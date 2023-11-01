@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+    version CDATA #REQUIRED
+       i       CDATA #REQUIRED
+       n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+  i CDATA #REQUIRED
+     n CDATA #REQUIRED
+     has-calls CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+   i CDATA #REQUIRED
+     n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+   i  CDATA #REQUIRED
+    n  CDATA #REQUIRED
+    ln CDATA #IMPLIED
+     l  CDATA #IMPLIED
+     s  CDATA #IMPLIED
+     v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+    i CDATA #REQUIRED
+     f CDATA #IMPLIED
+      n CDATA #IMPLIED
+      ln CDATA #IMPLIED
+     l CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     f CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+      i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED
+      t CDATA #IMPLIED
+      d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests2/data/bin/test-binaries/small/bin/inlines+loops-x86_64-gcc8-dr" has-calls="0" v="{}">
+<F i="3" n="/src/inlines+loops.c">
+<P i="4" n="f1 [inlines+loops-x86_64-gcc8-dr]" ln="f1" l="14" v="{[0x1110-0x1111)}">
+<S i="5" l="14" v="{[0x1110-0x111e)}"/>
+</P>
+<P i="6" n="f2 [inlines+loops-x86_64-gcc8-dr]" ln="f2" l="14" v="{[0x1120-0x1121)}">
+<S i="7" l="14" v="{[0x1120-0x112e)}"/>
+</P>
+<P i="8" n="f3_1 [inlines+loops-x86_64-gcc8-dr]" ln="f3_1" l="23" v="{[0x1130-0x1131)}">
+<S i="9" l="23" v="{[0x1130-0x1133) [0x113a-0x113b)}"/>
+<S i="10" l="24" v="{[0x1133-0x113a) [0x113b-0x1144)}"/>
+<S i="11" l="25" v="{[0x1144-0x1150)}"/>
+<S i="12" l="27" v="{[0x1164-0x1169)}"/>
+<L i="13" l="24" f="/src/inlines+loops.c" v="{[0x1150-0x1151)}">
+<S i="14" l="24" v="{[0x1155-0x1158) [0x115d-0x1164)}"/>
+<S i="15" l="25" v="{[0x1150-0x1155) [0x1158-0x115d)}"/>
+</L>
+</P>
+<P i="16" n="f3_2 [inlines+loops-x86_64-gcc8-dr]" ln="f3_2" l="28" v="{[0x1170-0x1171)}">
+<S i="17" l="28" v="{[0x1170-0x1172) [0x1179-0x117f)}"/>
+<S i="18" l="29" v="{[0x1172-0x1179) [0x117f-0x1190)}"/>
+<S i="19" l="31" v="{[0x1190-0x11a0)}"/>
+<S i="20" l="34" v="{[0x11d0-0x11d9)}"/>
+<L i="21" l="29" f="/src/inlines+loops.c" v="{[0x11a0-0x11a1)}">
+<S i="22" l="29" v="{[0x11c4-0x11d0)}"/>
+<S i="23" l="30" v="{[0x11a0-0x11b0)}"/>
+<L i="24" l="30" f="/src/inlines+loops.c" v="{[0x11b0-0x11b1)}">
+<S i="25" l="30" v="{[0x11b5-0x11b8) [0x11bd-0x11c4)}"/>
+<S i="26" l="31" v="{[0x11b0-0x11b5) [0x11b8-0x11bd)}"/>
+</L>
+</L>
+</P>
+<P i="27" n="f3_3 [inlines+loops-x86_64-gcc8-dr]" ln="f3_3" l="36" v="{[0x11e0-0x11e1)}">
+<S i="28" l="36" v="{[0x11e0-0x11f1) [0x11f5-0x11f8)}"/>
+<S i="29" l="39" v="{[0x11fd-0x1204)}"/>
+<S i="30" l="43" v="{[0x126c-0x127c)}"/>
+<A i="31" l="35" f="/src/inlines+loops.c" n="&lt;inline&gt;" v="{}">
+<S i="32" l="35" v="{[0x11f1-0x11f5) [0x11f8-0x11fd) [0x1204-0x1210)}"/>
+</A>
+<L i="33" l="36" f="/src/inlines+loops.c" v="{[0x1210-0x1211)}">
+<S i="34" l="36" v="{[0x125a-0x126c)}"/>
+<S i="35" l="37" v="{[0x1210-0x1228)}"/>
+<L i="36" l="37" f="/src/inlines+loops.c" v="{[0x1228-0x1229)}">
+<S i="37" l="37" v="{[0x124d-0x125a)}"/>
+<S i="38" l="38" v="{[0x1228-0x1238)}"/>
+<L i="39" l="38" f="/src/inlines+loops.c" v="{[0x1238-0x1239)}">
+<S i="40" l="38" v="{[0x123d-0x1241) [0x1246-0x124d)}"/>
+<S i="41" l="39" v="{[0x1238-0x123d) [0x1241-0x1246)}"/>
+</L>
+</L>
+</L>
+</P>
+<P i="42" n="f4_1 [inlines+loops-x86_64-gcc8-dr]" ln="f4_1" l="52" v="{[0x1280-0x1281)}">
+<S i="43" l="52" v="{[0x1280-0x1282) [0x1289-0x128f)}"/>
+<S i="44" l="53" v="{[0x1282-0x1289) [0x128f-0x12a0)}"/>
+<S i="45" l="56" v="{[0x12e0-0x12e9)}"/>
+<L i="46" l="53" f="/src/inlines+loops.c" v="{[0x12b0-0x12b1)}">
+<S i="47" l="53" v="{[0x12d4-0x12e0)}"/>
+<A i="48" l="54" f="/src/inlines+loops.c" n="" v="{}">
+<A i="49" l="48" f="/src/inlines+loops.c" n="f4_inline" v="{}">
+<S i="50" l="48" v="{[0x12b0-0x12c0)}"/>
+<L i="51" l="48" f="/src/inlines+loops.c" v="{[0x12c0-0x12c1)}">
+<S i="52" l="48" v="{[0x12c5-0x12c8) [0x12cd-0x12d4)}"/>
+<S i="53" l="49" v="{[0x12c0-0x12c5) [0x12c8-0x12cd)}"/>
+</L>
+</A>
+</A>
+</L>
+<A i="54" l="54" f="/src/inlines+loops.c" n="" v="{}">
+<A i="55" l="49" f="/src/inlines+loops.c" n="f4_inline" v="{}">
+<S i="56" l="49" v="{[0x12a0-0x12b0)}"/>
+</A>
+</A>
+</P>
+<P i="57" n="f4_2 [inlines+loops-x86_64-gcc8-dr]" ln="f4_2" l="58" v="{[0x12f0-0x12f1)}">
+<S i="58" l="58" v="{[0x12f0-0x1301) [0x1305-0x1308)}"/>
+<S i="59" l="63" v="{[0x137c-0x138c)}"/>
+<A i="60" l="57" f="/src/inlines+loops.c" n="&lt;inline&gt;" v="{}">
+<S i="61" l="57" v="{[0x1301-0x1305) [0x1308-0x130d) [0x1314-0x1320)}"/>
+</A>
+<L i="62" l="58" f="/src/inlines+loops.c" v="{[0x1320-0x1321)}">
+<S i="63" l="58" v="{[0x136a-0x137c)}"/>
+<S i="64" l="59" v="{[0x1320-0x1338)}"/>
+<L i="65" l="59" f="/src/inlines+loops.c" v="{[0x1338-0x1339)}">
+<S i="66" l="59" v="{[0x135d-0x136a)}"/>
+<A i="67" l="60" f="/src/inlines+loops.c" n="" v="{}">
+<A i="68" l="48" f="/src/inlines+loops.c" n="f4_inline" v="{}">
+<S i="69" l="48" v="{[0x1338-0x1348)}"/>
+<L i="70" l="48" f="/src/inlines+loops.c" v="{[0x1348-0x1349)}">
+<S i="71" l="48" v="{[0x134d-0x1351) [0x1356-0x135d)}"/>
+<S i="72" l="49" v="{[0x1348-0x134d) [0x1351-0x1356)}"/>
+</L>
+</A>
+</A>
+</L>
+</L>
+<A i="73" l="60" f="/src/inlines+loops.c" n="" v="{}">
+<A i="74" l="49" f="/src/inlines+loops.c" n="f4_inline" v="{}">
+<S i="75" l="49" v="{[0x130d-0x1314)}"/>
+</A>
+</A>
+</P>
+</F>
+<F i="76" n="[inlines+loops-x86_64-gcc8-dr]">
+<P i="77" n="_init [inlines+loops-x86_64-gcc8-dr]" ln="_init" l="0" v="{[0x1000-0x1001)}">
+<S i="78" l="0" v="{[0x1000-0x1017)}"/>
+</P>
+<P i="79" n="printf@plt [inlines+loops-x86_64-gcc8-dr]" ln="printf@plt" l="0" v="{[0x1030-0x1031)}">
+<S i="80" l="0" v="{[0x1030-0x1040)}"/>
+</P>
+<P i="81" n="targ1040@plt [inlines+loops-x86_64-gcc8-dr]" ln="targ1040@plt" l="0" v="{[0x1040-0x1041)}">
+<S i="82" l="0" v="{[0x1040-0x1048)}"/>
+</P>
+<P i="83" n="deregister_tm_clones [inlines+loops-x86_64-gcc8-dr]" ln="deregister_tm_clones" l="0" v="{[0x1050-0x1051)}">
+<S i="84" l="0" v="{[0x1050-0x1080)}"/>
+</P>
+<P i="85" n="register_tm_clones [inlines+loops-x86_64-gcc8-dr]" ln="register_tm_clones" l="0" v="{[0x1080-0x1081)}">
+<S i="86" l="0" v="{[0x1080-0x10c0)}"/>
+</P>
+<P i="87" n="__do_global_dtors_aux [inlines+loops-x86_64-gcc8-dr]" ln="__do_global_dtors_aux" l="0" v="{[0x10c0-0x10c1)}">
+<S i="88" l="0" v="{[0x10c0-0x1100)}"/>
+</P>
+<P i="89" n="frame_dummy [inlines+loops-x86_64-gcc8-dr]" ln="frame_dummy" l="0" v="{[0x1100-0x1101)}">
+<S i="90" l="0" v="{[0x1100-0x1110)}"/>
+</P>
+<P i="91" n="_fini [inlines+loops-x86_64-gcc8-dr]" ln="_fini" l="0" v="{[0x138c-0x138d)}">
+<S i="92" l="0" v="{[0x138c-0x1395)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

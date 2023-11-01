@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+    version CDATA #REQUIRED
+       i       CDATA #REQUIRED
+       n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+  i CDATA #REQUIRED
+     n CDATA #REQUIRED
+     has-calls CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+   i CDATA #REQUIRED
+     n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+   i  CDATA #REQUIRED
+    n  CDATA #REQUIRED
+    ln CDATA #IMPLIED
+     l  CDATA #IMPLIED
+     s  CDATA #IMPLIED
+     v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+    i CDATA #REQUIRED
+     f CDATA #IMPLIED
+      n CDATA #IMPLIED
+      ln CDATA #IMPLIED
+     l CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     f CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+      i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED
+      t CDATA #IMPLIED
+      d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests2/data/bin/test-binaries/small/bin/inlines+loops-sm_62-nvcc102-dr" has-calls="0" v="{}">
+<F i="3" n="/src/inlines+loops.cu">
+<P i="4" n="f4_2()" ln="_Z4f4_2v" s="23" l="48" v="{[0x3580-0x3581)}">
+<S i="5" l="48" v="{[0x3630-0x3670) [0x36a8-0x36e8)}"/>
+<S i="6" l="49" v="{[0x3670-0x36a8)}"/>
+<S i="7" l="58" v="{[0x3580-0x35f0) [0x3728-0x3768)}"/>
+<S i="8" l="59" v="{[0x35f0-0x3630) [0x36e8-0x3728)}"/>
+<S i="9" l="63" v="{[0x3768-0x3780)}"/>
+</P>
+<P i="10" n="f4_1()" ln="_Z4f4_1v" s="25" l="48" v="{[0x3780-0x3781)}">
+<S i="11" l="48" v="{[0x37f0-0x3830) [0x3868-0x38a8)}"/>
+<S i="12" l="49" v="{[0x3830-0x3868)}"/>
+<S i="13" l="53" v="{[0x3780-0x37f0) [0x38a8-0x38e8)}"/>
+<S i="14" l="56" v="{[0x38e8-0x3900)}"/>
+</P>
+<P i="15" n="f3_3()" ln="_Z4f3_3v" s="26" l="36" v="{[0x3900-0x3901)}">
+<S i="16" l="36" v="{[0x3900-0x3970) [0x3aa8-0x3ae8)}"/>
+<S i="17" l="37" v="{[0x3970-0x39b0) [0x3a68-0x3aa8)}"/>
+<S i="18" l="38" v="{[0x39b0-0x39f0) [0x3a28-0x3a68)}"/>
+<S i="19" l="39" v="{[0x39f0-0x3a28)}"/>
+<S i="20" l="43" v="{[0x3ae8-0x3b00)}"/>
+</P>
+<P i="21" n="f3_2()" ln="_Z4f3_2v" s="27" l="29" v="{[0x3b00-0x3b01)}">
+<S i="22" l="29" v="{[0x3b00-0x3b70) [0x3c28-0x3c68)}"/>
+<S i="23" l="30" v="{[0x3b70-0x3bb0) [0x3be8-0x3c28)}"/>
+<S i="24" l="31" v="{[0x3bb0-0x3be8)}"/>
+<S i="25" l="34" v="{[0x3c68-0x3c80)}"/>
+</P>
+<P i="26" n="f3_1()" ln="_Z4f3_1v" s="28" l="24" v="{[0x3c80-0x3c81)}">
+<S i="27" l="24" v="{[0x3c80-0x3cf0) [0x3d28-0x3d68)}"/>
+<S i="28" l="25" v="{[0x3cf0-0x3d28)}"/>
+<S i="29" l="27" v="{[0x3d68-0x3d80)}"/>
+</P>
+<P i="30" n="f2()" ln="_Z2f2v" s="29" l="9" v="{[0x3d80-0x3d81)}">
+<S i="31" l="0" v="{[0x3d80-0x3d90)}"/>
+<S i="32" l="9" v="{[0x3d90-0x3dd8)}"/>
+<S i="33" l="20" v="{[0x3dd8-0x3e00)}"/>
+</P>
+<P i="34" n="f1()" ln="_Z2f1v" s="30" l="14" v="{[0x3e00-0x3e01)}">
+<S i="35" l="0" v="{[0x3e00-0x3e10)}"/>
+<S i="36" l="14" v="{[0x3e10-0x3e58)}"/>
+<S i="37" l="15" v="{[0x3e58-0x3e80)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

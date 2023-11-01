@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+    version CDATA #REQUIRED
+       i       CDATA #REQUIRED
+       n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+  i CDATA #REQUIRED
+     n CDATA #REQUIRED
+     has-calls CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+   i CDATA #REQUIRED
+     n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+   i  CDATA #REQUIRED
+    n  CDATA #REQUIRED
+    ln CDATA #IMPLIED
+     l  CDATA #IMPLIED
+     s  CDATA #IMPLIED
+     v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+    i CDATA #REQUIRED
+     f CDATA #IMPLIED
+      n CDATA #IMPLIED
+      ln CDATA #IMPLIED
+     l CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     f CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+      i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED
+      t CDATA #IMPLIED
+      d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests2/data/bin/test-binaries/small/bin/recursion-sm_87-nvcc118-r" has-calls="1" v="{}">
+<F i="3" n="[recursion-sm_87-nvcc118-r]">
+<P i="4" n="kernmain()" ln="_Z8kernmainv" l="0" v="{[0xe00-0xe01)}">
+<S i="5" l="0" v="{[0xe00-0xf70) [0xf80-0xf90)}"/>
+<C i="6" l="0" v="{[0xf70-0xf80)}" t="0x1480" d="NVIDIA sm_87"/>
+</P>
+<P i="7" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main4top1EPVdi" l="0" v="{[0xf90-0xf91)}">
+<S i="8" l="0" v="{[0xf90-0x1050) [0x1060-0x10b0)}"/>
+<C i="9" l="0" v="{[0x1050-0x1060)}" t="0x16a0" d="NVIDIA sm_87"/>
+</P>
+<P i="10" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main4top2EPVdi" l="0" v="{[0x10b0-0x10b1)}">
+<S i="11" l="0" v="{[0x10b0-0x1310) [0x1320-0x13c0) [0x13d0-0x1480)}"/>
+<C i="12" l="0" v="{[0x1310-0x1320)}" t="0x19d0" d="NVIDIA sm_87"/>
+<C i="13" l="0" v="{[0x13c0-0x13d0)}" t="0x16a0" d="NVIDIA sm_87"/>
+</P>
+<P i="14" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main5heartEv" l="0" v="{[0x1480-0x1481)}">
+<S i="15" l="0" v="{[0x1480-0x1610) [0x1620-0x1670) [0x1680-0x16a0)}"/>
+<C i="16" l="0" v="{[0x1610-0x1620)}" t="0xf90" d="NVIDIA sm_87"/>
+<C i="17" l="0" v="{[0x1670-0x1680)}" t="0x10b0" d="NVIDIA sm_87"/>
+</P>
+<P i="18" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main7common1EPVdi" l="0" v="{[0x16a0-0x16a1)}">
+<S i="19" l="0" v="{[0x16a0-0x1760) [0x1770-0x17c0)}"/>
+<C i="20" l="0" v="{[0x1760-0x1770)}" t="0x17c0" d="NVIDIA sm_87"/>
+</P>
+<P i="21" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main7common2EPVdi" l="0" v="{[0x17c0-0x17c1)}">
+<S i="22" l="0" v="{[0x17c0-0x18a0) [0x18b0-0x18f0) [0x1900-0x19d0)}"/>
+<C i="23" l="0" v="{[0x18a0-0x18b0)}" t="0x10b0" d="NVIDIA sm_87"/>
+<C i="24" l="0" v="{[0x18f0-0x1900)}" t="0xf90" d="NVIDIA sm_87"/>
+</P>
+<P i="25" n="$_Z8kernmainv$__cuda_sm20_div_f64_slowpath_v2" l="0" v="{[0x19d0-0x19d1)}">
+<S i="26" l="0" v="{[0x19d0-0x2080)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>
