@@ -76,7 +76,7 @@ For more details see the [Spack User's Manual](https://spack.readthedocs.io/en/l
 
 HPCToolkit supports building from source using [Meson]. The prerequisites in this case are:
 
-- Python 3.10 (or higher),
+- Python 3.8 (or higher),
 - [Spack][getting spack] 0.20.1 (or higher) configured for the working system, and
 - [Meson][getting meson] 1.1.0 (or higher).
 
@@ -96,7 +96,7 @@ Note that the first `meson setup` may take some time, it will run `spack install
 Available configuration options:
 
 - `-Dhpcprof_mpi=(disabled|auto|enabled)`: Build `hpcprof-mpi` in addition to `hpcprof`. Requires MPI.
-- `-Dpython=(disabled|auto|enabled)`: Enable the (experimental) Python unwinder. Requires Python.
+- `-Dpython=(disabled|auto|enabled)`: Enable the (experimental) Python unwinder. Requires Python 3.10+.
 - `-Dpapi=(disabled|auto|enabled)`: Enable PAPI metrics. Requires PAPI.
 - `-Dcuda=(disabled|auto|enabled)`: Enable CUDA metrics (`-e gpu=nvidia`). Requires CUDA.
 - `-Dlevel0=(disabled|auto|enabled)`: Enable Level Zero metrics (`-e gpu=level0`). Requires Level Zero.

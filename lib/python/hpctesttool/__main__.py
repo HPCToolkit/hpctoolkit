@@ -1,4 +1,3 @@
-import collections.abc
 import difflib
 import sys
 import tarfile
@@ -15,6 +14,9 @@ from .formats import from_path, vcurrent
 from .formats.diff.strict import StrictAccuracy, StrictDiff
 from .match.context import MatchCtx, MatchEntryPoint, MatchFunction, chainmatch
 from .test.execution import Database, Measurements
+
+if typing.TYPE_CHECKING:
+    import collections.abc
 
 
 @click.group()
@@ -42,7 +44,11 @@ def test() -> None:
     "measurements", type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path)
 )
 def produces_profiles(
-    *, measurements: Path, procs: int, threads_per_proc: collections.abc.Sequence[int], trace: bool
+    *,
+    measurements: Path,
+    procs: int,
+    threads_per_proc: "collections.abc.Sequence[int]",
+    trace: bool,
 ) -> None:
     """Test that the given MEASUREMENTS contain a sufficient number of profiles."""
     meas = Measurements(measurements)
@@ -148,7 +154,7 @@ def db_compare(*, database: Path, canonical: Path) -> None:
     help="Disable any matching that would rely on the presence of debug info",
 )
 def match_struct(
-    *, structfile: Path, binary: Path, sources: collections.abc.Iterable[Path], debug: bool
+    *, structfile: Path, binary: Path, sources: "collections.abc.Iterable[Path]", debug: bool
 ) -> None:
     """Compare a STRUCTFILE against the lexical structure expressed in SOURCES."""
     try:
@@ -209,7 +215,7 @@ def tarball(*, contents: Path, output: typing.BinaryIO) -> None:
 )
 @click.argument("output", type=click.File("wb"))
 def tarball_files(
-    *, add: collections.abc.Iterable[tuple[Path, PurePosixPath]], output: typing.BinaryIO
+    *, add: "collections.abc.Iterable[typing.Tuple[Path, PurePosixPath]]", output: typing.BinaryIO
 ) -> None:
     """Create a tarball from individual files and mappings."""
 

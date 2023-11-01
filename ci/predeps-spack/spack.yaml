@@ -13,7 +13,7 @@ spack:
   - core:
     - cmake
     - pkgconfig
-    - 'python @3.10.8: +bz2 +ctypes +lzma +zlib'
+    - 'python @3.8.16: +bz2 +ctypes +lzma +zlib'  # LATEST: @3.10.10:
   # Core dependencies. These specs should stay in-sync with subprojects/spack-deps/spack.yaml
   - core:
     - >-

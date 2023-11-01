@@ -13,7 +13,7 @@ class DiffHunk:
     # TODO: Come up with a unified API that all Hunks are able to provide
 
 
-DbT = typing.TypeVar("DbT", bound=base.DatabaseBase | base.DatabaseFile)
+DbT = typing.TypeVar("DbT", bound=typing.Union[base.DatabaseBase, base.DatabaseFile])
 
 
 class DiffStrategy(abc.ABC):
@@ -29,7 +29,7 @@ class DiffStrategy(abc.ABC):
         self.a, self.b = a, b
 
     @abc.abstractmethod
-    def contexts(self) -> collections.abc.Iterable[collections.abc.Mapping]:
+    def contexts(self) -> "collections.abc.Iterable[collections.abc.Mapping]":
         """Return the similar parts between a and b, i.e. the context for any differences.
         There may be multiple, this method returns all of them, "best" ones first.
 
@@ -48,7 +48,7 @@ class DiffStrategy(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def hunks(self) -> collections.abc.Collection[DiffHunk]:
+    def hunks(self) -> "collections.abc.Collection[DiffHunk]":
         """Return a series of all DiffHunks indicating differences between a and b.
 
         Note that these DiffHunks may be available through other methods as well, this just

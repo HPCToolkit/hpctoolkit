@@ -9,6 +9,7 @@ ARG VERMODE=latest
 RUN \
   case "$VERMODE" in \
   latest) \
+    sed -E -i '/LATEST: @/ s/@[a-zA-Z0-9._-]+[,:a-zA-Z0-9._-]*(.*)LATEST: @([a-zA-Z0-9._-]+[,:a-zA-Z0-9._-]*)/@\2\1/' /opt/environment/spack.yaml; \
     ;; \
   minimum) \
     sed -E -i 's/@([a-zA-Z0-9._-]+)[,:a-zA-Z0-9._-]*/@\1/g' /opt/environment/spack.yaml; \

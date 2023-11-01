@@ -2,6 +2,7 @@ import collections.abc
 import contextlib
 import tarfile
 import tempfile
+import typing
 from pathlib import Path, PurePath
 
 import ruamel.yaml
@@ -12,8 +13,8 @@ __all__ = ["from_path", "from_path_extended", "vcurrent"]
 
 vcurrent = v4
 
-dir_classes: tuple[type[base.DatabaseBase], ...] = (v4.Database,)
-file_classes: tuple[type[base.DatabaseFile], ...] = (
+dir_classes: typing.Tuple[typing.Type[base.DatabaseBase], ...] = (v4.Database,)
+file_classes: typing.Tuple[typing.Type[base.DatabaseFile], ...] = (
     v4.metadb.MetaDB,
     v4.profiledb.ProfileDB,
     v4.cctdb.ContextDB,
@@ -21,7 +22,7 @@ file_classes: tuple[type[base.DatabaseFile], ...] = (
 )
 
 
-def from_path(src: Path) -> base.DatabaseBase | base.DatabaseFile | None:
+def from_path(src: Path) -> typing.Optional[typing.Union[base.DatabaseBase, base.DatabaseFile]]:
     """Open a file/directory of any of the supported formats. Returns the object-form of the input,
     or None if it does not appear to be a supported format.
     """
@@ -41,7 +42,7 @@ def from_path(src: Path) -> base.DatabaseBase | base.DatabaseFile | None:
     return None
 
 
-def _iter_deep_dir(path: Path) -> collections.abc.Iterator[Path]:
+def _iter_deep_dir(path: Path) -> "collections.abc.Iterator[Path]":
     yield path
     while path.is_dir():
         children = list(path.iterdir())
@@ -51,8 +52,8 @@ def _iter_deep_dir(path: Path) -> collections.abc.Iterator[Path]:
 
 
 def from_path_extended(
-    src: Path, *, subdir: PurePath | None = None
-) -> base.DatabaseBase | base.DatabaseFile | None:
+    src: Path, *, subdir: typing.Optional[PurePath] = None
+) -> typing.Optional[typing.Union[base.DatabaseBase, base.DatabaseFile]]:
     """Extension of from_path that also supports some more obscure but convenient formats.
 
     Supports:
@@ -85,7 +86,7 @@ def from_path_extended(
         # Attempt 3: It's a YAML file containing a serialized database or otherwise
         with open(src, encoding="utf-8") as f, contextlib.suppress(ruamel.yaml.YAMLError):
             result = ruamel.yaml.YAML(typ="safe").load(f)
-            if isinstance(result, base.DatabaseBase | base.DatabaseFile):
+            if isinstance(result, (base.DatabaseBase, base.DatabaseFile)):
                 return result
 
     # All attempts failed, give up

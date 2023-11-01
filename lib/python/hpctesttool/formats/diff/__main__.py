@@ -1,5 +1,6 @@
 import argparse
 import sys
+import typing
 from pathlib import Path, PurePath
 
 from .. import from_path_extended
@@ -44,7 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(inargs: list[str]) -> int:
+def main(inargs: typing.List[str]) -> int:
     args = build_parser().parse_args(inargs)
     args.strategy = diffs[args.strategy]
 

@@ -1,4 +1,3 @@
-import collections.abc
 import contextlib
 import csv
 import os
@@ -7,10 +6,14 @@ import re
 import shutil
 import subprocess
 import sys
+import typing
+
+if typing.TYPE_CHECKING:
+    import collections.abc
 
 
 @contextlib.contextmanager
-def nvidia(*capabilities: str, num_devices: int = 1) -> collections.abc.Iterator[None]:
+def nvidia(*capabilities: str, num_devices: int = 1) -> "collections.abc.Iterator[None]":
     nv_smi = shutil.which("nvidia-smi")
     if nv_smi is None:
         print("SKIP: nvidia-smi not found, CUDA must not be available.")
@@ -22,7 +25,7 @@ def nvidia(*capabilities: str, num_devices: int = 1) -> collections.abc.Iterator
         stdout=subprocess.PIPE,
         text=True,
     )
-    gpus: list[dict] = list(csv.DictReader(proc.stdout.split("\n"), skipinitialspace=True))
+    gpus: typing.List[dict] = list(csv.DictReader(proc.stdout.split("\n"), skipinitialspace=True))
 
     # Try to obey CUDA_VISIBLE_DEVICES to some extent
     if "CUDA_VISIBLE_DEVICES" in os.environ:
@@ -41,18 +44,17 @@ def nvidia(*capabilities: str, num_devices: int = 1) -> collections.abc.Iterator
             raise ValueError(c)
 
         cver = (int(mat[2]), int(mat[3]))
-        match mat[1]:
-            case ">=":
-                gpus = [g for g in gpus if g["compute_cap_v"] >= cver]
+        if mat[1] == ">=":
+            gpus = [g for g in gpus if g["compute_cap_v"] >= cver]
 
-            case "<=":
-                gpus = [g for g in gpus if g["compute_cap_v"] <= cver]
+        elif mat[1] == "<=":
+            gpus = [g for g in gpus if g["compute_cap_v"] <= cver]
 
-            case "=":
-                gpus = [g for g in gpus if g["compute_cap_v"] == cver]
+        elif mat[1] == "=":
+            gpus = [g for g in gpus if g["compute_cap_v"] == cver]
 
-            case _:
-                raise AssertionError
+        else:
+            raise AssertionError
 
     if len(gpus) < num_devices:
         print(
@@ -60,7 +62,7 @@ def nvidia(*capabilities: str, num_devices: int = 1) -> collections.abc.Iterator
         )
         sys.exit(77)
 
-    old_cvd: str | None = os.environ.get("CUDA_VISIBLE_DEVICES")
+    old_cvd: typing.Optional[str] = os.environ.get("CUDA_VISIBLE_DEVICES")
     os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(
         g["index"] for g in random.choices(gpus, k=num_devices)
     )

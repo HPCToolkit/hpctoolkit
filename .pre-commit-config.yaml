@@ -16,7 +16,7 @@ repos:
   hooks:
   # Automatically elide older Python syntax and replace with newer ones
   - id: pyupgrade
-    args: [--py310-plus]
+    args: [--py38-plus]
     # XXX: Old Python 2.7-compatible script. Probably bitrot by now.
     exclude: '^src/tool/hpcrun/sample-sources/make-wrappers.py$'
 
@@ -26,7 +26,7 @@ repos:
   # Run a number of Python linters in Rust. Not completely feature-parity with Python-based linters,
   # but can autofix a number of issues before they run. Also wicked fast.
   - id: ruff
-    args: [--target-version=py310, --fix, --line-length=100]
+    args: [--target-version=py38, --fix, --line-length=100]
     exclude: &py_excludes |
       (?x)(
         ^src/tool/hpcrun/sample-sources/make-wrappers\.py$    # XXX: Old bitrotted Py <2.7 script
@@ -42,7 +42,7 @@ repos:
   hooks:
   # Blacken all Python code, except allow slightly longer line lengths
   - id: black
-    args: ['--line-length=100', '--target-version=py310']
+    args: ['--line-length=100', '--target-version=py38']
 
 - repo: https://github.com/PyCQA/isort
   rev: 5.12.0
@@ -88,6 +88,7 @@ repos:
   - id: check-executables-have-shebangs
   # Ensure large files (>=500KB) are never added outside of LFS
   - id: check-added-large-files
+    exclude: ^lib/python/wheels/
   # Ensure symlinks always point to something
   - id: check-symlinks
   # Warn if symlinks are ever accidentally destroyed
@@ -115,6 +116,13 @@ repos:
   # Ensure the pyproject.toml files are valid for Poetry
   - id: poetry-check
     args: [-C, lib/python/, --lock]
+
+- repo: https://github.com/netromdk/vermin
+  rev: v1.5.2
+  hooks:
+  # Check that the Python code doesn't require a newer version than expected
+  - id: vermin
+    args: [--violations, -vvv]
 
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.5.1

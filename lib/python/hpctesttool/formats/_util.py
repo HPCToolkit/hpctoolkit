@@ -1,5 +1,6 @@
 import contextlib
 import struct
+import typing
 
 
 @contextlib.contextmanager
@@ -38,7 +39,7 @@ class VersionedStructure:
             return struct.Struct(endian + form)
         raise ValueError(f"Invalid format specification: {form}")
 
-    def __init__(self, endian: str, /, **fields: tuple[int, int, str]):
+    def __init__(self, endian: str, /, **fields: typing.Tuple[int, int, str]):
         """Create a new VersionedStructure with the given fields."""
         assert endian in (">", "<", "=")
         self._fields = {

@@ -9,8 +9,8 @@ pymod = import('python')
 
 # Find Python. This is a hard requirement since we use Python for the regression test suite as well.
 python = pymod.find_installation('python3')
-assert(python.language_version().version_compare('>=3.10'),
-       'Need Python >=3.10, got @0@'.format(python.language_version()))
+assert(python.language_version().version_compare('>=3.8'),
+       'Need Python >=3.8, got @0@'.format(python.language_version()))
 
 # Translate from prefixes to Meson dependency objects. They are missing most pieces like compiler
 # args and such, but they are closer to the Mesonic.
@@ -57,6 +57,15 @@ _gtpin_f = get_option('gtpin').require(level0_exdep.found(),
     error_message: 'gtpin is only available with level0')
 gtpin_exdep = dependency('gtpin-hpctoolkit', required: _gtpin_f)
 igc_exdep = dependency('igc-hpctoolkit', required: _gtpin_f)
+
+# The Python unwinding support requires a higher level of Python than the rest
+if get_option('python').require(python.language_version().version_compare('>=3.10'),
+    error_message: 'Python unwinding requires Python 3.10').allowed()
+  pyconfig = find_program(python.get_variable('BINDIR') / fs.name(python.full_path()) + '-config',
+      required: get_option('python'))
+else
+  pyconfig = dependency('', required: false)
+endif
 
 # Find CUDA language support.
 cuda_exdep = dependency('cuda-hpctoolkit', required: get_option('cuda'))
@@ -246,8 +255,8 @@ if perfmon_exdep.found()
     _autogoo_args += ['--with-perfmon=@0@'.format(perfmon_exdep.get_variable(internal: 'prefix'))]
     _ldflags += perfmon_exdep.get_variable(internal: 'link_args', default_value: '').split()
 endif
-if get_option('python').enable_auto_if(python.found()).enabled()
-    _autogoo_args += ['--with-python=@0@'.format(python.get_variable('BINDIR') / fs.stem(python.full_path()) + '-config')]
+if pyconfig.found()
+    _autogoo_args += ['--with-python=@0@'.format(pyconfig.full_path())]
 endif
 if opencl_exdep.found()
     _autogoo_args += ['--with-opencl=@0@'.format(opencl_exdep.get_variable(internal: 'prefix'))]
