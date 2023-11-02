@@ -61,7 +61,7 @@ namespace hpctoolkit::sinks {
 
 /// Base class for ProfileSinks that output byte-packed data. After packing,
 /// this data can be saved or passed to another machine, and read in with the
-/// corrosponding method of sources::Packed.
+/// corresponding method of sources::Packed.
 class Packed : public ProfileSink {
 public:
   Packed();

@@ -70,7 +70,7 @@
 // list of regions for which a thread is registered that are not yet resolved
 extern __thread ompt_trl_el_t* registered_regions;
 
-// thread's notifications queueus
+// thread's notifications queues
 //
 // public thread's notification queue
 extern __thread ompt_wfq_t threads_queue;

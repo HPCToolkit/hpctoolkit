@@ -133,7 +133,7 @@ private:
     uint64_t allocate(uint64_t size);
 
     // Write a new blob of profile data into the buffer, obtained by
-    // concatinating the two given blobs. The final offset of the blob will be
+    // concatenating the two given blobs. The final offset of the blob will be
     // saved to `offset` after flush() has been called.
     // MT: Internally Synchronized
     void write(const std::vector<char>& mvBlob, uint64_t& mvOffset,

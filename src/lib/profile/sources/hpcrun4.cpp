@@ -159,7 +159,7 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
   // If all went well, we can pause the file here.
   hpcrun_sparse_pause(file);
 
-  // Also check for a corrosponding tracefile. If anything goes wrong, we'll
+  // Also check for a corresponding tracefile. If anything goes wrong, we'll
   // just skip it.
   if(!setupTrace(traceDisorder)) tracepath.clear();
 }
