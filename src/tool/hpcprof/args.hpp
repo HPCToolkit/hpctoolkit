@@ -62,13 +62,13 @@ public:
   ProfArgs(int, char* const*);
   ~ProfArgs() = default;
 
-  /// Sources and corrosponding paths specified as arguments.
+  /// Sources and corresponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileSource>, stdshim::filesystem::path>> sources;
 
   /// KernelSymbols Finalizers from properly named measurements directories
   std::vector<std::pair<std::unique_ptr<ProfileFinalizer>, stdshim::filesystem::path>> ksyms;
 
-  /// (Structfile) Finalizers and corrosponding paths specified as arguments.
+  /// (Structfile) Finalizers and corresponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileFinalizer>, stdshim::filesystem::path>> structs;
 
   /// Finalizer that warns when a Structfile is present but missed due to path differences

@@ -80,7 +80,7 @@ extern "C" {
 //
 // arguments:
 //   input:
-//     pointer to a vector of bytes that will be crytographically hashed
+//     pointer to a vector of bytes that will be cryptographically hashed
 //   input_length:
 //     length in bytes of the input
 //   hash:
@@ -106,7 +106,7 @@ crypto_compute_hash
 //
 // arguments:
 //   hash:
-//     pointer to crytographic hash computed by cryto_hash_compute
+//     pointer to cryptographic hash computed by cryto_hash_compute
 //   hash_string:
 //     pointer to character buffer where string equivalent of the hash code
 //     will be written

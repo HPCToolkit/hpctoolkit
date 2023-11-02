@@ -35,7 +35,7 @@ $ hpcrun --version
 <!--
   Provide detailed steps to reproduce the issue as a numbered list. List any
   commands to run in `console` code blocks. Only include command output that is
-  relvant to the reproduction of the issue.
+  relevant to the reproduction of the issue.
 
   Example:
   1. Compile and measure the test application.

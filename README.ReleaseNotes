@@ -1331,7 +1331,7 @@ HPCToolkit Version 4.0.0: [2004.11.06]
     ensuring that in CFG construction no fallthru edge is placed
     between the return and possible subsequent (error handlin) code.
     On Itanium with Intel's compiler, this can have drastic effects.
-    Make necessary changes to GNU binutils to propgate this information.
+    Make necessary changes to GNU binutils to propagate this information.
   - Add options to treat irreducible intervals as loops and to turn
     off potentially unsafe normalizations.
 - hpcview and hpcquick handle multiple structure files

@@ -718,7 +718,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
             cieTable[kc].cieAugDataOffset = recordOffset + cieOffset;
             cieTable[kc].cieAugData = pb+cieOffset;
             //
-            // in order to advence cieOffset with the length of the aug record,
+            // in order to advance cieOffset with the length of the aug record,
             // we have to make a dummy call to decode, which will give us
             // an error condition if one exists, and the offset
             //

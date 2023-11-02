@@ -182,7 +182,7 @@ hpcrun_setup_segv()
 // ------------------------------------------------------------
 // ------------------------------------------------------------
 
-// Interface for callback registerations when a segv occurs.
+// Interface for callback registrations when a segv occurs.
 // The callback function will be called when a segv happens.
 // Returns: 0 if the function is already registered,
 //      1 if the function is now added to the list
