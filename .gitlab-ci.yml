@@ -393,7 +393,6 @@ validate:
   stage: test
   variables:
     JOB_CC: gcc
-    PYTHON_ENABLED: enabled
   script:
   - meson setup --native-file image.ini --native-file "$JOB_CC".ini --prefix /tmp/installdir /tmp/builddir
   - mkdir -p logs/"$CI_JOB_NAME"
@@ -411,12 +410,12 @@ validate:
     }
   - |
     for buildtype in debugoptimized release; do
-      build $buildtype-all    -Dbuildtype=$buildtype -Dpapi=enabled -Dpython="$PYTHON_ENABLED" -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopapi -Dbuildtype=$buildtype -Dpapi=disabled -Dpython="$PYTHON_ENABLED" -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-all    -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-nopapi -Dbuildtype=$buildtype -Dpapi=disabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
       build $buildtype-nopy   -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=disabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noocl  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython="$PYTHON_ENABLED" -Dopencl=disabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nompi  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython="$PYTHON_ENABLED" -Dopencl=enabled -Dhpcprof_mpi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noval  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython="$PYTHON_ENABLED" -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=false $COMMON_SETTINGS || exit $?
+      build $buildtype-noocl  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=disabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-nompi  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-noval  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=false $COMMON_SETTINGS || exit $?
     done
   after_script:
   - |
@@ -460,20 +459,14 @@ validate:
   extends: [.buildmany amd64 cpu, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_ALMALINUX8_AMD64
   parallel: {matrix: [{JOB_CC: gcc}]}
-  variables:
-    PYTHON_ENABLED: auto
 'buildmany min: [amd64, ubuntu20.04]':
   extends: [.buildmany amd64 cpu, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
   parallel: {matrix: [{JOB_CC: [clang10]}]}
-  variables:
-    PYTHON_ENABLED: auto
 'buildmany min: [amd64, fedora38]':
   extends: [.buildmany amd64 cpu, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_FEDORA38_AMD64
   parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
-  variables:
-    PYTHON_ENABLED: auto
 
 
 # CUDA spins
@@ -493,13 +486,9 @@ validate:
 'buildmany min: [amd64, cuda12.0]':
   extends: [.buildmany amd64 cuda, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_CUDA12_0_AMD64
-  variables:
-    PYTHON_ENABLED: auto
 'buildmany min: [amd64, cuda11.8]':
   extends: [.buildmany amd64 cuda, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_CUDA11_8_AMD64
-  variables:
-    PYTHON_ENABLED: auto
 
 # ROCm spins
 .buildmany amd64 rocm:
@@ -518,13 +507,9 @@ validate:
 'buildmany min: [amd64, rocm5.1]':
   extends: [.buildmany amd64 rocm, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_ROCM5_1_AMD64
-  variables:
-    PYTHON_ENABLED: auto
 'buildmany min: [amd64, rocm5.6]':
   extends: [.buildmany amd64 rocm, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_ROCM5_6_AMD64
-  variables:
-    PYTHON_ENABLED: auto
 
 # Level 0 + GTPin spins
 .buildmany amd64 lvlz:
@@ -536,7 +521,7 @@ validate:
   - !reference [.buildmany, script]
   - |
     for buildtype in debugoptimized release; do
-      build $buildtype-nogtpin -Dbuildtype=$buildtype -Dpapi=enabled -Dpython="$PYTHON_ENABLED" -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS -Dgtpin=disabled || exit $?
+      build $buildtype-nogtpin -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS -Dgtpin=disabled || exit $?
     done
 
 'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
@@ -546,8 +531,6 @@ validate:
 'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
   extends: [.buildmany amd64 lvlz, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_INTEL_AMD64
-  variables:
-    PYTHON_ENABLED: auto
 
 
 # Build single versions of the codebase and run unit tests through `make check`
