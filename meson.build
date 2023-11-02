@@ -11,6 +11,9 @@ pymod = import('python')
 python = pymod.find_installation('python3')
 assert(python.language_version().version_compare('>=3.8'),
        'Need Python >=3.8, got @0@'.format(python.language_version()))
+# The python*-config tool is only required for Python unwinding support
+pyconfig = find_program(python.get_variable('BINDIR') / fs.name(python.full_path()) + '-config',
+    required: get_option('python'))
 
 # Translate from prefixes to Meson dependency objects. They are missing most pieces like compiler
 # args and such, but they are closer to the Mesonic.
@@ -58,15 +61,6 @@ _gtpin_f = get_option('gtpin').require(level0_exdep.found(),
     error_message: 'gtpin is only available with level0')
 gtpin_exdep = dependency('gtpin-hpctoolkit', required: _gtpin_f)
 igc_exdep = dependency('igc-hpctoolkit', required: _gtpin_f)
-
-# The Python unwinding support requires a higher level of Python than the rest
-if get_option('python').require(python.language_version().version_compare('>=3.10'),
-    error_message: 'Python unwinding requires Python 3.10').allowed()
-  pyconfig = find_program(python.get_variable('BINDIR') / fs.name(python.full_path()) + '-config',
-      required: get_option('python'))
-else
-  pyconfig = dependency('', required: false)
-endif
 
 # Find CUDA language support.
 cuda_exdep = dependency('cuda-hpctoolkit', required: get_option('cuda'))

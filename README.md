@@ -98,7 +98,7 @@ Note that doing this may require additional configuration to [provide core depen
 Available configuration options:
 
 - `-Dhpcprof_mpi=(disabled|auto|enabled)`: Build `hpcprof-mpi` in addition to `hpcprof`. Requires MPI.
-- `-Dpython=(disabled|auto|enabled)`: Enable the (experimental) Python unwinder. Requires Python 3.10+.
+- `-Dpython=(disabled|auto|enabled)`: Enable the (experimental) Python unwinder.
 - `-Dpapi=(disabled|auto|enabled)`: Enable PAPI metrics. Requires PAPI.
 - `-Dcuda=(disabled|auto|enabled)`: Enable CUDA metrics (`-e gpu=nvidia`). Requires CUDA.
 - `-Dlevel0=(disabled|auto|enabled)`: Enable Level Zero metrics (`-e gpu=level0`). Requires Level Zero.
