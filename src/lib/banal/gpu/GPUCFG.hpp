@@ -269,15 +269,17 @@ struct Inst {
   InstructionStat *inst_stat;
 
   Inst(Address offset, int size, Arch arch, InstructionStat *inst_stat) : offset(offset), size(size), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false), arch(arch), inst_stat(inst_stat) {}
+    is_call(false), is_jump(false), is_sync(false), arch(arch), inst_stat(inst_stat) { InstIntercept(); }
 
   // Constructor for dummy inst
   Inst(Address offset, int size, Arch arch) : offset(offset), size(size), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false), arch(arch) {}
+    is_call(false), is_jump(false), is_sync(false), arch(arch) { InstIntercept(); }
 
-  Inst(Address offset, int size) : Inst(offset, size, Dyninst::Arch_none) {}
+  Inst(Address offset, int size) : Inst(offset, size, Dyninst::Arch_none) { InstIntercept(); }
 
-  explicit Inst(Address offset) : Inst(offset, 0) {}
+  explicit Inst(Address offset) : Inst(offset, 0) { InstIntercept(); }
+
+  void InstIntercept() { }
 };
 
 
@@ -421,9 +423,10 @@ struct Block {
   std::vector<Target *> targets;
   std::string name;
 
-  Block(size_t _id, Address _address, const std::string &_name) : id(_id), address(_address), name(_name) {}
+  Block(size_t _id, Address _address, const std::string &_name) : id(_id), address(_address), begin_offset(0), name(_name) { BlockIntercept(); }
 
-  Block(size_t _id, const std::string &_name) : Block(_id, 0, _name) {}
+  Block(size_t _id, const std::string &_name) : Block(_id, 0, _name) { BlockIntercept(); }
+
 
   bool operator<(const Block &other) const {
     if (this->insts.size() == 0) {
@@ -454,6 +457,9 @@ struct Block {
     for (auto *target: targets) {
       delete target;
     }
+  }
+
+  void BlockIntercept() {
   }
 };
 

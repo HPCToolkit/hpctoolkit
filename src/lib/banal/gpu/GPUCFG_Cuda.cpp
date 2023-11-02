@@ -314,8 +314,8 @@ parseDotCFG
     auto function = iter.first;
     if (symbol->getSize() > 0) {
       int len = cuda_arch >= 70 ? 16 : 8;
-      int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
-      int symbol_size = symbol->getSize();
+      unsigned long function_size = function->blocks.back()->insts.back()->offset + len - function->address;
+      unsigned long symbol_size = symbol->getSize();
       if (function_size < symbol_size) {
         if (DEBUG_CFG_PARSE) {
           std::cout << function->name << " append nop instructions" << std::endl;
