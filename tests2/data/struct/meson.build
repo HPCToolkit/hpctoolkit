@@ -66,36 +66,26 @@ _structfiles = {
   'recursion-x86_64-llvm7-r': {'': {}},
 }
 foreach name, variants : _structfiles
-  _binname = 'small/bin/' + name
   foreach suffix, features : variants
-    _struct = {
+    _bin = testdata_bin[name]
+    testdata_struct += {f'@name@@suffix@': {
       'structfile': meson.current_source_dir() / f'@name@@suffix@.hpcstruct',
       'gpucfg': features.get('gpucfg', false),
-    }
-    if _binname in testdata_bin
-      _bin = testdata_bin[_binname]
-      _struct += {'binary': _bin}
-      _gen = custom_target(output: f'@name@@suffix@.hpcstruct', input: _bin['binary'],
-        build_always_stale: true,  # This can be removed once we can actually track when hpstruct changes
-        console: true, command:
-          [hpcstruct, '--nocache', '@INPUT@', '-o', '@OUTPUT@',
-           '-j1', '--gpucfg=' + (features.get('gpucfg', false) ? 'yes' : 'no')],
-      )
-
-      _tag = 'none'
-      if _bin['arch_tags'][0].startswith('cuda::') and features.get('gpucfg', false)
-        _tag = 'sw-cuda'
-        if not has_cuda
-          _gen = disabler()
-        endif
+      'binary': _bin,
+    }}
+    _gen = custom_target(output: f'@name@@suffix@.hpcstruct', input: _bin['file'],
+      build_always_stale: true,  # This can be removed once we can actually track when hpstruct changes
+      console: true, command:
+        [hpcstruct, '--nocache', '@INPUT@', '-o', '@OUTPUT@',
+          '-j1', '--gpucfg=' + (features.get('gpucfg', false) ? 'yes' : 'no')],
+    )
+    _tag = 'none'
+    if _bin.get('cuda', false)  # CUDA binaries can only be parsed with a CUDA-enabled hpcstruct
+      _tag = 'sw-cuda'
+      if not has_cuda
+        _gen = disabler()
       endif
-
-      testdata_files += {_struct['structfile']: {
-        'src': _gen,
-        'tag': _tag,
-      }}
     endif
-
-    testdata_struct += {f'@name@@suffix@': _struct}
+    testdata_files += {testdata_struct[f'@name@@suffix@']['structfile']: {'src': _gen, 'tag': _tag}}
   endforeach
 endforeach

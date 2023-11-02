@@ -23,14 +23,14 @@ foreach name, struct : testdata_struct
   _args = [
     hpctesttool, hpcstruct,
     struct['structfile'],
-    struct.get('binary', {'binary': '--skip=test-binaries submodule was not cloned'})['binary'],
+    struct['binary']['file'],
     '--gpucfg=' + (struct['gpucfg'] ? 'yes' : 'no'),
   ]
   _suffix = struct['gpucfg'] ? '+gpucfg' : ''
 
   # FIXME: Multithread cases frequently fail consistency for CUDA binaries.
   # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/733
-  if 'binary' in struct and struct['binary']['arch_tags'][0].startswith('cuda::')
+  if struct['binary'].get('cuda', false)
     _threads = [1]
 
     # If the required support is not available, do not emit any tests.
