@@ -1,9 +1,8 @@
 import difflib
 import sys
-import tarfile
 import typing
 import xml.etree.ElementTree as XmlET
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 import click
 import pyparsing as pp
@@ -186,59 +185,6 @@ def struct_compare(*, structfile: typing.BinaryIO, canonical: typing.BinaryIO) -
         for line in difflib.unified_diff(expected, got):
             click.echo(line, nl=False)
         raise click.ClickException("Differences found between obtained and expected structure!")
-
-
-@test.command
-@click.argument(
-    "contents", type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path)
-)
-@click.argument("output", type=click.File("wb"))
-def tarball(*, contents: Path, output: typing.BinaryIO) -> None:
-    """Generate a (sanitized) tarball from a directory."""
-
-    def sanitize(ti):
-        ti.uid, ti.gid = 0, 0
-        ti.uname, ti.gname = "root", "root"
-        return ti
-
-    with tarfile.open(fileobj=output, mode="w:xz") as out:
-        out.add(contents, arcname=".", recursive=True, filter=sanitize)
-
-
-@test.command
-@click.option(
-    "--add",
-    type=(click.Path(exists=True, dir_okay=False), PurePosixPath),
-    metavar="<FILE DSTPATH>",
-    multiple=True,
-    help="Add a FILE to the tarball at the DSTPATH",
-)
-@click.argument("output", type=click.File("wb"))
-def tarball_files(
-    *, add: "collections.abc.Iterable[typing.Tuple[Path, PurePosixPath]]", output: typing.BinaryIO
-) -> None:
-    """Create a tarball from individual files and mappings."""
-
-    def sanitize(ti):
-        ti.uid, ti.gid = 0, 0
-        ti.uname, ti.gname = "root", "root"
-        return ti
-
-    with tarfile.open(fileobj=output, mode="w:xz") as out:
-        for src, dst in add:
-            out.add(src, arcname=dst, recursive=False, filter=sanitize)
-
-
-@test.command
-@click.argument("tarball", type=click.File("rb"))
-@click.argument(
-    "output", type=click.Path(exists=False, file_okay=False, writable=True, path_type=Path)
-)
-def untarball(*, tarball: typing.BinaryIO, output: Path) -> None:
-    """Unpack a tarball with tarfile.extractall."""
-    output.mkdir(parents=True, exist_ok=True)
-    with tarfile.open(fileobj=tarball, mode="r:*") as tf:
-        tf.extractall(output, numeric_owner=True)
 
 
 @test.command

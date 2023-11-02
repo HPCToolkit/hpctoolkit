@@ -18,7 +18,7 @@ foreach name, opt : _compile_options
 endforeach
 
 _tst = find_program(files('tst-consistent'))
-foreach name, struct : testdata_struct_current
+foreach name, struct : testdata_struct
   _threads = [1, 16]
   _args = [
     hpctesttool, hpcstruct,
