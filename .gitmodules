@@ -1,3 +1,0 @@
-[submodule "tests2/data/bin/test-binaries"]
-	path = tests2/data/bin/test-binaries
-	url = ../../hpctoolkit/test-binaries.git
