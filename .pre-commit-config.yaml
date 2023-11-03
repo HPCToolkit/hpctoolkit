@@ -60,6 +60,9 @@ repos:
       (?x)^(
         configure | (.*/|)Makefile\.in |    # Autogoo has tons of trailing whitespace
         src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
+        tests2/data/dbase/[^/]+\.d/.* |    # Generated test data
+        tests2/data/meas/[^/]+\.m/.* |    # Generated test data
+        tests2/data/struct/[^/]+\.hpcstruct |    # Generated test data
       )$
   # All files must end in a single newline (or be perfectly empty)
   - id: end-of-file-fixer
@@ -86,11 +89,8 @@ repos:
   hooks:
   # Ensure all executable scripts have a shebang
   - id: check-executables-have-shebangs
-  # Ensure large files (>=500KB) are never added outside of LFS
-  - id: check-added-large-files
-    exclude: ^lib/python/wheels/
   # Ensure symlinks always point to something
-  - id: check-symlinks
+  # - id: check-symlinks
   # Warn if symlinks are ever accidentally destroyed
   - id: destroyed-symlinks
   # Ensure conflict markers are never committed anywhere
@@ -191,4 +191,8 @@ repos:
   hooks:
   # Scan for secrets that should never appear in the repo itself
   - id: detect-secrets
-    exclude: ^configure$  # Some of the tight M4 looks like secret keywords
+    exclude: |
+      (?x)^(
+        configure |  # Some of the M4 fragments contain sensitive keywords
+        .*\.hpcstruct |  # Structfiles have lots of high-entropy strings
+      )$

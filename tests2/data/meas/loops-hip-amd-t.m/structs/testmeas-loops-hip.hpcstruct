@@ -1,0 +1,169 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+    version CDATA #REQUIRED
+       i       CDATA #REQUIRED
+       n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+  i CDATA #REQUIRED
+     n CDATA #REQUIRED
+     has-calls CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+   i CDATA #REQUIRED
+     n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+   i  CDATA #REQUIRED
+    n  CDATA #REQUIRED
+    ln CDATA #IMPLIED
+     l  CDATA #IMPLIED
+     s  CDATA #IMPLIED
+     v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+    i CDATA #REQUIRED
+     f CDATA #IMPLIED
+      n CDATA #IMPLIED
+      ln CDATA #IMPLIED
+     l CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     f CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+      i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED
+      t CDATA #IMPLIED
+      d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/ci/build/tests2/data/meas/testmeas-loops-hip" has-calls="0" v="{}">
+<F i="3" n="[testmeas-loops-hip]">
+<P i="4" n="_start" l="0" v="{[0x20b790-0x20b791)}">
+<S i="5" l="0" v="{[0x20b790-0x20b7bf)}"/>
+</P>
+<P i="6" n="_dl_relocate_static_pie" l="0" v="{[0x20b7c0-0x20b7c1)}">
+<S i="7" l="0" v="{[0x20b7c0-0x20b7c5)}"/>
+</P>
+<P i="8" n="__do_init" l="0" v="{[0x20b7c5-0x20b7c6)}">
+<S i="9" l="0" v="{[0x20b7c5-0x20b807)}"/>
+</P>
+<P i="10" n="__do_fini" l="0" v="{[0x20b807-0x20b808)}">
+<S i="11" l="0" v="{[0x20b807-0x20b85d)}"/>
+</P>
+<P i="12" n="main" l="0" v="{[0x20b860-0x20b861)}">
+<S i="13" l="0" v="{[0x20b860-0x20b8c0) [0x20b934-0x20b98c)}"/>
+<L i="14" l="0" f="[testmeas-loops-hip]" v="{[0x20b8c0-0x20b8c1)}">
+<S i="15" l="0" v="{[0x20b8c0-0x20b934)}"/>
+</L>
+</P>
+<P i="16" n="__device_stub__kernmain()" ln="_ZL23__device_stub__kernmainv" l="0" v="{[0x20b990-0x20b991)}">
+<S i="17" l="0" v="{[0x20b990-0x20b9d9)}"/>
+</P>
+<P i="18" n="__hip_module_ctor" l="0" v="{[0x20b9e0-0x20b9e1)}">
+<S i="19" l="0" v="{[0x20b9e0-0x20ba3b)}"/>
+</P>
+<P i="20" n="__hip_module_dtor" l="0" v="{[0x20ba40-0x20ba41)}">
+<S i="21" l="0" v="{[0x20ba40-0x20ba5f)}"/>
+</P>
+<P i="22" n="_GLOBAL__sub_I_loops.hip.cpp" l="0" v="{[0x20ba60-0x20ba61)}">
+<S i="23" l="0" v="{[0x20ba60-0x20ba80)}"/>
+</P>
+<P i="24" n="__libc_csu_init" l="0" v="{[0x20ba80-0x20ba81)}">
+<S i="25" l="0" v="{[0x20ba80-0x20bac0) [0x20bad6-0x20bae5)}"/>
+<L i="26" l="0" f="[testmeas-loops-hip]" v="{[0x20bac0-0x20bac1)}">
+<S i="27" l="0" v="{[0x20bac0-0x20bad6)}"/>
+</L>
+</P>
+<P i="28" n="__libc_csu_fini" l="0" v="{[0x20baf0-0x20baf1)}">
+<S i="29" l="0" v="{[0x20baf0-0x20baf5)}"/>
+</P>
+<P i="30" n="atexit" l="0" v="{[0x20bb00-0x20bb01)}">
+<S i="31" l="0" v="{[0x20bb00-0x20bb12)}"/>
+</P>
+<P i="32" n="_init" l="0" v="{[0x20bb14-0x20bb15)}">
+<S i="33" l="0" v="{[0x20bb14-0x20bb2f)}"/>
+</P>
+<P i="34" n="_fini" l="0" v="{[0x20bb30-0x20bb31)}">
+<S i="35" l="0" v="{[0x20bb30-0x20bb3d)}"/>
+</P>
+<P i="36" n="__register_frame_info@plt" l="0" v="{[0x20bb50-0x20bb51)}">
+<S i="37" l="0" v="{[0x20bb50-0x20bb60)}"/>
+</P>
+<P i="38" n="__cxa_finalize@plt" l="0" v="{[0x20bb60-0x20bb61)}">
+<S i="39" l="0" v="{[0x20bb60-0x20bb70)}"/>
+</P>
+<P i="40" n="__deregister_frame_info@plt" l="0" v="{[0x20bb70-0x20bb71)}">
+<S i="41" l="0" v="{[0x20bb70-0x20bb80)}"/>
+</P>
+<P i="42" n="hipGetDeviceCount@plt" l="0" v="{[0x20bb80-0x20bb81)}">
+<S i="43" l="0" v="{[0x20bb80-0x20bb90)}"/>
+</P>
+<P i="44" n="__hipPushCallConfiguration@plt" l="0" v="{[0x20bb90-0x20bb91)}">
+<S i="45" l="0" v="{[0x20bb90-0x20bba0)}"/>
+</P>
+<P i="46" n="__hipPopCallConfiguration@plt" l="0" v="{[0x20bba0-0x20bba1)}">
+<S i="47" l="0" v="{[0x20bba0-0x20bbb0)}"/>
+</P>
+<P i="48" n="hipLaunchKernel@plt" l="0" v="{[0x20bbb0-0x20bbb1)}">
+<S i="49" l="0" v="{[0x20bbb0-0x20bbc0)}"/>
+</P>
+<P i="50" n="hipGetLastError@plt" l="0" v="{[0x20bbc0-0x20bbc1)}">
+<S i="51" l="0" v="{[0x20bbc0-0x20bbd0)}"/>
+</P>
+<P i="52" n="hipDeviceSynchronize@plt" l="0" v="{[0x20bbd0-0x20bbd1)}">
+<S i="53" l="0" v="{[0x20bbd0-0x20bbe0)}"/>
+</P>
+<P i="54" n="std::__ostream_insert&lt;char, std::char_traits&lt;char&gt; &gt;(std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;&amp;, char const*, long)@plt" ln="_ZSt16__ostream_insertIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_PKS3_l@plt" l="0" v="{[0x20bbe0-0x20bbe1)}">
+<S i="55" l="0" v="{[0x20bbe0-0x20bbf0)}"/>
+</P>
+<P i="56" n="std::ios_base::Init::Init()@plt" ln="_ZNSt8ios_base4InitC1Ev@plt" l="0" v="{[0x20bbf0-0x20bbf1)}">
+<S i="57" l="0" v="{[0x20bbf0-0x20bc10)}"/>
+</P>
+<P i="58" n="__cxa_atexit@plt" l="0" v="{[0x20bc10-0x20bc11)}">
+<S i="59" l="0" v="{[0x20bc10-0x20bc20)}"/>
+</P>
+<P i="60" n="__hipRegisterFatBinary@plt" l="0" v="{[0x20bc20-0x20bc21)}">
+<S i="61" l="0" v="{[0x20bc20-0x20bc30)}"/>
+</P>
+<P i="62" n="__hipRegisterFunction@plt" l="0" v="{[0x20bc30-0x20bc31)}">
+<S i="63" l="0" v="{[0x20bc30-0x20bc40)}"/>
+</P>
+<P i="64" n="__hipUnregisterFatBinary@plt" l="0" v="{[0x20bc40-0x20bc41)}">
+<S i="65" l="0" v="{[0x20bc40-0x20bc50)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

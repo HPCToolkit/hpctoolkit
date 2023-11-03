@@ -4,10 +4,8 @@ import io
 import struct
 import sys
 import typing
-from pathlib import Path
 
 import pytest
-from hpctesttool.test.tarball import extracted
 
 from .._test_util import assert_good_traversal, dump_to_string, testdatadir, yaml
 from .metadb import Context, MetaDB, _Flex
@@ -26,12 +24,10 @@ def recursionlimit(limit: int):
 
 
 def test_small_v4_0(yaml):
-    with open(testdatadir / "dbase" / "v4.0" / "small.yaml", encoding="utf-8") as f:
+    with open(testdatadir / "dbase" / "small.yaml", encoding="utf-8") as f:
         expected = yaml.load(f).meta
 
-    with extracted(testdatadir / "dbase" / "v4.0" / "small.tar.xz") as db, open(
-        Path(db) / "meta.db", "rb"
-    ) as f:
+    with (testdatadir / "dbase" / "small.d" / "meta.db").open("rb") as f:
         got = MetaDB.from_file(f)
 
     assert dataclasses.asdict(got) == dataclasses.asdict(expected)
@@ -121,9 +117,7 @@ def test_context_deep_recursion():
 
 
 def test_yaml_rt(yaml):
-    with extracted(testdatadir / "dbase" / "v4.0" / "small.tar.xz") as db, open(
-        Path(db) / "meta.db", "rb"
-    ) as f:
+    with (testdatadir / "dbase" / "small.d" / "meta.db").open("rb") as f:
         orig = MetaDB.from_file(f)
 
     orig_s = dump_to_string(yaml, orig)
@@ -131,7 +125,7 @@ def test_yaml_rt(yaml):
 
 
 def test_traversal(yaml):
-    with open(testdatadir / "dbase" / "v4.0" / "small.yaml", encoding="utf-8") as f:
+    with (testdatadir / "dbase" / "small.yaml").open("r", encoding="utf-8") as f:
         db = yaml.load(f).meta
 
     assert_good_traversal(db)

@@ -1,7 +1,4 @@
 import dataclasses
-from pathlib import Path
-
-from hpctesttool.test.tarball import extracted
 
 from .._test_util import assert_good_traversal, dump_to_string, testdatadir, yaml
 from .cctdb import ContextDB
@@ -10,12 +7,10 @@ _ = yaml
 
 
 def test_small_v4_0(yaml):
-    with open(testdatadir / "dbase" / "v4.0" / "small.yaml", encoding="utf-8") as f:
+    with open(testdatadir / "dbase" / "small.yaml", encoding="utf-8") as f:
         expected = yaml.load(f).context
 
-    with extracted(testdatadir / "dbase" / "v4.0" / "small.tar.xz") as db, open(
-        Path(db) / "cct.db", "rb"
-    ) as f:
+    with (testdatadir / "dbase" / "small.d" / "cct.db").open("rb") as f:
         got = ContextDB.from_file(f)
 
     assert dataclasses.asdict(got) == dataclasses.asdict(expected)

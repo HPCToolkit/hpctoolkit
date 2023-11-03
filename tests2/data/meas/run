@@ -1,24 +1,44 @@
-#!/bin/sh -ex
+#!/bin/sh -e
 
-hpctesttool="$1"
-hpcrun="$2"
-hpcstruct="$3"
-min_samples="$4"
-output="$5"
-shift 5  # Remaining arguments go to hpcrun
+hpcrun="$1"
+hpcstruct="$2"
+min_samples="$3"
+output_stamp="$4"
+shift 4  # Remaining arguments go to hpcrun
 
-trap 'rm -rf "$tmpdir"' EXIT
-tmpdir=$(mktemp --directory --tmpdir=.)
+output="$(dirname "$output_stamp")/$(basename "$output_stamp" .fresh)"
 
 for _attempt in 1 2 3 4 5 6 7 8 9 10; do
-  "$hpcrun" -o "$tmpdir"/m "$@"
+  # Attempt to generate some (good) measurements
+  rm -rf "$output"
+  "$hpcrun" -o "$output" "$@"
+
+  # Check that there are enough samples to go around
   samples=$(
-    grep -E 'SUMMARY:[[:space:]]+samples:[[:space:]]+[[:digit:]]+[[:space:]]+\(recorded:[[:space:]]+[[:digit:]]+' "$tmpdir"/m/*.log \
+    grep -E 'SUMMARY:[[:space:]]+samples:[[:space:]]+[[:digit:]]+[[:space:]]+\(recorded:[[:space:]]+[[:digit:]]+' "$output"/*.log \
     | grep -Eo 'recorded:[[:space:]]+[[:digit:]]+' \
     | grep -Eo -m1 '[[:digit:]]+')
   if [ "$samples" -lt "$min_samples" ]; then continue; fi
 
-  "$hpcstruct" --gpucfg=yes --nocache "$tmpdir"/m
-  "$hpctesttool" test tarball "$tmpdir"/m "$output"
-  exit 0
+  # Measurements look good! We'll use these.
+  break
 done
+
+# Analyze all the binaries used during the run. This will generate a structs/ subdirectory.
+"$hpcstruct" --gpucfg=yes --nocache "$output"
+
+# Clean up all non-essential files
+rm -rf \
+  "$output"/cpubins/ \
+  "$output"/gpubins-used/ \
+  "$output"/structs/nvidia/ \
+  # END
+rm -f \
+  "$output"/*.log \
+  "$output"/all.lm \
+  "$output"/structs/*.warnings \
+  "$output"/structs/Makefile \
+  # END
+
+# Create/update the stampfile
+date > "$output_stamp"
