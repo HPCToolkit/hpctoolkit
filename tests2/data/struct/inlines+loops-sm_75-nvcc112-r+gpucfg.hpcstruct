@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+    version CDATA #REQUIRED
+       i       CDATA #REQUIRED
+       n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+  i CDATA #REQUIRED
+     n CDATA #REQUIRED
+     has-calls CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+   i CDATA #REQUIRED
+     n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+   i  CDATA #REQUIRED
+    n  CDATA #REQUIRED
+    ln CDATA #IMPLIED
+     l  CDATA #IMPLIED
+     s  CDATA #IMPLIED
+     v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+    i CDATA #REQUIRED
+     f CDATA #IMPLIED
+      n CDATA #IMPLIED
+      ln CDATA #IMPLIED
+     l CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     f CDATA #IMPLIED
+      v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+  i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+      i CDATA #REQUIRED
+     l CDATA #REQUIRED
+     v CDATA #IMPLIED
+      t CDATA #IMPLIED
+      d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests2/data/bin/test-binaries/small/bin/inlines+loops-sm_75-nvcc112-r" has-calls="1" v="{}">
+<F i="3" n="[inlines+loops-sm_75-nvcc112-r]">
+<P i="4" n="f4_2()" ln="_Z4f4_2v" l="0" v="{[0x2080-0x2081)}">
+<S i="5" l="0" v="{[0x2080-0x2110) [0x2380-0x2400)}"/>
+<L i="6" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x2110-0x2111)}">
+<S i="7" l="0" v="{[0x2110-0x2170) [0x2310-0x2380)}"/>
+<L i="8" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x2170-0x2171)}">
+<S i="9" l="0" v="{[0x2170-0x21d0) [0x22a0-0x2310)}"/>
+<L i="10" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x21d0-0x21d1)}">
+<S i="11" l="0" v="{[0x21d0-0x22a0)}"/>
+</L>
+</L>
+</L>
+</P>
+<P i="12" n="f4_1()" ln="_Z4f4_1v" l="0" v="{[0x2400-0x2401)}">
+<S i="13" l="0" v="{[0x2400-0x2490) [0x2630-0x2680)}"/>
+<L i="14" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x2490-0x2491)}">
+<S i="15" l="0" v="{[0x2490-0x24f0) [0x25c0-0x2630)}"/>
+<L i="16" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x24f0-0x24f1)}">
+<S i="17" l="0" v="{[0x24f0-0x25c0)}"/>
+</L>
+</L>
+</P>
+<P i="18" n="f3_3()" ln="_Z4f3_3v" l="0" v="{[0x2680-0x2681)}">
+<S i="19" l="0" v="{[0x2680-0x2710) [0x2980-0x2a00)}"/>
+<L i="20" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x2710-0x2711)}">
+<S i="21" l="0" v="{[0x2710-0x2770) [0x2910-0x2980)}"/>
+<L i="22" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x2770-0x2771)}">
+<S i="23" l="0" v="{[0x2770-0x27d0) [0x28a0-0x2910)}"/>
+<L i="24" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x27d0-0x27d1)}">
+<S i="25" l="0" v="{[0x27d0-0x28a0)}"/>
+</L>
+</L>
+</L>
+</P>
+<P i="26" n="f3_2()" ln="_Z4f3_2v" l="0" v="{[0x2a00-0x2a01)}">
+<S i="27" l="0" v="{[0x2a00-0x2a90) [0x2c30-0x2c80)}"/>
+<L i="28" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x2a90-0x2a91)}">
+<S i="29" l="0" v="{[0x2a90-0x2af0) [0x2bc0-0x2c30)}"/>
+<L i="30" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x2af0-0x2af1)}">
+<S i="31" l="0" v="{[0x2af0-0x2bc0)}"/>
+</L>
+</L>
+</P>
+<P i="32" n="f3_1()" ln="_Z4f3_1v" l="0" v="{[0x2c80-0x2c81)}">
+<S i="33" l="0" v="{[0x2c80-0x2d10) [0x2de0-0x2e00)}"/>
+<L i="34" l="0" f="[inlines+loops-sm_75-nvcc112-r]" v="{[0x2d10-0x2d11)}">
+<S i="35" l="0" v="{[0x2d10-0x2de0)}"/>
+</L>
+</P>
+<P i="36" n="f2()" ln="_Z2f2v" l="0" v="{[0x2e00-0x2e01)}">
+<S i="37" l="0" v="{[0x2e00-0x2f00)}"/>
+</P>
+<P i="38" n="f1()" ln="_Z2f1v" l="0" v="{[0x2f00-0x2f01)}">
+<S i="39" l="0" v="{[0x2f00-0x3000)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

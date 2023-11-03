@@ -686,11 +686,9 @@ validate:
   script:
   - *check_setup
   - *check_compile
-  - meson compile -C /tmp/builddir $(printf 'tests2/data/fresh-testdata-%s.tar.xz\n' $REGEN_SUITES)
-  - mkdir -p testdata/"$CI_JOB_NAME"
-  - cp -t testdata/"$CI_JOB_NAME"/ $(printf '/tmp/builddir/tests2/data/fresh-testdata-%s.tar.xz\n' $REGEN_SUITES)
-  - for suite in $REGEN_SUITES; do tar xJvf /tmp/builddir/tests2/data/fresh-testdata-$suite.tar.xz || exit $?; done
-  - *check_compile
+  - meson compile -C /tmp/builddir $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
+  - git add tests2/data
+  - git diff --cached --binary > testdata-"$CI_JOB_NAME".patch
   - *check_test
   after_script:
   - |
@@ -702,7 +700,7 @@ validate:
     <<: *check_artifacts
     paths:
     - logs/
-    - testdata/
+    - testdata-*.patch
 
 'check amd64: [cpu]':
   extends: .check
@@ -754,9 +752,8 @@ validate:
   variables: *vars_check_cuda
 'check semifresh amd64: [+cuda, 11.8]':
   extends: ['check amd64: [+cuda, 11.8]', .check semifresh job]
-  tags: [rice-linux-large-bare-amd64-gpu-p100]
   variables:
-    REGEN_SUITES: none cpu nvidia sw-cuda
+    REGEN_SUITES: nvidia sw-cuda
 
 'check amd64: [+rocm, 5.1]':
   extends: .check
@@ -806,9 +803,8 @@ validate:
   image: $PREDEPS_IMAGE_MIN_ROCM5_6_AMD64
 'check semifresh amd64: [+rocm, 5.6]':
   extends: ['check amd64: [+rocm, 5.6]', .check semifresh job]
-  tags: [rice-linux-large-bare-amd64-gpu-amd]
   variables:
-    REGEN_SUITES: none cpu amd
+    REGEN_SUITES: amd
 
 
 # Repackage the fresh testdata generated during the `check semifresh` jobs
@@ -821,19 +817,24 @@ fresh testdata:
   - 'check semifresh amd64: [+rocm, 5.6]'
   when: always
   variables:
-    GIT_SUBMODULE_STRATEGY: none
+    GIT_COMMITTER_NAME: 'CI Pipeline #$CI_PIPELINE_ID'
+    GIT_COMMITTER_EMAIL: '<ci@noreply.gitlab.com>'
   script:
-  - apk add xz
-  - mkdir /tmp/result
-  # Unpack all the tarballs to the temporary directory
-  - "tar x -af testdata/'check semifresh amd64: [cpu]'/fresh-testdata-none.tar.xz -C /tmp/result"
-  - "tar x -af testdata/'check semifresh amd64: [cpu]'/fresh-testdata-cpu.tar.xz -C /tmp/result"
-  - "tar x -af testdata/'check semifresh amd64: [+cuda, 11.8]'/fresh-testdata-sw-cuda.tar.xz -C /tmp/result"
-  - "tar x -af testdata/'check semifresh amd64: [+cuda, 11.8]'/fresh-testdata-nvidia.tar.xz -C /tmp/result"
-  - "tar x -af testdata/'check semifresh amd64: [+rocm, 5.6]'/fresh-testdata-amd.tar.xz -C /tmp/result"
-  # Repack into a single tarball
-  - tar c -Jf testdata.tar.xz -C /tmp/result .
+  - apk add git
+  # Apply the patches to the main tree
+  - >-
+    git apply --binary --index
+    testdata-'check semifresh amd64: [+cuda, 11.8].patch'
+    testdata-'check semifresh amd64: [+rocm, 5.6].patch'
+    testdata-'check semifresh amd64: [cpu].patch'
+  # Generate a commit with the fresh test data and a simple commit message
+  - |
+    git commit --author="$CI_COMMIT_AUTHOR" --message="chore: Regenerate test data
+
+    Regenerated in CI: $CI_PIPELINE_URL"
+  # Turn the commit into a patch that can be applied with `git am` or `git apply`
+  - git format-patch --stdout --no-numbered --binary HEAD^ > testdata.patch
   artifacts:
-    expose_as: "Regenerated test data"
+    expose_as: "Test data refresh patch"
     paths:
-    - testdata.tar.xz
+    - testdata.patch

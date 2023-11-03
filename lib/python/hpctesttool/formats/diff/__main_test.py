@@ -14,11 +14,11 @@ _ = yaml, v4_data_small, v4_data_small_path
     ("db1", "db2"),
     [
         (
-            testdatadir / "dbase" / "v4.0" / "small.tar.xz",
-            testdatadir / "dbase" / "v4.0" / "small.yaml",
+            testdatadir / "dbase" / "small.d",
+            testdatadir / "dbase" / "small.yaml",
         )
     ],
-    ids=["small4.0"],
+    ids=["small"],
 )
 def test_same(capsys, db1, db2):
     assert main.main(["strict", str(db1), str(db2)]) == 0
