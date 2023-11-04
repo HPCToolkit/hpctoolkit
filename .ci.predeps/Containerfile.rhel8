@@ -36,9 +36,11 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
   && : # END
 
 # Install a up-to-date versions of Meson, using a suitable Python
+# Also install docutils for processing documentation.
 RUN \
   python3.9 -m pip install \
     'meson>=1.1.0,<2' \
+    'docutils' \
   && : # END
 
 # Ensure the appropriate MPI is loaded into the shell environment, always.

@@ -109,6 +109,7 @@ $ meson devenv
 
 Additional configuration arguments can be passed to the initial `meson setup` or later `meson configure` invocations:
 
+- `-Dmanpages=(disabled|auto|enabled)`: Generate and build man pages. Requires [Docutils](https://www.docutils.org/).
 - `-Dhpcprof_mpi=(disabled|auto|enabled)`: Build `hpcprof-mpi` in addition to `hpcprof`. Requires MPI.
 - `-Dpython=(disabled|auto|enabled)`: Enable the (experimental) Python unwinder. Requires Python headers.
 - `-Dpapi=(disabled|auto|enabled)`: Enable PAPI metrics. Requires PAPI.

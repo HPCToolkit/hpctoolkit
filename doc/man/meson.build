@@ -1,24 +1,49 @@
-_latex2man = find_program(meson.project_source_root() / 'tools/latex2man/latex2man')
-_latex2man_trans = files('hpctoolkit-latex2man.trans')
+if not rst2man.found()
+  subdir_done()
+endif
 
-_ext = '1hpctoolkit'
-_stems = [
-  'hpctoolkit',
-  'hpcrun',
-  'hpcstruct',
-  'hpcprof',
-  'hpcproftt',
-  'hpcviewer'
-]
-foreach stem : _stems
-  _pp = configure_file(input: f'@stem@.tex', output: f'@stem@.tex.pp',
-    configuration: {'PACKAGE_VERSION': meson.project_version()})
-  custom_target(output: f'@stem@.@_ext@', input: _pp,
-    command: [_latex2man, '-t', _latex2man_trans, '@INPUT@', '@OUTPUT@'],
-    install: true, install_dir: get_option('mandir') / 'man1',
-    install_tag: 'man')
-  custom_target(output: f'@stem@.html', input: _pp,
-    command: [_latex2man, '-H', '-t', _latex2man_trans, '@INPUT@', '@OUTPUT@'],
-    install: true, install_dir: docdir / 'man',
-    install_tag: 'man')
+_cdata = configuration_data()
+_cdata.set('PROJECT_VERSION', meson.project_version())
+
+# Datestamp is the time of configuration, but only the month and year.
+_date = run_command(python, '-c', '''
+import datetime
+months = ["ERROR", "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"]
+today = datetime.datetime.today()
+print(f"{months[today.month]} {today.year:d}")
+''', check: true)
+_cdata.set('DATE', _date.stdout().strip())
+
+assert(meson.project_license() == ['BSD-3-Clause'])
+_cdata.set('LICENSE_RST', 'the BSD 3-Clause License <`<https://opensource.org/license/bsd-3-clause/>`_>')
+
+_srcs = files(
+  'hpcprof.rst',
+  'hpcproftt.rst',
+  'hpcrun.rst',
+  'hpcstruct.rst',
+  'hpctoolkit.rst',
+  'hpcviewer.rst',
+)
+
+_manpages = []
+foreach page : _srcs
+  # Extract the manual section. Default to the non-section 0 on error.
+  _section = '0'
+  foreach line : fs.read(page).split('\n')
+    if line.contains(':manual_section:')
+      _section = line.replace(':manual_section:', '').strip()
+      break
+    endif
+  endforeach
+  assert(_section != '0')
+
+  _manpages += configure_file(
+    output: '@BASENAME@.'+_section, command: [rst2man, '@INPUT@', '@OUTPUT@'],
+    input: configure_file(output: '@PLAINNAME@', input: page,
+                          configuration: _cdata),
+  )
 endforeach
+
+install_man(_manpages)

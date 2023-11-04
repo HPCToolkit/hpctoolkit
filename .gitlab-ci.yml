@@ -567,6 +567,7 @@ compiler icx:
       - -Dopencl=disabled
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
+      - -Dmanpages=disabled
       - -Dextended_tests=disabled
       - -Dhpcprof_mpi=disabled
       TEST_ARGS: --suite none

@@ -171,6 +171,10 @@ if not perfmon_dep.found()
 endif
 
 
+# Find rst2man, which is used to generate the man pages from source
+rst2man = find_program('rst2man', 'rst2man.py', required: get_option('manpages'))
+
+
 # Find MPI. We try different methods to handle the quirks of different systems.
 mpi_dep = dependency('', required: false)
 if get_option('hpcprof_mpi').allowed()
