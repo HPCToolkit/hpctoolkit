@@ -92,6 +92,8 @@ $ meson install  # -OR- ninja install
 ```
 
 Note that the first `meson setup` may take some time, it will run `spack install` to install the core dependencies.
+If this is unwanted, set the `spack_mode` options above to `find` to avoid installing any new packages or to `no` to disallow using Spack altogether, see [Providing dependencies from Spack](#alternative-providing-dependencies-from-spack) below for details.
+Note that doing this may require additional configuration to [provide core dependencies](#providing-and-customizing-dependencies) before the build will work.
 
 Available configuration options:
 
@@ -126,141 +128,106 @@ Until this is resolved, keep the following caveats in mind:
 
 ### Providing and customizing dependencies
 
-Overriding or providing optional dependencies needed to compile HPCToolkit is done via [Meson native files].
-To start, write a native file listing the install prefix(es) and/or binaries of the dependencies to configure:
+Overriding or providing optional dependencies needed to compile HPCToolkit is done via Meson "native" files.
+For a more in-depth description of how these files are written and stored, please read the official documentation on [native files][meson native file] and [machine files in general][meson machine file].
+The instructions below may be read before reading these documents but some parts may be confusing.
+
+In HPCToolkit, most library dependencies are defined by their install prefix as machine properties.
+These properties are taken from native files, such as the example below:
 
 ```ini
-# .../my-native-file.ini
-[binaries]
-python = '...'
-
+# …/my-elf-dyn.ini
 [properties]
-prefix_elfutils = '.../elfutils/'
-prefix_dyninst = '.../dyninst/'
+prefix_elfutils = '/…/path/to/elfutils/install/'
+prefix_dyninst = '/…/path/to/dyninst/install/'
 
+# If you don't extend `LD_LIBRARY_PATH`, you will also need to specify rpaths
+# for custom install prefixes so libraries can be found at runtime.
+# The necessary compiler flags can be specified in the Meson configuration:
+#     meson (setup|configure) -Dc_link_args=… -Dcpp_link_args=… [etc…]
+# Or, directly in the native file as shown below.
+#
+# Due to a Meson bug (https://github.com/mesonbuild/meson/issues/11930), it is
+# highly recommended to use either `-D` flags or this section BUT NOT BOTH.
+[constants]
+rpath_args = [
+  '-Wl,-rpath=/…/path/to/elfutils/install/lib',
+  '-Wl,-rpath=/…/path/to/dyninst/install/lib'
+  ]
 [built-in options]
-c_link_args = ['-Wl,-rpath=.../elfutils/lib', '-Wl,-rpath=.../dyninst/lib']
-cpp_link_args = ['-Wl,-rpath=.../elfutils/lib', '-Wl,-rpath=.../dyninst/lib']
+c_link_args = rpath_args
+cpp_link_args = rpath_args
 ```
 
-<details>
-<summary>
-All configurable native file fields
-</summary>
+Build tools and some library dependencies are defined by the path to the executable, again written in native files:
 
 ```ini
+# …/my-mpi-python.ini
 [binaries]
-c = '...'  # C compiler, may also be a list, e.g. ['ccache', '.../my-gcc']
-cxx = '...' # C++ compiler, may also be a list, e.g. ['ccache', '.../my-g++']
-cuda = '...' # NVCC compiler, may also be a list, e.g. ['ccache', '.../my-nvcc']
-mpicxx = '...'  # MPI C++ compiler
-spack = '...'  # Spack command used for fallback dependencies
-autoreconf = '...'
-autoconf = '...'
-aclocal = '...'
-autoheader = '...'
-autom4te = '...'
-automake= '...'
-libtoolize = '...'
-m4 = '...'
-make = '...'
-python = '...'
-
-[properties]
-prefix_boost = '...'
-prefix_bzip = '...'  # libbz2
-prefix_dyninst = '...'
-prefix_elfutils = '...'  # libelf and libdw
-prefix_tbb = '...'  # libtbb
-prefix_libmonitor = '...'  # https://github.com/hpctoolkit/libmonitor
-prefix_libunwind = '...'
-prefix_xerces = '...'  # libxerces-c
-prefix_lzma = '...'  # liblzma aka xz
-prefix_zlib = '...'
-prefix_libiberty = '...'
-prefix_xed = '...'  # https://github.com/intelxed/xed
-prefix_memkind = '...'  # libmemkind
-prefix_yaml_cpp = '...'  # libyaml-cpp
-prefix_papi = '...'  # libpapi
-prefix_perfmon = '...'  # libpfm4
-prefix_opencl = '...'  # Headers-only, opencl-c-headers
-prefix_cuda = '...'  # https://developer.nvidia.com/cuda-toolkit
-prefix_gtpin = '...'  # https://www.intel.com/content/www/us/en/developer/articles/tool/gtpin.html
-prefix_igc = '...'  # https://github.com/intel/intel-graphics-compiler
-prefix_level0 = '...'  # Part of https://www.oneapi.io/
-prefix_rocm_hip = '/opt/rocm-5.4.3/'  # https://github.com/ROCm-Developer-Tools/HIP
-prefix_rocm_hsa = '/opt/rocm-5.4.3/'  # https://github.com/RadeonOpenCompute/ROCR-Runtime
-prefix_rocm_tracer = '/opt/rocm-5.4.3/'  # https://github.com/ROCm-Developer-Tools/roctracer
-prefix_rocm_profiler = '/opt/rocm-5.4.3/'  # https://github.com/ROCm-Developer-Tools/rocprofiler
+mpicxx = '/…/path/to/mpi/install/bin/mpicxx'
+# You can also specify just the executable's name if it's already on your PATH:
+python = 'python3.12'
 ```
 
-</details>
-
-Then configure your build by passing the file you have just written as a `--native-file`:
+A complete template native file is available [here](/doc/developers/meson.ini).
+The configuration set by native files is applied by passing a `--native-file` argument when setting up a build directory:
 
 ```console
-$ meson setup --native-file .../my-native-file.ini ...
+$ meson setup --native-file …/my-elf-dyn.ini --native-file …/my-mpi-python.ini ...
 ```
 
-Note that the libraries for any dependencies provided this way must be available at runtime.
-Common solutions are to extend `LD_LIBRARY_PATH`, or to pass `-Wl,-rpath` arguments during the link as shown in the example above.
+Note that Meson will track the paths to native files and automatically reconfigure whenever they change.
+This means you should not delete or move native files that are in use, but nor do you need to `meson setup` every time you adjust an installation prefix or build tool.
 
-If all dependencies are provided by native files, you may also set `-D<subproject>:spack_mode=no` (the default), which removes the dependency on Spack.
-Native files may be saved to `~/.local/share/meson/native` for convenient access across many builds, see the [official documentation][meson native file] for details.
+Native files are the preferred way to provide or customize dependencies, and take precedence over all alternatives (other than `meson (setup|configure) -D` options).
+For very specific use cases, there are alternatives available that may be more convenient than writing a native file.
+These are described in the subsections below.
 
-The following sections detail alternative methods to configure dependencies that may be easier under some circumstances.
-Note that native files override all other methods.
+#### Alternative: Providing dependencies from the PATH
 
-#### Alternative: Customizing PATH-based dependencies (MPI, Python)
-
-Some dependencies are pulled from the `PATH` by default. Specifically:
-
-- MPI is determined by `mpicxx`, and
-- Python is determined by `python` and/or `python3`.
-
-For these dependencies, you may simply alter your `PATH` as needed to point to the wanted installations, then use `meson setup --wipe` to clear Meson's cache:
+Meson will by default respect some dependencies you have "loaded" into your shell environment, e.g. by:
 
 ```console
-$ which mpicxx
-/path/to/my/mpi/bin/mpicxx
-$ which python3
-/path/to/my/python/bin/python3
-$ meson setup --wipe builddir/
-...
+$ export PATH=/…/path/to/bin/:$PATH  # -OR-
+$ module load python mpi  # -OR-
+$ spack load python mpi # -OR-
+$ # etc.
 ```
 
-Meson will then re-search your new `PATH` for any binaries not specified in a [Meson native file] (described above).
+Currently this only works for MPI (`mpicxx`) and Python (`python` or `python3`).
+If one of these dependencies is not provided by a native file as described above, it will be pulled from the `PATH` when Meson (re-)configures the build directory.
 
-#### Alternative: Customizing core dependencies
+Note that if you load a different package (e.g. `module swap python/3.10 python/3.12`) Meson will still be using the cached data from the package it saw first.
+You can clear this cache using the `meson configure --clearcache` or `meson setup --wipe` options.
 
-All core (non-optional) dependencies will fall back to Spack-built software. Normally the build will automatically create a [Spack environment][spack environments] for this purpose, but you may also pass in custom environments to adjust the fallback dependencies.
-To start, create a new Spack environment based on the original (note that this should not be under `builddir/` to avoid being deleted by `meson setup --wipe`):
+#### Alternative: Providing dependencies from Spack
+
+We have custom support in HPCToolkit for pulling missing core dependencies from Spack.
+How this happens is controlled by the `spack_mode` option for the `spack-deps` and `autotools` subprojects:
+
+- `-D(spack-deps|autotools):spack_mode=no`: Don't use Spack for missing core dependencies. (Default)
+- `-D(spack-deps|autotools):spack_mode=find`: Use only prebuilt Spack packages.
+- `-D(spack-deps|autotools):spack_mode=install`: Install any missing Spack packages if they aren't built already.
+
+The `autotools` subproject provides fallbacks for the Autotools (`automake`, `autoconf`, `libtool`, etc.) while the `spack-deps` subproject provides fallbacks for other core dependencies.
+By default these subprojects will automatically create (and if allowed, install) a [Spack environment][spack environments] in the build directory with all the dependencies.
+You can customize this environment by setting the `-D(spack-deps|autotools):spack_env` option to a Spack environment directory of your choosing:
 
 ```console
-$ mkdir -p /path/to/my-spack-deps-env/
-$ cp .../hpctoolkit/subprojects/spack-deps/spack.yaml /path/to/my-spack-deps-env/
-$ # Customize /path/to/my-spack-deps-env/spack.yaml as desired
-$ spack -D /path/to/my-spack-deps-env/ install
+$ spack env create my-hpct-deps …/hpctoolkit/subprojects/spack-deps/spack.yaml
+$ spack -e my-hpct-deps config edit  # Customize the environment as appropriate
+$ spack -e my-hpct-deps install
+$ meson configure \
+>   -Dspack-deps:spack_env=$(spack location -e my-hpct-deps) -Dspack-deps:spack_mode=find
 ```
 
-See [`subprojects/spack-deps/spack.yaml`] for the list of dependencies that can be configured this way.
-Once all the packages in your customized Spack environment have been installed, you can `setup` a build directory to use it with:
-
-```console
-$ meson setup \
-    -Dspack-deps:spack_mode=find -Dspack-deps:spack_env=/path/to/custom-spack-deps-env \
-    ...
-```
-
-Any dependencies not provided by a [Meson native file] (described above) will then be fetched from the custom Spack environment.
-
-If desired, you may also customize the fallback Spack environment for the Autotools by replacing `spack-deps` in the above commands with `autotools`.
-Be warned, HPCToolkit is very particular about the versions of the Autotools used in the build which limits the range of customization in this case.
-However this may be convenient as it allows setting `-Dspack-deps:spack_env` and `-Dautotools:spack_env` to the same custom environment.
+You are free to add arbitrary packages to this environment, but they will NOT be used by the build.
+Only packages listed in [`subprojects/spack-deps/spack.yaml`] will be used as fallback dependencies.
+Use a native file as described above to provide/customize other dependencies.
 
 ## Building HPCToolkit from source with Autotools
 
-**WARNING**: New developers should use the Meson method described above.
+**WARNING**: New developers should use the Meson method described above. This text is only kept for legacy reasons.
 
 This method uses spack to build hpctoolkit's prerequisites and
 then uses the traditional autotools `configure && make && make install`
@@ -349,6 +316,7 @@ follow your steps.
 [getting meson]: https://mesonbuild.com/Getting-meson.html
 [getting spack]: https://spack.readthedocs.io/en/latest/getting_started.html
 [meson]: https://mesonbuild.com/
+[meson machine file]: https://mesonbuild.com/Machine-files.html
 [meson native file]: https://mesonbuild.com/Native-environments.html
 [spack]: https://spack.io/
 [spack environments]: https://spack.readthedocs.io/en/latest/environments.html
