@@ -39,8 +39,9 @@ xerces_exdep = dependency('xerces-hpctoolkit', fallback: ['spack-deps', 'xerces_
 lzma_exdep = dependency('lzma-hpctoolkit', fallback: ['spack-deps', 'lzma_dep'])
 zlib_exdep = dependency('zlib-hpctoolkit', fallback: ['spack-deps', 'zlib_dep'])
 libiberty_exdep = dependency('libiberty-hpctoolkit', fallback: ['spack-deps', 'libiberty_dep'])
-xed_exdep = dependency('xed-hpctoolkit', required: host_machine.cpu_family() in ['x86', 'x86_64'],
-                       fallback: ['spack-deps', 'xed_dep'])
+if host_machine.cpu_family() in ['x86', 'x86_64']
+  xed_exdep = dependency('xed-hpctoolkit', fallback: ['spack-deps', 'xed_dep'])
+endif
 memkind_exdep = dependency('memkind-hpctoolkit', fallback: ['spack-deps', 'memkind_dep'])
 yaml_cpp_exdep = dependency('yaml_cpp-hpctoolkit', fallback: ['spack-deps', 'yaml_cpp_dep'])
 papi_exdep = dependency('papi-hpctoolkit', required: get_option('papi'))
@@ -231,7 +232,7 @@ _ldflags += libiberty_exdep.get_variable(internal: 'link_args', default_value: '
 _ldflags += memkind_exdep.get_variable(internal: 'link_args', default_value: '').split()
 _ldflags += yaml_cpp_exdep.get_variable(internal: 'link_args', default_value: '').split()
 _autogoo_env = {}
-if xed_exdep.found()
+if host_machine.cpu_family() in ['x86', 'x86_64']
     _autogoo_args += ['--with-xed=@0@'.format(xed_exdep.get_variable(internal: 'prefix'))]
     _ldflags += xed_exdep.get_variable(internal: 'link_args', default_value: '').split()
 endif

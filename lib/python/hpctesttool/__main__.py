@@ -84,30 +84,36 @@ def unwind_py_simple(*, script: Path, database: Path) -> None:
     db = from_path(database)
     assert isinstance(db, vcurrent.Database)
 
-    matches = list(
-        chainmatch(
-            db.meta.context,
-            MatchEntryPoint(entry_point="main_thread"),
-            MatchCtx(relation="call", lexical_type="line", file=str(script)),
-            MatchCtx(
-                relation="call",
-                lexical_type="function",
-                function=MatchFunction(name="func_hi", module="<logical python>"),
-            ),
-            MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
-            MatchCtx(
-                relation="call",
-                lexical_type="function",
-                function=MatchFunction(name="func_mid", module="<logical python>"),
-            ),
-            MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
-            MatchCtx(
-                relation="call",
-                lexical_type="function",
-                function=MatchFunction(name="func_lo", module="<logical python>"),
-            ),
+    for gapframes in range(4):
+        gap = [MatchCtx()] * gapframes
+        matches = list(
+            chainmatch(
+                db.meta.context,
+                MatchEntryPoint(entry_point="main_thread"),
+                *gap,
+                MatchCtx(relation="call", lexical_type="line", file=str(script)),
+                MatchCtx(
+                    relation="call",
+                    lexical_type="function",
+                    function=MatchFunction(name="func_hi", module="<logical python>"),
+                ),
+                MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
+                MatchCtx(
+                    relation="call",
+                    lexical_type="function",
+                    function=MatchFunction(name="func_mid", module="<logical python>"),
+                ),
+                MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
+                MatchCtx(
+                    relation="call",
+                    lexical_type="function",
+                    function=MatchFunction(name="func_lo", module="<logical python>"),
+                ),
+            )
         )
-    )
+        if matches:
+            break
+
     if not matches:
         raise ValueError("Unable to find match!")
     if len(matches) > 1:
