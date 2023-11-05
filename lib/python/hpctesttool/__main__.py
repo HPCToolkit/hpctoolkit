@@ -91,32 +91,35 @@ def unwind_py_simple(*, script: Path, database: Path) -> None:
     assert isinstance(db, vcurrent.Database)
 
     for gapframes in range(4):
-        gap = [MatchCtx()] * gapframes
-        matches = list(
-            chainmatch(
-                db.meta.context,
-                MatchEntryPoint(entry_point="main_thread"),
-                *gap,
-                MatchCtx(relation="call", lexical_type="line", file=str(script)),
-                MatchCtx(
-                    relation="call",
-                    lexical_type="function",
-                    function=MatchFunction(name="func_hi", module="<logical python>"),
-                ),
-                MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
-                MatchCtx(
-                    relation="call",
-                    lexical_type="function",
-                    function=MatchFunction(name="func_mid", module="<logical python>"),
-                ),
-                MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
-                MatchCtx(
-                    relation="call",
-                    lexical_type="function",
-                    function=MatchFunction(name="func_lo", module="<logical python>"),
-                ),
+        for entry_point in ["main_thread", "application_thread"]:
+            gap = [MatchCtx()] * gapframes
+            matches = list(
+                chainmatch(
+                    db.meta.context,
+                    MatchEntryPoint(entry_point=entry_point),
+                    *gap,
+                    MatchCtx(relation="call", lexical_type="line", file=str(script)),
+                    MatchCtx(
+                        relation="call",
+                        lexical_type="function",
+                        function=MatchFunction(name="func_hi", module="<logical python>"),
+                    ),
+                    MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
+                    MatchCtx(
+                        relation="call",
+                        lexical_type="function",
+                        function=MatchFunction(name="func_mid", module="<logical python>"),
+                    ),
+                    MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
+                    MatchCtx(
+                        relation="call",
+                        lexical_type="function",
+                        function=MatchFunction(name="func_lo", module="<logical python>"),
+                    ),
+                )
             )
-        )
+            if matches:
+                break
         if matches:
             break
 
