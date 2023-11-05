@@ -63,6 +63,9 @@ default:
 #----------------------------------------------
 
 include:
+# All code should pass pre-commit without error.
+- component: gitlab.com/blue42u/ci.pre-commit@0.1.0
+
 # First build images that just contain the Spack-built dependencies. Since these are bound to
 # a particular OS+ARCH, they can be shared between multiple final images, so we do this build
 # first so that we don't end up rebuilding Spack packages a whole bunch of times.
@@ -398,18 +401,6 @@ include:
 #-----------------------------------
 # Phase N: lint
 #-----------------------------------
-
-# Pre-commit linting passes must pass for the pipeline to succeed
-precommit:
-  stage: lint
-  image: docker.io/python:3.10-bullseye
-  needs: []
-  before_script:
-  - apt-get update -yqq && apt-get install -yqq git git-lfs
-  - python3 -m pip install pre-commit
-  script:
-  - pre-commit run --all-files --show-diff-on-failure
-
 
 # Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
 # Failures are allowed for MRs so that if the dependencies or build flags shift, we are made aware
