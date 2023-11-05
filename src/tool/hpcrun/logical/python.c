@@ -94,6 +94,7 @@ static logical_metadata_store_t python_metastore;
 static bool python_unwind(logical_region_t* region, void** store,
     unsigned int index, logical_frame_t* in_lframe, frame_t* frame) {
   logical_python_region_t* state = &region->specific.python;
+  const unsigned int real_index = index;
   if (in_lframe == NULL) {
     // opportunity for enhancement to handle the case when logical
     // frames and python frames don't match. for now, give up,
@@ -142,8 +143,8 @@ static bool python_unwind(logical_region_t* region, void** store,
   // Fetch the next frame in the unwind and save that in *store for next time
   PyFrameObject* prevframe = DL(PyFrame_GetBack)(pyframe);
   Py_XDECREF(prevframe);
-  if(ENABLED(LOGICAL_CTX_PYTHON) && prevframe == state->caller && index+1 < region->expected)
-    TMSG(LOGICAL_CTX_PYTHON, "Python appears to be missing some frames, got %d of %d (caller = %p)", index+1, region->expected, state->caller);
+  if(ENABLED(LOGICAL_CTX_PYTHON) && prevframe == state->caller && real_index+1 < region->expected)
+    TMSG(LOGICAL_CTX_PYTHON, "Python appears to be missing some frames, got %d of %d (caller = %p)", real_index+1, region->expected, state->caller);
   *store = prevframe;
 
   // Stop whenever the next unwound frame is not part of this logical region
