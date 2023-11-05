@@ -85,6 +85,13 @@ include:
     fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    name: spack-ubuntu20.04-ppc64le
+    context_dir: ci/predeps-spack/
+    platform: linux/ppc64le
+    job_tag: rice-linux-medium-ppc64le
+    fallback_registry: *ci_predeps_fallback_registry
+- component: *ci_predeps
+  inputs:
     name: spack-fedora37-amd64
     context_dir: ci/predeps-spack/
     fallback_registry: *ci_predeps_fallback_registry
@@ -106,6 +113,13 @@ include:
     context_dir: ci/predeps-spack/
     platform: linux/arm64
     job_tag: rice-linux-medium-arm64
+    fallback_registry: *ci_predeps_fallback_registry
+- component: *ci_predeps
+  inputs:
+    name: spack-min-ubuntu20.04-ppc64le
+    context_dir: ci/predeps-spack/
+    platform: linux/ppc64le
+    job_tag: rice-linux-medium-ppc64le
     fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
@@ -133,6 +147,13 @@ include:
     fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    name: ubuntu20.04-ppc64le
+    context_dir: ci/predeps/
+    platform: linux/ppc64le
+    job_tag: rice-linux-medium-ppc64le
+    fallback_registry: *ci_predeps_fallback_registry
+- component: *ci_predeps
+  inputs:
     name: fedora38-amd64
     context_dir: ci/predeps/
     fallback_registry: *ci_predeps_fallback_registry
@@ -153,6 +174,13 @@ include:
     context_dir: ci/predeps/
     platform: linux/arm64
     job_tag: rice-linux-medium-arm64
+    fallback_registry: *ci_predeps_fallback_registry
+- component: *ci_predeps
+  inputs:
+    name: min-ubuntu20.04-ppc64le
+    context_dir: ci/predeps/
+    platform: linux/ppc64le
+    job_tag: rice-linux-medium-ppc64le
     fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
@@ -252,6 +280,9 @@ include:
 'predeps: [spack-ubuntu20.04-arm64]':
   variables:
     PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+'predeps: [spack-ubuntu20.04-ppc64le]':
+  variables:
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
 'predeps: [spack-fedora37-amd64]':
   variables:
     PREDEPS_BUILD_ARG_SPACKOS: fedora37
@@ -265,6 +296,10 @@ include:
     PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
     PREDEPS_BUILD_ARG_VERMODE: minimum
 'predeps: [spack-min-ubuntu20.04-arm64]':
+  variables:
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+'predeps: [spack-min-ubuntu20.04-ppc64le]':
   variables:
     PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
     PREDEPS_BUILD_ARG_VERMODE: minimum
@@ -288,6 +323,11 @@ include:
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
     PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_ARM64
+'predeps: [ubuntu20.04-ppc64le]':
+  needs: ['predeps: [spack-ubuntu20.04-ppc64le]']
+  variables:
+    PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
+    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_PPC64LE
 'predeps: [fedora38-amd64]':
   needs: ['predeps: [spack-fedora37-amd64]']
   variables:
@@ -309,6 +349,11 @@ include:
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
     PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_ARM64
+'predeps: [min-ubuntu20.04-ppc64le]':
+  needs: ['predeps: [spack-min-ubuntu20.04-ppc64le]']
+  variables:
+    PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
+    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_PPC64LE
 'predeps: [min-fedora38-amd64]':
   needs: ['predeps: [spack-min-fedora37-amd64]']
   variables:
@@ -744,6 +789,15 @@ validate:
   tags: [rice-linux-small-bare-arm64]
   variables:
     JOB_TEST_REPEAT: 1
+
+'check ppc64le: [cpu]':
+  extends: .check
+  image: $PREDEPS_IMAGE_UBUNTU20_04_PPC64LE
+  tags: [rice-linux-small-ppc64le]
+'check min ppc64le: [cpu]':
+  extends: .check
+  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_PPC64LE
+  tags: [rice-linux-small-ppc64le]
 
 'check amd64: [+cuda, 11.6]':
   extends: .check
