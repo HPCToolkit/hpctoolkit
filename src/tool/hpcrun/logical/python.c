@@ -232,10 +232,13 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   }
   case PyTrace_C_CALL: {  // Python is calling a C function
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
+    if (top == NULL) {
+      TMSG(LOGICAL_CTX_PYTHON, "[? -> ?] ignoring attempt to call into C via function %s from frame = %p: no logical stack",
+           DL(PyEval_GetFuncName)(arg), frame);
+      break;
+    }
     TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] call into C via function %s from frame = %p",
          top->expected, top->expected+1, DL(PyEval_GetFuncName)(arg), frame);
-    if (top == NULL)
-      hpcrun_terminate();  // Python C_CALL without a logical stack???
 
     // Update the top region to record that we have exited Python. Assume there
     // is a stable physical frame within the top 4 callers of this callback.
@@ -251,10 +254,13 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   }
   case PyTrace_C_RETURN: {  // A C function is returning, back into Python
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
+    if (top == NULL) {
+      TMSG(LOGICAL_CTX_PYTHON, "[? -> ?] ignoring attempt to return from C frame into Python frame = %p: no logical stack",
+           frame);
+      break;
+    }
     TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] return from C into Python frame = %p",
          top->expected, top->expected-1, frame);
-    if (top == NULL)
-      hpcrun_terminate();  // Python C_RETURN without a logical stack???
 
     // Update the top region to record that we have re-entered Python
     top->specific.python.cfunc = NULL;
@@ -267,8 +273,11 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   }
   case PyTrace_RETURN: {  // Python is returning from a Python function.
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
-    if (top == NULL)
-      hpcrun_terminate();  // Python RETURN without a logical stack???
+    if (top == NULL) {
+      TMSG(LOGICAL_CTX_PYTHON, "[? -> ?] ignoring attempt to return from Python frame = %p: no logical stack",
+           frame);
+      break;
+    }
 
     // Fetch the frame we are returning into
     PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
