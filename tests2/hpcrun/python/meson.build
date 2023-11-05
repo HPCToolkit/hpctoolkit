@@ -18,6 +18,4 @@ test('Measurement of simple-exception unwound Python',
     suite: ['hpcrun', 'python'])
 test('Measurement of simple-signals unwound Python',
     _tst, args: [hpctesttool, hpcrun, hpcprof, python.full_path(), files('simple-signals'), '1'],
-    suite: ['hpcrun', 'python'],
-    # FIXME: Fails due to how Python reports signals
-    should_fail: true)
+    suite: ['hpcrun', 'python'])
