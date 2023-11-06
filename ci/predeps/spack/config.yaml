@@ -1,3 +1,4 @@
 config:
   install_tree:
     root: /opt/software
+    padded_length: 256
