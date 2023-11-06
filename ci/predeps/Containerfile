@@ -1,4 +1,48 @@
+ARG SPACKOS
 ARG BASE
+ARG TARGETOS
+ARG TARGETARCH
+
+# Preparation stage: Build all the dependencies with Spack
+# TODO: Freeze this to a release once 0.21.0 is released
+FROM ghcr.io/spack/$SPACKOS:latest as spackbuild
+
+# Copy in the environment, and possibly modify it depending on the mode
+COPY spack.yaml /opt/environment/spack.yaml
+ARG VERMODE=latest
+RUN \
+  case "$VERMODE" in \
+  latest) \
+    sed -E -i '/LATEST: @/ s/@[a-zA-Z0-9._-]+[,:a-zA-Z0-9._-]*(.*)LATEST: @([a-zA-Z0-9._-]+[,:a-zA-Z0-9._-]*)/@\2\1/' /opt/environment/spack.yaml; \
+    ;; \
+  minimum) \
+    sed -E -i 's/@([a-zA-Z0-9._-]+)[,:a-zA-Z0-9._-]*/@\1/g' /opt/environment/spack.yaml; \
+    ;; \
+  *) \
+    echo "Bad VERMODE: $VERMODE" >&2; \
+    exit 1; \
+    ;; \
+  esac
+
+# Install all the packages we want, using the environment.
+RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
+    --mount=type=cache,target=/mnt/cache/spack-bin,sharing=locked \
+  export PATH=/opt/spack/bin:"$PATH" \
+  && spack -D /opt/environment install --no-check-signature \
+  && spack -D /opt/environment buildcache push --unsigned --allow-root --fail-fast --update-index local-cache \
+  && spack -D /opt/environment gc -y
+
+# Generate a Meson native file that provides access to the installed packages, using Jinja2
+COPY j2-spack.py spack_env.ini.j2 /tmp/
+RUN \
+  export PATH=/opt/spack/bin:"$PATH" \
+  && py="$(spack -D /opt/environment find --format='{prefix}' python)/bin/python" \
+  && "$py" -m venv /tmp/venv && /tmp/venv/bin/python -m pip install 'Jinja2>=3.1,<4' \
+  && /tmp/venv/bin/python /tmp/j2-spack.py /tmp/spack_env.ini.j2 /usr/share/meson/native/spack_env.ini \
+  && rm -r /tmp/j2-spack.py /tmp/spack_env.ini.j2 /tmp/venv
+
+
+# Final stage
 FROM $BASE
 
 # Some images set problematic environment variables. Wipe those out first for safety.
@@ -19,11 +63,10 @@ RUN --mount=type=bind,target=/src/context \
 RUN --mount=type=bind,target=/src/context \
   /src/context/best-python.sh -m pip install 'meson[ninja]>=1.1.0,<2'
 
-# Copy in the Spack-built dependencies and such
-ARG SPACKDEPS
-COPY --from=$SPACKDEPS /opt/software /opt/software
-COPY --from=$SPACKDEPS /opt/environment /opt/environment
-COPY --from=$SPACKDEPS /usr/share/meson/native/spack_env.ini /usr/share/meson/native/image.ini
+# Copy in the Spack-built dependencies etc. from the previous stage
+COPY --from=spackbuild /opt/software /opt/software
+COPY --from=spackbuild /opt/environment /opt/environment
+COPY --from=spackbuild /usr/share/meson/native/spack_env.ini /usr/share/meson/native/image.ini
 
 # Merge together the "patch" Meson native files to produce the final native file for the image.
 RUN --mount=type=bind,target=/src/context \
