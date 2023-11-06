@@ -1,8 +1,4 @@
 spack:
-  config:
-    install_tree:
-      root: /opt/software
-
   view: false
   concretizer:
     unify: true
@@ -72,5 +68,17 @@ spack:
         when: '+lzma'
 
   mirrors:
-    local-cache: /mnt/cache/spack-bin
-    spack-binaries: https://binaries.spack.io/develop
+    local-cache:
+      url: /mnt/cache/spack-bin
+      binary: true
+      source: false
+
+    upstream-cache:
+      url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v0.21.0
+      binary: true
+      source: false
+
+    spack-binaries:
+      url: https://binaries.spack.io/develop
+      binary: true
+      source: false

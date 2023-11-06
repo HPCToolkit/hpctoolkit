@@ -7,6 +7,9 @@ ARG TARGETARCH
 # TODO: Freeze this to a release once 0.21.0 is released
 FROM ghcr.io/spack/$SPACKOS:latest as spackbuild
 
+# Copy in the common Spack configuration, for the install tree and such
+COPY spack/ /etc/spack/
+
 # Copy in the environment, and possibly modify it depending on the mode
 COPY spack.yaml /opt/environment/spack.yaml
 ARG VERMODE=latest
@@ -24,12 +27,19 @@ RUN \
     ;; \
   esac
 
-# Install all the packages we want, using the environment.
+# Install all the packages we want, using the environment. We use an extra Makefile to add a
+# post-install hook that pushes the resulting packages to various buildcaches.
+COPY Makefile /opt/environment/Makefile
+ARG REMOTE_CACHE_MIRROR=
 RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
     --mount=type=cache,target=/mnt/cache/spack-bin,sharing=locked \
   export PATH=/opt/spack/bin:"$PATH" \
-  && spack -D /opt/environment install --no-check-signature \
-  && spack -D /opt/environment buildcache push --unsigned --allow-root --fail-fast --update-index local-cache \
+  && spack -D /opt/environment concretize \
+  && spack -D /opt/environment env depfile --generator make --make-prefix predeps \
+      -o /opt/environment/spack.mk \
+  && make -j$(nproc) -C /opt/environment --output-sync=recurse \
+      SPACK_INSTALL_FLAGS=--no-check-signature REMOTE_CACHE_MIRROR="$REMOTE_CACHE_MIRROR" \
+  && spack -D /opt/environment buildcache push --unsigned --fail-fast --update-index local-cache \
   && spack -D /opt/environment gc -y
 
 # Generate a Meson native file that provides access to the installed packages, using Jinja2

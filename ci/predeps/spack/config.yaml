@@ -1,0 +1,3 @@
+config:
+  install_tree:
+    root: /opt/software
