@@ -33,6 +33,7 @@ COPY Makefile /opt/environment/Makefile
 ARG REMOTE_CACHE_MIRROR=
 RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
     --mount=type=cache,target=/mnt/cache/spack-bin,sharing=locked \
+    --mount=type=cache,target=/mnt/cache/spack-src \
   export PATH=/opt/spack/bin:"$PATH" \
   && spack -D /opt/environment concretize \
   && spack -D /opt/environment env depfile --generator make --make-prefix predeps \

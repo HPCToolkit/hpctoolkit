@@ -1,4 +1,7 @@
 spack:
+  config:
+    source_cache: /mnt/cache/spack-src
+
   view: false
   concretizer:
     unify: true
