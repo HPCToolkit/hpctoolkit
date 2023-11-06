@@ -5,7 +5,7 @@ spack:
   view: false
   concretizer:
     unify: true
-    reuse: true
+    reuse: false
 
   definitions:
   # Core prerequisites. These are required for Meson or specified in the README.md.
