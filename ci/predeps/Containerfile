@@ -7,9 +7,6 @@ ARG TARGETARCH
 # TODO: Freeze this to a release once 0.21.0 is released
 FROM ghcr.io/spack/$SPACKOS:latest as spackbuild
 
-# Copy in the common Spack configuration, for the install tree and such
-COPY spack/ /etc/spack/
-
 # Copy in the environment, and possibly modify it depending on the mode
 COPY spack.yaml /opt/environment/spack.yaml
 ARG VERMODE=latest
@@ -76,7 +73,6 @@ RUN --mount=type=bind,target=/src/context \
 
 # Copy in the Spack-built dependencies etc. from the previous stage
 COPY --from=spackbuild /opt/software /opt/software
-COPY --from=spackbuild /opt/environment /opt/environment
 COPY --from=spackbuild /usr/share/meson/native/spack_env.ini /usr/share/meson/native/image.ini
 
 # Merge together the "patch" Meson native files to produce the final native file for the image.

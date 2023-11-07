@@ -1,5 +1,8 @@
 spack:
   config:
+    install_tree:
+      root: /opt/software
+      padded_length: 256
     source_cache: /mnt/cache/spack-src
 
   view: false
