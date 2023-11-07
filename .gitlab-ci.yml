@@ -10,7 +10,6 @@ stages:
 - setup
 - validate
 - test
-- lint
 
 
 variables:
@@ -357,59 +356,6 @@ include:
     PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
     PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
-
-#-----------------------------------
-# Phase N: lint
-#-----------------------------------
-
-# Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
-# Failures are allowed for MRs so that if the dependencies or build flags shift, we are made aware
-# (by a big orange exclaimation point) but not blocked by upstream Spack.
-'spack install: [amd64]':
-  stage: lint
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  needs:
-  - job: 'predeps: [ubuntu20.04-amd64]'
-  - job: validate
-    artifacts: false
-  tags: [saas-linux-small-amd64]
-  rules:
-  - if: $CI_COMMIT_REF_PROTECTED == "true"
-    allow_failure: false
-  - allow_failure: true
-  cache:
-    key: spack
-    when: always
-    paths: [.spack.git]
-  parallel:
-    matrix:
-    - VARIANTS:
-      # TODO: Expand this list a bit sometime to better represent what we want to ensure works
-      - +papi
-      - ~papi
-  before_script:
-  - apt-get update -yqq
-  - apt-get install -yqq git git-lfs gcc g++ make patch tar gzip unzip bzip2 xz-utils zstd file gnupg2 eatmydata
-  # Ensure we have Git and Git LFS
-  - git --version
-  - git lfs --version
-  script:
-  # Instantiate a fresh Spack develop (instead of whatever is burned into the image)
-  - |
-    if [ ! -d .spack.git ]; then
-      git clone --depth=30 --single-branch --no-tags --branch=develop --bare \
-        https://github.com/spack/spack.git .spack.git || exit $?
-    fi
-  - git -C .spack.git fetch --verbose origin +develop:develop
-  - git clone --shared --branch=develop .spack.git /tmp/spack
-  - export PATH=/tmp/spack/bin:"$PATH"
-  # Use a (temporary) Spack environment so that Spack will build from the current sources
-  - spack env create -d /tmp/env
-  - spack -D /tmp/env config add config:install_tree:root:/opt/software/
-  - spack -D /tmp/env develop --no-clone --path "$CI_PROJECT_DIR" hpctoolkit@develop-ci
-  - spack -D /tmp/env add "hpctoolkit @=develop-ci ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
-  # Spack out a representative HPCToolkit. All dependencies should already be built.
-  - eatmydata spack -D /tmp/env install --fail-fast --only=package hpctoolkit
 
 #-----------------------------------
 # Phase 2: validate
@@ -810,3 +756,37 @@ fresh testdata:
     expose_as: "Test data refresh patch"
     paths:
     - testdata.patch
+
+
+# Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
+'spack install':
+  stage: test
+  image:
+    name: ghcr.io/spack/fedora37:latest
+    entrypoint: ['spack-env']
+  dependencies: []
+  tags: [saas-linux-medium-amd64]
+  rules:
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+    allow_failure: false
+  - allow_failure: true
+  cache:
+  - key: spack-src
+    paths:
+    - .cache/spack-src/
+  before_script:
+  - mkdir -p .cache/spack-src
+  - >-
+    spack config add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src
+  - >-
+    test -z "$CI_REGISTRY" ||
+    spack mirror add --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
+    --type binary remote-cache oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21.0
+  script:
+  - spack env create -d /tmp/env ci/tests.spack.yaml
+  - spack -D /tmp/env install --fail-fast --no-check-signature
+  after_script:
+  - |
+    echo "To reproduce:"
+    echo "    cd path/to/hpctoolkit"
+    echo "    podman run --rm -it -v ./:/hpctoolkit:O --workdir /hpctoolkit $CI_JOB_IMAGE"
