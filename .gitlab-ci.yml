@@ -10,7 +10,6 @@ stages:
 - setup
 - validate
 - test
-- lint
 
 
 variables:
@@ -66,76 +65,12 @@ include:
 # All code should pass pre-commit without error.
 - component: gitlab.com/blue42u/ci.pre-commit@0.1.0
 
-# First build images that just contain the Spack-built dependencies. Since these are bound to
-# a particular OS+ARCH, they can be shared between multiple final images, so we do this build
-# first so that we don't end up rebuilding Spack packages a whole bunch of times.
-- component: &ci_predeps gitlab.com/blue42u/ci.predeps@0.1.0
-  inputs:
-    name: spack-almalinux8-amd64
-    context_dir: ci/predeps-spack/
-    fallback_registry: &ci_predeps_fallback_registry registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
-- component: *ci_predeps
-  inputs:
-    name: spack-ubuntu20.04-amd64
-    context_dir: ci/predeps-spack/
-    fallback_registry: *ci_predeps_fallback_registry
-- component: *ci_predeps
-  inputs:
-    name: spack-ubuntu20.04-arm64
-    context_dir: ci/predeps-spack/
-    platform: linux/arm64
-    job_tag: rice-linux-medium-arm64
-    fallback_registry: *ci_predeps_fallback_registry
-- component: *ci_predeps
-  inputs:
-    name: spack-ubuntu20.04-ppc64le
-    context_dir: ci/predeps-spack/
-    platform: linux/ppc64le
-    job_tag: rice-linux-medium-ppc64le
-    fallback_registry: *ci_predeps_fallback_registry
-- component: *ci_predeps
-  inputs:
-    name: spack-fedora37-amd64
-    context_dir: ci/predeps-spack/
-    fallback_registry: *ci_predeps_fallback_registry
-
-# Minimum variant, where all versions of Spack-built software are locked to their minimum allowed.
-- component: *ci_predeps
-  inputs:
-    name: spack-min-almalinux8-amd64
-    context_dir: ci/predeps-spack/
-    fallback_registry: *ci_predeps_fallback_registry
-- component: *ci_predeps
-  inputs:
-    name: spack-min-ubuntu20.04-amd64
-    context_dir: ci/predeps-spack/
-    fallback_registry: *ci_predeps_fallback_registry
-- component: *ci_predeps
-  inputs:
-    name: spack-min-ubuntu20.04-arm64
-    context_dir: ci/predeps-spack/
-    platform: linux/arm64
-    job_tag: rice-linux-medium-arm64
-    fallback_registry: *ci_predeps_fallback_registry
-- component: *ci_predeps
-  inputs:
-    name: spack-min-ubuntu20.04-ppc64le
-    context_dir: ci/predeps-spack/
-    platform: linux/ppc64le
-    job_tag: rice-linux-medium-ppc64le
-    fallback_registry: *ci_predeps_fallback_registry
-- component: *ci_predeps
-  inputs:
-    name: spack-min-fedora37-amd64
-    context_dir: ci/predeps-spack/
-    fallback_registry: *ci_predeps_fallback_registry
-
 # These images are based on classic distrobutions and contain no vendor software
-- component: *ci_predeps
+- component: &ci_predeps gitlab.com/blue42u/ci.predeps@0.1.0
   inputs:
     name: almalinux8-amd64
     context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
+    fallback_registry: &ci_predeps_fallback_registry registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
 - component: *ci_predeps
   inputs:
     name: ubuntu20.04-amd64
@@ -274,227 +209,153 @@ include:
     context_dir: ci/predeps/
     fallback_registry: *ci_predeps_fallback_registry
 
-'predeps: [spack-almalinux8-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: almalinux8
-'predeps: [spack-ubuntu20.04-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
-'predeps: [spack-ubuntu20.04-arm64]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
-'predeps: [spack-ubuntu20.04-ppc64le]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
-'predeps: [spack-fedora37-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: fedora37
-
-'predeps: [spack-min-almalinux8-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: almalinux8
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-'predeps: [spack-min-ubuntu20.04-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-'predeps: [spack-min-ubuntu20.04-arm64]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-'predeps: [spack-min-ubuntu20.04-ppc64le]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-'predeps: [spack-min-fedora37-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_SPACKOS: fedora37
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-
 'predeps: [almalinux8-amd64]':
-  needs: ['predeps: [spack-almalinux8-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: quay.io/almalinux/almalinux:8
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_ALMALINUX8_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: almalinux8
+  before_script: &predeps_before_script
+  - export PREDEPS_BUILD_ARG_REMOTE_CACHE_MIRROR=remote-cache PREDEPS_SECRET_spack_mirrors=/tmp/mirrors.yaml
+  - >-
+    printf "mirrors: {%s: {url: '%s', access_pair: ['%s', '%s'], binary: true, source: false}}"
+    "$PREDEPS_BUILD_ARG_REMOTE_CACHE_MIRROR" oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21.0
+    "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD"
+    > "$PREDEPS_SECRET_spack_mirrors"
 'predeps: [ubuntu20.04-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [ubuntu20.04-arm64]':
-  needs: ['predeps: [spack-ubuntu20.04-arm64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_ARM64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [ubuntu20.04-ppc64le]':
-  needs: ['predeps: [spack-ubuntu20.04-ppc64le]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_PPC64LE
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [fedora38-amd64]':
-  needs: ['predeps: [spack-fedora37-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/fedora:38
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_FEDORA37_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: fedora37
+  before_script: *predeps_before_script
 
 'predeps: [min-almalinux8-amd64]':
-  needs: ['predeps: [spack-min-almalinux8-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: quay.io/almalinux/almalinux:8
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_ALMALINUX8_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: almalinux8
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 'predeps: [min-ubuntu20.04-amd64]':
-  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 'predeps: [min-ubuntu20.04-arm64]':
-  needs: ['predeps: [spack-min-ubuntu20.04-arm64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_ARM64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 'predeps: [min-ubuntu20.04-ppc64le]':
-  needs: ['predeps: [spack-min-ubuntu20.04-ppc64le]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/ubuntu:20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_PPC64LE
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 'predeps: [min-fedora38-amd64]':
-  needs: ['predeps: [spack-min-fedora37-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/fedora:38
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_FEDORA37_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: fedora37
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 
 'predeps: [cuda11.6-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [cuda11.8-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [cuda12.0-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/nvidia/cuda:12.0.1-devel-ubuntu20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 
 'predeps: [min-cuda11.8-amd64]':
-  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 'predeps: [min-cuda12.0-amd64]':
-  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/nvidia/cuda:12.0.1-devel-ubuntu20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 
 'predeps: [rocm5.1-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/rocm/dev-ubuntu-20.04:5.1.3
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [rocm5.2-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/rocm/dev-ubuntu-20.04:5.2.3
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [rocm5.3-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/rocm/dev-ubuntu-20.04:5.3.2
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [rocm5.4-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/rocm/dev-ubuntu-20.04:5.4.2
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [rocm5.5-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/rocm/dev-ubuntu-20.04:5.5.1
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [rocm5.6-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/rocm/dev-ubuntu-20.04:5.6
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 
 'predeps: [min-rocm5.1-amd64]':
-  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/rocm/dev-ubuntu-20.04:5.1.3
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 'predeps: [min-rocm5.6-amd64]':
-  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/rocm/dev-ubuntu-20.04:5.6
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 
 'predeps: [intel-amd64]':
-  needs: ['predeps: [spack-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/intel/oneapi-runtime:devel-ubuntu20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+  before_script: *predeps_before_script
 'predeps: [min-intel-amd64]':
-  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
   variables:
     PREDEPS_BUILD_ARG_BASE: docker.io/intel/oneapi-runtime:devel-ubuntu20.04
-    PREDEPS_BUILD_ARG_SPACKDEPS: $PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64
-
-#-----------------------------------
-# Phase N: lint
-#-----------------------------------
-
-# Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
-# Failures are allowed for MRs so that if the dependencies or build flags shift, we are made aware
-# (by a big orange exclaimation point) but not blocked by upstream Spack.
-'spack install: [amd64]':
-  stage: lint
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  needs:
-  - job: 'predeps: [ubuntu20.04-amd64]'
-  - job: validate
-    artifacts: false
-  tags: [saas-linux-small-amd64]
-  rules:
-  - if: $CI_COMMIT_REF_PROTECTED == "true"
-    allow_failure: false
-  - allow_failure: true
-  cache:
-    key: spack
-    when: always
-    paths: [.spack.git]
-  parallel:
-    matrix:
-    - VARIANTS:
-      # TODO: Expand this list a bit sometime to better represent what we want to ensure works
-      - +papi
-      - ~papi
-  before_script:
-  - apt-get update -yqq
-  - apt-get install -yqq git git-lfs gcc g++ make patch tar gzip unzip bzip2 xz-utils zstd file gnupg2 eatmydata
-  # Ensure we have Git and Git LFS
-  - git --version
-  - git lfs --version
-  script:
-  # Instantiate a fresh Spack develop (instead of whatever is burned into the image)
-  - |
-    if [ ! -d .spack.git ]; then
-      git clone --depth=30 --single-branch --no-tags --branch=develop --bare \
-        https://github.com/spack/spack.git .spack.git || exit $?
-    fi
-  - git -C .spack.git fetch --verbose origin +develop:develop
-  - git clone --shared --branch=develop .spack.git /tmp/spack
-  - export PATH=/tmp/spack/bin:"$PATH"
-  # Use a (temporary) Spack environment so that Spack will build from the current sources
-  - spack env create -d /tmp/env
-  - spack -D /tmp/env config add config:install_tree:root:/opt/software/
-  - spack -D /tmp/env develop --no-clone --path "$CI_PROJECT_DIR" hpctoolkit@develop-ci
-  - spack -D /tmp/env add "hpctoolkit @=develop-ci ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
-  # Spack out a representative HPCToolkit. All dependencies should already be built.
-  - eatmydata spack -D /tmp/env install --fail-fast --only=package hpctoolkit
+    PREDEPS_BUILD_ARG_SPACKOS: ubuntu-focal
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
 
 #-----------------------------------
 # Phase 2: validate
@@ -883,3 +744,37 @@ fresh testdata:
     expose_as: "Test data refresh patch"
     paths:
     - testdata.patch
+
+
+# Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
+'spack install':
+  stage: test
+  image:
+    name: ghcr.io/spack/fedora37:latest
+    entrypoint: ['spack-env']
+  dependencies: []
+  tags: [saas-linux-medium-amd64]
+  rules:
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+    allow_failure: false
+  - allow_failure: true
+  cache:
+  - key: spack-src
+    paths:
+    - .cache/spack-src/
+  before_script:
+  - mkdir -p .cache/spack-src
+  - >-
+    spack config add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src
+  - >-
+    test -z "$CI_REGISTRY" ||
+    spack mirror add --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
+    --type binary remote-cache oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21.0
+  script:
+  - spack env create -d /tmp/env ci/tests.spack.yaml
+  - spack -D /tmp/env install --fail-fast --no-check-signature
+  after_script:
+  - |
+    echo "To reproduce:"
+    echo "    cd path/to/hpctoolkit"
+    echo "    podman run --rm -it -v ./:/hpctoolkit:O --workdir /hpctoolkit $CI_JOB_IMAGE"
