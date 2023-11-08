@@ -195,7 +195,7 @@ public:
   }
   void path(stdshim::filesystem::path&&);
 
-  /// Get or set the job number corrosponding to the profiled program.
+  /// Get or set the job number corresponding to the profiled program.
   /// If the job number is not known, has_job() will return false and job()
   /// will throw an error.
   // MT: Externally Synchronized

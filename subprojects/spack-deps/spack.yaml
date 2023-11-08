@@ -1,0 +1,33 @@
+spack:
+  view: false
+  concretizer:
+    reuse: true
+    unify: true
+
+  # For developers: The format of this list is written specifically to make parsing in Meson easy.
+  # Specifically, each spec should be on a single line, single-quoted, marked with a
+  # suitable marker comment at the EOL, and have the package name separated by a single space.
+  #
+  # These rules are only required for the the copy of this file in the source tree, other copies
+  # may be formatted freely.
+  specs:
+  - 'boost @1.70.0: +atomic +date_time +filesystem +system +thread +timer +graph +regex +shared +multithreaded visibility=global'  # SPEC
+  - 'bzip2 @1.0.8:'  # SPEC
+  - 'dyninst @12.3.0:'  # SPEC
+  - 'elfutils ~nls @0.186:'  # SPEC
+  - 'intel-tbb +shared @2020.3'  # SPEC
+  - 'libmonitor +hpctoolkit ~dlopen @2023.03.15:'  # SPEC
+  - 'xz +pic libs=static @5.2.5:5.2.6,5.2.10:'  # SPEC
+  - 'zlib +shared @1.2.13:1.2'  # SPEC
+  - 'libunwind +xz +pic @1.6.2:'  # SPEC
+  - 'libpfm4 @4.11.0:'  # SPEC
+  - 'xerces-c transcoder=iconv @3.2.3:'  # SPEC
+  - 'libiberty +pic @2.37:'  # SPEC
+  - 'memkind'  # SPEC
+  - 'yaml-cpp +shared @0.7.0:'  # SPEC
+  - $target_specific
+
+  definitions:
+  - when: arch.satisfies('target=x86_64:')
+    target_specific:
+    - 'intel-xed +pic @2022.04.17:'  # SPECX86

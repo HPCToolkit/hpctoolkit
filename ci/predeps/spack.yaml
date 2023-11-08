@@ -1,0 +1,90 @@
+spack:
+  config:
+    install_tree:
+      root: /opt/software
+      padded_length: 256
+    source_cache: /mnt/cache/spack-src
+
+  view: false
+  concretizer:
+    unify: true
+    reuse: false
+
+  definitions:
+  # Core prerequisites. These are required for Meson or specified in the README.md.
+  - core:
+    - cmake
+    - pkgconfig
+    - 'python @3.10.8: +bz2 +ctypes +lzma +zlib'
+  # Core dependencies. These specs should stay in-sync with subprojects/spack-deps/spack.yaml
+  - core:
+    - >-
+      boost @1.70.0:
+      +atomic +date_time +filesystem +system +thread +timer +graph +regex
+      +shared +multithreaded visibility=global
+    - 'bzip2 @1.0.8:'
+    - 'dyninst @12.3.0:'
+    - 'elfutils ~nls @0.186:'
+    - 'intel-tbb +shared @2020.3'
+    - 'libmonitor +hpctoolkit ~dlopen @2023.03.15:'
+    - 'xz +pic libs=static,shared @5.2.5:5.2.6,5.2.10:'
+    - 'zlib +shared @1.2.13:1.2'
+    - 'libunwind +xz +pic @1.6.2:'
+    - 'libpfm4 @4.11.0:'
+    - 'xerces-c transcoder=iconv @3.2.3:'
+    - 'libiberty +pic @2.37:'
+    - 'memkind'
+    - 'yaml-cpp +shared @0.7.0:'
+  - when: arch.satisfies('target=x86_64:')
+    core:
+    - 'intel-xed +pic @2022.08.11:'
+  # Autotools. These specs should stay in-sync with subprojects/autotools/spack.yaml
+  - core:
+    - 'autoconf @2.69'
+    - 'automake @1.15.1'
+    - 'libtool @2.4.6'
+    - 'm4'
+    - 'gmake'
+  # Optional dependencies.
+  - optional:
+    - 'papi @6.0.0.1:'  # Required for -Dpapi=enabled
+    - 'opencl-c-headers @2022.01.04:'  # Required for -Dopencl=enabled
+    - 'openmpi @4.1.3:'  # Required for -Dmpi=enabled
+
+  specs:
+  - $core
+  - $optional
+
+  packages:
+    all:
+      # NB: These requirements must be anchor-copied to all packages with custom requires
+      require:
+      # We only concretize for generic targets
+      - &target {any_of: ['target=:x86_64', 'target=:aarch64', 'target=:ppc64le']}
+      # Do not allow infinity versions, we only build full "point" releases
+      - &noinf '@:999999999'
+
+    python:
+      require:
+      - *target
+      - *noinf
+      # Workaround implementation for https://github.com/spack/spack/pull/38593
+      # Can be removed with Spack 0.21.x
+      - spec: '^xz libs=shared'
+        when: '+lzma'
+
+  mirrors:
+    local-cache:
+      url: /mnt/cache/spack-bin
+      binary: true
+      source: false
+
+    upstream-cache:
+      url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v0.21.0
+      binary: true
+      source: false
+
+    spack-binaries:
+      url: https://binaries.spack.io/develop
+      binary: true
+      source: false

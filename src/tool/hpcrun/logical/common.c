@@ -364,7 +364,7 @@ earlyexit:
 }
 
 // ---------------------------------------
-// Logical metadata mangagement
+// Logical metadata management
 // ---------------------------------------
 
 void hpcrun_logical_metadata_register(logical_metadata_store_t* store, const char* generator) {

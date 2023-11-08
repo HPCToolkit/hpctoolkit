@@ -120,7 +120,7 @@
 //
 // Features:
 //   - The '--' token forces the end of optional argument scanning and
-//     iterprets everything following as a list of regular arguments.
+//     interprets everything following as a list of regular arguments.
 //     This is useful for non-option arguments that begin with dashes.
 //   - Unlike getopt() we do not support the deprecated use of the single
 //     '-'; this is an error.

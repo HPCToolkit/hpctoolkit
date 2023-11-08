@@ -1,88 +1,44 @@
-#!/usr/bin/env python3
+#!/bin/sh -e
 
-import argparse
-import contextlib
-import re
-import sys
-import tarfile
-import typing
-from pathlib import Path
+hpcrun="$1"
+hpcstruct="$2"
+min_samples="$3"
+output_stamp="$4"
+shift 4  # Remaining arguments go to hpcrun
 
-from hpctoolkit.test.execution import hpcrun, hpcstruct
-from hpctoolkit.test.hardware import nvidia
+output="$(dirname "$output_stamp")/$(basename "$output_stamp" .fresh)"
 
-parser = argparse.ArgumentParser(
-    description="Run hpcrun and package the measurements as an xz-tarball"
-)
-parser.add_argument("output", type=Path)
-parser.add_argument("arguments", nargs="+")
-parser.add_argument("--no-struct", default=True, action="store_false", dest="struct")
-parser.add_argument("-m", "--min-samples", default=100, type=int)
-parser.add_argument("--cuda", action="store_true")
-parser.add_argument("--cuda-pc", action="store_true")
-args = parser.parse_args()
-del parser
+for _attempt in 1 2 3 4 5 6 7 8 9 10; do
+  # Attempt to generate some (good) measurements
+  rm -rf "$output"
+  "$hpcrun" -o "$output" "$@"
 
-if args.cuda_pc:
-    hw_ctx: typing.Any = nvidia(">=6.0")
-elif args.cuda:
-    hw_ctx = nvidia()
-else:
-    hw_ctx = contextlib.nullcontext()
+  # Check that there are enough samples to go around
+  samples=$(
+    grep -E 'SUMMARY:[[:space:]]+samples:[[:space:]]+[[:digit:]]+[[:space:]]+\(recorded:[[:space:]]+[[:digit:]]+' "$output"/*.log \
+    | grep -Eo 'recorded:[[:space:]]+[[:digit:]]+' \
+    | grep -Eo -m1 '[[:digit:]]+')
+  if [ "$samples" -lt "$min_samples" ]; then continue; fi
 
+  # Measurements look good! We'll use these.
+  break
+done
 
-def sanitize(ti):
-    ti.uid, ti.gid = 0, 0
-    ti.uname, ti.gname = "root", "root"
-    return ti
+# Analyze all the binaries used during the run. This will generate a structs/ subdirectory.
+"$hpcstruct" --gpucfg=yes --nocache "$output"
 
+# Clean up all non-essential files
+rm -rf \
+  "$output"/cpubins/ \
+  "$output"/gpubins-used/ \
+  "$output"/structs/nvidia/ \
+  # END
+rm -f \
+  "$output"/*.log \
+  "$output"/all.lm \
+  "$output"/structs/*.warnings \
+  "$output"/structs/Makefile \
+  # END
 
-def check_ok(meas):
-    sample_cnts = []
-    logfiles = 0
-    for stem in meas.thread_stems:
-        if meas.logfile(stem):
-            logfiles += 1
-            with open(M.logfile(stem), encoding="utf-8") as f:
-                for line in f:
-                    mat = re.match(r"SUMMARY:\s+samples:\s+\d+\s+\(recorded:\s+(\d+)", line)
-                    if mat:
-                        sample_cnt = int(mat.group(1))
-                        break
-                else:
-                    print(
-                        f"{stem}: Did not find SUMMARY line in log output. Retrying...",
-                        file=sys.stderr,
-                    )
-                    return False
-            if sample_cnt < args.min_samples:
-                print(
-                    f"{stem}: Achieved {sample_cnt} samples, wanted at least {args.min_samples}. Retrying...",
-                    file=sys.stderr,
-                )
-                return False
-            sample_cnts.append(sample_cnt)
-    if logfiles == 0:
-        print("Did not find any log output. Retrying...", file=sys.stderr)
-        return False
-    print(
-        f"Achieved {sum(sample_cnts)} total samples (min/avg/max {min(sample_cnts)}/{sum(sample_cnts)/len(sample_cnts)}/{max(sample_cnts)} per process)"
-    )
-    return True
-
-
-for _i in range(10):
-    with hw_ctx, hpcrun(*args.arguments[:-1], cmd=[args.arguments[-1]]) as M:
-        # Verify that the measurements contains enough samples to call it useful
-        if not check_ok(M):
-            continue
-
-        if args.struct:
-            # Generate and include all the structure files
-            hpcstruct(M, "--gpucfg=yes")
-
-        with tarfile.open(args.output, mode="w:xz") as out:
-            out.add(M.basedir, arcname=".", recursive=True, filter=sanitize)
-            break
-else:
-    raise RuntimeError("All 10 attempts failed to collect enough data, adjust the arguments!")
+# Create/update the stampfile
+date > "$output_stamp"

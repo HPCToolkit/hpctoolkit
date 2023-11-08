@@ -98,7 +98,7 @@ private:
 /// Description of the serialized form of some data.
 template<class T> struct DataTraits;
 
-/// Mixin for implementors of DataTraits, for data with constant size.
+/// Mixin for implementers of DataTraits, for data with constant size.
 template<class T, std::size_t Size, std::uint8_t Align = Size>
 class ConstSizeDataTraits {
 public:

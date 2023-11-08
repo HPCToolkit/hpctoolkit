@@ -1,0 +1,22 @@
+spack:
+  view: false
+  concretizer:
+    unify: false
+    reuse: dependencies
+
+  develop:
+    hpctoolkit:
+      path: '..'
+      spec: hpctoolkit@develop-ci
+
+  specs:
+  - matrix:
+    - - hpctoolkit@=develop-ci
+    - - ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero
+    - [+papi, ~papi]
+
+  mirrors:
+    upstream-cache:
+      url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v0.21.0
+      binary: true
+      source: false

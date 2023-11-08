@@ -74,7 +74,7 @@ typedef struct auditor_map_entry_t {
   struct dl_phdr_info dl_info;
   size_t dl_info_sz;
 
-  // Corrosponding load_module_t for this here thing.
+  // Corresponding load_module_t for this here thing.
   struct load_module_t* load_module;
 
   // link_map entry for this library, if that makes sense for this entry.

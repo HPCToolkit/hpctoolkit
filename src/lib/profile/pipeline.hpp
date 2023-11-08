@@ -427,7 +427,7 @@ public:
     [[nodiscard]] TimepointStatus timepoint(PerThreadTemporary&, Metric&, double, std::chrono::nanoseconds);
 
     /// Reference to the Thread-local metric data for a particular Context.
-    /// Allows for efficient emmission of multiple Metrics' data to one location.
+    /// Allows for efficient emission of multiple Metrics' data to one location.
     class AccumulatorsRef final {
     public:
       AccumulatorsRef() = delete;
