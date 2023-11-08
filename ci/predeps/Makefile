@@ -1,4 +1,5 @@
 SPACK ?= spack
+REMOTE_CACHE_MIRROR := __ci_remote_cache_push_mirror
 
 .PHONY: all
 
@@ -6,8 +7,8 @@ all: post-all
 
 include spack.mk
 
-ifeq ($(REMOTE_CACHE_MIRROR),)
-$(warning No remote-cache mirror specified, will not be using the remote cache)
+ifeq ($(shell spack mirror list | grep -c '^$(REMOTE_CACHE_MIRROR)'),0)
+$(warning Remote cache mirror $(REMOTE_CACHE_MIRROR) not found, will not be pushing to the remote cache)
 post-all: $(addprefix predeps/install/,$(predeps/SPACK_PACKAGE_IDS))
 else
 predeps/post/%: predeps/install/%

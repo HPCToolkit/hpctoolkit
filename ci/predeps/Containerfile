@@ -27,7 +27,6 @@ RUN \
 # Install all the packages we want, using the environment. We use an extra Makefile to add a
 # post-install hook that pushes the resulting packages to various buildcaches.
 COPY Makefile /opt/environment/Makefile
-ARG REMOTE_CACHE_MIRROR=
 RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
     --mount=type=cache,target=/mnt/cache/spack-bin,sharing=locked \
     --mount=type=cache,target=/mnt/cache/spack-src \
@@ -36,7 +35,7 @@ RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
   && spack -D /opt/environment env depfile --generator make --make-prefix predeps \
       -o /opt/environment/spack.mk \
   && make -j$(nproc) -C /opt/environment --output-sync=recurse \
-      SPACK_INSTALL_FLAGS=--no-check-signature REMOTE_CACHE_MIRROR="$REMOTE_CACHE_MIRROR" \
+      SPACK_INSTALL_FLAGS=--no-check-signature \
   && spack -D /opt/environment buildcache push --unsigned --fail-fast --update-index local-cache \
   && spack -D /opt/environment gc -y
 
