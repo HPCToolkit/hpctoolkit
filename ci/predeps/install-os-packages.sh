@@ -15,6 +15,7 @@ PACKAGES=(
   file
   git git-lfs
   tar
+  perl
 )
 
 case "$ID" in
