@@ -7,26 +7,10 @@ ARG TARGETARCH
 # TODO: Freeze this to a release once 0.21.0 is released
 FROM ghcr.io/spack/$SPACKOS:latest as spackbuild
 
-# Copy in the environment, and possibly modify it depending on the mode
-COPY spack.yaml /opt/environment/spack.yaml
-ARG VERMODE=latest
-RUN \
-  case "$VERMODE" in \
-  latest) \
-    sed -E -i '/LATEST: @/ s/@[a-zA-Z0-9._-]+[,:a-zA-Z0-9._-]*(.*)LATEST: @([a-zA-Z0-9._-]+[,:a-zA-Z0-9._-]*)/@\2\1/' /opt/environment/spack.yaml; \
-    ;; \
-  minimum) \
-    sed -E -i 's/@([a-zA-Z0-9._-]+)[,:a-zA-Z0-9._-]*/@\1/g' /opt/environment/spack.yaml; \
-    ;; \
-  *) \
-    echo "Bad VERMODE: $VERMODE" >&2; \
-    exit 1; \
-    ;; \
-  esac
-
 # Install all the packages we want, using the environment. We use an extra Makefile to add a
 # post-install hook that pushes the resulting packages to various buildcaches.
-COPY Makefile /opt/environment/Makefile
+COPY spack.yaml Makefile /opt/environment/
+ARG VERMODE=latest
 RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
     --mount=type=cache,target=/mnt/cache/spack-bin,sharing=locked \
     --mount=type=cache,target=/mnt/cache/spack-src \
