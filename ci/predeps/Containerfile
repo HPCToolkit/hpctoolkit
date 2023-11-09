@@ -7,27 +7,10 @@ ARG TARGETARCH
 # TODO: Freeze this to a release once 0.21.0 is released
 FROM ghcr.io/spack/$SPACKOS:latest as spackbuild
 
-# Copy in the environment, and possibly modify it depending on the mode
-COPY spack.yaml /opt/environment/spack.yaml
-ARG VERMODE=latest
-RUN \
-  case "$VERMODE" in \
-  latest) \
-    sed -E -i '/LATEST: @/ s/@[a-zA-Z0-9._-]+[,:a-zA-Z0-9._-]*(.*)LATEST: @([a-zA-Z0-9._-]+[,:a-zA-Z0-9._-]*)/@\2\1/' /opt/environment/spack.yaml; \
-    ;; \
-  minimum) \
-    sed -E -i 's/@([a-zA-Z0-9._-]+)[,:a-zA-Z0-9._-]*/@\1/g' /opt/environment/spack.yaml; \
-    ;; \
-  *) \
-    echo "Bad VERMODE: $VERMODE" >&2; \
-    exit 1; \
-    ;; \
-  esac
-
 # Install all the packages we want, using the environment. We use an extra Makefile to add a
 # post-install hook that pushes the resulting packages to various buildcaches.
-COPY Makefile /opt/environment/Makefile
-ARG REMOTE_CACHE_MIRROR=
+COPY spack.yaml Makefile /opt/environment/
+ARG VERMODE=latest
 RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
     --mount=type=cache,target=/mnt/cache/spack-bin,sharing=locked \
     --mount=type=cache,target=/mnt/cache/spack-src \
@@ -36,7 +19,7 @@ RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
   && spack -D /opt/environment env depfile --generator make --make-prefix predeps \
       -o /opt/environment/spack.mk \
   && make -j$(nproc) -C /opt/environment --output-sync=recurse \
-      SPACK_INSTALL_FLAGS=--no-check-signature REMOTE_CACHE_MIRROR="$REMOTE_CACHE_MIRROR" \
+      SPACK_INSTALL_FLAGS=--no-check-signature \
   && spack -D /opt/environment buildcache push --unsigned --fail-fast --update-index local-cache \
   && spack -D /opt/environment gc -y
 
@@ -50,36 +33,55 @@ RUN \
   && rm -r /tmp/j2-spack.py /tmp/spack_env.ini.j2 /tmp/venv
 
 
-# Final stage
-FROM $BASE
+# Installation stage: Get all the software into a single image
+FROM $BASE as install
 
 # Some images set problematic environment variables. Wipe those out first for safety.
-ENV PYTHONPATH=
-ENV PKG_CONFIG_PATH=
-ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ENV CPATH=
-ENV LIBRARY_PATH=
-ENV LD_LIBRARY_PATH=
-ENV CMAKE_PREFIX_PATH=
+ENV \
+  PYTHONPATH= \
+  PKG_CONFIG_PATH= \
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  CPATH= \
+  LIBRARY_PATH= \
+  LD_LIBRARY_PATH= \
+  CMAKE_PREFIX_PATH=
 
-# Install the required packages along with all the Meson native files for system bits
-COPY native/ /usr/share/meson/native/
-RUN --mount=type=bind,target=/src/context \
-  /src/context/install-os-packages.sh
+# Install the required OS packages
+COPY install-os-packages.sh /tmp/
+RUN \
+  /tmp/install-os-packages.sh \
+  && rm /tmp/install-os-packages.sh
 
 # Install a up-to-date versions of Meson and Ninja, using a suitable Python
-RUN --mount=type=bind,target=/src/context \
-  /src/context/best-python.sh -m pip install 'meson[ninja]>=1.1.0,<2'
+RUN \
+  for trial in python3.12 python3.11 python3.10 python3.9 python3.8 python3 python; do \
+    if command -v "$trial" > /dev/null 2>&1; then python="$trial"; break; fi \
+  done \
+  && "$python" -m pip install 'meson[ninja]>=1.1.0,<2'
 
-# Copy in the Spack-built dependencies etc. from the previous stage
+# Copy in the Spack-built software
 COPY --from=spackbuild /opt/software /opt/software
-COPY --from=spackbuild /usr/share/meson/native/spack_env.ini /usr/share/meson/native/image.ini
 
-# Merge together the "patch" Meson native files to produce the final native file for the image.
-RUN --mount=type=bind,target=/src/context \
-  do_patch() { \
+# Generation stage: Generate the image.ini and verify that the image works as intended
+FROM install as generation
+
+# Identify all the native files that this image can support
+COPY native/ /usr/share/meson/native/
+COPY prune-native.sh /tmp/
+RUN \
+  /tmp/prune-native.sh \
+  && rm /tmp/prune-native.sh
+
+# Generate the final image.ini by patching the one generated during a previous stage
+COPY --from=spackbuild /usr/share/meson/native/spack_env.ini /usr/share/meson/native/image.ini
+COPY patch-native.py /tmp/
+RUN \
+  for trial in python3.12 python3.11 python3.10 python3.9 python3.8 python3 python; do \
+    if command -v "$trial" > /dev/null 2>&1; then python="$trial"; break; fi \
+  done \
+  && do_patch() { \
     if test -e /usr/share/meson/native/"$1".patch.ini; then \
-      /src/context/best-python.sh /src/context/patch-native.py \
+      "$python" /tmp/patch-native.py \
         /usr/share/meson/native/image.ini /usr/share/meson/native/"$1".patch.ini \
       && rm /usr/share/meson/native/"$1".patch.ini; \
     fi; \
@@ -91,15 +93,14 @@ RUN --mount=type=bind,target=/src/context \
   && ! test -e /usr/share/meson/native/*.patch.ini
 
 # At this point the image should be complete. Test the image before continuing to ensure it
-# actually does in fact work as intended. We play some tricks with bind-mounting to keep from
-# leaving behind any mark on the image here.
+# actually does in fact work as intended.
 # TODO: Currently the project_dir bind-mount needs to be rw, because Autotools.
-RUN --mount=type=bind,target=/src/context \
-    --mount=type=bind,from=project_dir,target=/src/hpctoolkit,rw \
+COPY verify-image.sh /tmp/
+RUN --mount=type=bind,from=project_dir,target=/src/hpctoolkit,rw \
     --mount=type=bind,from=scratch,target=/tmp/tmpdir,rw \
-  /src/context/verify-image.sh /src/hpctoolkit /tmp/tmpdir/builddir
+  /tmp/verify-image.sh /src/hpctoolkit /tmp/tmpdir/builddir
 
-# Clean up empty directories created by bind-mounts
-RUN \
-  rm -rfv /src/context /tmp/tmpdir /src/hpctoolkit \
-  && rmdir --ignore-fail-on-non-empty /src
+
+# Final stage, putting it all together
+FROM install
+COPY --from=generation /usr/share/meson/native/ /usr/share/meson/native/
