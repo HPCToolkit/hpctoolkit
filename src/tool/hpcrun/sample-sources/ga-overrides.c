@@ -74,18 +74,18 @@
 // local includes
 //***************************************************************************
 
-#include <main.h>
-#include <metrics.h>
-#include <safe-sampling.h>
-#include <sample_event.h>
-#include <thread_data.h>
-#include <trace.h>
+#include "../main.h"
+#include "../metrics.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
+#include "../trace.h"
 
-#include <messages/messages.h>
-#include <sample-sources/ga.h>
-#include <sample-sources/ga-overrides.h>
+#include "../messages/messages.h"
+#include "ga.h"
+#include "ga-overrides.h"
 
-#include <lib/support-lean/timer.h>
+#include "../../../lib/support-lean/timer.h"
 
 
 //***************************************************************************

@@ -73,7 +73,7 @@
 #include "TimeCPID.hpp" //For Time
 
 #ifdef HPCTOOLKIT_PROFILE
- #include "hpctoolkit.h"
+ #include "../hpcrun/hpctoolkit.h"
 #endif
 
 #include <iostream>

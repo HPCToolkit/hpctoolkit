@@ -53,10 +53,10 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/splay-uint64.h>
+#include "../../../lib/prof-lean/splay-uint64.h"
 
-#include <hpcrun/cct/cct.h>
-#include <messages/errors.h>
+#include "../cct/cct.h"
+#include "../messages/errors.h"
 
 #include "gpu-host-correlation-map.h"
 #include "gpu-op-placeholders.h"

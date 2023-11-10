@@ -51,7 +51,7 @@
 #include "x86-interval-highwatermark.h"
 #include "x86-interval-arg.h"
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
 /******************************************************************************
  * interface operations

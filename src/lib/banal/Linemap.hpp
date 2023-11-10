@@ -55,11 +55,11 @@
 #ifndef Banal_Linemap_hpp
 #define Banal_Linemap_hpp
 
-#include <lib/isa/ISATypes.hpp>
-#include <lib/support/StringTable.hpp>
+#include "../isa/ISATypes.hpp"
+#include "../support/StringTable.hpp"
 
-#include "dwarf.h"
-#include "libdwarf.h"
+#include <dwarf.h>
+#include <libdwarf.h>
 
 #include <map>
 

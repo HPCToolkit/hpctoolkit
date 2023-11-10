@@ -50,10 +50,10 @@
 
 #include <stdbool.h>
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 #include "x86-build-intervals.h"
 
-#include "uw_recipe_map.h"
+#include "../common/uw_recipe_map.h"
 
 #include "x86-decoder.h"
 #include "x86-process-inst.h"
@@ -65,7 +65,7 @@
 #include "amd-xop.h"
 #endif // ENABLE_XOP and HOST_CPU_x86_64
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
 extern void x86_dump_ins(void* addr);
 

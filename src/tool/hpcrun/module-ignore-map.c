@@ -72,7 +72,7 @@
 //#include <stdlib.h>
 //#include <unistd.h>
 
-#include        <elf.h>
+#include        "../../lib/binutils/intel/elf.h"
 #include        <libelf.h>
 #include        <gelf.h>
 
@@ -83,8 +83,8 @@
 
 #include <monitor.h>
 
-#include <lib/prof-lean/pfq-rwlock.h>
-#include <hpcrun/loadmap.h>
+#include "../../lib/prof-lean/pfq-rwlock.h"
+#include "loadmap.h"
 
 #include "module-ignore-map.h"
 

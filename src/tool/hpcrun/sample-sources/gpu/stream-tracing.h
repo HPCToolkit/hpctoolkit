@@ -5,9 +5,9 @@
 #ifndef HPCTOOLKIT_STREAM_TRACE_THREAD_H
 #define HPCTOOLKIT_STREAM_TRACE_THREAD_H
 
-#include <lib/prof-lean/producer_wfq.h>
-#include <tool/hpcrun/thread_data.h>
-#include <tool/hpcrun/cct/cct.h>
+#include "../../../../lib/prof-lean/producer_wfq.h"
+#include "../../thread_data.h"
+#include "../../cct/cct.h"
 
 #ifndef __cplusplus
 #include <stdatomic.h>

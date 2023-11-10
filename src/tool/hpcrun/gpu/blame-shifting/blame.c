@@ -20,17 +20,17 @@
 #include "blame-helper.h"                                                             // calculate_blame_for_active_kernels
 #include "blame.h"
 
-#include <hpcrun/cct/cct.h>                                         // cct_node_t
-#include <hpcrun/gpu/gpu-activity.h>                                // gpu_activity_t
-#include <hpcrun/gpu/gpu-metrics.h>                                 // gpu_metrics_attribute
-#include <hpcrun/gpu/gpu-application-thread-api.h>                  // gpu_application_thread_correlation_callback
-#include <hpcrun/gpu/gpu-activity-channel.h>                        // gpu_activity_channel_get
-#include <hpcrun/memory/hpcrun-malloc.h>                            // hpcrun_malloc_safe
-#include <hpcrun/safe-sampling.h>                                   // hpcrun_safe_enter, hpcrun_safe_exit
+#include "../../cct/cct.h"                                         // cct_node_t
+#include "../gpu-activity.h"                                // gpu_activity_t
+#include "../gpu-metrics.h"                                 // gpu_metrics_attribute
+#include "../gpu-application-thread-api.h"                  // gpu_application_thread_correlation_callback
+#include "../gpu-activity-channel.h"                        // gpu_activity_channel_get
+#include "../../memory/hpcrun-malloc.h"                            // hpcrun_malloc_safe
+#include "../../safe-sampling.h"                                   // hpcrun_safe_enter, hpcrun_safe_exit
 
-#include <lib/prof-lean/spinlock.h>                                 // spinlock_t, SPINLOCK_UNLOCKED
+#include "../../../../lib/prof-lean/spinlock.h"                                 // spinlock_t, SPINLOCK_UNLOCKED
 #include <stdatomic.h>                                // atomic_fetch_add
-#include <lib/support-lean/timer.h>                                 // time_getTimeReal
+#include "../../../../lib/support-lean/timer.h"                                 // time_getTimeReal
 
 
 

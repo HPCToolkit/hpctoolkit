@@ -53,9 +53,9 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/splay-uint64.h>
+#include "../../../lib/prof-lean/splay-uint64.h"
 
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 
 #include "gpu-stream-id-map.h"
 

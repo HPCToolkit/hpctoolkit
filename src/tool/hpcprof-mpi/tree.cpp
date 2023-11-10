@@ -44,12 +44,12 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "lib/profile/util/vgannotations.hpp"
+#include "../../lib/profile/util/vgannotations.hpp"
 
 #include "tree.hpp"
 
-#include "lib/profile/mpi/all.hpp"
-#include "lib/profile/util/once.hpp"
+#include "../../lib/profile/mpi/all.hpp"
+#include "../../lib/profile/util/once.hpp"
 
 using namespace hpctoolkit;
 

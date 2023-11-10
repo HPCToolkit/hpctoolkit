@@ -67,7 +67,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <lib/support/CmdLineParser.hpp>
+#include "../../lib/support/CmdLineParser.hpp"
 
 //*************************** Forward Declarations **************************
 

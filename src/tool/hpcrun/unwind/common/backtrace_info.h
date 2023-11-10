@@ -12,8 +12,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <hpcrun/frame.h>
-#include <unwind/common/fence_enum.h>
+#include "../../frame.h"
+#include "fence_enum.h"
 #include "../../frame.h"
 #include "fence_enum.h"
 

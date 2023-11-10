@@ -44,27 +44,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "lib/profile/util/vgannotations.hpp"
+#include "../../lib/profile/util/vgannotations.hpp"
 
 #include "../hpcprof/args.hpp"
 #include "tree.hpp"
 
-#include "lib/profile/mpi/core.hpp"
-#include "lib/profile/pipeline.hpp"
-#include "lib/profile/packedids.hpp"
-#include "lib/profile/source.hpp"
-#include "lib/profile/sources/packed.hpp"
-#include "lib/profile/sinks/hpctracedb2.hpp"
-#include "lib/profile/sinks/metadb.hpp"
-#include "lib/profile/sinks/metricsyaml.hpp"
-#include "lib/profile/sinks/sparsedb.hpp"
-#include "lib/profile/finalizers/denseids.hpp"
-#include "lib/profile/finalizers/directclassification.hpp"
-#include "lib/profile/finalizers/logical.hpp"
-#include "lib/profile/finalizers/struct.hpp"
-#include "lib/profile/finalizers/kernelsyms.hpp"
-#include "lib/profile/util/log.hpp"
-#include "lib/profile/mpi/all.hpp"
+#include "../../lib/profile/mpi/core.hpp"
+#include "../../lib/profile/pipeline.hpp"
+#include "../../lib/profile/packedids.hpp"
+#include "../../lib/profile/source.hpp"
+#include "../../lib/profile/sources/packed.hpp"
+#include "../../lib/profile/sinks/hpctracedb2.hpp"
+#include "../../lib/profile/sinks/metadb.hpp"
+#include "../../lib/profile/sinks/metricsyaml.hpp"
+#include "../../lib/profile/sinks/sparsedb.hpp"
+#include "../../lib/profile/finalizers/denseids.hpp"
+#include "../../lib/profile/finalizers/directclassification.hpp"
+#include "../../lib/profile/finalizers/logical.hpp"
+#include "../../lib/profile/finalizers/struct.hpp"
+#include "../../lib/profile/finalizers/kernelsyms.hpp"
+#include "../../lib/profile/util/log.hpp"
+#include "../../lib/profile/mpi/all.hpp"
 
 #include <mpi.h>
 #include <iostream>

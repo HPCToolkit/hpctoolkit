@@ -72,9 +72,9 @@
 // local includes
 //*****************************************************************************
 
-#include "messages/debug-flag.h"
-#include "monitor.h"
-#include <utilities/tokenize.h>
+#include "debug-flag.h"
+#include <monitor.h>
+#include "../utilities/tokenize.h"
 
 extern void unlimit_msgs(void);
 

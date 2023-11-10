@@ -59,7 +59,7 @@
 #define VMETHOD_DEF(name,...) METHOD_DEF(void,name, ##__VA_ARGS__)
 #define METHOD_FN(n,...) n(sample_source_t *self, ##__VA_ARGS__)
 
-#include "evlist.h"
+#include "../evlist.h"
 
 // A sample source "state"
 // UNINIT and INIT refer to the source

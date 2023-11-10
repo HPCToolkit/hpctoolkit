@@ -12,10 +12,10 @@
 
 #include "blame-queue-map.h"
 
-#include <hpcrun/gpu/gpu-splay-allocator.h>
-#include <lib/prof-lean/splay-uint64.h>
-#include <lib/prof-lean/spinlock.h>
-#include <messages/messages.h>
+#include "../gpu-splay-allocator.h"
+#include "../../../../lib/prof-lean/splay-uint64.h"
+#include "../../../../lib/prof-lean/spinlock.h"
+#include "../../messages/messages.h"
 
 
 

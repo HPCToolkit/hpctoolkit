@@ -65,15 +65,15 @@
 #include "x86-decoder.h"
 #include "x86-validate-retn-addr.h"
 #include "x86-unwind-analysis.h"
-#include "fnbounds_interface.h"
-#include "validate_return_addr.h"
-#include "uw_recipe_map.h"
+#include "../../fnbounds/fnbounds_interface.h"
+#include "../common/validate_return_addr.h"
+#include "../common/uw_recipe_map.h"
 #include "x86-unwind-interval.h"
 
-#include <unwind/common/unw-datatypes.h>
-#include <messages/messages.h>
+#include "../common/unw-datatypes.h"
+#include "../../messages/messages.h"
 
-#include <lib/isa-lean/x86/instruction-set.h>
+#include "../../../../lib/isa-lean/x86/instruction-set.h"
 
 
 //****************************************************************************

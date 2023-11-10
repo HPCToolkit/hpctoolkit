@@ -78,19 +78,19 @@
 //---------------------------------------------------------------------
 // local include files
 //---------------------------------------------------------------------
-#include <memory/hpcrun-malloc.h>
-#include <main.h>
-#include "thread_data.h"
+#include "../../memory/hpcrun-malloc.h"
+#include "../../main.h"
+#include "../../thread_data.h"
 #include "uw_hash.h"
 #include "uw_recipe_map.h"
 #include "unwind-interval.h"
-#include <fnbounds/fnbounds_interface.h>
-#include <lib/prof-lean/cskiplist.h>
-#include <lib/prof-lean/mcs-lock.h>
-#include <lib/prof-lean/binarytree.h>
+#include "../../fnbounds/fnbounds_interface.h"
+#include "../../../../lib/prof-lean/cskiplist.h"
+#include "../../../../lib/prof-lean/mcs-lock.h"
+#include "../../../../lib/prof-lean/binarytree.h"
 #include "binarytree_uwi.h"
-#include "segv_handler.h"
-#include <messages/messages.h>
+#include "../../segv_handler.h"
+#include "../../messages/messages.h"
 
 // libmonitor functions
 #include <monitor.h>

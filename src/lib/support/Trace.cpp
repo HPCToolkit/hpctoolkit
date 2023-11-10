@@ -48,7 +48,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <lib/support/Trace.hpp>
+#include "Trace.hpp"
 
 //*************************** Forward Declarations **************************
 

@@ -54,7 +54,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/messages/messages.h>
+#include "../messages/messages.h"
 
 #include "gpu-instrumentation.h"
 

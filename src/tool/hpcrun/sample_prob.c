@@ -54,8 +54,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <messages/messages.h>
-#include <lib/support-lean/OSUtil.h>
+#include "messages/messages.h"
+#include "../../lib/support-lean/OSUtil.h"
 #include "sample_prob.h"
 
 #define HPCRUN_SAMPLE_PROB  "HPCRUN_PROCESS_FRACTION"

@@ -65,13 +65,13 @@
  * local includes
  *****************************************************************************/
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
+#include "../../cct/cct.h"
+#include "../../safe-sampling.h"
+#include "../../sample_event.h"
 
-#include <hpcrun/sample-sources/blame-shift/blame-map.h>
-#include <hpcrun/sample-sources/blame-shift/undirected.h>
-#include <hpcrun/sample-sources/blame-shift/metric_info.h>
+#include "blame-map.h"
+#include "undirected.h"
+#include "metric_info.h"
 
 #include <stdatomic.h>
 

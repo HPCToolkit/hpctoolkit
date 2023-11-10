@@ -52,7 +52,7 @@
 //*****************************************************************************
 
 #include "level0-command-list-context-map.h"
-#include "lib/prof-lean/spinlock.h"
+#include "../../../../../lib/prof-lean/spinlock.h"
 
 //*****************************************************************************
 // macros
@@ -60,7 +60,7 @@
 
 #define DEBUG 0
 
-#include "hpcrun/gpu/gpu-print.h"
+#include "../../gpu-print.h"
 
 //******************************************************************************
 // local data

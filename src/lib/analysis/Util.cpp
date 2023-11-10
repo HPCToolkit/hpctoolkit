@@ -73,25 +73,25 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
+#include "../../include/gcc-attr.h"
 
 #include "Util.hpp"
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/hpcrunflat-fmt.h>
-#include <lib/prof-lean/formats/cctdb.h>
-#include <lib/prof-lean/formats/metadb.h>
-#include <lib/prof-lean/formats/profiledb.h>
-#include <lib/prof-lean/formats/tracedb.h>
+#include "../prof-lean/hpcio.h"
+#include "../prof-lean/hpcfmt.h"
+#include "../prof-lean/hpcrun-fmt.h"
+#include "../prof-lean/hpcrunflat-fmt.h"
+#include "../prof-lean/formats/cctdb.h"
+#include "../prof-lean/formats/metadb.h"
+#include "../prof-lean/formats/profiledb.h"
+#include "../prof-lean/formats/tracedb.h"
 
-#include <lib/support/PathFindMgr.hpp>
-#include <lib/support/PathReplacementMgr.hpp>
-#include <lib/support/diagnostics.h>
-#include <lib/support/dictionary.h>
-#include <lib/support/realpath.h>
-#include <lib/support/IOUtil.hpp>
+#include "../support/PathFindMgr.hpp"
+#include "../support/PathReplacementMgr.hpp"
+#include "../support/diagnostics.h"
+#include "../support/dictionary.h"
+#include "../support/realpath.h"
+#include "../support/IOUtil.hpp"
 
 #define DEBUG_DEMAND_STRUCT  0
 #define TMP_BUFFER_LEN 1024

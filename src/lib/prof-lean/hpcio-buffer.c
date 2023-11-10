@@ -88,7 +88,7 @@
 #include "hpcfmt.h"
 #include "hpcio-buffer.h"
 #include "spinlock.h"
-#include <include/min-max.h>
+#include "../../include/min-max.h"
 
 #define HPCIO_OUTBUF_MAGIC  0x494F4246
 

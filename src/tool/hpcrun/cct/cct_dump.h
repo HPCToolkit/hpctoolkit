@@ -52,8 +52,8 @@
 
 #include <stdint.h>
 
-#include <cct/cct.h>
-#include <messages/messages.h>
+#include "cct.h"
+#include "../messages/messages.h"
 
 #define TLIM 1
 
@@ -61,7 +61,7 @@
 #define TL(E)  E
 #define TLS(S) S
 #else
-#include <hpcrun/thread_data.h>
+#include "../thread_data.h"
 #define TL(E) ((TD_GET(id) == TLIM) && (E))
 #define TLS(S) if (TD_GET(id) == TLIM) S
 #endif

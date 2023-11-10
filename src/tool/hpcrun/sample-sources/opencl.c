@@ -50,19 +50,19 @@
 #include <monitor.h>
 #include <pthread.h>
 
-#include <hpcrun/device-finalizers.h>
-#include <hpcrun/gpu/gpu-trace.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/gpu-trace.h>
-#include <hpcrun/gpu/opencl/opencl-api.h>
-#include <hpcrun/gpu/blame-shifting/blame.h>
-#include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trace.h>
+#include "../device-finalizers.h"
+#include "../gpu/gpu-trace.h"
+#include "../gpu/gpu-metrics.h"
+#include "../gpu/gpu-trace.h"
+#include "../gpu/opencl/opencl-api.h"
+#include "../gpu/blame-shifting/blame.h"
+#include "../gpu/opencl/intel/papi/papi-metric-collector.h"
+#include "../thread_data.h"
+#include "../trace.h"
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
-#include <utilities/tokenize.h>
+#include "../utilities/tokenize.h"
 
 
 

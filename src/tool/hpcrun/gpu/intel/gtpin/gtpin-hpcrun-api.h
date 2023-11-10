@@ -60,20 +60,20 @@
 // local include files
 //*****************************************************************************
 
-#include <hpcrun/gpu/gpu-correlation.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
+#include "../../gpu-correlation.h"
+#include "../../gpu-op-placeholders.h"
 
-#include <hpcrun/gpu/gpu-instrumentation.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/cct/cct.h>
+#include "../../gpu-instrumentation.h"
+#include "../../gpu-op-placeholders.h"
+#include "../../../cct/cct.h"
 
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-binary.h>
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/gpu-operation-multiplexer.h>
-#include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <hpcrun/gpu/gpu-metrics.h>
+#include "../../../safe-sampling.h"
+#include "../../gpu-activity-channel.h"
+#include "../../gpu-binary.h"
+#include "../../gpu-monitoring-thread-api.h"
+#include "../../gpu-operation-multiplexer.h"
+#include "../../../utilities/hpcrun-nanotime.h"
+#include "../../gpu-metrics.h"
 
 #ifndef __cplusplus
 #include <stdatomic.h>

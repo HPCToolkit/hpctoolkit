@@ -44,14 +44,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "logical/common.h"
+#include "common.h"
 
-#include "cct_backtrace_finalize.h"
-#include "files.h"
-#include "hpcrun-malloc.h"
-#include "messages/messages.h"
-#include "thread_data.h"
-#include "env.h"
+#include "../cct_backtrace_finalize.h"
+#include "../files.h"
+#include "../memory/hpcrun-malloc.h"
+#include "../messages/messages.h"
+#include "../thread_data.h"
+#include "../env.h"
 
 #include <errno.h>
 #include <fcntl.h>

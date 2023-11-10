@@ -22,15 +22,15 @@
 // *********************************************************
 
 // ******* HPCToolkit Includes *********************************
-#include <lib/prof-lean/spinlock.h>
+#include "../../../lib/prof-lean/spinlock.h"
 
-#include <hpcrun/thread_data.h>
-#include <messages/messages.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_sources_all.h>
-#include <sample-sources/common.h>
-#include <sample-sources/ss-obj-name.h>
+#include "../thread_data.h"
+#include "../messages/messages.h"
+#include "../sample_event.h"
+#include "../safe-sampling.h"
+#include "../sample_sources_all.h"
+#include "common.h"
+#include "ss-obj-name.h"
 // *********************************************************
 
 // ******** local includes ***********

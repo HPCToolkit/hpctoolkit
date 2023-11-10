@@ -47,9 +47,9 @@
 #ifndef CCT_INSERT_BACKTRACE_H
 #define CCT_INSERT_BACKTRACE_H
 
-#include <cct/cct_bundle.h>
-#include <cct/cct.h>
-#include <unwind/common/backtrace.h>
+#include "cct/cct_bundle.h"
+#include "cct/cct.h"
+#include "unwind/common/backtrace.h"
 #include "metrics.h"
 
 typedef  cct_node_t *(*hpcrun_kernel_callpath_t)(cct_node_t *path, void *data_aux);

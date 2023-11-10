@@ -53,7 +53,7 @@
 #include  <stdlib.h>
 #include  <unistd.h>
 #include  <string.h>
-#include  <elf.h>
+#include  "../../lib/binutils/intel/elf.h"
 #include  <libelf.h>
 #include  <gelf.h>
 #include        <dwarf.h>

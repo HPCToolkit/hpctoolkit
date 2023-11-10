@@ -80,19 +80,19 @@
 // local includes
 //*****************************************************************************
 
-#include "disabled.h"
-#include "fname_max.h"
-#include "files.h"
-#include "name.h"
-#include "rank.h"
-#include "thread_data.h"
-#include "thread_use.h"
-#include "monitor.h"
+#include "../disabled.h"
+#include "../fname_max.h"
+#include "../files.h"
+#include "../name.h"
+#include "../rank.h"
+#include "../thread_data.h"
+#include "../thread_use.h"
+#include <monitor.h>
 
-#include <messages/debug-flag.h>
-#include <messages/messages.h>
-#include <messages/messages.i>
-#include <messages/fmt.h>
+#include "debug-flag.h"
+#include "messages.h"
+#include "messages.i"
+#include "fmt.h"
 
 
 //*****************************************************************************

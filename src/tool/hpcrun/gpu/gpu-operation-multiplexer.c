@@ -53,8 +53,8 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/control-knob.h>
-#include <hpcrun/utilities/hpcrun-nanotime.h>
+#include "../control-knob.h"
+#include "../utilities/hpcrun-nanotime.h"
 #include <stdatomic.h>
 
 #define DEBUG 0
@@ -67,7 +67,7 @@
 #include "gpu-operation-multiplexer.h"
 #include "gpu-trace.h"
 #include "gpu-print.h"
-#include "monitor.h"
+#include <monitor.h>
 
 
 

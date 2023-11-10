@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #include "foil.h"
-#include "sample-sources/io-over.h"
+#include "../sample-sources/io-over.h"
 
 HPCRUN_EXPOSED ssize_t read(int fd, void* buf, size_t count) {
   LOOKUP_FOIL_BASE(base, read);

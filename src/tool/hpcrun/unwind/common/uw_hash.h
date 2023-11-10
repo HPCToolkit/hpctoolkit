@@ -60,7 +60,7 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/binarytree.h>
+#include "../../../../lib/prof-lean/binarytree.h"
 
 #include "unwind-interval.h"
 #include "uw_recipe_map.h"

@@ -56,7 +56,7 @@
 #include "gpu-activity.h"
 #include "gpu-channel-item-allocator.h"
 
-#include "messages/messages.h"
+#include "../messages/messages.h"
 
 #define DEBUG 0
 

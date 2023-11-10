@@ -47,14 +47,14 @@
 #define HPCTOOLKIT_PROF2MPI_SPARSE_H
 #ifdef HPCTOOLKIT_PROF2MPI_SPARSE_H
 
-#include "lib/profile/sink.hpp"
-#include "lib/profile/stdshim/filesystem.hpp"
-#include "lib/profile/util/once.hpp"
-#include "lib/profile/util/locked_unordered.hpp"
-#include "lib/profile/util/file.hpp"
-#include "lib/profile/mpi/all.hpp"
+#include "../sink.hpp"
+#include "../stdshim/filesystem.hpp"
+#include "../util/once.hpp"
+#include "../util/locked_unordered.hpp"
+#include "../util/file.hpp"
+#include "../mpi/all.hpp"
 
-#include "lib/prof-lean/formats/profiledb.h"
+#include "../../prof-lean/formats/profiledb.h"
 
 #include <vector>
 

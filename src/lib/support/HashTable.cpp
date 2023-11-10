@@ -72,11 +72,11 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
+#include "../../include/gcc-attr.h"
 
 #include "HashTable.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "diagnostics.h"
 
 /******************************* local defines *******************************/
 

@@ -1,7 +1,7 @@
 #ifndef blame_shift_h
 #define blame_shift_h
 
-#include <cct/cct.h>
+#include "../../cct/cct.h"
 
 typedef void (*bs_fn_t)(void* arg, int metric_id, cct_node_t* node, int metric_incr);
 

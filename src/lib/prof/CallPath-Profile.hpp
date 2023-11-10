@@ -73,7 +73,7 @@
 //*************************** User Include Files ****************************
 
 
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../prof-lean/hpcrun-fmt.h"
 
 //*************************** Forward Declarations ***************************
 

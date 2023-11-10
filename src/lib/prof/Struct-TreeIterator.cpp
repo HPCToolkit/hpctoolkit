@@ -68,7 +68,7 @@ using std::endl;
 
 #include "Struct-Tree.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "../support/diagnostics.h"
 
 //*************************** Forward Declarations **************************
 

@@ -84,32 +84,32 @@
  * local includes
  *****************************************************************************/
 
-#include "sample-sources/simple_oo.h"
-#include "sample-sources/sample_source_obj.h"
-#include "sample-sources/common.h"
-#include "sample-sources/ss-errno.h"
+#include "../simple_oo.h"
+#include "../sample_source_obj.h"
+#include "../common.h"
+#include "../ss-errno.h"
 
-#include <hpcrun/main.h>
-#include <hpcrun/cct_insert_backtrace.h>
-#include <hpcrun/files.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/loadmap.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/sample-sources/blame-shift/blame-shift.h>
-#include <hpcrun/utilities/tokenize.h>
-#include <hpcrun/utilities/arch/context-pc.h>
-#include <hpcrun/trace.h>
+#include "../../main.h"
+#include "../../cct_insert_backtrace.h"
+#include "../../files.h"
+#include "../../hpcrun_stats.h"
+#include "../../loadmap.h"
+#include "../../messages/messages.h"
+#include "../../metrics.h"
+#include "../../safe-sampling.h"
+#include "../../sample_event.h"
+#include "../../sample_sources_registered.h"
+#include "../blame-shift/blame-shift.h"
+#include "../../utilities/tokenize.h"
+#include "../../utilities/arch/context-pc.h"
+#include "../../trace.h"
 
-#include <evlist.h>
+#include "../../evlist.h"
 #include <limits.h>   // PATH_MAX
-#include <lib/prof-lean/hpcrun-metric.h> // prefix for metric helper
-#include <lib/support-lean/OSUtil.h>     // hostid
+#include "../../../../lib/prof-lean/hpcrun-metric.h" // prefix for metric helper
+#include "../../../../lib/support-lean/OSUtil.h"     // hostid
 
-#include <include/linux_info.h>
+#include "../../../../include/linux_info.h"
 
 #include "perfmon-util.h"
 
@@ -120,11 +120,11 @@
 
 #include "event_custom.h"     // api for pre-defined events
 
-#include "sample-sources/display.h" // api to display available events
+#include "../display.h" // api to display available events
 
 #include "kernel_blocking.h"  // api for predefined kernel blocking event
 
-#include "lib/support-lean/compress.h"
+#include "../../../../lib/support-lean/compress.h"
 
 //******************************************************************************
 // macros
@@ -1039,7 +1039,7 @@ read_fd(int fd)
 #define ss_cls SS_HARDWARE
 #define ss_sort_order  60
 
-#include "sample-sources/ss_obj.h"
+#include "../ss_obj.h"
 
 // ---------------------------------------------
 // signal handler

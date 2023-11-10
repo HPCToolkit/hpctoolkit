@@ -17,7 +17,7 @@
 // Local includes
 //------------------------------------------------------------------
 #include "mmap.h"
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 //------------------------------------------------------------------
 // Internal constants

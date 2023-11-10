@@ -89,24 +89,24 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
+#include "../../include/gcc-attr.h"
 
 #include "CallPath-Profile.hpp"
 
-#include <lib/xml/xml.hpp>
+#include "../xml/xml.hpp"
 using namespace xml;
 
-#include <lib/analysis/Util.hpp>
+#include "../analysis/Util.hpp"
 
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/hpcrun-metric.h>
+#include "../prof-lean/hpcfmt.h"
+#include "../prof-lean/hpcrun-fmt.h"
+#include "../prof-lean/hpcrun-metric.h"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/Logic.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/StrUtil.hpp>
+#include "../support/diagnostics.h"
+#include "../support/FileUtil.hpp"
+#include "../support/Logic.hpp"
+#include "../support/RealPathMgr.hpp"
+#include "../support/StrUtil.hpp"
 
 
 //*************************** Forward Declarations **************************

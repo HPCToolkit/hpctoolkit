@@ -52,7 +52,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/thread_data.h>
+#include "../thread_data.h"
 
 
 

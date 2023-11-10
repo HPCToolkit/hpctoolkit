@@ -9,7 +9,7 @@
 
 #if defined(__x86_64__)
 
-#include "atomic-op-gcc.h"
+#include <atomic-op-gcc.h>
 
 #endif
 

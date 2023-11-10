@@ -58,8 +58,8 @@
 // Local Includes
 // ******************************************************************************
 
-#include <utilities/arch/mcontext.h>
-#include <utilities/arch/context-pc.h>
+#include "../mcontext.h"
+#include "../context-pc.h"
 
 //***************************************************************************
 // interface functions

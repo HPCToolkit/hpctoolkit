@@ -68,7 +68,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
+#include "../../include/gcc-attr.h"
 
 #include "../prof-lean/hpcio.h"
 #include "../prof-lean/hpcio-buffer.h"

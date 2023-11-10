@@ -54,12 +54,12 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/splay-uint64.h>
+#include "../../../lib/prof-lean/splay-uint64.h"
 
 #include "gpu-correlation-id-map.h"
 #include "gpu-splay-allocator.h"
 
-#include "messages/errors.h"
+#include "../messages/errors.h"
 
 
 //*****************************************************************************

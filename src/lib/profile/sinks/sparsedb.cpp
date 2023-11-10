@@ -53,10 +53,10 @@
 #include "../mpi/all.hpp"
 #include "../util/log.hpp"
 
-#include <lib/prof-lean/id-tuple.h>
-#include "lib/prof-lean/formats/profiledb.h"
-#include "lib/prof-lean/formats/cctdb.h"
-#include "include/hpctoolkit-config.h"
+#include "../../prof-lean/id-tuple.h"
+#include "../../prof-lean/formats/profiledb.h"
+#include "../../prof-lean/formats/cctdb.h"
+#include "hpctoolkit-config.h"
 
 #include "../stdshim/numeric.hpp"
 #include "../stdshim/filesystem.hpp"

@@ -76,7 +76,7 @@
 #include "DebugUtils.hpp"
 
 #ifdef HPCTOOLKIT_PROFILE
- #include "hpctoolkit.h"
+ #include "../hpcrun/hpctoolkit.h"
 #endif
 
 using namespace MPI;

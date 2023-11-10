@@ -74,39 +74,39 @@
 // local include files
 //***************************************************************************
 
-#include <include/gcc-attr.h>
-#include <x86-decoder.h>
+#include "../../../../include/gcc-attr.h"
+#include "x86-decoder.h"
 
-#include <hpcrun/epoch.h>
-#include <hpcrun/main.h>
-#include "stack_troll.h"
-#include "thread_use.h"
+#include "../../epoch.h"
+#include "../../main.h"
+#include "../common/stack_troll.h"
+#include "../../thread_use.h"
 
-#include <unwind/common/unwind.h>
-#include <unwind/common/backtrace.h>
-#include <unwind/common/libunw_intervals.h>
-#include <unwind/common/libunwind-interface.h>
-#include <unwind/common/unw-throw.h>
-#include <unwind/common/validate_return_addr.h>
-#include <unwind/common/fence_enum.h>
-#include <fnbounds/fnbounds_interface.h>
-#include <unwind/common/uw_recipe_map.h>
-#include <utilities/arch/mcontext.h>
-#include <utilities/ip-normalized.h>
+#include "../common/unwind.h"
+#include "../common/backtrace.h"
+#include "../common/libunw_intervals.h"
+#include "../common/libunwind-interface.h"
+#include "../common/unw-throw.h"
+#include "../common/validate_return_addr.h"
+#include "../common/fence_enum.h"
+#include "../../fnbounds/fnbounds_interface.h"
+#include "../common/uw_recipe_map.h"
+#include "../../utilities/arch/mcontext.h"
+#include "../../utilities/ip-normalized.h"
 
-#include <hpcrun/main.h>
-#include <hpcrun/thread_data.h>
+#include "../../main.h"
+#include "../../thread_data.h"
 #include "x86-build-intervals.h"
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
 
-#include <messages/messages.h>
-#include <messages/debug-flag.h>
+#include "../../messages/messages.h"
+#include "../../messages/debug-flag.h"
 
 //****************************************************************************
 // macros
 //****************************************************************************
-#include <trampoline/common/trampoline.h>
+#include "../../trampoline/common/trampoline.h"
 
 #define DECREMENT_PC(pc) pc = ((char *)pc) - 1
 

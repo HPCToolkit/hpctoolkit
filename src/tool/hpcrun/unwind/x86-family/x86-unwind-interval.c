@@ -48,11 +48,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <memory/hpcrun-malloc.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/unwind/common/libunw_intervals.h>
+#include "../../memory/hpcrun-malloc.h"
+#include "../../hpcrun_stats.h"
+#include "../common/libunw_intervals.h"
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
 #include "x86-unwind-interval.h"
 
@@ -86,7 +86,7 @@ new_ui(char *start, ra_loc ra_status, const x86registers_t *reg)
   bitree_uwi_t *u = bitree_uwi_malloc(NATIVE_UNWINDER, sizeof(x86recipe_t));
 
   // DXN: what is this?
-# include "mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
+# include "../common/mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
 
   hpcrun_stats_num_unwind_intervals_total_inc();
 

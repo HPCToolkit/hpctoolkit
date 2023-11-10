@@ -3,9 +3,9 @@
 #define UNRESOLVED_ROOT -50
 #define UNRESOLVED -100
 
-#include <hpcrun/thread_data.h>
-#include <cct/cct_bundle.h>
-#include <hpcrun/epoch.h>
+#include "thread_data.h"
+#include "cct/cct_bundle.h"
+#include "epoch.h"
 
 static inline cct_node_t**
 hpcrun_get_tbd_cct(void)

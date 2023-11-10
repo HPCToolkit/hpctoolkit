@@ -5,7 +5,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>                   // cct_node_t
+#include "../../cct/cct.h"                   // cct_node_t
 #include "blame-kernel-cleanup-map.h"         // kernel_id_t
 
 

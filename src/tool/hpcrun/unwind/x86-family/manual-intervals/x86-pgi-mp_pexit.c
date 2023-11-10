@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 #include <string.h>
-#include "x86-unwind-interval-fixup.h"
-#include "x86-unwind-interval.h"
+#include "../x86-unwind-interval-fixup.h"
+#include "../x86-unwind-interval.h"
 
 static char pgi_mp_pexit_signature[] = {
   0x41,  0x5b,                                  // pop    %r11

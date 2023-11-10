@@ -85,8 +85,8 @@
 // local includes
 //******************************************************************************
 
-#include <lib/binutils/ElfHelper.hpp>
-#include <lib/support/diagnostics.h>
+#include "../../binutils/ElfHelper.hpp"
+#include "../../support/diagnostics.h"
 
 #include "GPUCFG.hpp"
 #include "GPUCFGFactory.hpp"

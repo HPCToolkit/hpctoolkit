@@ -66,11 +66,11 @@
 #include "sample_sources_registered.h"
 
 #include "thread_data.h"
-#include <sample-sources/simple_oo.h>
-#include <sample-sources/sample_source_obj.h>
-#include <sample-sources/common.h>
-#include <utilities/tokenize.h>
-#include <messages/messages.h>
+#include "sample-sources/simple_oo.h"
+#include "sample-sources/sample_source_obj.h"
+#include "sample-sources/common.h"
+#include "utilities/tokenize.h"
+#include "messages/messages.h"
 
 
 

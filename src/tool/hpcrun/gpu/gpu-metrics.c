@@ -49,11 +49,11 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/thread_data.h>
+#include "../cct2metrics.h"
+#include "../memory/hpcrun-malloc.h"
+#include "../metrics.h"
+#include "../safe-sampling.h"
+#include "../thread_data.h"
 
 #include "gpu-activity.h"
 #include "gpu-metrics.h"
