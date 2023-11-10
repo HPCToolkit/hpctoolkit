@@ -77,8 +77,8 @@ MYSOURCES = \
 	\
 	Util.hpp Util.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) -fvisibility=hidden
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@ @BOOST_IFLAGS@ -fvisibility=hidden
+MYCFLAGS   = @HOST_CFLAGS@ -fvisibility=hidden
+MYCXXFLAGS = @HOST_CXXFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@ -fvisibility=hidden
 
 if IS_HOST_AR
 MYAR = @HOST_AR@

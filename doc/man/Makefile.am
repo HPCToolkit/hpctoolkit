@@ -109,7 +109,6 @@ CLEANFILES = $(MYMAN) $(MYMANHTML)
 
 %.tex.pp : %.tex
 	sed -e 's/=PACKAGE_VERSION=/@PACKAGE_VERSION@/g' $< > $@
-#	$(MYCPP) -P -I@builddir@ $< $@
 
 %.$(MYMANEXT) : %.tex.pp
 	$(MYLATEX2MAN) -t $(MYLATEX2MANTRANS) $< $@
