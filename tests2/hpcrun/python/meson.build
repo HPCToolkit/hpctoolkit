@@ -9,15 +9,11 @@ test('Measurement of simple-1thread unwound Python',
 test('Measurement of simple-mthread unwound Python',
     _tst, args: [hpctesttool, hpcrun, hpcprof, python.full_path(), files('simple-mthread'), '3'],
     suite: ['hpcrun', 'python'],
-    # FIXME: Fails for multiple reasons:
-    #  - The test cannot currently detect a side-thread callstack
-    #  - The Python support does not work reliably for Python-spawned threads
+    # FIXME: The Python support currently can't detect Python-spawned threads
     should_fail: true)
 test('Measurement of simple-exception unwound Python',
     _tst, args: [hpctesttool, hpcrun, hpcprof, python.full_path(), files('simple-exception'), '1'],
     suite: ['hpcrun', 'python'])
 test('Measurement of simple-signals unwound Python',
     _tst, args: [hpctesttool, hpcrun, hpcprof, python.full_path(), files('simple-signals'), '1'],
-    suite: ['hpcrun', 'python'],
-    # FIXME: Fails due to how Python reports signals
-    should_fail: true)
+    suite: ['hpcrun', 'python'])

@@ -3,7 +3,6 @@
 import contextlib
 import os
 import signal
-import threading
 import time
 
 
@@ -18,19 +17,9 @@ def func_mid() -> None:
 
 def func_lo() -> None:
     time.sleep(0.01)
-
-
-# Shutdown timer
-def shootdown():
     os.kill(os.getpid(), signal.SIGINT)
 
 
-t = threading.Timer(2, shootdown)
-t.start()
-
-# Main loop
-with contextlib.suppress(KeyboardInterrupt):
-    while True:
+for _i in range(10):
+    with contextlib.suppress(KeyboardInterrupt):
         func_hi()
-
-    t.join()
