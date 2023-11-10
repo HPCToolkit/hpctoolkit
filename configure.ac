@@ -2452,6 +2452,16 @@ AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
 AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
 AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
 
+if test "$UNWINDER" == "x86-family"; then
+  AC_DEFINE([HPCRUN_UNW_X86], 1, [using the x86 custom unwinder])
+fi
+if test "$UNWINDER" == "ppc64"; then
+  AC_DEFINE([HPCRUN_UNW_PPC64], 1, [using the ppc64 custom unwinder])
+fi
+if test "$UNWINDER" == "libunw"; then
+  AC_DEFINE([HPCRUN_UNW_LIBUNWIND], 1, [using the libunwind generic unwinder])
+fi
+
 AM_CONDITIONAL(OPT_LIBUNWIND_STATIC, [test "$libunwind_static" = yes])
 
 
