@@ -595,6 +595,7 @@ validate:
   - *check_after
   artifacts:
     <<: *check_artifacts
+    expire_in: 1 day
     paths:
     - logs/
     - testdata-*.patch
@@ -742,6 +743,7 @@ fresh testdata:
   - git format-patch --stdout --no-numbered --binary HEAD^ > testdata.patch
   artifacts:
     expose_as: "Test data refresh patch"
+    expire_in: 3 days
     paths:
     - testdata.patch
 
