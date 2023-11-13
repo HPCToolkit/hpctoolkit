@@ -93,15 +93,6 @@ spack:
       # Do not allow infinity versions, we only build full "point" releases
       - &noinf '@:999999999'
 
-    python:
-      require:
-      - *target
-      - *noinf
-      # Workaround implementation for https://github.com/spack/spack/pull/38593
-      # Can be removed with Spack 0.21.x
-      - spec: '^xz libs=shared'
-        when: '+lzma'
-
     libevent:
       require:
       - *target
