@@ -102,6 +102,13 @@ spack:
       - spec: '^xz libs=shared'
         when: '+lzma'
 
+    libevent:
+      require:
+      - *target
+      - *noinf
+      # Workaround for https://github.com/spack/spack/issues/41056
+      - spec: '^libtool @2.4.6'
+
   mirrors:
     local-cache:
       url: /mnt/cache/spack-bin
