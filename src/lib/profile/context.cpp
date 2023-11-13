@@ -159,7 +159,7 @@ ContextFlowGraph::ContextFlowGraph(ContextFlowGraph&& o)
   : u_scope(std::move(o.u_scope)), m_templates(std::move(o.m_templates)),
     m_handler(std::move(o.m_handler)) {}
 
-ContextFlowGraph::~ContextFlowGraph() = default;
+ContextFlowGraph::~ContextFlowGraph() noexcept = default;
 
 void ContextFlowGraph::add(Template t) {
   assert(std::all_of(t.path().cbegin(), t.path().cend(),
@@ -500,7 +500,7 @@ ContextReconstruction::ContextReconstruction(ContextReconstruction&& o)
   : u_graph(o.graph()), m_root(o.m_root), m_siblings(std::move(o.m_siblings)),
     m_finals(std::move(o.m_finals)) {}
 
-ContextReconstruction::~ContextReconstruction() = default;
+ContextReconstruction::~ContextReconstruction() noexcept = default;
 
 void ContextReconstruction::instantiate(
     const std::function<Context&(Context&, const Scope&)>& create_base,

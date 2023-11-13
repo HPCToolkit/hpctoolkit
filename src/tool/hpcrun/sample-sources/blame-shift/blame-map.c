@@ -120,6 +120,7 @@ union blame_entry_t {
  * private data
  ***************************************************************************/
 
+__attribute__((unused))
 static uint64_t volatile thelock;
 
 

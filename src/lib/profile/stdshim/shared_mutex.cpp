@@ -56,27 +56,33 @@ shared_mutex::shared_mutex() {}
 shared_mutex::~shared_mutex() {}
 void shared_mutex::lock() {
   real.lock();
+  (void)&arc_rw;  // Avoid compiler warnings
   ANNOTATE_HAPPENS_AFTER(&arc_rw);  // The readers are done as of now.
 }
 bool shared_mutex::try_lock() {
   if(!real.try_lock()) return false;
+  (void)&arc_rw;  // Avoid compiler warnings
   ANNOTATE_HAPPENS_AFTER(&arc_rw);  // The readers are done as of now.
   return true;
 }
 void shared_mutex::unlock() {
+  (void)&arc_wr;  // Avoid compiler warnings
   ANNOTATE_HAPPENS_BEFORE(&arc_wr);
   real.unlock();
 }
 void shared_mutex::lock_shared() {
   real.lock_shared();
+  (void)&arc_wr;  // Avoid compiler warnings
   ANNOTATE_HAPPENS_AFTER(&arc_wr);  // The (last) writer is done as of now.
 }
 bool shared_mutex::try_lock_shared() {
   if(!real.try_lock_shared()) return false;
+  (void)&arc_wr;  // Avoid compiler warnings
   ANNOTATE_HAPPENS_AFTER(&arc_wr);  // The (last) writer is done as of now.
   return true;
 }
 void shared_mutex::unlock_shared() {
+  (void)&arc_rw;  // Avoid compiler warnings
   ANNOTATE_HAPPENS_BEFORE(&arc_rw);
   real.unlock_shared();
 }

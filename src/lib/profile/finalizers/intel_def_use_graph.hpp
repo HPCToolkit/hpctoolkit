@@ -58,7 +58,7 @@ public:
   IntelDefUseGraphClassification();
 
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
-  ExtensionClass requires() const noexcept override { return ExtensionClass::resolvedPath; }
+  ExtensionClass requirements() const noexcept override { return ExtensionClass::resolvedPath; }
   void module(const Module&, Classification&) noexcept override;
 
 private:

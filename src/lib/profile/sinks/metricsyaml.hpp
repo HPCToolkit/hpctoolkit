@@ -72,7 +72,7 @@ public:
     return attributes;
   }
   DataClass wavefronts() const noexcept override { return accepts(); }
-  ExtensionClass requires() const noexcept override { return {}; }
+  ExtensionClass requirements() const noexcept override { return {}; }
 
 private:
   stdshim::filesystem::path dir;

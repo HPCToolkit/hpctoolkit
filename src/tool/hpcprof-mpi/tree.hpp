@@ -68,7 +68,7 @@ class Sender : public hpctoolkit::sinks::Packed {
 public:
   Sender(RankTree&);
 
-  hpctoolkit::ExtensionClass requires() const noexcept override { return {}; }
+  hpctoolkit::ExtensionClass requirements() const noexcept override { return {}; }
   hpctoolkit::DataClass accepts() const noexcept override {
     using namespace hpctoolkit::literals;
     return data::attributes + data::references + data::contexts;

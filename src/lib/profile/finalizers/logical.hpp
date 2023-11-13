@@ -57,7 +57,7 @@ public:
   ~LogicalFile() = default;
 
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
-  ExtensionClass requires() const noexcept override { return ExtensionClass::resolvedPath; }
+  ExtensionClass requirements() const noexcept override { return ExtensionClass::resolvedPath; }
 
   void notifyPipeline() noexcept override;
 

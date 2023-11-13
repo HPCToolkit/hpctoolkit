@@ -89,12 +89,12 @@ Diagnostics_GetDiagnosticFilterLevel()
 }
 
 
+static unsigned int count = 0;
 void
 Diagnostics_TheMostVisitedBreakpointInHistory(const char* GCC_ATTR_UNUSED filenm,
                                               unsigned int GCC_ATTR_UNUSED lineno)
 {
   // Prevent this routine from ever being inlined
-  static unsigned int count = 0;
   count++;
 }
 

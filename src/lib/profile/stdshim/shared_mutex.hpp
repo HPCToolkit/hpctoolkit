@@ -130,6 +130,7 @@ public:
   void unlock_shared();
 private:
   detail::shared_mutex real;
+  // These two variables are used for tracking the lock's state with Helgrind
   char arc_rw;
   char arc_wr;
 };

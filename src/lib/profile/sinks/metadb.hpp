@@ -73,7 +73,7 @@ public:
     return attributes + references + contexts + metrics;
   }
 
-  ExtensionClass requires() const noexcept override {
+  ExtensionClass requirements() const noexcept override {
     using namespace hpctoolkit::literals::extensions;
     Class ret = classification + identifier;
     if(copySources) ret += resolvedPath;

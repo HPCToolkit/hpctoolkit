@@ -166,7 +166,7 @@ lushPthr_processInit()
 
   // align with next cache line
   atomic_store_explicit(&lushPthr_mem_ptr,
-                        (uintptr_t)(lushPthr_mem_beg
+                        ((uintptr_t)lushPthr_mem_beg
                                              + lushPthr_maxValueOfLock
                                              + (HOST_CACHE_LINE_SZ - 1))
                                  & (uintptr_t)~(HOST_CACHE_LINE_SZ - 1),

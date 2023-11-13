@@ -522,7 +522,6 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   char *augString;
   uint64_t codeAlign;
   int64_t  dataAlign;
-  uint8_t retReg;
   uint8_t fdeEnc;
   uint64_t augDataLen;
   uint64_t cieOffset, fdeOffset, a, b;
@@ -673,20 +672,19 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       cieOffset += a;
 
       if (cieVersion == EHF_CIE_VER_1) {
-        retReg = *(pb+cieOffset);
         ++cieOffset;
       }
       else if (cieVersion == EHF_CIE_VER_3) {
-        retReg = (uint8_t) decodeULEB128(pb+cieOffset, &a);
+        uint64_t value = decodeULEB128(pb+cieOffset, &a);
         cieOffset += a;
+        if (value == EHF_ULEB128_ERROR) {
+          cieTable[kc].cieSize = 0;
+          goto nextRecord;
+        }
       }
       else {
         fprintf(stderr, "FNB2: Warning in eh_frame handling, unsupported CIE version %d found in %s\n",
             (uint32_t)cieVersion, xname);
-        cieTable[kc].cieSize = 0;
-        goto nextRecord;
-      }
-      if (retReg == EHF_ULEB128_ERROR) {
         cieTable[kc].cieSize = 0;
         goto nextRecord;
       }

@@ -1684,7 +1684,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
   }
 
   // one binutils proc may contain several parseapi funcs
-  long num = 0;
+  [[maybe_unused]] long num = 0;
   for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
     ProcInfo * pinfo = pit->second;
     ParseAPI::Function * func = pinfo->func;
@@ -2069,7 +2069,7 @@ doUnparsableFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 {
   // not sure if cuda generates multiple functions, but we'll handle
   // this case until proven otherwise.
-  long num = 0;
+  [[maybe_unused]] long num = 0;
 
   for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
     ProcInfo * pinfo = pit->second;

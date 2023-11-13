@@ -283,7 +283,6 @@ main(int argc, char **argv)
   ElfFileVector * elfFileVector = inputFile.fileVector();
 
   // Output structure files under the current directory
-  auto search_path = "./";
   for (unsigned int i = 0; i < elfFileVector->size(); i++) {
     auto * elfFile = (*elfFileVector)[i];
     // open <filename>.dot.<i> for output
@@ -319,7 +318,7 @@ main(int argc, char **argv)
 
     if (cuda_file) { // don't run parseapi on cuda binary
 #ifdef OPT_HAVE_CUDA
-      buildCudaGPUCFG(search_path, elfFile, symtab, &code_src, &code_obj);
+      buildCudaGPUCFG("./", elfFile, symtab, &code_src, &code_obj);
       parsable = true;
 #else
       std::cerr << "ERROR: CFG requested for CUDA binary but hpcstruct was not compiled with CUDA support\n";
@@ -329,7 +328,7 @@ main(int argc, char **argv)
       #ifdef ENABLE_IGC
       // this thread count for performing backward slicing has been selected after some manual runs of hpcstruct
       int threads = 5;
-      parsable = buildIntelGPUCFG(search_path, elfFile, symtab, true, false, threads, &code_src, &code_obj);
+      parsable = buildIntelGPUCFG("./", elfFile, symtab, true, false, threads, &code_src, &code_obj);
       #endif // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);

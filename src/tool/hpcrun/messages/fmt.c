@@ -429,7 +429,7 @@ static T cvt[256] = {
 void
 hpcrun_msg_puts(const char *str, int len,
          int put(int c, void *cl), void *cl,
-         unsigned char flags[], int width, int precision)
+         unsigned char flags[256], int width, int precision)
 {
   if (width == INT_MIN)
     width = 0;
@@ -553,7 +553,7 @@ hpcrun_msg_register(int code, T newcvt)
 void
 hpcrun_msg_putd(const char *str, int len,
          int put(int c, void *cl), void *cl,
-         unsigned char flags[], int width, int precision)
+         unsigned char flags[256], int width, int precision)
 {
   int sign;
 

@@ -723,7 +723,6 @@ write_cc_funcs()
 {
   int i;
   // write the function address list
-  int np = 0;
   if (nfunc > 0) {
     // print the header
     printf("unsigned long hpcrun_nm_addrs[] = {\n" );
@@ -732,7 +731,6 @@ write_cc_funcs()
     // printf("  0x%lx   /* %s(%s)", farray[0].fadd, farray[0].fnam, farray[0].src);
     printf("  0x%lx  /* %s", farray[0].fadd, farray[0].fnam);
     uint64_t lastaddr = farray[0].fadd;
-    np ++;
 
     // now do the rest of the list
     for (i=1; i<nfunc; i ++) {
@@ -745,7 +743,6 @@ write_cc_funcs()
         // printf(" */,\n  0x%lx  /*  %s(%s)", farray[i].fadd, farray[i].fnam, farray[i].src);
         printf(" */,\n  0x%lx  /* %s", farray[i].fadd, farray[i].fnam);
         lastaddr = farray[i].fadd;
-        np ++;
       }
     }
     // terminate the last entry written, and the table

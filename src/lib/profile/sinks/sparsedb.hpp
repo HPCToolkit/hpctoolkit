@@ -77,7 +77,7 @@ public:
     return DataClass::contexts + DataClass::threads;
   }
 
-  hpctoolkit::ExtensionClass requires() const noexcept override {
+  hpctoolkit::ExtensionClass requirements() const noexcept override {
     using namespace hpctoolkit;
     return ExtensionClass::identifier;
   }

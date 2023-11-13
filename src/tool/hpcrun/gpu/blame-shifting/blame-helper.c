@@ -304,7 +304,7 @@ distribute_blame_to_kernels
         continue;
       } else {
         ak_helper_node akn = {data->time, last_time, active_kernels_size()};
-        active_kernels_forall(splay_inorder, increment_blame_for_active_kernel, &akn);
+        active_kernels_forall(splay_inorder_visit, increment_blame_for_active_kernel, &akn);
         data = data->next;
         break;
       }
@@ -313,14 +313,14 @@ distribute_blame_to_kernels
     if (data->isStart) {
       if (inSync) {
         ak_helper_node akn = {data->time, last_time, active_kernels_size()};
-        active_kernels_forall(splay_inorder, increment_blame_for_active_kernel, &akn);
+        active_kernels_forall(splay_inorder_visit, increment_blame_for_active_kernel, &akn);
         last_time = data->time;
       }
       active_kernels_insert(data->id, data->kernel_node);
     } else {
       if (inSync) {
         ak_helper_node akn = {data->time, last_time, active_kernels_size()};
-        active_kernels_forall(splay_inorder, increment_blame_for_active_kernel, &akn);
+        active_kernels_forall(splay_inorder_visit, increment_blame_for_active_kernel, &akn);
         last_time = data->time;
       }
       active_kernels_delete(data->id);

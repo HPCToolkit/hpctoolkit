@@ -69,7 +69,7 @@ public:
     DataClass accepts() const noexcept override {
       return DataClass::attributes + DataClass::contexts;
     }
-    ExtensionClass requires() const noexcept override {
+    ExtensionClass requirements() const noexcept override {
       return ExtensionClass::identifier;
     }
 

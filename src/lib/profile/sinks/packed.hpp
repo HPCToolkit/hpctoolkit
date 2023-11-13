@@ -77,7 +77,7 @@ public:
     ExtensionClass provides() const noexcept override {
       return ExtensionClass::classification;
     }
-    ExtensionClass requires() const noexcept override {
+    ExtensionClass requirements() const noexcept override {
       return {};
     }
 
@@ -89,7 +89,7 @@ public:
 
   // This Sink uses the unique identifiers to make associations. Subclasses
   // should take care to append this to their own overrides.
-  ExtensionClass requires() const noexcept override {
+  ExtensionClass requirements() const noexcept override {
     return ExtensionClass::identifier;
   }
 

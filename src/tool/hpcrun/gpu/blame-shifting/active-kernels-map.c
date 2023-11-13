@@ -158,12 +158,12 @@ active_kernels_delete
 void
 active_kernels_forall
 (
- splay_visit_t visit_type,
+ splay_order_t order_type,
  void (*fn),
  void *arg
 )
 {
-  ak_forall(ak_map_root, visit_type, fn, arg);
+  ak_forall(ak_map_root, order_type, fn, arg);
 }
 
 

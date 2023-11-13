@@ -146,13 +146,13 @@ printw(FILE *output, const char *name, const char *desc_unsanitized)
 void
 display_line_single(FILE *output)
 {
-  fprintf(output, line_single);
+  fprintf(output, "%s", line_single);
 }
 
 void
 display_line_double(FILE *output)
 {
-  fprintf(output, line_double);
+  fprintf(output, "%s", line_double);
 }
 
 void
@@ -174,5 +174,5 @@ void
 display_event_info(FILE *output, const char *event, const char *desc)
 {
   printw(output, event, desc);
-  fprintf(output, newline);
+  fprintf(output, "%s", newline);
 }

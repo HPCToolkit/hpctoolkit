@@ -60,7 +60,7 @@ public:
   ExtensionClass provides() const noexcept override {
     return ExtensionClass::identifier;
   }
-  ExtensionClass requires() const noexcept override { return {}; }
+  ExtensionClass requirements() const noexcept override { return {}; }
 
   std::optional<unsigned int> identify(const Module&) noexcept override;
   std::optional<unsigned int> identify(const File&) noexcept override;
