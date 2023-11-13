@@ -58,7 +58,7 @@
 
 #include <include/gnu_demangle.h>
 #include <lib/prof-lean/spinlock.h>
-#include <lib/support-lean/demangle.h>
+#include <lib/support-lean/hpctoolkit_demangle.h>
 
 #define DEMANGLE_FLAGS  (DMGL_PARAMS | DMGL_ANSI | DMGL_VERBOSE | DMGL_RET_DROP)
 

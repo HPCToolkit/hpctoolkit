@@ -669,8 +669,8 @@ my_demangle_ldflags=""
 
 # Options: Default for GCC
 if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-  my_opt_cflags="-g -O0 -Wall -Wstack-usage=65536"
-  my_opt_cxxflags="-g -O0 -Wall -Wstack-usage=65536"
+  my_opt_cflags="-g -Og -Wall -Wstack-usage=65536"
+  my_opt_cxxflags="-g -Og -Wall -Wstack-usage=65536"
 else
   # On some compilers, -g implies -O0.  Make sure -O3 takes precedence!
   my_opt_cflags="-g -O3 -Wall -Wstack-usage=65536 -DNDEBUG"
@@ -2207,15 +2207,25 @@ case "${DYNINST}" in
   /* )
     if test -f "${DYNINST}/include/Symtab.h"  \
        && test -f "${DYNINST}/include/CFG.h"
-    then : ; else
-      AC_MSG_ERROR([invalid dyninst directory: $DYNINST])
+    then
+        DYNINST_IFLAGS="-I${DYNINST}/include"
+    elif test -f "${DYNINST}/include/dyninst/Symtab.h"  \
+         && test -f "${DYNINST}/include/dyninst/CFG.h"
+    then
+        DYNINST_IFLAGS="-I${DYNINST}/include/dyninst"
+    else
+        AC_MSG_ERROR([invalid dyninst directory: $DYNINST])
     fi
-    DYNINST_IFLAGS="-I${DYNINST}/include"
+
 
     for lib in $multilib_path ; do
       dir="${DYNINST}/$lib"
       if test -f "${dir}/libparseAPI.so" ; then
         DYNINST_LIB_DIR="$dir"
+        break
+      elif test -f "${dir}/dyninst/libparseAPI.so" ; then
+        DYNINST_LIB_DIR="$dir/dyninst"
+        DYNINST_COPY=yes
         break
       fi
     done
@@ -2312,8 +2322,10 @@ found_libiberty=no
 case "$LIBIBERTY" in
   /* )
     # demangle.h must exist
-    if test -f "${LIBIBERTY}/include/libiberty/demangle.h" ; then
+    if test -f "${LIBIBERTY}/include/demangle.h" ; then
       LIBIBERTY_IFLAGS="-I${LIBIBERTY}/include"
+    elif test -f "${LIBIBERTY}/include/libiberty/demangle.h" ; then
+      LIBIBERTY_IFLAGS="-I${LIBIBERTY}/include/libiberty"
     else
       AC_MSG_ERROR([unable to find libiberty/demangle.h in: $LIBIBERTY])
     fi
