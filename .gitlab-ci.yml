@@ -217,7 +217,7 @@ include:
   - export PREDEPS_SECRET_spack_mirrors=/tmp/mirrors.yaml
   - >-
     printf "mirrors: {%s: {url: '%s', access_pair: ['%s', '%s'], binary: true, source: false}}"
-    __ci_remote_cache_push_mirror oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21.0
+    __ci_remote_cache_push_mirror oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21
     "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD"
     > "$PREDEPS_SECRET_spack_mirrors"
 'predeps: [ubuntu20.04-amd64]':
@@ -783,7 +783,7 @@ fresh testdata:
   - >-
     test -z "$CI_REGISTRY" ||
     spack mirror add --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
-    --type binary remote-cache oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21.0
+    --type binary remote-cache oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21
   script:
   - spack env create -d /tmp/env ci/tests.spack.yaml
   - spack -D /tmp/env install --fail-fast --no-check-signature

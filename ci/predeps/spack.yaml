@@ -107,7 +107,7 @@ spack:
       source: false
 
     upstream-cache:
-      url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v0.21.0
+      url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v0.21
       binary: true
       source: false
 
