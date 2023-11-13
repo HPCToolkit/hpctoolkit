@@ -764,7 +764,7 @@ fresh testdata:
 'spack install':
   stage: test
   image:
-    name: ghcr.io/spack/fedora37:latest
+    name: ghcr.io/spack/fedora37:develop
     entrypoint: ['spack-env']
   dependencies: []
   tags: [saas-linux-medium-amd64]
