@@ -422,7 +422,7 @@ validate:
     echo "To reproduce:"
     echo "    cd path/to/hpctoolkit"
     echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
-  - ./ci/predeps/best-python.sh ci/cc-diagnostics.py cq.json logs/"$CI_JOB_NAME"/*.log
+  - ./ci/cc-diagnostics.py cq.json logs/"$CI_JOB_NAME"/*.log
   artifacts:
     reports:
       codequality: cq.json
@@ -569,7 +569,7 @@ validate:
     echo "    cd path/to/hpctoolkit"
     echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit $CI_JOB_IMAGE"
   - &check_after
-    - ./ci/predeps/best-python.sh ci/cc-diagnostics.py cq.json logs/"$CI_JOB_NAME".log
+    - ./ci/cc-diagnostics.py cq.json logs/"$CI_JOB_NAME".log
     - cp -t "$CI_PROJECT_DIR"/ /tmp/builddir/meson-logs/testlog.junit.xml
 
   artifacts: &check_artifacts

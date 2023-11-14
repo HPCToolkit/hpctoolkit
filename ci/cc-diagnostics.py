@@ -1,3 +1,14 @@
+#!/bin/sh
+# The following is run by sh and ignored by Python.
+""":"
+for trial in python3.12 python3.11 python3.10 python3.9 python3.8 python3 python; do
+  if command -v "$trial" > /dev/null 2>&1; then
+    exec "$trial" "$0" "$@"
+  fi
+done
+exit 127
+"""  # noqa: D400, D415
+
 import argparse
 import collections.abc
 import contextlib
