@@ -71,11 +71,11 @@ SUBDIRS = \
 if OPT_BUILD_LIB_ALL
 SUBDIRS += \
 	analysis \
+	xml \
 	banal \
 	binutils \
 	prof \
 	profile \
-	xml \
 	support
 endif
 

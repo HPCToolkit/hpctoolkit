@@ -118,25 +118,14 @@ endif
 
 # Fetch the Autotools. We're very picky about the versions, so if we can't find a version we fall
 # back to the subproject that will handle it for us.
-foreach binary : ['make', 'm4']
+foreach binary : ['make', 'm4', 'autoreconf', 'autoconf', 'aclocal', 'autoheader', 'autom4te',
+    'automake', 'libtoolize']
   _prog = find_program(binary, native: true, required: false)
   if not _prog.found()
     _prog = subproject('autotools').get_variable(binary, dependency('', required: false))
     if not _prog.found()
       # Re-run as required to throw a suitable error message
       _prog = find_program(binary, native: true, required: true)
-    endif
-  endif
-  set_variable('_'+binary, _prog)
-endforeach
-foreach binary, version : {'autoreconf': '=2.69', 'autoconf': '=2.69', 'aclocal': '=1.15.1',
-    'autoheader': '=2.69', 'autom4te': '=2.69', 'automake': '=1.15.1', 'libtoolize': '=2.4.6'}
-  _prog = find_program(binary, version: version, native: true, required: false)
-  if not _prog.found()
-    _prog = subproject('autotools').get_variable(binary, dependency('', required: false))
-    if not _prog.found()
-      # Re-run as required to throw a suitable error message
-      _prog = find_program(binary, version: version, native: true, required: true)
     endif
   endif
   set_variable('_'+binary, _prog)
@@ -155,7 +144,7 @@ _autoenv = {
     'M4': _m4.full_path(),
     'MAKE': _make.full_path(),
 }
-message('Running ./autogen ...')
+message('Generating Autotools files ...')
 run_command(files('meson'/'autogen'),
     # The following files are read during the autogen process
     files('configure.ac'),
