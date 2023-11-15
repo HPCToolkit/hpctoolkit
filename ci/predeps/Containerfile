@@ -4,8 +4,7 @@ ARG TARGETOS
 ARG TARGETARCH
 
 # Preparation stage: Build all the dependencies with Spack
-# TODO: Freeze this to a release once 0.21.0 is released
-FROM ghcr.io/spack/$SPACKOS:latest as spackbuild
+FROM ghcr.io/spack/$SPACKOS:0.21.0 as spackbuild
 
 # Install all the packages we want, using the environment. We use an extra Makefile to add a
 # post-install hook that pushes the resulting packages to various buildcaches.
