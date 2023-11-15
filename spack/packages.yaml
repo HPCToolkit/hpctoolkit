@@ -285,12 +285,6 @@ packages:
   #   variants: +pic
 
 
-  # memkind -- used in hpcrun
-  #
-  memkind:
-    version:  [1.13.0]
-
-
   # papi -- used in hpcrun for access to the hardware performance
   # counters.
   #

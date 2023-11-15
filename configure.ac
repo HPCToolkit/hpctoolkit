@@ -1859,7 +1859,6 @@ default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
-default_memkind_prefix=no
 default_papi_prefix=no
 default_perfmon_prefix=no
 default_tbb_prefix=no
@@ -1959,9 +1958,6 @@ then
   fi
   if find_spack_pkg xz ; then
     default_lzma_prefix="$spack_ans"
-  fi
-  if find_spack_pkg memkind ; then
-    default_memkind_prefix="$spack_ans"
   fi
   if find_spack_pkg papi ; then
     default_papi_prefix="$spack_ans"
@@ -2610,52 +2606,6 @@ AC_SUBST([LZMA_PROF_MPI_LIBS])
 AC_SUBST([LZMA_LIB_DIR])
 
 AM_CONDITIONAL(OPT_LZMA_STATIC, [test "$lzma_static" = yes])
-
-
-#-------------------------------------------------
-# Option: --with-memkind=PATH
-#-------------------------------------------------
-
-# For memkind, we only want the lib dir for LD_LIBRARY_PATH.
-
-MEMKIND="$default_memkind_prefix"
-
-AC_ARG_WITH([memkind],
-  [AS_HELP_STRING([--with-memkind=PATH],
-      [path to memkind install directory])],
-  [MEMKIND="$withval"],
-  [])
-
-AC_MSG_CHECKING([for memkind])
-
-MEMKIND_LIBDIR=
-
-case "$MEMKIND" in
-  /* )
-    for lib in $multilib_path ; do
-      if test -f "${MEMKIND}/${lib}/libmemkind.so" ; then
-        MEMKIND_LIBDIR="${MEMKIND}/$lib"
-        break
-      fi
-    done
-    if test "x$MEMKIND_LIBDIR" = x ; then
-      AC_MSG_ERROR([unable to find libmemkind.so in $MEMKIND])
-    fi
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([memkind directory must be absolute path: $MEMKIND])
-    ;;
-esac
-
-AC_MSG_RESULT([$MEMKIND])
-
-AC_SUBST(MEMKIND_LIBDIR)
-
-if test "x$MEMKIND" = x ; then
-  AC_MSG_WARN([memkind workaround is not available])
-fi
 
 
 #-------------------------------------------------
@@ -5457,7 +5407,6 @@ AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
-AC_MSG_NOTICE([  memkind:      ${MEMKIND}])
 AC_MSG_NOTICE([  papi:         ${papi_mesg}])
 AC_MSG_NOTICE([  perfmon:      ${perfmon_mesg}])
 AC_MSG_NOTICE([  tbb:          ${TBB}])

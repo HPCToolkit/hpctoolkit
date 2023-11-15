@@ -39,7 +39,6 @@ spack:
     - 'libpfm4 @4.11.0:'
     - 'xerces-c transcoder=iconv @3.2.3:'
     - 'libiberty +pic @2.37:'
-    - 'memkind'
     - 'yaml-cpp +shared @0.7.0:'
   - when: env["VERMODE"] == "minimum"
     core:

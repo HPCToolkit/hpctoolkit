@@ -23,7 +23,6 @@ spack:
   - 'libpfm4 @4.11.0:'  # SPEC
   - 'xerces-c transcoder=iconv @3.2.3:'  # SPEC
   - 'libiberty +pic @2.37:'  # SPEC
-  - 'memkind'  # SPEC
   - 'yaml-cpp +shared @0.7.0:'  # SPEC
   - $target_specific
 

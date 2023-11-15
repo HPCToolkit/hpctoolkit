@@ -20,7 +20,6 @@ libmonitor_dir='@LIBMONITOR_LIB@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
 gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
-memkind_libdir='@MEMKIND_LIBDIR@'
 host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
 
@@ -273,13 +272,6 @@ Options to consider only when hpcrun causes an application to fail:
                        it is believed that the rewriting is causing the
                        application to fail.
 
-  --default-memkind    By default, hpcrun uses its own copy of libmemkind.so. It
-                       does so to sidestep a Glibc bug that causes programs to SEGV
-                       when loading libraries with properties commonly
-                       found in libmemkind.so on Cray x86_64 platforms. This option
-                       can be used to ensure that your program loads the default
-                       version of libmemkind.so.
-
   --fnbounds-eager-shutdown
                        Hpcrun uses a helper process 'hpcfnbounds' to calculate
                        function bounds in each load module at runtime.  By
@@ -352,20 +344,6 @@ namespace_default=multiple
 namespace_multiple=
 namespace_single=
 rocm_envs_rocprofiler_path="$ROCM_PATH"
-
-# All versions of glibc currently have a bug handling R_X86_64_TLSDESC
-# relocations when LD_AUDIT is used. This bug causes programs to crash
-# in the dynamic loader when loading any shared library that has
-# R_X86_64_TLSDESC relocations. Such relocations are often found in
-# libmemkind.so on Cray platforms. To avoid trouble, HPCToolkit uses
-# spack to build its own libmemkind.so library without such relocations.
-# If present, use HPCToolkit's copy of libmemkind.so with the
-# hope of avoiding trouble.
-if test "x$memkind_libdir" != x ; then
-    use_memkind=yes
-else
-    use_memkind=no
-fi
 
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
@@ -675,10 +653,6 @@ do
             unset HPCRUN_AUDIT_FAKE_AUDITOR
             ;;
 
-        --default-memkind )
-            use_memkind=no
-            ;;
-
         # --------------------------------------------------
 
         -- )
@@ -852,9 +826,6 @@ hpc_ld_library_path="${hpcrun_dir}"
 hpc_ld_library_path="${hpc_ld_library_path}${papi_libdir:+:${papi_libdir}}"
 hpc_ld_library_path="${hpc_ld_library_path}${perfmon_libdir:+:${perfmon_libdir}}"
 hpc_ld_library_path="${hpc_ld_library_path}${gtpin_libdir:+:${gtpin_libdir}}"
-if test "$use_memkind" = yes ; then
-    hpc_ld_library_path="${hpc_ld_library_path}${memkind_libdir:+:${memkind_libdir}}"
-fi
 
 #------------------------------------------------------------
 # assemble preload list
