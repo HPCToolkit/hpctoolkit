@@ -50,7 +50,7 @@ def _gcc_to_cq(project_root: Path, line: str) -> dict:
         else:
             return {}
     try:
-        report["location"]["path"] = path.relative_to(project_root).as_posix()
+        report["location"]["path"] = path.resolve().relative_to(project_root).as_posix()
     except ValueError:
         return {}
 
@@ -72,6 +72,10 @@ def _gcc_to_cq(project_root: Path, line: str) -> dict:
     masked_report["location"]["positions"] = None
     masked_report["location"]["lines"] = None
     masked_report["location"]["line"] = linecache.getline(str(path), lineno)
+    masked_report["location"]["column"] = (
+        report["location"].get("positions", {}).get("begin", {}).get("column")
+    )
+    masked_report["description"] = None
     report["fingerprint"] = hashlib.md5(
         json.dumps(masked_report, sort_keys=True).encode("utf-8")
     ).hexdigest()
