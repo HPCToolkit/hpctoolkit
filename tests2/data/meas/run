@@ -8,7 +8,7 @@ shift 4  # Remaining arguments go to hpcrun
 
 output="$(dirname "$output_stamp")/$(basename "$output_stamp" .fresh)"
 
-for _attempt in 1 2 3 4 5 6 7 8 9 10; do
+try_gen() {
   # Attempt to generate some (good) measurements
   rm -rf "$output"
   "$hpcrun" -o "$output" "$@"
@@ -18,11 +18,25 @@ for _attempt in 1 2 3 4 5 6 7 8 9 10; do
     grep -E 'SUMMARY:[[:space:]]+samples:[[:space:]]+[[:digit:]]+[[:space:]]+\(recorded:[[:space:]]+[[:digit:]]+' "$output"/*.log \
     | grep -Eo 'recorded:[[:space:]]+[[:digit:]]+' \
     | grep -Eo -m1 '[[:digit:]]+')
-  if [ "$samples" -lt "$min_samples" ]; then continue; fi
+  printf '%s' "Collected $samples samples...  "
+  if [ "$samples" -lt "$min_samples" ]; then echo "FAIL, need >= $min_samples"; return 1; fi
+  echo "OK"
 
   # Measurements look good! We'll use these.
-  break
+  return 0
+}
+
+ok=
+for _attempt in 1 2 3 4 5 6 7 8 9 10; do
+  if try_gen "$@"; then
+    ok=yes
+    break
+  fi
 done
+if [ -z "$ok" ]; then
+  echo "Failed to generate good measurements after 10 attempts, giving up."
+  exit 1
+fi
 
 # Analyze all the binaries used during the run. This will generate a structs/ subdirectory.
 "$hpcstruct" --gpucfg=yes --nocache "$output"
