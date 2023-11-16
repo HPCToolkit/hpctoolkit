@@ -603,6 +603,7 @@ validate:
   - *check_setup
   - *check_compile
   - meson compile -C /tmp/builddir $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
+  - git add --intent-to-add tests2/data/
   - meson compile -C /tmp/builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
   - mkdir testdata-patches/
   - cp -t testdata-patches/ /tmp/builddir/tests2/data/*.patch
