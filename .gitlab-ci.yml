@@ -625,11 +625,17 @@ validate:
 'check amd64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  tags: [rice-linux-large-bare-amd64]
+  tags: [saas-linux-large-amd64]
+  before_script: &perf_enable
+  # If we don't have sufficient perf events support, try to enable it.
+  - if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt 1 ]; then echo 1 > /proc/sys/kernel/perf_event_paranoid; fi
+  # We also want kernel symbols available (kallsyms), so enable that too.
+  - if [ "$(cat /proc/sys/kernel/kptr_restrict)" -gt 0 ]; then echo 0 > /proc/sys/kernel/kptr_restrict; fi
 'check min amd64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
-  tags: [rice-linux-large-bare-amd64]
+  tags: [saas-linux-large-amd64]
+  before_script: *perf_enable
 'check semifresh amd64: [cpu]':
   extends: ['check amd64: [cpu]', .check semifresh job]
   variables:
@@ -638,15 +644,17 @@ validate:
 'check arm64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-bare-arm64]
+  tags: [rice-linux-small-arm64]
   variables:
     JOB_TEST_REPEAT: 1
+  before_script: *perf_enable
 'check min arm64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-bare-arm64]
+  tags: [rice-linux-small-arm64]
   variables:
     JOB_TEST_REPEAT: 1
+  before_script: *perf_enable
 
 'check ppc64le: [cpu]':
   extends: .check
