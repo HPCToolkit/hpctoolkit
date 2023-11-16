@@ -7,9 +7,9 @@
 
 <!ELEMENT HPCToolkitStructure (LM)*>
 <!ATTLIST HPCToolkitStructure
-    version CDATA #REQUIRED
-       i       CDATA #REQUIRED
-       n       CDATA #IMPLIED>
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
   <!-- Load module: -->
   <!--   (i)d: unique identifier for cross referencing -->
   <!--   (n)ame -->
@@ -19,111 +19,111 @@
   <!--   (d)evice: device name -->
   <!ELEMENT LM (F|P)*>
   <!ATTLIST LM
-  i CDATA #REQUIRED
-     n CDATA #REQUIRED
-     has-calls CDATA #REQUIRED
-     v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
   <!-- File: -->
   <!ELEMENT F (P|L|S)*>
   <!ATTLIST F
-   i CDATA #REQUIRED
-     n CDATA #REQUIRED>
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
   <!-- Procedure: ln=link name (if different than name) -->
   <!ELEMENT P (P|A|L|S|C)*>
   <!ATTLIST P
-   i  CDATA #REQUIRED
-    n  CDATA #REQUIRED
-    ln CDATA #IMPLIED
-     l  CDATA #IMPLIED
-     s  CDATA #IMPLIED
-     v  CDATA #IMPLIED>
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
   <!-- Alien: (f)ilename -->
   <!ELEMENT A (A|L|S|C)*>
   <!ATTLIST A
-    i CDATA #REQUIRED
-     f CDATA #IMPLIED
-      n CDATA #IMPLIED
-      ln CDATA #IMPLIED
-     l CDATA #IMPLIED
-      v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
   <!-- Loop -->
   <!ELEMENT L (A|L|S|C)*>
   <!ATTLIST L
-  i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     f CDATA #IMPLIED
-      v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
   <!-- Statement -->
   <!ELEMENT S EMPTY>
   <!ATTLIST S
-  i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
   <!-- Callsite (a special Statement) -->
   <!ELEMENT C (C)*>
   <!ATTLIST C
-      i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     v CDATA #IMPLIED
-      t CDATA #IMPLIED
-      d CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
 ]>
 <HPCToolkitStructure i="0" version="4.9" n="">
-<LM i="2" n="/builds/hpctoolkit/hpctoolkit/ci/build/tests2/data/meas/testmeas-small" has-calls="0" v="{}">
+<LM i="2" n="/tmp/builddir/tests2/data/meas/testmeas-small" has-calls="0" v="{}">
 <F i="3" n="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/small.c">
-<P i="4" n="spinsleep" l="1" v="{[0x1129-0x112a)}">
-<S i="5" l="1" v="{[0x1129-0x1131)}"/>
-<S i="6" l="2" v="{[0x1131-0x113e)}"/>
-<S i="7" l="3" v="{[0x113e-0x1147)}"/>
-<S i="8" l="4" v="{[0x1172-0x1176)}"/>
-<L i="9" l="3" f="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/small.c" v="{[0x1169-0x116a)}">
-<S i="10" l="3" v="{[0x1147-0x1172)}"/>
+<P i="4" n="spinsleep" l="1" v="{[0x4129-0x412a)}">
+<S i="5" l="1" v="{[0x4129-0x4131)}"/>
+<S i="6" l="2" v="{[0x4131-0x413e)}"/>
+<S i="7" l="3" v="{[0x413e-0x4147)}"/>
+<S i="8" l="4" v="{[0x4172-0x4176)}"/>
+<L i="9" l="3" f="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/small.c" v="{[0x4169-0x416a)}">
+<S i="10" l="3" v="{[0x4147-0x4172)}"/>
 </L>
 </P>
-<P i="11" n="caller" l="6" v="{[0x1176-0x1177)}">
-<S i="12" l="6" v="{[0x1176-0x117e)}"/>
-<S i="13" l="7" v="{[0x117e-0x1188)}"/>
-<S i="14" l="8" v="{[0x1188-0x118b)}"/>
+<P i="11" n="caller" l="6" v="{[0x4176-0x4177)}">
+<S i="12" l="6" v="{[0x4176-0x417e)}"/>
+<S i="13" l="7" v="{[0x417e-0x4188)}"/>
+<S i="14" l="8" v="{[0x4188-0x418b)}"/>
 </P>
-<P i="15" n="main" l="10" v="{[0x118b-0x118c)}">
-<S i="16" l="10" v="{[0x118b-0x1193)}"/>
-<S i="17" l="11" v="{[0x1193-0x11ac)}"/>
-<S i="18" l="12" v="{[0x11ac-0x11ae)}"/>
+<P i="15" n="main" l="10" v="{[0x418b-0x418c)}">
+<S i="16" l="10" v="{[0x418b-0x4193)}"/>
+<S i="17" l="11" v="{[0x4193-0x41ac)}"/>
+<S i="18" l="12" v="{[0x41ac-0x41ae)}"/>
 </P>
 </F>
 <F i="19" n="[testmeas-small]">
-<P i="20" n="_init" l="0" v="{[0x1000-0x1001)}">
-<S i="21" l="0" v="{[0x1000-0x101b)}"/>
+<P i="20" n="_init" l="0" v="{[0x4000-0x4001)}">
+<S i="21" l="0" v="{[0x4000-0x401b)}"/>
 </P>
-<P i="22" n="targ1030@plt" l="0" v="{[0x1030-0x1031)}">
-<S i="23" l="0" v="{[0x1030-0x1040)}"/>
+<P i="22" n="targ4030@plt" l="0" v="{[0x4030-0x4031)}">
+<S i="23" l="0" v="{[0x4030-0x4040)}"/>
 </P>
-<P i="24" n="_start" l="0" v="{[0x1040-0x1041)}">
-<S i="25" l="0" v="{[0x1040-0x106f)}"/>
+<P i="24" n="_start" l="0" v="{[0x4040-0x4041)}">
+<S i="25" l="0" v="{[0x4040-0x406f)}"/>
 </P>
-<P i="26" n="deregister_tm_clones" l="0" v="{[0x1070-0x1071)}">
-<S i="27" l="0" v="{[0x1070-0x10a0)}"/>
+<P i="26" n="deregister_tm_clones" l="0" v="{[0x4070-0x4071)}">
+<S i="27" l="0" v="{[0x4070-0x40a0)}"/>
 </P>
-<P i="28" n="register_tm_clones" l="0" v="{[0x10a0-0x10a1)}">
-<S i="29" l="0" v="{[0x10a0-0x10e0)}"/>
+<P i="28" n="register_tm_clones" l="0" v="{[0x40a0-0x40a1)}">
+<S i="29" l="0" v="{[0x40a0-0x40e0)}"/>
 </P>
-<P i="30" n="__do_global_dtors_aux" l="0" v="{[0x10e0-0x10e1)}">
-<S i="31" l="0" v="{[0x10e0-0x1120)}"/>
+<P i="30" n="__do_global_dtors_aux" l="0" v="{[0x40e0-0x40e1)}">
+<S i="31" l="0" v="{[0x40e0-0x4120)}"/>
 </P>
-<P i="32" n="frame_dummy" l="0" v="{[0x1120-0x1121)}">
-<S i="33" l="0" v="{[0x1120-0x1129)}"/>
+<P i="32" n="frame_dummy" l="0" v="{[0x4120-0x4121)}">
+<S i="33" l="0" v="{[0x4120-0x4129)}"/>
 </P>
-<P i="34" n="__libc_csu_init" l="0" v="{[0x11b0-0x11b1)}">
-<S i="35" l="0" v="{[0x11b0-0x11f0) [0x1206-0x1215)}"/>
-<L i="36" l="0" f="[testmeas-small]" v="{[0x11f0-0x11f1)}">
-<S i="37" l="0" v="{[0x11f0-0x1206)}"/>
+<P i="34" n="__libc_csu_init" l="0" v="{[0x41b0-0x41b1)}">
+<S i="35" l="0" v="{[0x41b0-0x41f0) [0x4206-0x4215)}"/>
+<L i="36" l="0" f="[testmeas-small]" v="{[0x41f0-0x41f1)}">
+<S i="37" l="0" v="{[0x41f0-0x4206)}"/>
 </L>
 </P>
-<P i="38" n="__libc_csu_fini" l="0" v="{[0x1220-0x1221)}">
-<S i="39" l="0" v="{[0x1220-0x1225)}"/>
+<P i="38" n="__libc_csu_fini" l="0" v="{[0x4220-0x4221)}">
+<S i="39" l="0" v="{[0x4220-0x4225)}"/>
 </P>
-<P i="40" n="_fini" l="0" v="{[0x1228-0x1229)}">
-<S i="41" l="0" v="{[0x1228-0x1235)}"/>
+<P i="40" n="_fini" l="0" v="{[0x4228-0x4229)}">
+<S i="41" l="0" v="{[0x4228-0x4235)}"/>
 </P>
 </F>
 </LM>
