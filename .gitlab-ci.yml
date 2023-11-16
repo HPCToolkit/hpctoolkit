@@ -597,12 +597,17 @@ validate:
     - logs/
     when: always
 .check semifresh job:
+  variables:
+    JOB_TEST_SUITE: ''  # Always run all possible tests
   script:
   - *check_setup
   - *check_compile
   - meson compile -C /tmp/builddir $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
-  - git add tests2/data
-  - git diff --cached --binary > testdata-"$CI_JOB_NAME".patch
+  - meson compile -C /tmp/builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
+  - mkdir testdata-patches/
+  - cp -t testdata-patches/ /tmp/builddir/tests2/data/*.patch
+  - meson setup --wipe /tmp/builddir
+  - *check_compile
   - *check_test
   after_script:
   - |
@@ -615,7 +620,7 @@ validate:
     expire_in: 1 day
     paths:
     - logs/
-    - testdata-*.patch
+    - testdata-patches/
 
 'check amd64: [cpu]':
   extends: .check
@@ -726,7 +731,7 @@ validate:
     REGEN_SUITES: amd
 
 
-# Repackage the fresh testdata generated during the `check semifresh` jobs
+# Re-expose the testdata patches as a single bundle, for easy access
 fresh testdata:
   stage: .post
   image: docker.io/alpine
@@ -735,29 +740,15 @@ fresh testdata:
   - 'check semifresh amd64: [+cuda, 11.8]'
   - 'check semifresh amd64: [+rocm, 5.6]'
   when: always
-  variables:
-    GIT_COMMITTER_NAME: 'CI Pipeline #$CI_PIPELINE_ID'
-    GIT_COMMITTER_EMAIL: '<ci@noreply.gitlab.com>'
   script:
   - apk add git
-  # Apply the patches to the main tree
-  - >-
-    git apply --binary --index
-    testdata-'check semifresh amd64: [+cuda, 11.8].patch'
-    testdata-'check semifresh amd64: [+rocm, 5.6].patch'
-    testdata-'check semifresh amd64: [cpu].patch'
-  # Generate a commit with the fresh test data and a simple commit message
-  - |
-    git commit --author="$CI_COMMIT_AUTHOR" --message="chore: Regenerate test data
-
-    Regenerated in CI: $CI_PIPELINE_URL"
-  # Turn the commit into a patch that can be applied with `git am` or `git apply`
-  - git format-patch --stdout --no-numbered --binary HEAD^ > testdata.patch
+  - ls -l testdata-patches/
+  - git apply --index --check -- testdata-patches/*.patch
   artifacts:
-    expose_as: "Test data refresh patch"
+    expose_as: "Test data refresh patches"
     expire_in: 3 days
     paths:
-    - testdata.patch
+    - testdata-patches/
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
