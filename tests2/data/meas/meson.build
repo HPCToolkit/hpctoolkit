@@ -22,20 +22,20 @@ endif
 _run = [find_program(files('run')), hpcrun, hpcstruct]
 
 _measurements = {
-  # `small` is designed to contain 3-4 samples scattered through a tiny, easy-to-understand
+  # `small` is designed to contain a few samples scattered through a tiny, easy-to-understand
   # calling context tree. Good for debugging very bad problems.
   'small': { 'tag': 'cpu', 'minsamples': 3,
-    'tail': ['-e', 'cycles@1000000000', '-e', 'instructions@100000000000', '-t', _exe_small],
+    'tail': ['-e', 'CPUTIME@100000', '-t', _exe_small],
   },
 
   # `loops-*` are designed to exercise more interesting cases with multiple nested loops and
   # simple multithreading. Various events/trace settings are tested to exercise minor differences
-  # in the different metrics. Tuned to contain <300 samples total.
+  # in the different metrics.
   'loops-cputime-t': { 'tag': 'none',
     'tail': ['-e', 'CPUTIME', '-t', _exe_loops],
   },
-  'loops-perf-t': { 'tag': 'cpu',
-    'tail': ['-e', 'cycles@f1000', '-e', 'instructions@12000000', '-t', _exe_loops],
+  'loops-perf': { 'tag': 'cpu',
+    'tail': ['-e', 'perf::cpu-clock@f80', '-e', 'perf::task-clock@100000000', _exe_loops],
   },
   'loops-cuda-nvidia-t': { 'tag': 'nvidia',
     'tail': ['-e', 'gpu=nvidia', '-t', _exe_loops_cuda],
