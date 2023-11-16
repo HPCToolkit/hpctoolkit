@@ -597,6 +597,8 @@ validate:
     - logs/
     when: always
 .check semifresh job:
+  variables:
+    JOB_TEST_SUITE: ''  # Always run all possible tests
   script:
   - *check_setup
   - *check_compile
