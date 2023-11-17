@@ -3,10 +3,9 @@ testdata_dbase = {}
 _databases = {
   'small': {'yaml': true},
   'loops-cputime-t': {},
-  'loops-perf-t': {},
+  'loops-perf': {},
   'loops-cuda-nvidia-t': {},
   'loops-cuda-nvidiapc-t': {},
-  'loops-hip-amd-t': {},
 }
 
 _prof = [find_program(files('prof')), hpcprof]

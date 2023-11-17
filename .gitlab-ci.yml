@@ -580,12 +580,18 @@ validate:
     - logs/
     when: always
 .check semifresh job:
+  variables:
+    JOB_TEST_SUITE: ''  # Always run all possible tests
   script:
   - *check_setup
   - *check_compile
   - meson compile -C /tmp/builddir $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
-  - git add tests2/data
-  - git diff --cached --binary > testdata-"$CI_JOB_NAME".patch
+  - git add --intent-to-add tests2/data/
+  - meson compile -C /tmp/builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
+  - mkdir testdata-patches/
+  - cp -t testdata-patches/ /tmp/builddir/tests2/data/*.patch
+  - meson setup --wipe /tmp/builddir
+  - *check_compile
   - *check_test
   after_script:
   - |
@@ -598,19 +604,22 @@ validate:
     expire_in: 1 day
     paths:
     - logs/
-    - testdata-*.patch
+    - testdata-patches/
 
 'check amd64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  tags: [rice-linux-large-bare-amd64]
-  variables: &vars_check_cpu
-    SPEC: '+mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
+  tags: [saas-linux-large-amd64]
+  before_script: &perf_enable
+  # If we don't have sufficient perf events support, try to enable it.
+  - if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt 1 ]; then echo 1 > /proc/sys/kernel/perf_event_paranoid; fi
+  # We also want kernel symbols available (kallsyms), so enable that too.
+  - if [ "$(cat /proc/sys/kernel/kptr_restrict)" -gt 0 ]; then echo 0 > /proc/sys/kernel/kptr_restrict; fi
 'check min amd64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
-  tags: [rice-linux-large-bare-amd64]
-  variables: *vars_check_cpu
+  tags: [saas-linux-large-amd64]
+  before_script: *perf_enable
 'check semifresh amd64: [cpu]':
   extends: ['check amd64: [cpu]', .check semifresh job]
   variables:
@@ -619,17 +628,17 @@ validate:
 'check arm64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-bare-arm64]
+  tags: [rice-linux-small-arm64]
   variables:
-    <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
+  before_script: *perf_enable
 'check min arm64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-bare-arm64]
+  tags: [rice-linux-small-arm64]
   variables:
-    <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
+  before_script: *perf_enable
 
 'check ppc64le: [cpu]':
   extends: .check
@@ -714,7 +723,7 @@ validate:
     REGEN_SUITES: amd
 
 
-# Repackage the fresh testdata generated during the `check semifresh` jobs
+# Re-expose the testdata patches as a single bundle, for easy access
 fresh testdata:
   stage: .post
   image: docker.io/alpine
@@ -723,29 +732,15 @@ fresh testdata:
   - 'check semifresh amd64: [+cuda, 11.8]'
   - 'check semifresh amd64: [+rocm, 5.6]'
   when: always
-  variables:
-    GIT_COMMITTER_NAME: 'CI Pipeline #$CI_PIPELINE_ID'
-    GIT_COMMITTER_EMAIL: '<ci@noreply.gitlab.com>'
   script:
   - apk add git
-  # Apply the patches to the main tree
-  - >-
-    git apply --binary --index
-    testdata-'check semifresh amd64: [+cuda, 11.8].patch'
-    testdata-'check semifresh amd64: [+rocm, 5.6].patch'
-    testdata-'check semifresh amd64: [cpu].patch'
-  # Generate a commit with the fresh test data and a simple commit message
-  - |
-    git commit --author="$CI_COMMIT_AUTHOR" --message="chore: Regenerate test data
-
-    Regenerated in CI: $CI_PIPELINE_URL"
-  # Turn the commit into a patch that can be applied with `git am` or `git apply`
-  - git format-patch --stdout --no-numbered --binary HEAD^ > testdata.patch
+  - ls -l testdata-patches/
+  - git apply --index --check -- testdata-patches/*.patch
   artifacts:
-    expose_as: "Test data refresh patch"
+    expose_as: "Test data refresh patches"
     expire_in: 3 days
     paths:
-    - testdata.patch
+    - testdata-patches/
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
