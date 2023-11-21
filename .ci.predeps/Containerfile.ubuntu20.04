@@ -1,0 +1,88 @@
+# OS installation stage: Install build tools from the OS
+FROM docker.io/ubuntu:20.04 as os-install
+
+# Some images set problematic environment variables. Wipe those out first for safety.
+ENV \
+  PYTHONPATH= \
+  PKG_CONFIG_PATH= \
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  CPATH= \
+  LIBRARY_PATH= \
+  LD_LIBRARY_PATH= \
+  CMAKE_PREFIX_PATH=
+
+# Install the required OS packages
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  rm -f /etc/apt/apt.conf.d/docker-clean \
+  && apt-get update -yqq \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    ccache \
+    clang clang-9 clang-10 clang-11 \
+    diffutils \
+    eatmydata \
+    file \
+    g++ g++-8 g++-9 g++-10 \
+    gcc gcc-8 gcc-9 gcc-10 \
+    git git-lfs \
+    libomp-dev \
+    perl \
+    python3 python3-pip \
+    tar \
+  && : # END
+
+# Install a up-to-date versions of Meson and Ninja, using a suitable Python
+RUN \
+  python3 -m pip install \
+    'meson[ninja]>=1.1.0,<2' \
+  && : # END
+
+# Debian/Ubuntu stores libraries in "multilib" directories, e.g. /usr/lib/x86_64-linux-gnu.
+# Configure currently only understands RHEL-like installations (/usr/lib64), so symlink the
+# difference away. Same issue for (some) headers.
+# TODO: Remove whenever possible.
+RUN \
+  cp -rsTn /usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/ /usr/lib64/ \
+  && cp -rsTn /usr/include/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/ /usr/include/
+
+
+# OS native-file side-stage: Collect and compose a native file for the OS software
+FROM os-install as os-native
+
+# Copy in the native files this OS image can support
+COPY ci/native/src/image.ubuntu20.04.ini /usr/share/meson/native/image.ini
+COPY \
+  ci/native/src/clang.ini \
+  ci/native/src/clang10.ini \
+  ci/native/src/clang11.ini \
+  ci/native/src/clang9.ini \
+  ci/native/src/gcc.ini \
+  ci/native/src/gcc10.ini \
+  ci/native/src/gcc8.ini \
+  ci/native/src/gcc9.ini \
+  /usr/share/meson/native/
+
+
+# Spack installation side-stage: Install (some) software from Spack to /opt/software
+FROM ghcr.io/spack/ubuntu-focal:0.21.0 as spack-install
+
+# Install all the packages we want, using the environment. This also generates a Meson native file
+# referring to all the packages.
+COPY ci/spack-deps/ /opt/environment/
+ARG VERMODE=latest
+RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
+    --mount=type=cache,target=/mnt/cache/spack-src,sharing=locked \
+  export PATH=/opt/spack/bin:"$PATH" \
+  && /opt/environment/install.sh
+
+
+# Final native-file side-stage: Merge the OS and Spack native files
+FROM os-native as final-native
+COPY --from=spack-install /opt/environment/spack_env.ini /tmp/
+COPY ci/native/patch-native.py /tmp/
+RUN /tmp/patch-native.py /usr/share/meson/native/image.ini /tmp/spack_env.ini
+
+
+# Composition stage: Produce what will become the final image
+FROM os-install
+COPY --from=spack-install /opt/software/ /opt/software/
+COPY --from=final-native /usr/share/meson/native/ /usr/share/meson/native/

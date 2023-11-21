@@ -33,7 +33,7 @@ if __name__ == "__main__":
         keep_trailing_newline=True,
     )
     output = Path(sys.argv[2])
-    output.parent.mkdir(parents=True)
+    output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         env.get_template(sys.argv[1]).render(spack_prefix=spack_prefix),
         encoding="utf-8",
