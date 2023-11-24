@@ -5,20 +5,8 @@
 {%- endmacro -%}
 
 [binaries]
-pkg-config = '{{ pfxpath("pkgconfig", "bin/pkg-config") }}'
-cmake = '{{ pfxpath("cmake", "bin/cmake") }}'
 mpicxx = '{{ pfxpath("mpi", "bin/mpicxx") }}'
 mpiexec = '{{ pfxpath("mpi", "bin/mpiexec") }}'
-autoreconf = '{{ pfxpath("autoconf", "bin/autoreconf") }}'
-autoconf = '{{ pfxpath("autoconf", "bin/autoconf") }}'
-autoheader = '{{ pfxpath("autoconf", "bin/autoheader") }}'
-autom4te = '{{ pfxpath("autoconf", "bin/autom4te") }}'
-aclocal = '{{ pfxpath("automake", "bin/aclocal") }}'
-automake = '{{ pfxpath("automake", "bin/automake") }}'
-libtoolize = '{{ pfxpath("libtool", "bin/libtoolize") }}'
-m4 = '{{ pfxpath("m4", "bin/m4") }}'
-make = '{{ pfxpath("gmake", "bin/make") }}'
-python = '{{ pfxpath("python", "bin/python") }}'
 
 [built-in options]
 {%- macro rpath(spec) -%}

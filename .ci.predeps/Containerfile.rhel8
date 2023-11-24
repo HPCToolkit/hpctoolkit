@@ -14,24 +14,28 @@ ENV \
 # Install the required OS packages
 RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
   dnf install -y epel-release \
+  && dnf config-manager --set-enabled powertools \
   && dnf install -y \
+    autoconf \
+    automake \
     ccache \
     clang \
-    diffutils \
+    cmake \
     eatmydata \
-    file \
     gcc \
     gcc-c++ \
     git git-lfs \
-    perl \
-    python39 python39-pip \
-    tar \
+    libtool \
+    make \
+    ninja-build \
+    pkg-config \
+    python39 python39-pip python39-devel \
   && : # END
 
-# Install a up-to-date versions of Meson and Ninja, using a suitable Python
+# Install a up-to-date versions of Meson, using a suitable Python
 RUN \
-  python3 -m pip install \
-    'meson[ninja]>=1.1.0,<2' \
+  python3.9 -m pip install \
+    'meson>=1.1.0,<2' \
   && : # END
 
 

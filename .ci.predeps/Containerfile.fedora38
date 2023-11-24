@@ -14,23 +14,26 @@ ENV \
 # Install the required OS packages
 RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
   dnf install -y \
+    autoconf \
+    automake \
     ccache \
     clang \
-    diffutils \
+    cmake \
     eatmydata \
-    file \
     gcc \
     gcc-c++ \
     git git-lfs \
-    perl \
-    python3 python3-pip \
-    tar \
+    libtool \
+    make \
+    ninja-build \
+    pkg-config \
+    python3 python3-pip python3-devel \
   && : # END
 
-# Install a up-to-date versions of Meson and Ninja, using a suitable Python
+# Install a up-to-date versions of Meson, using a suitable Python
 RUN \
   python3 -m pip install \
-    'meson[ninja]>=1.1.0,<2' \
+    'meson>=1.1.0,<2' \
   && : # END
 
 

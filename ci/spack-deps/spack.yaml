@@ -11,17 +11,6 @@ spack:
     reuse: false
 
   definitions:
-  # Core prerequisites. These are required for Meson or specified in the README.md.
-  - core:
-    - cmake
-    - pkgconfig
-    - 'python @3.8.16: +bz2 +ctypes +lzma +zlib'
-  - when: env["VERMODE"] == "minimum"
-    core:
-    - python @3.8.16
-  - when: env["VERMODE"] == "latest"
-    core:
-    - 'python @3.10:'
   # Core dependencies. These specs should stay in-sync with subprojects/spack-deps/spack.yaml
   - core:
     - >-
@@ -61,13 +50,6 @@ spack:
   - when: arch.satisfies('target=x86_64:') and env["VERMODE"] == "minimum"
     core:
     - intel-xed @2022.08.11
-  # Autotools. These specs should stay in-sync with subprojects/autotools/spack.yaml
-  - core:
-    - 'autoconf'
-    - 'automake'
-    - 'libtool'
-    - 'm4'
-    - 'gmake'
   # Optional dependencies.
   - optional:
     - 'papi @6.0.0.1:'  # Required for -Dpapi=enabled

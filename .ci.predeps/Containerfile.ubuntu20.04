@@ -16,24 +16,27 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   rm -f /etc/apt/apt.conf.d/docker-clean \
   && apt-get update -yqq \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    autoconf \
+    automake \
     ccache \
     clang clang-9 clang-10 clang-11 \
-    diffutils \
+    cmake \
     eatmydata \
-    file \
     g++ g++-8 g++-9 g++-10 \
     gcc gcc-8 gcc-9 gcc-10 \
     git git-lfs \
     libomp-dev \
-    perl \
-    python3 python3-pip \
-    tar \
+    libtool \
+    make \
+    ninja-build \
+    pkg-config \
+    python3 python3-pip python3-venv python3-dev \
   && : # END
 
-# Install a up-to-date versions of Meson and Ninja, using a suitable Python
+# Install a up-to-date versions of Meson, using a suitable Python
 RUN \
   python3 -m pip install \
-    'meson[ninja]>=1.1.0,<2' \
+    'meson>=1.1.0,<2' \
   && : # END
 
 # Debian/Ubuntu stores libraries in "multilib" directories, e.g. /usr/lib/x86_64-linux-gnu.
@@ -64,6 +67,11 @@ COPY \
 
 # Spack installation side-stage: Install (some) software from Spack to /opt/software
 FROM ghcr.io/spack/ubuntu-focal:0.21.0 as spack-install
+
+# Install the venv support for Python, which is a separate package on Ubuntu
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  apt-get update -yqq \
+  && apt-get install -y python3-venv
 
 # Install all the packages we want, using the environment. This also generates a Meson native file
 # referring to all the packages.
