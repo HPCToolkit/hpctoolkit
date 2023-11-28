@@ -396,9 +396,18 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         }
         break;
       }
-      case 3:  // --only-exe
-        only_exes.emplace(optarg);
+      case 3: {  // --only-exe
+        fs::path exe(optarg);
+        if(!exe.has_filename()) {
+          std::cerr << "WARNING: ignoring malformed argument to --only-exe, no filename: " << exe.native() << "\n";
+          break;
+        }
+        if(exe.has_parent_path()) {
+          std::cerr << "WARNING: ignoring leading path to --only-exe, will match on filename: " << exe.filename().generic_string() << "\n";
+        }
+        only_exes.emplace(exe.filename().generic_string());
         break;
+      }
       }
       break;
     default:
