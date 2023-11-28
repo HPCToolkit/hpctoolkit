@@ -6,6 +6,7 @@ _databases = {
   'loops-perf': {},
   'loops-cuda-nvidia-t': {},
   'loops-cuda-nvidiapc-t': {},
+  'recursion-cuda-nvidiapc-t': {},
 }
 
 _prof = [find_program(files('prof')), hpcprof]

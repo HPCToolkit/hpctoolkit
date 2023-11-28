@@ -48,6 +48,7 @@
 
 #include "../util/log.hpp"
 
+#include <limits>
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
@@ -267,25 +268,16 @@ bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
 
     // DFS through the call graph to iterate all possible paths from a kernel
     // entry point (uncalled function) to this function.
-    std::unordered_set<util::reference_index<const Function>> seen;
     std::vector<Scope> rpath;
     const std::function<void(const Function&)> dfs = [&](const Function& callee){
-      // TODO: SCC algorithms are needed to handle recursion in a meaningful
-      // way. For now just truncate the search.
-      auto [seenit, first] = seen.insert(callee);
-      if(!first) return;
-
-      // Try to step "forwards" to the caller instructions. If we succeed, this
-      // is part of the path.
+      // Step to any potential callers. If this function can be called, this is part of the path.
       bool terminal = true;
       for(auto [callerit, end] = udm.rcg.equal_range(callee);
           callerit != end; ++callerit) {
         terminal = false;
         rpath.push_back(Scope(mo.first, callerit->second.first));
 
-        // Find the function for the caller instruction, and continue the DFS
-        // from there.
-        // TODO: Gracefully handle the error if the Structfile has a bad call graph.
+        // Continue the DFS from the caller Function.
         dfs(callerit->second.second);
         rpath.pop_back();
       }
@@ -298,8 +290,6 @@ bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
         // Record the full Template representing this route.
         fg.add({Scope(callee), std::move(fpath)});
       }
-
-      seen.erase(seenit);
     };
     dfs(leafit->second.second);
 
@@ -555,23 +545,107 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
   }
   assert(stack.size() == 0 && "Inconsistent stack handling!");
 
-  // Now convert the tmp_rcg into the proper rcg
+  // If we have a call graph, do some processing on it to generate a final Reverse Call Graph (RCG).
   if(has_calls || !tmp_rcg.empty()) {
     ud.cfgStatus = StructFile::CallGraphStatus::VALID;
+
+    // First, go through and associate all the call edges with their callees.
+    bool ok = true;
     ud.rcg.reserve(tmp_rcg.size());
     for(const auto& [callee, caller]: tmp_rcg) {
       auto target_it = funcs.find(callee);
       if(target_it != funcs.end()) {
         ud.rcg.emplace(target_it->second, std::move(caller));
       } else {
-        // <C> tag obviously not correct, consider the entire CFG invalid
+        // One of the <C> tags is obviously not correct. This usually indicates an error in
+        // hpcstruct's mapping of calls to procedures, so
         ud.cfgStatus = StructFile::CallGraphStatus::ERRORED;
         ud.rcg.clear();
+        ok = false;
         util::log::info{} << "Missing callee at 0x" << std::hex << callee
                           << " when processing Structfile for binary\n  "
                           << m.path().string();
         break;
       }
+    }
+
+    if(ok) {
+      // At this point, the RCG may contain cycles from recursive functions. This makes things
+      // harder later when we try to associate call paths, so we adjust the edges until we achieve
+      // a proper DAG.
+
+      // First, using Tarjan's algorithm to group all the Functions in the RCG together into
+      // strongly connected components.
+      std::unordered_multimap<util::reference_index<const Function>, std::reference_wrapper<const Function>> sccs;
+      std::unordered_map<util::reference_index<const Function>, std::reference_wrapper<const Function>> scc_roots;
+      {
+        struct FuncState {
+          std::size_t encounterIndex;
+          std::size_t rootEncounterIndex;
+          bool isActive;
+        };
+        std::unordered_map<util::reference_index<const Function>, FuncState> states;
+        states.reserve(funcs.size());
+        std::stack<std::reference_wrapper<const Function>> active;
+        std::size_t numEncountered = 0;
+        const std::function<std::pair<const FuncState&, bool>(const Function&)> scc =
+          [&](const Function& func) -> std::pair<const FuncState&, bool> {
+            auto [stateit, first] = states.try_emplace(func);
+            FuncState& state = stateit->second;
+            if(first) {
+              state.encounterIndex = state.rootEncounterIndex = numEncountered++;
+              active.push(std::cref(func));
+              state.isActive = true;
+              for(auto [it, end] = ud.rcg.equal_range(func); it != end; ++it) {
+                const Function& caller = it->second.second;
+                auto [callerState, callerFirstVisit] = scc(caller);
+                if(callerFirstVisit) {
+                  state.rootEncounterIndex = std::min(state.rootEncounterIndex, callerState.rootEncounterIndex);
+                } else if(callerState.isActive) {
+                  state.rootEncounterIndex = std::min(state.rootEncounterIndex, callerState.encounterIndex);
+                }
+              }
+              if(state.encounterIndex == state.rootEncounterIndex) {
+                const Function* sccfunc;
+                do {
+                  sccfunc = &active.top().get();
+                  sccs.emplace(std::cref(func), std::cref(*sccfunc));
+                  scc_roots.emplace(std::cref(*sccfunc), std::cref(func));
+                  states.at(*sccfunc).isActive = false;
+                  active.pop();
+                } while(sccfunc != &func);
+              }
+            }
+            return {std::cref(state), first};
+          };
+        for(const Function& func: ud.funcs)
+          scc(func);
+      }
+
+      // Delete any edges where the callee and caller are in the same SCC. These edges cause cycles
+      // which we want to remove. After this, the graph will be a DAG.
+      for(auto it = ud.rcg.begin(), end = ud.rcg.end(); it != end;) {
+        if(&scc_roots.at(it->first).get() == &scc_roots.at(it->second.second).get()) {
+          it = ud.rcg.erase(it);
+        } else {
+          ++it;
+        }
+      }
+
+      // The previous step may have broken call paths that required some SCC-internal edges. Recover
+      // the reachability properties of the original graph (between Functions not in the same SCC)
+      // by "summarizing" the intra-SCC edges with inter-SCC edges.
+      // In short, we pretend every call "could" call all other Functions in the callee's SCC.
+      decltype(ud.rcg) extra_rcg;
+      for(const auto& [callee_w, call]: ud.rcg) {
+        const Function& callee = callee_w;
+        for(auto [it, end] = sccs.equal_range(callee); it != end; ++it) {
+          const Function& sib_callee = it->second;
+          if(&callee == &sib_callee) continue;
+          extra_rcg.emplace(std::cref(sib_callee), call);
+        }
+      }
+      ud.rcg.merge(std::move(extra_rcg));
     }
   }
 
