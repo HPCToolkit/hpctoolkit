@@ -4320,7 +4320,7 @@ case "$PYTHON_CONFIG" in
   * )
     OPT_PYTHON_IFLAGS="`$PYTHON_CONFIG --includes`"
 
-    # Check that Python >= 3.10 and < 4.0
+    # Check that Python >= 3.8 and < 4.0
     ORIG_CFLAGS="$CFLAGS"
     CFLAGS="${HOST_CFLAGS} ${CFLAGS} ${OPT_PYTHON_IFLAGS}"
     AC_LANG_PUSH([C])
@@ -4330,8 +4330,8 @@ case "$PYTHON_CONFIG" in
 #include <Python.h>
 #if PY_VERSION_HEX >= 0x04000000
 #error "Python version too new, need 3.x!"
-#elif PY_VERSION_HEX < 0x030A00F0
-#error "Python version too old, need 3.10 or higher!"
+#elif PY_VERSION_HEX < 0x030800F0
+#error "Python version too old, need 3.8 or higher!"
 #endif
 ]])],
     [OPT_ENABLE_PYTHON=yes],
@@ -4340,7 +4340,7 @@ case "$PYTHON_CONFIG" in
     CFLAGS="$ORIG_CFLAGS"
 
     if test "$OPT_ENABLE_PYTHON" != yes; then
-      AC_MSG_ERROR([Python version is incompatible, need >=3.10: $PYTHON_CONFIG])
+      AC_MSG_ERROR([Python version is incompatible, need >=3.8: $PYTHON_CONFIG])
     fi
     ;;
 esac

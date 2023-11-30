@@ -65,21 +65,38 @@
 #include <frameobject.h>
 #include <stddef.h>
 
+// set flag for python 3.8
+// use funcs F(PyFrame_GetBack) and F(PyFrame_GetCode) for python >= 3.9
+// use PyFrameObject attributes to replace these functions for python 3.8
+#if PY_VERSION_HEX >= 0x030800F0 && PY_VERSION_HEX < 0x030900F0
+#define IS_PYTHON_38
+#endif
+
 // -----------------------------
 // Local variables
 // -----------------------------
 
 #define DL(NAME) dl_##NAME
 
-#define PYFUNCS(F) \
-  F(PyEval_GetFuncName) \
-  F(PyEval_SetProfile) \
-  F(PyFrame_GetBack) \
-  F(PyFrame_GetCode) \
-  F(PyFrame_GetLineNumber) \
-  F(PySys_AddAuditHook) \
-  F(PyUnicode_AsUTF8) \
-// END PYFUNCS
+#ifdef IS_PYTHON_38
+  #define PYFUNCS(F) \
+    F(PyEval_GetFuncName) \
+    F(PyEval_SetProfile) \
+    F(PyFrame_GetLineNumber) \
+    F(PySys_AddAuditHook) \
+    F(PyUnicode_AsUTF8) \
+    // END PYFUNCS
+#else
+  #define PYFUNCS(F) \
+    F(PyEval_GetFuncName) \
+    F(PyEval_SetProfile) \
+    F(PyFrame_GetBack) \
+    F(PyFrame_GetCode) \
+    F(PyFrame_GetLineNumber) \
+    F(PySys_AddAuditHook) \
+    F(PyUnicode_AsUTF8) \
+    // END PYFUNCS
+#endif
 
 #define DL_DEF(NAME) static typeof(NAME)* dl_##NAME = NULL;
 PYFUNCS(DL_DEF)
@@ -123,8 +140,13 @@ static bool python_unwind(logical_region_t* region, void** store,
 
   // Decipher the PyFrameObject to generate the final logical frame
   PyFrameObject* pyframe = *store;
+#ifdef IS_PYTHON_38
+  PyCodeObject* code = pyframe->f_code;
+#else
   PyCodeObject* code = DL(PyFrame_GetCode)(pyframe);
   Py_DECREF(code);
+#endif
+
   TMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame %p: %s:%d in function %s (starting at line %d)",
        pyframe, DL(PyUnicode_AsUTF8)(code->co_filename),
        DL(PyFrame_GetLineNumber)(pyframe), DL(PyUnicode_AsUTF8)(code->co_name),
@@ -141,8 +163,12 @@ static bool python_unwind(logical_region_t* region, void** store,
   frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, DL(PyFrame_GetLineNumber)(pyframe));
 
   // Fetch the next frame in the unwind and save that in *store for next time
+#ifdef IS_PYTHON_38
+  PyFrameObject* prevframe = pyframe->f_back;
+#else
   PyFrameObject* prevframe = DL(PyFrame_GetBack)(pyframe);
   Py_XDECREF(prevframe);
+#endif
   if(ENABLED(LOGICAL_CTX_PYTHON) && prevframe == state->caller && real_index+1 < region->expected)
     TMSG(LOGICAL_CTX_PYTHON, "Python appears to be missing some frames, got %d of %d (caller = %p)", real_index+1, region->expected, state->caller);
   *store = prevframe;
@@ -186,8 +212,12 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   case PyTrace_CALL: {  // Some Python function was called
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     IF_ENABLED(LOGICAL_CTX_PYTHON) {
+#ifdef IS_PYTHON_38
+      PyCodeObject* code = frame->f_code;
+#else
       PyCodeObject* code = DL(PyFrame_GetCode)(frame);
       Py_DECREF(code);
+#endif
       TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] call of Python function %s (%s:%d), now at frame = %p",
            top == NULL ? -1 : top->expected, top == NULL ? 1 : top->expected+1,
            DL(PyUnicode_AsUTF8)(code->co_name),
@@ -198,13 +228,20 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
       // We are (re)entering Python from C. Push a brand new logical region
       logical_region_t reg = {
         .generator = python_unwind, .specific = {.python = {
-          .lm = 0, .caller = DL(PyFrame_GetBack)(frame),
+          .lm = 0,
+#ifdef IS_PYTHON_38
+          .caller = frame->f_back,
+#else
+          .caller = DL(PyFrame_GetBack)(frame),
+#endif
           .frame = frame, .cfunc = NULL,
         }},
         .expected = 1,
         .beforeenter = {}, .exit = {}, .exit_len = 0, .afterexit = python_afterexit,
       };
+#ifndef IS_PYTHON_38
       Py_XDECREF(reg.specific.python.caller);
+#endif
 
       // Unwind out through libpython.so to identify the appropriate C caller
       hpcrun_logical_frame_cursor(&reg.beforeenter, 1);
@@ -281,8 +318,12 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     }
 
     // Fetch the frame we are returning into
+#ifdef IS_PYTHON_38
+    PyFrameObject* prevframe = frame->f_back;
+#else
     PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
     Py_XDECREF(prevframe);
+#endif
     TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] (about to) return from Python frame = %p, now at frame %p",
          top->expected, top->expected-1, frame, prevframe);
 

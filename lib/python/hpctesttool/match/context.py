@@ -47,13 +47,13 @@ class _MatchExact:
         return _MatchExact(val)
 
 
-def _coercion_to_exact(exact):
+def _coercion_to_exact(exact: typing.Type, *, coerce_none: bool = False):
     def apply(func):
         @functools.wraps(func)
         def wrapper(cls, val):
             if isinstance(val, (_MatchAny, cls)):
                 return val
-            if isinstance(val, exact):
+            if isinstance(val, exact) or (coerce_none and val is None):
                 return _MatchExact(val)
             return func(cls, val)
 
@@ -131,7 +131,7 @@ class MatchFile:
         return filter(self.matches, fs.files)
 
     @classmethod
-    @_coercion_to_exact(typing.Optional[metadb.File])
+    @_coercion_to_exact(metadb.File, coerce_none=True)
     def coerce(cls, val) -> "MatchFile":
         return cls(path=val)
 
@@ -162,7 +162,7 @@ class MatchModule:
         return filter(self.matches, lm.modules)
 
     @classmethod
-    @_coercion_to_exact(typing.Optional[metadb.Module])
+    @_coercion_to_exact(metadb.Module, coerce_none=True)
     def coerce(cls, val) -> "MatchModule":
         return cls(path=val)
 
@@ -205,7 +205,7 @@ class MatchFunction:
         return filter(self.matches, fs.functions)
 
     @classmethod
-    @_coercion_to_exact(typing.Optional[metadb.Function])
+    @_coercion_to_exact(metadb.Function, coerce_none=True)
     def coerce(cls, val) -> "MatchFunction":
         return cls(name=val)
 
