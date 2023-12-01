@@ -879,12 +879,6 @@ libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 PROF_LEAN_A = $(top_builddir)/src/lib/prof-lean/.libs/libHPCprof-lean.a
 SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 
-# Modified versions of the external archives.  The static case works
-# with or without -fPIC, but the dynamic case requires -fPIC.
-
-OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
-OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
-
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
 libhpcrun_unwind_la_LDFLAGS = -Wl,-Bsymbolic
@@ -916,11 +910,11 @@ libhpcrun_la_LDFLAGS +=  \
 	-lpthread -lrt  \
 	-L$(LIBELF_LIB) -lelf  \
 	$(PERFMON_LDFLAGS_DYN)  \
-	$(OPT_ROCM_LDFLAGS)
+	$(OPT_ROCM_LDFLAGS)	\
+	$(LZMA_LDFLAGS_DYN)
 
-libhpcrun_unwind_la_LIBADD =	\
-	$(OUR_LIBUNWIND_A)	\
-	$(OUR_LZMA_A)
+libhpcrun_unwind_la_LDFLAGS +=	\
+	$(LIBUNWIND_LDFLAGS_DYN)
 
 libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \

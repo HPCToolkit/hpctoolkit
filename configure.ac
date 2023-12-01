@@ -2486,51 +2486,6 @@ esac
 AC_MSG_RESULT([$LIBUNWIND])
 AC_MSG_NOTICE([libunwind.a static archive: $libunwind_static])
 
-#
-# Test if libunwind.a was compiled with -fPIC.
-# If yes, then use for both static and dynamic.
-#
-if test "x$libunwind_static" = xyes
-then
-  ORIG_CFLAGS="$CFLAGS"
-  ORIG_LIBS="$LIBS"
-  CFLAGS="-shared -fPIC $LIBUNWIND_IFLAGS"
-  LIBS="$LIBUNWIND_LDFLAGS_STAT"
-
-  AC_LANG_PUSH([C])
-  AC_LINK_IFELSE([
-  AC_LANG_SOURCE([[
-#define UNW_LOCAL_ONLY
-#include <sys/types.h>
-#include <libunwind.h>
-unw_word_t
-my_get_ip_addr(unw_context_t *context)
-{
-  unw_cursor_t cursor;
-  unw_word_t ip;
-  unw_init_local(&cursor, context);
-  unw_step(&cursor);
-  unw_get_reg(&cursor, UNW_REG_IP, &ip);
-  return ip;
-}
-]])], [libunwind_fpic=yes], [libunwind_fpic=no])
-
-  AC_LANG_POP
-  CFLAGS="$ORIG_CFLAGS"
-  LIBS="$ORIG_LIBS"
-fi
-
-AC_MSG_NOTICE([libunwind.a compiled with -fPIC: $libunwind_fpic])
-
-#
-# Now require libunwind static archive with fpic for both static and
-# dynamic cases, or else not at all, same as mbedtls.  (The nothing
-# case is for just building documentation.)  And never need to copy.
-#
-if test "$libunwind_exists" = yes && test "$libunwind_fpic" = no ; then
-  AC_MSG_ERROR([libunwind.a must be compiled with -fPIC])
-fi
-
 unwinder_mesg="$UNWINDER"
 if test "$UNWINDER" != libunw && test "$libunwind_exists" = yes ; then
   unwinder_mesg="$unwinder_mesg + libunw"
@@ -2637,49 +2592,6 @@ esac
 
 AC_MSG_RESULT([$LZMA])
 AC_MSG_NOTICE([lzma.a static archive: $lzma_static])
-
-#
-# Test if liblzma.a was compiled with -fPIC.
-# If yes, then use for both static and dynamic.
-#
-if test "$lzma_static" = yes
-then
-  ORIG_CFLAGS="$CFLAGS"
-  ORIG_LIBS="$LIBS"
-  CFLAGS="-shared -fPIC $LZMA_IFLAGS"
-  LIBS="$LZMA_LDFLAGS_STAT"
-
-  AC_LANG_PUSH([C])
-  AC_LINK_IFELSE([
-  AC_LANG_SOURCE([[
-#include <sys/types.h>
-#include <inttypes.h>
-#include <lzma.h>
-long
-myencode(uint8_t *in_buf, uint8_t *out_buf)
-{
-  lzma_stream stream = LZMA_STREAM_INIT;
-  stream.next_in = in_buf;
-  stream.next_out = out_buf;
-  lzma_code(&stream, LZMA_FINISH);
-  return (long) stream.avail_out;
-}
-]])], [lzma_fpic=yes], [lzma_fpic=no])
-
-  AC_LANG_POP
-  CFLAGS="$ORIG_CFLAGS"
-  LIBS="$ORIG_LIBS"
-fi
-
-AC_MSG_NOTICE([lzma.a compiled with -fPIC: $lzma_fpic])
-
-#
-# Now require lzma static archive with fpic, or else nothing at all
-# (for docs), same as libunwind and mbedtls.
-#
-if test "$lzma_exists" = yes && test "$lzma_fpic" = no ; then
-  AC_MSG_ERROR([liblzma.a must be compiled with -fPIC])
-fi
 
 #
 # hpcprof-mpi: same as hpclink if fully static, else default
@@ -5424,9 +5336,6 @@ AC_CONFIG_FILES([ \
   lib/Makefile \
   \
   src/Makefile \
-  src/extern/Makefile \
-  src/extern/libunwind/Makefile \
-  src/extern/lzma/Makefile \
   src/tool/Makefile \
   src/tool/hpcfnbounds/Makefile \
   src/tool/hpcprof/Makefile \
