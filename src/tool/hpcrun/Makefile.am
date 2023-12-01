@@ -677,15 +677,11 @@ libhpcrun_fake_audit_la_SOURCES =	\
 	audit/fake-auditor.c
 
 libhpcrun_private_ns_la_SOURCES =	\
-	audit/private-ns.c		\
-	extern-real/dl-iterate.c	\
-	extern-real/mmap.c
+	audit/private-ns.c
 
 libhpcrun_audit_la_SOURCES =		\
 	audit/auditor.c			\
-	audit/private-ns.c		\
-	extern-real/dl-iterate.c	\
-	extern-real/mmap.c
+	audit/private-ns.c
 
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
