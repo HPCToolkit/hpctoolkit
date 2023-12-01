@@ -83,6 +83,7 @@
 #include <hpcrun/hpcrun_stats.h>
 #include <unwind/common/unw-datatypes.h>
 #include <unwind/common/unwind.h>
+#include <unwind/common/libunwind-interface.h>
 #include <unwind/common/uw_recipe_map.h>
 #include <unwind/common/binarytree_uwi.h>
 #include <utilities/arch/context-pc.h>
@@ -183,7 +184,7 @@ libunw_cursor_get_pc(hpcrun_unw_cursor_t* cursor)
   unw_word_t tmp;
 
   unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
+  libunwind_get_reg(unw_cursor, UNW_REG_IP, &tmp);
 
   return (void *) tmp;
 }
@@ -195,7 +196,7 @@ libunw_cursor_get_sp(hpcrun_unw_cursor_t* cursor)
   unw_word_t tmp;
 
   unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_get_reg(unw_cursor, UNW_REG_SP, &tmp);
+  libunwind_get_reg(unw_cursor, UNW_REG_SP, &tmp);
 
   return (void *) tmp;
 }
@@ -208,7 +209,7 @@ libunw_cursor_get_bp(hpcrun_unw_cursor_t* cursor)
 
 #if HOST_CPU_x86_64
   unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_get_reg(unw_cursor, UNW_TDEP_BP, &tmp);
+  libunwind_get_reg(unw_cursor, UNW_TDEP_BP, &tmp);
 #else
   tmp = 0;
 #endif
@@ -223,7 +224,7 @@ libunw_cursor_get_ra_loc(hpcrun_unw_cursor_t* cursor)
   unw_save_loc_t ip_loc;
 
   unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_get_save_loc(unw_cursor, UNW_REG_IP, &ip_loc);
+  libunwind_get_save_loc(unw_cursor, UNW_REG_IP, &ip_loc);
 
   unw_word_t tmp = (ip_loc.type == UNW_SLT_MEMORY ? ip_loc.u.addr : 0);
 
@@ -299,7 +300,7 @@ libunw_take_step(hpcrun_unw_cursor_t* cursor)
   bitree_uwi_t* uw = cursor->unwr_info.btuwi;
   if (!uw) {
     // If we don't have unwind info, let libunwind do its thing.
-    int ret = unw_step(&(cursor->uc));
+    int ret = libunwind_step(&(cursor->uc));
     if(ret > 0) return STEP_OK;
     // Libunwind failed (or the frame-chain ended). Log an error and error.
     switch(-ret) {
@@ -332,7 +333,7 @@ libunw_take_step(hpcrun_unw_cursor_t* cursor)
   }
 
   uwi_t *uwi = bitree_uwi_rootval(uw);
-  unw_apply_reg_state(&(cursor->uc), uwi->recipe);
+  libunwind_apply_reg_state(&(cursor->uc), uwi->recipe);
 
   return STEP_OK;
 }
@@ -347,7 +348,7 @@ libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   unw_cursor_t *unw_cursor = &(cursor->uc);
   unw_context_t *ctx = (unw_context_t *) context;
 
-  if (ctx != NULL && unw_init_local2(unw_cursor, ctx, UNW_INIT_SIGNAL_FRAME) == 0) {
+  if (ctx != NULL && libunwind_init_local2(unw_cursor, ctx, UNW_INIT_SIGNAL_FRAME) == 0) {
     libunw_finalize_cursor(cursor, 0);
   }
 }
@@ -389,14 +390,14 @@ btuwi_status_t
 libunw_build_intervals(char *beg_insn, unsigned int len)
 {
   unw_context_t uc;
-  (void) unw_getcontext(&uc);
+  (void) libunwind_getcontext(&uc);
   unw_cursor_t c;
-  unw_init_local2(&c, &uc, UNW_INIT_SIGNAL_FRAME);
-  unw_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
+  libunwind_init_local2(&c, &uc, UNW_INIT_SIGNAL_FRAME);
+  libunwind_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
   void *space[2] __attribute((aligned (32))); // enough space for any binarytree
   bitree_uwi_t *dummy = (bitree_uwi_t*)space;
   struct builder b = {DWARF_UNWINDER, dummy, 0};
-  int status = unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
+  int status = libunwind_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
 
   intptr_t end = bitree_uwi_rootval(b.latest)->interval.end;
   uintptr_t end_insn = (uintptr_t)beg_insn + len;
@@ -406,8 +407,8 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
     // info we can possibly pull.
     end++;
     do {
-      unw_set_reg(&c, UNW_REG_IP, end);
-      status = unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
+      libunwind_set_reg(&c, UNW_REG_IP, end);
+      status = libunwind_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
       end++;  // In case this doesn't work, move to the next byte
     } while(status < 0 && end < end_insn);
     if(end >= end_insn) break;  // Scanned to the end, just go with what we got

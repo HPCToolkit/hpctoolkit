@@ -85,6 +85,7 @@
 #include <unwind/common/unwind.h>
 #include <unwind/common/backtrace.h>
 #include <unwind/common/libunw_intervals.h>
+#include <unwind/common/libunwind-interface.h>
 #include <unwind/common/unw-throw.h>
 #include <unwind/common/validate_return_addr.h>
 #include <unwind/common/fence_enum.h>
@@ -190,6 +191,7 @@ hpcrun_unw_init(void)
     TMSG(NU, "hpcrun_unw_init from x86_unwind.c" );
     msg_sent = true;
   }
+  libunwind_bind();
   x86_family_decoder_init();
   uw_recipe_map_init();
 }
@@ -250,9 +252,9 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   libunw_unw_init_cursor(cursor, context);
 
   void *pc, **bp, **sp;
-  unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
-  unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
-  unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
+  libunwind_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
+  libunwind_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
+  libunwind_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
   save_registers(cursor, pc, bp, sp, NULL);
 
   if (cursor->libunw_status == LIBUNW_READY)
@@ -444,7 +446,7 @@ hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
   LV_MCONTEXT_PC(&uc.uc_mcontext) = (intptr_t)pc;
   LV_MCONTEXT_SP(&uc.uc_mcontext) = (intptr_t)sp;
   LV_MCONTEXT_BP(&uc.uc_mcontext) = (intptr_t)bp;
-  unw_init_local(&cursor->uc, &uc);
+  libunwind_init_local(&cursor->uc, &uc);
   return libunw_finalize_cursor(cursor, 1);
 }
 

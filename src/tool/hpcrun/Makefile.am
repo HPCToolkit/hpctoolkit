@@ -120,6 +120,7 @@ endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
 noinst_LTLIBRARIES = libhpcrun.la
+pkglib_LTLIBRARIES += libhpcrun_unwind.la
 pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
 pkglib_LTLIBRARIES += libhpcrun_private_ns.la
 pkglib_LTLIBRARIES += libhpcrun_audit.la
@@ -202,6 +203,7 @@ UNW_COMMON_FILES = \
 	unwind/common/binarytree_uwi.c			\
 	unwind/common/interval_t.c			\
 	unwind/common/libunw_intervals.c		\
+	unwind/common/libunwind-interface.c		\
 	unwind/common/stack_troll.c			\
 	unwind/common/uw_hash.c			\
 	unwind/common/uw_recipe_map.c
@@ -416,9 +418,6 @@ MY_BASE_FILES =				\
 	ompt/ompt-device-map.c          \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
-	\
-	extern-real/dl-iterate.c	\
-	extern-real/mmap.c		\
 	\
 	syscalls/poll.c	\
 	syscalls/ppoll.c \
@@ -671,6 +670,9 @@ libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
+libhpcrun_unwind_la_SOURCES =	\
+	unwind/common/libunwind-pvt.c
+
 libhpcrun_fake_audit_la_SOURCES =	\
 	audit/fake-auditor.c
 
@@ -742,6 +744,10 @@ libhpcrun_la_CPPFLAGS =			\
 if OPT_BGQ_BACKEND
 libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
 endif
+
+libhpcrun_unwind_la_CPPFLAGS =	\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
 
 libhpcrun_fake_audit_la_CPPFLAGS =	\
 	$(MY_CPP_DEFINES)		\
@@ -847,6 +853,7 @@ endif
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
+libhpcrun_unwind_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_fake_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_private_ns_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -884,6 +891,8 @@ OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
+libhpcrun_unwind_la_LDFLAGS = -Wl,-Bsymbolic
+
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
 libhpcrun_private_ns_la_LDFLAGS = -Wl,-Bsymbolic -ldl
@@ -902,19 +911,9 @@ libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
-# Note: (1) for dynamic libhpcrun.so, use LIBADD for (.a) archives
-# with fPIC (libunwind, etc) that are linked in and hidden at link
-# time, and LDFLAGS (-L, -l) for other dependency libraries.
-#
-# (2) for static libhpcrun.o, use LDADD for archives that are linked
-# and hidden into libhpcrun.o.  Other dependencies go into hpclink.
-# Don't use LDFLAGS for static case.
-
 libhpcrun_la_LIBADD =  \
 	$(PROF_LEAN_A)  \
-	$(SUPPORT_LEAN_A)  \
-	$(OUR_LIBUNWIND_A)  \
-	$(OUR_LZMA_A)
+	$(SUPPORT_LEAN_A)
 
 libhpcrun_la_LDFLAGS +=  \
 	-L$(LIBMONITOR_LIB) -lmonitor  \
@@ -923,12 +922,14 @@ libhpcrun_la_LDFLAGS +=  \
 	$(PERFMON_LDFLAGS_DYN)  \
 	$(OPT_ROCM_LDFLAGS)
 
+libhpcrun_unwind_la_LIBADD =	\
+	$(OUR_LIBUNWIND_A)	\
+	$(OUR_LZMA_A)
+
 libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
-	$(PERFMON_LDFLAGS_STAT)  \
-	$(OUR_LIBUNWIND_A)  \
-	$(OUR_LZMA_A)
+	$(PERFMON_LDFLAGS_STAT)
 
 if HOST_CPU_X86_FAMILY
 libhpcrun_la_LIBADD += $(XED2_HPCRUN_LIBS)
