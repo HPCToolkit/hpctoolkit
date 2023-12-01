@@ -121,6 +121,7 @@ endif
 if OPT_ENABLE_HPCRUN_DYNAMIC
 noinst_LTLIBRARIES = libhpcrun.la
 pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
+pkglib_LTLIBRARIES += libhpcrun_private_ns.la
 pkglib_LTLIBRARIES += libhpcrun_audit.la
 pkglib_LTLIBRARIES += libhpcrun_dlmopen.la
 pkglib_LTLIBRARIES += libhpcrun_ga.la
@@ -336,6 +337,8 @@ MY_BASE_FILES =				\
 	trace.c				\
 	weak.c				\
 	write_data.c		        \
+	\
+	audit/binding.c			\
 	\
 	cct/cct_bundle.c		\
 	cct/cct_ctxt.c			\
@@ -671,8 +674,16 @@ libhpcrun_la_SOURCES = 			\
 libhpcrun_fake_audit_la_SOURCES =	\
 	audit/fake-auditor.c
 
+libhpcrun_private_ns_la_SOURCES =	\
+	audit/private-ns.c		\
+	extern-real/dl-iterate.c	\
+	extern-real/mmap.c
+
 libhpcrun_audit_la_SOURCES =		\
-	audit/auditor.c
+	audit/auditor.c			\
+	audit/private-ns.c		\
+	extern-real/dl-iterate.c	\
+	extern-real/mmap.c
 
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -733,6 +744,10 @@ libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
 endif
 
 libhpcrun_fake_audit_la_CPPFLAGS =	\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_private_ns_la_CPPFLAGS =	\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
@@ -833,6 +848,7 @@ libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
 libhpcrun_fake_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_private_ns_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -869,6 +885,8 @@ OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+
+libhpcrun_private_ns_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
 libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 

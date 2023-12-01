@@ -1900,6 +1900,7 @@ void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* ho
   hooks->open = auditor_open;
   hooks->close = auditor_close;
   hooks->stable = auditor_stable;
+  hooks->dl_iterate_phdr = hpcrun_loadmap_iterate;
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */
