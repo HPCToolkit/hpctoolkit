@@ -54,12 +54,10 @@ spack:
   - optional:
     - 'papi @6.0.0.1:'  # Required for -Dpapi=enabled
     - 'opencl-c-headers @2022.01.04:'  # Required for -Dopencl=enabled
-    - 'openmpi @4.1.3:'  # Required for -Dmpi=enabled
   - when: env["VERMODE"] == "minimum"
     optional:
     - papi @6.0.0.1
     - opencl-c-headers @2022.01.04
-    - openmpi @4.1.3
 
   specs:
   - $core

@@ -4,10 +4,6 @@
   {%- endif -%}
 {%- endmacro -%}
 
-[binaries]
-mpicxx = '{{ pfxpath("mpi", "bin/mpicxx") }}'
-mpiexec = '{{ pfxpath("mpi", "bin/mpiexec") }}'
-
 [built-in options]
 {%- macro rpath(spec) -%}
   {%- if spack_prefix(spec) -%}

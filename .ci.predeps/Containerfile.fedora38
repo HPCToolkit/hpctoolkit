@@ -26,6 +26,7 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
     libtool \
     make \
     ninja-build \
+    openmpi-devel \
     pkg-config \
     python3 python3-pip python3-devel \
   && : # END
@@ -35,6 +36,14 @@ RUN \
   python3 -m pip install \
     'meson>=1.1.0,<2' \
   && : # END
+
+# Fedora prefers to use modules for MPI, but that makes headaches in containers.
+# Symlink all our problems away.
+RUN \
+  . /etc/profile.d/modules.sh \
+  && module load mpi \
+  && cp -svrTn $MPI_BIN /usr/bin \
+  && cp -svrTn $MPI_LIB /usr/lib64
 
 
 # OS native-file side-stage: Collect and compose a native file for the OS software
