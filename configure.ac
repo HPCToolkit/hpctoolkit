@@ -3410,8 +3410,8 @@ int my_xed_init(void)
 #include <xed-operand-values-interface.h>
 int main(int argc, char **argv)
 {
-  long ans = xed_operand_values_get_branch_displacement_int64(NULL);
-  printf("ans = %ld\n", ans);
+  long xyzzy = xed_operand_values_get_branch_displacement_int64(NULL);
+  printf("xyzzy = %ld\n", xyzzy);
   return 0;
 }
 ]])], [xed_displacement_int64=yes])
