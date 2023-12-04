@@ -92,7 +92,7 @@ if mpiexec.found()
     mpiexec = [mpiexec.full_path(), '-host', 'localhost:1000', '-n']
 else
     _sh = find_program('sh')
-    mpiexec = [_sh, '-c', 'exit 77']
+    mpiexec = [_sh.full_path(), '-c', 'exit 77']
 endif
 
 # --- START AUTOGOO STUB ---------------------
