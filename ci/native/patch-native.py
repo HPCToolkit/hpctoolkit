@@ -19,9 +19,18 @@ if __name__ == "__main__":
                     a.set(section, opt, val)
                 else:
                     aval = a.get(section, opt)
-                    if not re.match(r"\s*\[", val) or not re.match(r"\s*\[", aval):
-                        raise ValueError(f"Unable to merge non-list values: {aval!r} + {val!r}")
-                    a.set(section, opt, f"{aval}\n+ {val}")
+                    if not re.match(r"\s*\[", val):
+                        if re.match(r"\s*\[", aval):
+                            raise ValueError(
+                                f"Attempt to override list with non-list: {aval!r} + {val!r}"
+                            )
+                        a.set(section, opt, val)
+                    else:
+                        if not re.match(r"\s*\[", aval):
+                            raise ValueError(
+                                f"Unable to merge list into non-list: {aval!r} + {val!r}"
+                            )
+                        a.set(section, opt, f"{aval}\n+ {val}")
 
     with open(sys.argv[1], "w", encoding="utf-8") as f:
         a.write(f, space_around_delimiters=True)
