@@ -68,7 +68,11 @@ static void*
 actual_get_branch_target(void *ins, xed_decoded_inst_t *xptr,
                    xed_operand_values_t *vals)
 {
+#ifdef XED_DISPLACEMENT_INT64
   int64_t offset = xed_operand_values_get_branch_displacement_int64(vals);
+#else
+  int32_t offset = xed_operand_values_get_branch_displacement_int32(vals);
+#endif
 
   void *end_of_call_inst = ins + xed_decoded_inst_get_length(xptr);
   void *target = end_of_call_inst + offset;
