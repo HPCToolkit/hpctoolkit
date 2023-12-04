@@ -1,11 +1,16 @@
 import configparser
+import os.path
 import re
 import sys
 
 if __name__ == "__main__":
     a = configparser.ConfigParser(interpolation=None)
+    if not os.path.exists(sys.argv[1]):
+        raise ValueError(f"Not a file: {sys.argv[1]}")
     a.read(sys.argv[1], encoding="utf-8")
     b = configparser.ConfigParser(interpolation=None)
+    if not os.path.exists(sys.argv[2]):
+        raise ValueError(f"Not a file: {sys.argv[2]}")
     b.read(sys.argv[2], encoding="utf-8")
 
     for section in b.sections():
