@@ -54,9 +54,6 @@
 // start/stop functions so that an application can link with
 // -lhpctoolkit without having to #ifdef all of the calls.
 //
-// The static case must use weak symbols, but the dynamic case can use
-// strong or weak (LD_PRELOAD supersedes strong/weak).
-//
 //***************************************************************************
 
 #include "hpctoolkit.h"

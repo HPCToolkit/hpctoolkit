@@ -13,9 +13,7 @@
 
 #include <pthread.h>
 
-#ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
-#endif
 
 
 
@@ -137,13 +135,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-#ifndef HPCRUN_STATIC_LINK
     return hpcrun_ev_is(ev_str, AMD_ROCM);
-#else
-    return false;
-#endif
-
-
 }
 
 static void
@@ -160,19 +152,15 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-#ifndef HPCRUN_STATIC_LINK
   if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
     monitor_real_exit(-1);
   }
-#endif
 
-#ifndef HPCRUN_STATIC_LINK
   if (hip_bind()) {
     EEMSG("hpcrun: unable to bind to HIP AMD library %s\n", dlerror());
     monitor_real_exit(-1);
   }
-#endif
 
 #if 0
   // Fetch the event string for the sample source

@@ -807,7 +807,6 @@ rocprofiler_init
 
   monitor_disable_new_threads();
 
-#ifndef HPCRUN_STATIC_LINK
   // We usually bind GPU vendor library in finalize_event_list.
   // But here we must do early binding to query supported list of counters
   if (rocprofiler_bind() != DYNAMIC_BINDING_STATUS_OK) {
@@ -815,7 +814,6 @@ rocprofiler_init
     EEMSG("hpcrun: see hpcrun --help message for instruction on how to provide a rocprofiler install");
     monitor_real_exit(-1);
   }
-#endif
 
   initialize_counter_information();
 
@@ -866,8 +864,6 @@ rocprofiler_bind
   void
 )
 {
-#ifndef HPCRUN_STATIC_LINK
-  // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   const char* rocprofiler_path = getenv("HSA_TOOLS_LIB");
   if (rocprofiler_path == NULL) {
@@ -889,9 +885,6 @@ rocprofiler_bind
   hpcrun_force_dlopen(false);
 
   return DYNAMIC_BINDING_STATUS_OK;
-#else
-  return DYNAMIC_BINDING_STATUS_ERROR;
-#endif // ! HPCRUN_STATIC_LINK
 }
 
 void

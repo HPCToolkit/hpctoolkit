@@ -158,20 +158,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #if ENABLE_OPENCL
-#ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, OPENCL_OPTION);
-#if 0
-  return strncmp(ev_str, OPENCL_OPTION, strlen(OPENCL_OPTION)) == 0;
-  return (hpcrun_ev_is(ev_str, OPENCL) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION)
-                                           || strstr(ev_str, INSTRUMENTATION_PREFIX)
-                                           || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK)
-                                           || hpcrun_ev_is(ev_str, ENABLE_OPENCL_BLAME_SHIFTING)
-                                           || hpcrun_ev_is(ev_str, ENABLE_INTEL_GPU_UTILIZATION)
-         );
-#endif
-#else
-  return false;
-#endif
 #else
   return false;
 #endif
@@ -226,12 +213,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  #ifndef HPCRUN_STATIC_LINK
   if (opencl_bind()) {
     EEMSG("hpcrun: unable to bind to opencl library %s\n", dlerror());
     monitor_real_exit(-1);
   }
-  #endif
   opencl_api_initialize(&opencl_instrumentation_options);
 
   device_finalizer_flush.fn = opencl_api_thread_finalize;

@@ -290,7 +290,7 @@ AM_CONDITIONAL(OPT_ENABLE_PLAIN, test "${OPT_ENABLE_PLAIN}" = "yes")
 # enable-strip-debug
 #-------------------------------------------------
 
-# Strip the debug section from the libraries used in hpcrun/hpclink so
+# Strip the debug section from the libraries used in hpcrun so
 # that our code does not appear in the viewer.
 
 default=yes
@@ -1034,48 +1034,6 @@ else
   warn_non_gnu=yes
   warn_non_gnu_mesg='CC/CXX'
 fi
-
-
-#-------------------------------------------------
-# Find base CC compiler, outside of spack
-#-------------------------------------------------
-
-# Hpclink needs the CC compiler for the fnbounds array, but the spack
-# wrapper won't run outside of spack.  So, if we're being built by
-# spack, then find the base compiler for hpclink.
-
-HPCLINK_CC="$CC_PATH"
-
-echo "$CC_PATH" | grep -E -i -e 'lib.*spack.*env' >/dev/null
-if test $? -eq 0 ; then
-  AC_MSG_NOTICE([found spack compiler wrapper])
-  AC_MSG_CHECKING([if base compiler works: $SPACK_CC])
-
-  ORIG_CC="$CC"
-  CC="$SPACK_CC"
-  AC_LANG_PUSH([C])
-
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-unsigned long addrs[] = {
-  0x400400, 0x400410
-};
-unsigned long len = sizeof(addrs) / sizeof(addrs[0]);
-]])], [result=yes], [result=no])
-
-  AC_MSG_RESULT([$result])
-
-  AC_LANG_POP()
-  CC="$ORIG_CC"
-
-  if test "$result" = yes ; then HPCLINK_CC="$SPACK_CC"
-  else HPCLINK_CC=gcc
-  fi
-fi
-
-AC_MSG_NOTICE([hpclink compiler: $HPCLINK_CC])
-
-AC_SUBST([HPCLINK_CC])
 
 
 #-------------------------------------------------
@@ -2354,7 +2312,6 @@ AC_SUBST([LIBIBERTY_LIBS])
 #-------------------------------------------------
 
 OPT_LIBMONITOR_DYNAMIC=no
-OPT_LIBMONITOR_STATIC=no
 
 LIBMONITOR="$default_libmonitor_prefix"
 
@@ -2378,12 +2335,6 @@ case "${LIBMONITOR}" in
     if test -f "${LIBMONITOR_LIB}/libmonitor.so" ; then
       OPT_LIBMONITOR_DYNAMIC=yes
     fi
-    wrap_file="${LIBMONITOR_LIB}/libmonitor_wrap.a"
-    if test -f "$wrap_file" ; then
-      OPT_LIBMONITOR_STATIC=yes
-      LIBMONITOR_WRAP_NAMES=`nm "$wrap_file" | grep __wrap_ |
-        $SED -e 's/.*__wrap_//' | tr '\n' ' '`
-    fi
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -2395,12 +2346,8 @@ esac
 
 AC_MSG_RESULT([$LIBMONITOR])
 
-echo "libmonitor wrap names:" >&AS_MESSAGE_LOG_FD
-echo "$LIBMONITOR_WRAP_NAMES" >&AS_MESSAGE_LOG_FD
-
 AC_SUBST([LIBMONITOR_INC])
 AC_SUBST([LIBMONITOR_LIB])
-AC_SUBST([LIBMONITOR_WRAP_NAMES])
 
 
 #-------------------------------------------------
@@ -2411,8 +2358,7 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 # Test for three things:
 #
 #  1. libunwind exists (headers + .so) for dynamic case.
-#  2. static archive libunwind.a exists for static case.
-#  3. archive compiled with -fPIC for link into libhpcrun.so.
+#  2. static archive libunwind.a compiled with -fPIC for link into libhpcrun.so.
 #
 # Note: we only use local (first-party) unwinding, so we only need
 # libunwind.so, not libunwind-PLATFORM.so, but code must be compiled
@@ -2516,8 +2462,7 @@ AM_CONDITIONAL(OPT_LIBUNWIND_STATIC, [test "$libunwind_static" = yes])
 # Test for three things:
 #
 #  1. liblzma exists (headers + .so) for dynamic case.
-#  2. static archive liblzma.a exists for static case.
-#  3. archive compiled with -fPIC for link into libhpcrun.so.
+#  2. static archive liblzma.a compiled with -fPIC for link into libhpcrun.so.
 #
 # Note: lzma is also used in prof-mpi (via support-lean), not just in
 # hpcrun, so we also need "normal" usage, not just fPIC archive for
@@ -2590,7 +2535,7 @@ AC_MSG_RESULT([$LZMA])
 AC_MSG_NOTICE([lzma.a static archive: $lzma_static])
 
 #
-# hpcprof-mpi: same as hpclink if fully static, else default
+# hpcprof-mpi: static if fully static, else default
 #
 echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
 if test $? = 0 ; then
@@ -2613,10 +2558,8 @@ AM_CONDITIONAL(OPT_LZMA_STATIC, [test "$lzma_static" = yes])
 #-------------------------------------------------
 
 OPT_PAPI_DYNAMIC=no
-OPT_PAPI_STATIC=no
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
-OPT_PAPI_LIBS_STAT=
 OPT_PAPI_LIBPATH=
 
 OPT_PAPI="$default_papi_prefix"
@@ -2655,13 +2598,6 @@ case "$OPT_PAPI" in
             OPT_PAPI_LDFLAGS="${OPT_PAPI_LDFLAGS} -lpfm"
           fi
         fi
-        if test -f "${lib_dir}/libpapi.a" ; then
-          OPT_PAPI_STATIC=yes
-          OPT_PAPI_LIBS_STAT="${lib_dir}/libpapi.a"
-          if test -f "${lib_dir}/libpfm.a" ; then
-            OPT_PAPI_LIBS_STAT="${OPT_PAPI_LIBS_STAT} ${lib_dir}/libpfm.a"
-          fi
-        fi
         break
       fi
     done
@@ -2682,13 +2618,11 @@ AC_MSG_RESULT([$OPT_PAPI])
 
 if test "$OPT_PAPI" != no ; then
   AC_MSG_NOTICE([papi shared libpapi.so: $OPT_PAPI_DYNAMIC])
-  AC_MSG_NOTICE([papi static libpapi.a: $OPT_PAPI_STATIC])
 fi
 
 AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
 AC_SUBST(OPT_PAPI_LDFLAGS)
-AC_SUBST(OPT_PAPI_LIBS_STAT)
 AC_SUBST(OPT_PAPI_LIBPATH)
 
 
@@ -2821,12 +2755,10 @@ fi
 #-------------------------------------------------
 
 PERFMON=no
-PERFMON_STATIC=no
 OPT_PERFMON=no
 
 PERFMON_CFLAGS=
 PERFMON_LDFLAGS_DYN=
-PERFMON_LDFLAGS_STAT=
 PERFMON_LIB=
 
 AC_ARG_WITH([perfmon],
@@ -2918,10 +2850,6 @@ case "$PERFMON" in
         if test -f "${lib_dir}/libpfm.so" ; then
           PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
         fi
-        if test -f "${lib_dir}/libpfm.a" ; then
-          PERFMON_LDFLAGS_STAT="${lib_dir}/libpfm.a"
-          PERFMON_STATIC=yes
-        fi
         break
       fi
     done
@@ -2936,7 +2864,6 @@ esac
 AC_SUBST([PERFMON_CFLAGS])
 AC_SUBST([PERFMON_LIB])
 AC_SUBST([PERFMON_LDFLAGS_DYN])
-AC_SUBST([PERFMON_LDFLAGS_STAT])
 
 AM_CONDITIONAL(OPT_PERFMON, [test "$OPT_PERFMON" = yes])
 
@@ -3080,7 +3007,6 @@ then
 
     OPT_PAPI=no
     OPT_PAPI_DYNAMIC=no
-    OPT_PAPI_STATIC=no
     OPT_PAPI_IFLAGS=
     OPT_PAPI_LDFLAGS=
     OPT_PAPI_LIBPATH=
@@ -3093,7 +3019,6 @@ fi
 # AC-SUBST can be anywhere, but AM-CONDITIONAL reads the value now.
 
 AM_CONDITIONAL(OPT_PAPI_DYNAMIC, [test "$OPT_PAPI_DYNAMIC" = yes])
-AM_CONDITIONAL(OPT_PAPI_STATIC,  [test "$OPT_PAPI_STATIC" = yes])
 AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 AM_CONDITIONAL(OPT_PAPI_ROCM, [test "$use_papi_c_rocm" = yes])
@@ -3188,10 +3113,8 @@ XED2_INC=
 XED2_LIB_DIR=no
 XED2_LIB_FLAGS=
 XED2_HPCRUN_LIBS=
-XED2_HPCLINK_LIBS=
 XED2_PROF_MPI_LIBS=
 no_xed_for_hpcrun=no
-no_xed_for_hpclink=no
 xed_displacement_int64=no
 
 XED2="$default_xed_prefix"
@@ -3232,7 +3155,6 @@ AC_MSG_RESULT([$XED2])
 if test "$HOST_CPU_X86_FAMILY" = yes && test "$XED2" = no ; then
   AC_MSG_WARN([xed2 is required for x86 platforms])
   no_xed_for_hpcrun=yes
-  no_xed_for_hpclink=yes
 fi
 
 if test "$xed2_avail" = yes ; then
@@ -3285,14 +3207,13 @@ int main(int argc, char **argv)
   fi
 
   #
-  # now require .a archive + fPIC for both hpcrun and hpclink
+  # now require .a archive + fPIC for hpcrun
   #
   if test "$xed2_static_fpic" = no ; then
     AC_MSG_ERROR([libxed.a must be compiled with -fPIC])
   fi
   XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
   XED2_HPCRUN_LIBS="${XED2}/lib/libxed.a"
-  XED2_HPCLINK_LIBS="${XED2}/lib/libxed.a"
   XED2_PROF_MPI_LIBS="$XED2_LIB_FLAGS"
 
   AC_MSG_NOTICE([xed2 hpcrun libs: $XED2_HPCRUN_LIBS])
@@ -3307,7 +3228,6 @@ AC_SUBST([XED2_INC])
 AC_SUBST([XED2_LIB_DIR])
 AC_SUBST([XED2_LIB_FLAGS])
 AC_SUBST([XED2_HPCRUN_LIBS])
-AC_SUBST([XED2_HPCLINK_LIBS])
 AC_SUBST([XED2_PROF_MPI_LIBS])
 
 
@@ -3430,7 +3350,6 @@ AC_MSG_CHECKING([zlib])
 
 ZLIB_INC=no
 ZLIB_LIB=no
-ZLIB_HPCLINK_LIB=no
 
 case "$ZLIB" in
   /* )
@@ -3439,9 +3358,8 @@ case "$ZLIB" in
     fi
     ZLIB_INC="${ZLIB}/include"
     for lib in $multilib_path ; do
-      if test -f "${ZLIB}/${lib}/libz.so" && test -f "${ZLIB}/${lib}/libz.a" ; then
+      if test -f "${ZLIB}/${lib}/libz.so" ; then
         ZLIB_LIB="${ZLIB}/${lib}"
-        ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
         break
       fi
     done
@@ -3463,7 +3381,6 @@ AM_CONDITIONAL([OPT_USE_ZLIB], [test "$ZLIB" != no])
 
 AC_SUBST([ZLIB_INC])
 AC_SUBST([ZLIB_LIB])
-AC_SUBST([ZLIB_HPCLINK_LIB])
 
 
 #----------------------------------------------------------------------------
@@ -3769,7 +3686,7 @@ fi
 
 AC_ARG_ENABLE([back-end],
   [AS_HELP_STRING([--enable-back-end],
-      [build only those tools needed to run hpcrun and hpclink
+      [build only those tools needed to run hpcrun
        on the back-end compute nodes])],
   [],
   [enable_back_end=no])
@@ -3835,52 +3752,6 @@ fi
 
 AC_MSG_RESULT([$enable_hpcrun_mesg])
 AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
-
-
-#-------------------------------------------------
-# enable-hpcrun-static:
-#-------------------------------------------------
-
-# The motivation for this option is that it can be very tricky to
-# build the static profiling code when cross-compiling for a multilib
-# system.
-#
-# The problem is related to the fact that the final libtool target is
-# a .o (rather than a .la) linked together from other .o's.  Libtool
-# correctly creates the individual .o's.  But when the time comes to
-# link the individual .o's together, problems occur.  The link begins
-# promisingly using --mode=link and the cross compiler (e.g. scgcc32).
-# However, libtool then uses the linker (ld) directly.  Unfortunately,
-# the linker doesn't know about cross-compiling multilib magic and
-# uses the default ABI rather than the correct one (e.g., 64 instead
-# of n32).  Even worse, trying to solve the problem using by setting
-# LDFLAGS (e.g. LDFLAGS="-Wl,-m...") appears futile because the flag
-# is not passed to ld when it is called directly.
-
-AC_MSG_CHECKING([whether to build hpcrun for statically linked executables])
-
-OPT_ENABLE_HPCRUN_STATIC="yes"
-
-AC_ARG_ENABLE([hpcrun-static],
-  AS_HELP_STRING([--enable-hpcrun-static],
-          [build hpcrun for statically linked executables (default yes)]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_HPCRUN_STATIC="yes" ;;
-     no)  OPT_ENABLE_HPCRUN_STATIC="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpcrun-static]) ;;
-   esac],
-  [OPT_ENABLE_HPCRUN_STATIC=yes])
-
-if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes \
-   || test "$libunwind_static" = no
-then
-  OPT_ENABLE_HPCRUN_STATIC=no
-fi
-
-AC_MSG_RESULT([${OPT_ENABLE_HPCRUN_STATIC}])
-AM_CONDITIONAL(OPT_ENABLE_HPCRUN_STATIC, test "${OPT_ENABLE_HPCRUN_STATIC}" = "yes")
-
-AC_SUBST(HPCLINK_LD_FLAGS)
 
 AC_MSG_CHECKING([whether to build hpcrun for dynamically linked executables])
 
@@ -4172,20 +4043,8 @@ if test "$enable_lush_pthreads" = yes && test "$opt_enable_lush" = no ; then
   AC_MSG_ERROR([enable-lush-pthreads requires enable-lush])
 fi
 
-wrap1='pthread_mutex_lock pthread_mutex_trylock pthread_mutex_unlock'
-wrap2='pthread_spin_lock pthread_spin_trylock pthread_spin_unlock pthread_spin_destroy'
-wrap3='pthread_cond_init pthread_cond_destroy pthread_cond_wait'
-wrap4='pthread_cond_timedwait pthread_cond_signal pthread_cond_broadcast'
-
-hpclink_extra_wrap_names=
-if test "$enable_lush_pthreads" = yes ; then
-  hpclink_extra_wrap_names="$wrap1 $wrap2 $wrap3 $wrap4"
-fi
-
 AC_MSG_NOTICE([lush pthreads: $enable_lush_pthreads])
 AM_CONDITIONAL([OPT_ENABLE_LUSH_PTHREADS], [test "$enable_lush_pthreads" = yes])
-
-AC_SUBST([hpclink_extra_wrap_names])
 
 #-------------------------------------------------
 # with-python: support for Python callstack unwinding
@@ -5319,8 +5178,6 @@ AC_CONFIG_FILES([ \
 
 AC_CONFIG_FILES([src/tool/hpcrun/hpcrun],
   [chmod +x src/tool/hpcrun/hpcrun])
-AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
-  [chmod +x src/tool/hpcrun/scripts/hpclink])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcsummary],
   [chmod +x src/tool/hpcrun/scripts/hpcsummary])
 
@@ -5340,7 +5197,7 @@ AC_OUTPUT()
 dnl # Hack to rename the scripts for a back-end build.
 dnl if test "$enable_back_end" = yes ; then
 dnl   dir=src/tool/hpcrun/scripts
-dnl   for file in hpcrun hpclink
+dnl   for file in hpcrun
 dnl   do
 dnl     cp -f "${dir}/${file}" "${dir}/${file}${BACK_END_LABEL}"
 dnl   done
@@ -5367,7 +5224,6 @@ AC_MSG_NOTICE([  host:   ${host} ${host_extra_mesg}])
 AC_MSG_NOTICE([  host endian: $host_endian])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
-AC_MSG_NOTICE([  hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}])
 AC_MSG_NOTICE([  hpcprof-mpi:  ${prof_mpi_avail}])
 AC_MSG_NOTICE([  unwinder:     ${unwinder_mesg}])
 AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])

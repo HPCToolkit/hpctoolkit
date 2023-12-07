@@ -13,9 +13,7 @@
 
 #include <pthread.h>
 
-#ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
-#endif
 
 
 
@@ -133,7 +131,6 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-#ifndef HPCRUN_STATIC_LINK
   if (hpcrun_ev_is(ev_str, AMD_ROCPROFILER_PREFIX)) {
     rocprofiler_init();
     const char* roc_str = ev_str + sizeof(AMD_ROCPROFILER_PREFIX);
@@ -142,11 +139,6 @@ METHOD_FN(supports_event, const char *ev_str)
     return rocprofiler_match_event(roc_str) != 0;
   }
   return false;
-#else
-    return false;
-#endif
-
-
 }
 
 static void

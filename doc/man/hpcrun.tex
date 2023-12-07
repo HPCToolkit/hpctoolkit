@@ -68,7 +68,7 @@ supports measurement of applications with multiple processes and/or multiple thr
 fork, exec, and/or dynamic loading of shared libraries.
 \Prog{hpcrun} can be used in conjunction with program launchers such as \texttt{mpiexec}, SLURM's \texttt{srun}, LSF's \texttt{jsrun}, and Cray's \texttt{aprun}.
 
-To profile a statically-linked executable, make sure to link with \HTMLhref{hpclink.html}{\Cmd{hpclink}{1}}.
+Note that \Prog{hpcrun} is unable to profile static executables.
 
 To configure \Prog{hpcrun}'s sampling sources, specify events and periods using the \texttt{-e/--event} option.
 For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e}, a sample is generated that causes \Prog{hpcrun} to inspect the
@@ -567,8 +567,7 @@ The solution is to add \verb+HPCTOOLKIT+ to your environment so that
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
 
-\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.\\
-\HTMLhref{hpclink.html}{\Cmd{hpclink}{1}}.
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

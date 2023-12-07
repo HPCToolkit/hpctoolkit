@@ -52,9 +52,7 @@
 // system includes
 //******************************************************************************
 
-#ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
-#endif
 
 
 
@@ -319,12 +317,8 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-#ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING)
                                                                                                                                                                                         || hpcrun_ev_is(ev_str, NVIDIA_CUDA_NV_LINK);
-#else
-  return false;
-#endif
 }
 
 // FIXME: The contents of this function (and potentially the entire sample source
@@ -386,7 +380,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   gpu_metrics_default_enable();
   gpu_metrics_KINFO_enable();
 
-#ifndef HPCRUN_STATIC_LINK
   if (cuda_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
     monitor_real_exit(-1);
@@ -396,7 +389,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
     monitor_real_exit(-1);
   }
-#endif
 
   // Register hpcrun callbacks
   device_finalizer_flush.fn = cupti_device_flush;

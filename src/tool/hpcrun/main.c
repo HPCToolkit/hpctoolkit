@@ -153,10 +153,7 @@
 
 #include <loadmap.h>
 
-// The auditor only applies to the dynamic case.
-#ifndef HPCRUN_STATIC_LINK
 #include "audit/audit-api.h"
-#endif
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 
 #ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
@@ -234,11 +231,9 @@ static bool safe_to_sync_sample = false;
 static void* main_addr = NULL;
 static void* main_lower = NULL;
 static void* main_upper = (void*) (intptr_t) -1;
-#ifndef HPCRUN_STATIC_LINK
 static void* main_addr_dl = NULL;
 static void* main_lower_dl = NULL;
 static void* main_upper_dl = (void*) (intptr_t) -1;
-#endif
 static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
@@ -338,7 +333,6 @@ setup_main_bounds_check(void* main_addr)
     fnbounds_enclosing_addr(main_addr, &main_lower, &main_upper, &lm);
   }
 
-#ifndef HPCRUN_STATIC_LINK
   // record bound information about the function bounds of a global
   // dynamic symbol named 'main' (if any).
   // passed into libc_start_main as real_main. this might be a
@@ -353,7 +347,6 @@ setup_main_bounds_check(void* main_addr)
       fnbounds_enclosing_addr(main_addr_dl, &main_lower_dl, &main_upper_dl, &lm);
     }
   }
-#endif
 }
 
 
@@ -414,11 +407,9 @@ hpcrun_inbounds_main(void* addr)
   int in_static_main = (main_lower <= addr) & (addr <= main_upper);
   int in_main = in_static_main;
 
-#ifndef HPCRUN_STATIC_LINK
   // address is in a main routine dynamically linked into the executable
   int in_dynamic_main = (main_lower_dl <= addr) & (addr <= main_upper_dl);
   in_main |= in_dynamic_main;
-#endif
 
   return in_main;
 }
@@ -814,9 +805,7 @@ hpcrun_fini_internal()
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(td);
 
-#ifndef HPCRUN_STATIC_LINK
     auditor_exports->mainlib_disconnect();
-#endif
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -988,10 +977,8 @@ foilbase_monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_wait();
 
-#ifndef HPCRUN_STATIC_LINK
   if(hpcrun_get_env_bool("HPCRUN_AUDIT_FAKE_AUDITOR"))
     hpcrun_init_fake_auditor();
-#endif
 
   // We need to initialize the control-knob framework early so we can use it
   // to provide settings just about anywhere.
@@ -1057,11 +1044,9 @@ foilbase_monitor_init_process(int *argc, char **argv, void* data)
 
     // fnbounds must be after module_ignore_map
     fnbounds_init(process_name);
-#ifndef HPCRUN_STATIC_LINK
     if (!is_child) {
       auditor_exports->mainlib_connected(get_saved_vdso_path());
     }
-#endif
 
     TMSG(PROCESS, "init process: pid: %d  parent: %d  fork-child: %d",
          (int) getpid(), (int) getppid(), (int) is_child);
@@ -1471,12 +1456,6 @@ foilbase_monitor_reset_stacksize(size_t old_size)
 
 typedef int mutex_lock_fcn(pthread_mutex_t *);
 
-#ifdef HPCRUN_STATIC_LINK
-//extern mutex_lock_fcn __real_pthread_mutex_lock;
-extern mutex_lock_fcn __real_pthread_mutex_trylock;
-extern mutex_lock_fcn __real_pthread_mutex_unlock;
-#endif // HPCRUN_STATIC_LINK
-
 //static mutex_lock_fcn *real_mutex_lock = NULL;
 static mutex_lock_fcn *real_mutex_trylock = NULL;
 static mutex_lock_fcn *real_mutex_unlock = NULL;
@@ -1548,13 +1527,6 @@ MONITOR_EXT_WRAP_NAME(pthread_mutex_unlock)(pthread_mutex_t* lock)
 #ifdef LUSH_PTHREADS
 
 typedef int spinlock_fcn(pthread_spinlock_t *);
-
-#ifdef HPCRUN_STATIC_LINK
-extern spinlock_fcn __real_pthread_spin_lock;
-extern spinlock_fcn __real_pthread_spin_trylock;
-extern spinlock_fcn __real_pthread_spin_unlock;
-extern spinlock_fcn __real_pthread_spin_destroy;
-#endif // HPCRUN_STATIC_LINK
 
 static spinlock_fcn *real_spin_lock = NULL;
 static spinlock_fcn *real_spin_trylock = NULL;
@@ -1673,15 +1645,6 @@ typedef int cond_timedwait_fcn(pthread_cond_t *, pthread_mutex_t *,
                                const struct timespec *);
 typedef int cond_signal_fcn(pthread_cond_t *);
 
-#ifdef HPCRUN_STATIC_LINK
-extern cond_init_fcn    __real_pthread_cond_init;
-extern cond_destroy_fcn __real_pthread_cond_destroy;
-extern cond_wait_fcn      __real_pthread_cond_wait;
-extern cond_timedwait_fcn __real_pthread_cond_timedwait;
-extern cond_signal_fcn __real_pthread_cond_signal;
-extern cond_signal_fcn __real_pthread_cond_broadcast;
-#endif // HPCRUN_STATIC_LINK
-
 static cond_init_fcn    *real_cond_init = NULL;
 static cond_destroy_fcn *real_cond_destroy = NULL;
 static cond_wait_fcn      *real_cond_wait = NULL;
@@ -1783,8 +1746,6 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
 //***************************************************************************
 
 
-#ifndef HPCRUN_STATIC_LINK
-
 static void auditor_open(auditor_map_entry_t* entry) {
   hpcrun_safe_enter();
   entry->load_module = fnbounds_map_dso(entry->path,
@@ -1815,24 +1776,3 @@ void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* ho
   hooks->stable = auditor_stable;
   hooks->dl_iterate_phdr = hpcrun_loadmap_iterate;
 }
-
-#endif /* ! HPCRUN_STATIC_LINK */
-
-
-//----------------------------------------------------------------------
-
-// FIXME: Add a weak symbol for cplus_demangle() for hpclink in the
-// static case.  Something is pulling in hpctoolkit_demangle() and
-// thus cplus_demangle() into libhpcrun.o and this breaks hpclink,
-// even though nothing actually uses them.  But the real fix should be
-// in the lib Makefiles.
-
-#ifdef HPCRUN_STATIC_LINK
-
-char * __attribute__ ((weak))
-cplus_demangle(char *str, int opts)
-{
-  return strdup(str);
-}
-
-#endif

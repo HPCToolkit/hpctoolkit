@@ -1173,8 +1173,6 @@ level0_bind
  void
 )
 {
-#ifndef HPCRUN_STATIC_LINK
-  // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(level0, level0_path(), RTLD_NOW | RTLD_GLOBAL);
   hpcrun_force_dlopen(false);
@@ -1187,9 +1185,6 @@ level0_bind
 #undef LEVEL0_BIND
 
   return DYNAMIC_BINDING_STATUS_OK;
-#else
-  return DYNAMIC_BINDING_STATUS_ERROR;
-#endif // ! HPCRUN_STATIC_LINK
 }
 
 void

@@ -98,11 +98,7 @@ SUBDIRS = utilities/bgq-cnk
 endif
 
 pkglibdir = @my_pkglibdir@
-force_pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
-
-plugin_srcdir = $(srcdir)/plugins
-plugin_instdir = $(pkglibdir)/plugins
 
 bin_SCRIPTS =
 pkglibexec_SCRIPTS =
@@ -135,18 +131,6 @@ pkglib_LTLIBRARIES += libhpctoolkit.la
 bin_SCRIPTS += hpcrun
 endif
 
-if OPT_ENABLE_HPCRUN_STATIC
-force_pkglib_PROGRAMS  = libhpcrun.o
-pkglib_LIBRARIES += libhpcrun_wrap.a
-pkglib_LIBRARIES += libhpcrun_ga_wrap.a
-pkglib_LIBRARIES += libhpcrun_gprof_wrap.a
-pkglib_LIBRARIES += libhpcrun_io_wrap.a
-pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
-pkglib_LIBRARIES += libhpcrun_pthread_wrap.a
-pkglib_LIBRARIES += libhpctoolkit.a
-bin_SCRIPTS += scripts/hpclink
-endif
-
 if OPT_ENABLE_MPI_WRAP
 pkglib_LTLIBRARIES += libhpcrun_mpi.la
 endif
@@ -164,7 +148,6 @@ PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
-XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 
 ROCM_INC_FLGS = @OPT_ROCM_IFLAGS@
@@ -179,21 +162,10 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 
 ZLIB_LIB = @ZLIB_LIB@
-ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 
 LZMA_LDFLAGS_DYN=@LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT=@LZMA_LDFLAGS_STAT@
-
-PLUGIN_CONFIG_FILES = ga io memleak pthread
-
-# Disable the ibm-xlomp plugin in favor of the new openmp tools
-# interface.
-if FALSE
-PLUGIN_CONFIG_FILES += ibm-xlomp
-pkglib_LIBRARIES += libibm_xlomp_wrappers.a
-libibm_xlomp_wrappers_a_SOURCES = plugins/ibm-xlomp-wrappers.c
-endif
 
 UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
@@ -494,10 +466,6 @@ MY_DYNAMIC_FILES = 			\
 	foil/syscalls/select-preload.c	\
 	foil/syscalls/sysv_signal-preload.c
 
-MY_STATIC_FILES = 			\
-	fnbounds/fnbounds_static.c      \
-	custom-init-static.c
-
 MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
 
@@ -693,47 +661,21 @@ libhpcrun_audit_la_SOURCES =		\
 	audit/auditor.c			\
 	audit/private-ns.c
 
-libhpcrun_o_SOURCES = 			\
-	$(MY_BASE_FILES)		\
-	$(MY_STATIC_FILES)
-
-
-libhpcrun_wrap_a_SOURCES =		\
-	foil/hpctoolkit-wrap.c	\
-	foil/monitor-wrap.c		\
-	foil/ompt-wrap.c		\
-	foil/syscalls/poll-wrap.c	\
-	foil/syscalls/ppoll-wrap.c	\
-	foil/syscalls/select-wrap.c	\
-	foil/syscalls/sysv_signal-wrap.c
 
 libhpcrun_ga_la_SOURCES = foil/ga-preload.c
 
-libhpcrun_ga_wrap_a_SOURCES = foil/ga-wrap.c
-
 libhpcrun_gprof_la_SOURCES = foil/gprof-preload.c
-
-libhpcrun_gprof_wrap_a_SOURCES = foil/gprof-wrap.c
 
 libhpcrun_io_la_SOURCES = foil/io-preload.c
 
-libhpcrun_io_wrap_a_SOURCES = foil/io-wrap.c
-
 libhpcrun_memleak_la_SOURCES = foil/memleak-preload.c
 
-libhpcrun_memleak_wrap_a_SOURCES = foil/memleak-wrap.c
-
 libhpcrun_pthread_la_SOURCES = foil/pthread-blame-preload.c
-
-libhpcrun_pthread_wrap_a_SOURCES = foil/pthread-blame-wrap.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	./mpi-overrides.c
 
 libhpctoolkit_la_SOURCES = 		\
-	hpctoolkit.c
-
-libhpctoolkit_a_SOURCES = 		\
 	hpctoolkit.c
 
 
@@ -765,26 +707,7 @@ libhpcrun_audit_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libhpcrun_o_CPPFLAGS =			\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-if OPT_BGQ_BACKEND
-libhpcrun_o_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
-endif
-
-libhpcrun_wrap_a_CPPFLAGS =		\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
 libhpcrun_ga_la_CPPFLAGS =		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-libhpcrun_ga_wrap_a_CPPFLAGS =		\
-	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
@@ -792,17 +715,7 @@ libhpcrun_gprof_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libhpcrun_gprof_wrap_a_CPPFLAGS =	\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
 libhpcrun_io_la_CPPFLAGS =		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-libhpcrun_io_wrap_a_CPPFLAGS =		\
-	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
@@ -810,17 +723,7 @@ libhpcrun_memleak_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libhpcrun_memleak_wrap_a_CPPFLAGS =	\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
 libhpcrun_pthread_la_CPPFLAGS =		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-libhpcrun_pthread_wrap_a_CPPFLAGS =	\
-	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
@@ -830,11 +733,6 @@ libhpcrun_mpi_la_CPPFLAGS =		\
 	$(MY_INCLUDE_DIRS)
 
 libhpctoolkit_la_CPPFLAGS =		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-libhpctoolkit_a_CPPFLAGS =		\
-	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
@@ -855,23 +753,16 @@ endif
 #-----------------------------------------------------------
 
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
-libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
 libhpcrun_unwind_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_fake_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_private_ns_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_ga_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gprof_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 
@@ -925,17 +816,8 @@ libhpcrun_la_LDFLAGS +=  \
 libhpcrun_unwind_la_LDFLAGS +=	\
 	$(LIBUNWIND_LDFLAGS_DYN)
 
-libhpcrun_o_LDADD =  \
-	$(PROF_LEAN_A)  \
-	$(SUPPORT_LEAN_A)  \
-	$(PERFMON_LDFLAGS_STAT)
-
-libhpcrun_o_LDFLAGS =  \
-	-Wl,--exclude-libs=ALL
-
 if HOST_CPU_X86_FAMILY
 libhpcrun_la_LIBADD += $(XED2_HPCRUN_LIBS)
-libhpcrun_o_LDADD += $(XED2_HPCRUN_LIBS)
 endif
 
 
@@ -951,18 +833,11 @@ MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS)
 
 if HOST_CPU_MIPS
 libhpcrun_la_SOURCES  += $(MY_MIPS_FILES)
-libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
-libhpcrun_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
@@ -974,86 +849,51 @@ endif
 
 if HOST_CPU_PPC
 libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
-libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
 libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-libhpcrun_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_gprof_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
 endif
 
 if HOST_CPU_X86_FAMILY
 libhpcrun_la_SOURCES  += $(MY_X86_FILES)
-libhpcrun_o_SOURCES   += $(MY_X86_FILES)
-libhpcrun_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
 if OPT_ENABLE_GTPIN
 libhpcrun_gtpin_cxx_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 endif
 libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_gprof_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_IA64
 libhpcrun_la_SOURCES  += $(MY_IA64_FILES)
-libhpcrun_o_SOURCES   += $(MY_IA64_FILES)
-libhpcrun_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-libhpcrun_o_CPPFLAGS  += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-libhpcrun_io_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_AARCH64
 libhpcrun_la_SOURCES  += $(MY_AARCH64_FILES)
-libhpcrun_o_SOURCES   += $(MY_AARCH64_FILES)
-libhpcrun_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_o_CPPFLAGS  += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_gprof_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_io_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 endif
 
@@ -1067,7 +907,6 @@ endif
 
 if OPT_ENABLE_CUPTI
 libhpcrun_la_SOURCES  += $(MY_CUPTI_FILES)
-libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
 libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 
 MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
@@ -1083,25 +922,14 @@ libhpcrun_la_CPPFLAGS   += $(ROCM_INC_FLGS)
 MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_ROCM
 endif
 
-if OPT_PAPI_STATIC
-libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
-libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
-libhpcrun_o_LDADD     += $(OPT_PAPI_LIBS_STAT)
-
-MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
-endif
-
 if OPT_ENABLE_UPC
 libhpcrun_la_SOURCES  += $(MY_UPC_FILES)
-libhpcrun_o_SOURCES   += $(MY_UPC_FILES)
 libhpcrun_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
-libhpcrun_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
 libhpcrun_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
 endif
 
 if OPT_ENABLE_LUSH_PTHREADS
 libhpcrun_la_CPPFLAGS += -DLUSH_PTHREADS
-libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
 endif
 
 
@@ -1112,14 +940,12 @@ endif
 if UNW_X86
 UNW_SOURCE_FILES = $(UNW_X86_FILES)
 UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
-UNW_STATIC_LD_FLAGS =  $(XED2_HPCLINK_LIBS)
 endif
 
 if UNW_PPC64
 UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
 UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
 UNW_DYNAMIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
-UNW_STATIC_LD_FLAGS =  $(UNW_PPC64_LD_FLAGS)
 endif
 
 if OPT_ENABLE_PYTHON
@@ -1131,7 +957,6 @@ if OPT_ENABLE_CUDA
 libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
 libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
 libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
-libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
 endif
 
 if OPT_ENABLE_ROCM
@@ -1163,7 +988,6 @@ if UNW_LIBUNW
 UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
 UNW_INCLUDE_DIRS = $(UNW_LIBUNW_INCLUDE_DIRS)
 UNW_DYNAMIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
-UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
 endif
 
 libhpcrun_dlmopen_la_SOURCES   = dlmopen/dlmopen.c
@@ -1172,25 +996,16 @@ libhpcrun_dlmopen_la_LDFLAGS   = -ldl
 libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
 libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
-libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
-libhpcrun_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
-libhpcrun_o_CPPFLAGS  += $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
-libhpcrun_ga_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
-libhpcrun_io_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
-libhpcrun_memleak_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
-libhpcrun_pthread_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_LDFLAGS  += $(UNW_DYNAMIC_LD_FLAGS)
-libhpcrun_o_LDADD     += $(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS += $(UNW_INCLUDE_DIRS)
 
 libhpcrun_la_SOURCES += utilities/last_func.c
-libhpcrun_o_SOURCES  += utilities/last_func.c
 
 
 #-----------------------------------------------------------
@@ -1242,19 +1057,6 @@ pkglib_LTLIBRARIES       += libagent-tbb.la
 libagent_tbb_la_SOURCES  = $(MY_AGENT_TBB_SOURCES)
 libagent_tbb_la_CFLAGS   = $(MY_AGENT_TBB_CFLAGS)
 endif
-
-
-#-----------------------------------------------------------
-# Manual install targets
-#-----------------------------------------------------------
-
-# Install the plugin config files.
-
-install-data-hook:
-	mkdir -p "$(DESTDIR)$(plugin_instdir)"
-	-for file in $(PLUGIN_CONFIG_FILES) ; do \
-		cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
-	done
 
 
 #############################################################################

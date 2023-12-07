@@ -123,7 +123,7 @@ install-exec-local:
 
 #
 # Strip the debug sections from the libraries (ours and externals)
-# used in hpcrun and hpclink.  This prevents our code from being
+# used in hpcrun.  This prevents our code from being
 # displayed in the viewer.
 #
 #  $1 = directory containing the libraries

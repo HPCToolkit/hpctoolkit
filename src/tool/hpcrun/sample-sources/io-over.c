@@ -124,20 +124,12 @@ typedef size_t  fwrite_fn_t(const void *, size_t, size_t, FILE *);
 // functions: the __libc_/_IO_ names or dlsym().  The __libc_ names
 // are GNU libc specific and may not be portable, and dlsym() may
 // interfere with our code via locks or override functions.  We'll try
-// the _IO_ names until we hit a problem.  Statically, we always use
-// __wrap and __real.
+// the _IO_ names until we hit a problem.
 
-#ifdef HPCRUN_STATIC_LINK
-#define real_read    __real_read
-#define real_write   __real_write
-#define real_fread   __real_fread
-#define real_fwrite  __real_fwrite
-#else
 #define real_read    __read
 #define real_write   __write
 #define real_fread   _IO_fread
 #define real_fwrite  _IO_fwrite
-#endif
 
 extern read_fn_t    real_read;
 extern write_fn_t   real_write;

@@ -120,10 +120,4 @@ static inline void* hpcrun_foil_dlvsym_cached(hpcrun_pfn_cache_t* cache, const c
   static hpcrun_pfn_cache_t _cache_real_ ## VAR; \
   typeof(NAME)* VAR = hpcrun_foil_dlvsym_cached(&_cache_real_ ## VAR, #NAME, VERSION);
 
-/// Helper macro to declare the "real" and wrapper functions.
-/// Usable only for `ld --wrap` foils.
-#define FOIL_WRAP_DECL(NAME) \
-  extern typeof(NAME) __real_ ## NAME; \
-  extern typeof(NAME) __wrap_ ## NAME;
-
 #endif  // FOIL_FOIL_H

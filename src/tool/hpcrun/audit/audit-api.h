@@ -53,12 +53,6 @@
 
 #include "include/hpctoolkit-config.h"
 
-// The entirety of this file only makes sense in the dynamic case, so
-// error if someone tries to use it in the static case.
-#ifdef HPCRUN_STATIC_LINK
-#error The auditor interface only makes sense in the dynamic case!
-#endif
-
 // Structure used to represent an active link map entry. Most informational
 // fields are filled by the auditor.
 typedef struct auditor_map_entry_t {

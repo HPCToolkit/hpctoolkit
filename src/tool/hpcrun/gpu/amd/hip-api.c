@@ -100,7 +100,6 @@
 // static data
 //******************************************************************************
 
-#ifndef HPCRUN_STATIC_LINK
 HIP_FN
 (
  hipDeviceSynchronize,
@@ -126,15 +125,10 @@ HIP_FN
 );
 
 
-#endif
-
-
-
 //******************************************************************************
 // private operations
 //******************************************************************************
 //TODO: Copied from cuda-api.c - check if works for hip
-#ifndef HPCRUN_STATIC_LINK
 static int
 hip_device_sm_blocks_query
 (
@@ -151,7 +145,6 @@ hip_device_sm_blocks_query
       return 8;
   }
 }
-#endif
 
 
 //******************************************************************************
@@ -164,8 +157,6 @@ hip_bind
 void
 )
 {
-#ifndef HPCRUN_STATIC_LINK
-  // dynamic libraries only availabile in non-static case
   CHK_DLOPEN(hip, "libamdhip64.so", RTLD_NOW | RTLD_GLOBAL);
 
 #define HIP_BIND(fn) \
@@ -175,9 +166,6 @@ void
 #undef HIP_BIND
 
   return 0;
-#else
-  return -1;
-#endif // ! HPCRUN_STATIC_LINK
 }
 
 int
@@ -186,12 +174,8 @@ hip_context
  hipCtx_t *ctx
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_HIP_API_CALL(hipCtxGetCurrent, (ctx));
   return 0;
-#else
-  return -1;
-#endif
 }
 
 int
@@ -201,7 +185,6 @@ hip_device_property_query
  hip_device_property_t *property
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
                        (&property->sm_count, hipDeviceAttributeMultiprocessorCount, device_id));
 
@@ -235,9 +218,6 @@ hip_device_property_query
   property->sm_blocks = hip_device_sm_blocks_query(major, minor);
 
   return 0;
-#else
-  return -1;
-#endif
 }
 
 
@@ -245,10 +225,6 @@ int
 hip_dev_sync
 ()
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_HIP_API_CALL(hipDeviceSynchronize, () );
   return 0;
-#else
-  return -1;
-#endif
 }
