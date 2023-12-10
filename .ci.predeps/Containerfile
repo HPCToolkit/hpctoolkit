@@ -11,15 +11,13 @@ FROM ghcr.io/spack/$SPACKOS:0.21.0 as spackbuild
 COPY ci/spack-deps/spack.yaml ci/spack-deps/Makefile /opt/environment/
 ARG VERMODE=latest
 RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
-    --mount=type=cache,target=/mnt/cache/spack-bin,sharing=locked \
-    --mount=type=cache,target=/mnt/cache/spack-src \
+    --mount=type=cache,target=/mnt/cache/spack-src,sharing=locked \
   export PATH=/opt/spack/bin:"$PATH" \
   && spack -D /opt/environment concretize \
   && spack -D /opt/environment env depfile --generator make --make-prefix predeps \
       -o /opt/environment/spack.mk \
   && make -j$(nproc) -C /opt/environment --output-sync=recurse \
       SPACK_INSTALL_FLAGS=--no-check-signature \
-  && spack -D /opt/environment buildcache push --unsigned --fail-fast --update-index local-cache \
   && spack -D /opt/environment gc -y
 
 # Generate a Meson native file that provides access to the installed packages, using Jinja2
