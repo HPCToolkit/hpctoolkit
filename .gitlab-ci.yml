@@ -66,148 +66,124 @@ include:
 - component: gitlab.com/blue42u/ci.pre-commit@0.1.0
 
 # These images are based on classic distrobutions and contain no vendor software
-- component: &ci_predeps gitlab.com/blue42u/ci.predeps@0.1.0
+- component: &ci_predeps gitlab.com/blue42u/ci.predeps@0.2.0
   inputs:
+    <<: &ci_predeps_shared
+      fallback_registry: registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
     name: almalinux8-amd64
-    context_dir: ci/predeps/
-    fallback_registry: &ci_predeps_fallback_registry registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: ubuntu20.04-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: ubuntu20.04-arm64
-    context_dir: ci/predeps/
     platform: linux/arm64
     job_tag: rice-linux-medium-arm64
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: ubuntu20.04-ppc64le
-    context_dir: ci/predeps/
     platform: linux/ppc64le
     job_tag: rice-linux-medium-ppc64le
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: fedora38-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-almalinux8-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-ubuntu20.04-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-ubuntu20.04-arm64
-    context_dir: ci/predeps/
     platform: linux/arm64
     job_tag: rice-linux-medium-arm64
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-ubuntu20.04-ppc64le
-    context_dir: ci/predeps/
     platform: linux/ppc64le
     job_tag: rice-linux-medium-ppc64le
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-fedora38-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 
 # Images based on (containing) Nvidia's CUDA Toolkit
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: cuda11.6-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: cuda11.8-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: cuda12.0-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-cuda11.8-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-cuda12.0-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 
 # Images based on (containing) AMD's ROCm
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: rocm5.1-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: rocm5.2-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: rocm5.3-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: rocm5.4-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: rocm5.5-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: rocm5.6-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-rocm5.1-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-rocm5.6-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 
 # Image(s) based on (containing) Intel's Level Zero, IGC, GTPin, etc.
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: intel-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 - component: *ci_predeps
   inputs:
+    <<: *ci_predeps_shared
     name: min-intel-amd64
-    context_dir: ci/predeps/
-    fallback_registry: *ci_predeps_fallback_registry
 
 'predeps: [almalinux8-amd64]':
   variables:
