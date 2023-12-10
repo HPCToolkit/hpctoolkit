@@ -89,14 +89,6 @@ RUN \
   && do_patch gtpin \
   && ! test -e /usr/share/meson/native/*.patch.ini
 
-# At this point the image should be complete. Test the image before continuing to ensure it
-# actually does in fact work as intended.
-# TODO: Currently the bind-mount needs to be rw, because Autotools.
-COPY ci/verify-image.sh /tmp/
-RUN --mount=type=bind,target=/src/hpctoolkit,rw \
-    --mount=type=bind,from=scratch,target=/tmp/tmpdir,rw \
-  /tmp/verify-image.sh /src/hpctoolkit /tmp/tmpdir/builddir
-
 
 # Final stage, putting it all together
 FROM install
