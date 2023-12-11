@@ -101,11 +101,6 @@ spack:
       - spec: '^libtool @2.4.6'
 
   mirrors:
-    local-cache:
-      url: /mnt/cache/spack-bin
-      binary: true
-      source: false
-
     upstream-cache:
       url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v0.21
       binary: true

@@ -8,22 +8,20 @@ FROM ghcr.io/spack/$SPACKOS:0.21.0 as spackbuild
 
 # Install all the packages we want, using the environment. We use an extra Makefile to add a
 # post-install hook that pushes the resulting packages to various buildcaches.
-COPY spack.yaml Makefile /opt/environment/
+COPY ci/spack-deps/spack.yaml ci/spack-deps/Makefile /opt/environment/
 ARG VERMODE=latest
 RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
-    --mount=type=cache,target=/mnt/cache/spack-bin,sharing=locked \
-    --mount=type=cache,target=/mnt/cache/spack-src \
+    --mount=type=cache,target=/mnt/cache/spack-src,sharing=locked \
   export PATH=/opt/spack/bin:"$PATH" \
   && spack -D /opt/environment concretize \
   && spack -D /opt/environment env depfile --generator make --make-prefix predeps \
       -o /opt/environment/spack.mk \
   && make -j$(nproc) -C /opt/environment --output-sync=recurse \
       SPACK_INSTALL_FLAGS=--no-check-signature \
-  && spack -D /opt/environment buildcache push --unsigned --fail-fast --update-index local-cache \
   && spack -D /opt/environment gc -y
 
 # Generate a Meson native file that provides access to the installed packages, using Jinja2
-COPY j2-spack.py spack_env.ini.j2 /tmp/
+COPY ci/spack-deps/j2-spack.py ci/spack-deps/spack_env.ini.j2 /tmp/
 RUN \
   export PATH=/opt/spack/bin:"$PATH" \
   && py="$(spack -D /opt/environment find --format='{prefix}' python)/bin/python" \
@@ -46,7 +44,7 @@ ENV \
   CMAKE_PREFIX_PATH=
 
 # Install the required OS packages
-COPY install-os-packages.sh /tmp/
+COPY ci/os/install-os-packages.sh /tmp/
 RUN \
   /tmp/install-os-packages.sh \
   && rm /tmp/install-os-packages.sh
@@ -65,15 +63,15 @@ COPY --from=spackbuild /opt/software /opt/software
 FROM install as generation
 
 # Identify all the native files that this image can support
-COPY native/ /usr/share/meson/native/
-COPY prune-native.sh /tmp/
+COPY ci/native/src/ /usr/share/meson/native/
+COPY ci/os/prune-native.sh /tmp/
 RUN \
   /tmp/prune-native.sh \
   && rm /tmp/prune-native.sh
 
 # Generate the final image.ini by patching the one generated during a previous stage
 COPY --from=spackbuild /usr/share/meson/native/spack_env.ini /usr/share/meson/native/image.ini
-COPY patch-native.py /tmp/
+COPY ci/native/patch-native.py /tmp/
 RUN \
   for trial in python3.12 python3.11 python3.10 python3.9 python3.8 python3 python; do \
     if command -v "$trial" > /dev/null 2>&1; then python="$trial"; break; fi \
@@ -90,14 +88,6 @@ RUN \
   && do_patch level-zero \
   && do_patch gtpin \
   && ! test -e /usr/share/meson/native/*.patch.ini
-
-# At this point the image should be complete. Test the image before continuing to ensure it
-# actually does in fact work as intended.
-# TODO: Currently the project_dir bind-mount needs to be rw, because Autotools.
-COPY verify-image.sh /tmp/
-RUN --mount=type=bind,from=project_dir,target=/src/hpctoolkit,rw \
-    --mount=type=bind,from=scratch,target=/tmp/tmpdir,rw \
-  /tmp/verify-image.sh /src/hpctoolkit /tmp/tmpdir/builddir
 
 
 # Final stage, putting it all together
