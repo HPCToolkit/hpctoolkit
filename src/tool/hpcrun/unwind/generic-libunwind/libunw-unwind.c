@@ -102,6 +102,7 @@
 #include <unwind/common/uw_recipe_map.h>
 #include <unwind/common/binarytree_uwi.h>
 #include <unwind/common/libunw_intervals.h>
+#include <unwind/common/libunwind-interface.h>
 #include <utilities/arch/context-pc.h>
 
 //************************************************
@@ -120,6 +121,7 @@ hpcrun_unw_init(void)
     TMSG(NU, "hpcrun_unw_init from libunw_unwind.c" );
     msg_sent = true;
   }
+  libunwind_bind();
   uw_recipe_map_init();
 }
 
@@ -132,7 +134,7 @@ int
 hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* cursor, void** val)
 {
   unw_word_t tmp;
-  int rv = unw_get_reg(&(cursor->uc), UNW_REG_IP, &tmp);
+  int rv = libunwind_get_reg(&(cursor->uc), UNW_REG_IP, &tmp);
   *val = (void*) tmp;
   return rv;
 }

@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,30 +44,29 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// Redefine function calls from external libraries (libunwind) to
-// better hide them from UCX.
-//
-// Call the real functions via syscall().
+#ifndef LIBUNWIND_PVT_H
+#define LIBUNWIND_PVT_H
 
-//----------------------------------------------------------------------
+#include <libunwind.h>
 
-#define _GNU_SOURCE  1
+void libunwind_bind();
 
-#include <sys/types.h>
-#include <sys/syscall.h>
-#include <errno.h>
-#include <unistd.h>
+int libunwind_getcontext(unw_context_t*);
 
-void *
-hpcrun_real_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
-{
-  return (void *)
-    syscall((long) SYS_mmap, addr, len, prot, flags, fd, offset);
-}
+int libunwind_init_local(unw_cursor_t*, unw_context_t*);
 
-int
-hpcrun_real_munmap(void *addr, size_t len)
-{
-  return (int)
-    syscall((long) SYS_munmap, addr, len);
-}
+int libunwind_init_local2(unw_cursor_t*, unw_context_t*, int);
+
+int libunwind_step(unw_cursor_t*);
+
+int libunwind_reg_states_iterate(unw_cursor_t*, unw_reg_states_callback, void*);
+
+int libunwind_apply_reg_state(unw_cursor_t*, void*);
+
+int libunwind_get_reg(unw_cursor_t*, int, unw_word_t*);
+
+int libunwind_set_reg(unw_cursor_t*, int, unw_word_t);
+
+int libunwind_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*);
+
+#endif  // LIBUNWIND_PVT_H

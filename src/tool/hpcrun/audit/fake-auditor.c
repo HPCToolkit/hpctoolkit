@@ -90,6 +90,9 @@ static bool update_shadow();
 static void* (*real_dlopen)(const char*, int) = NULL;
 static void* (*real_dlmopen)(Lmid_t, const char*, int) = NULL;
 static int (*real_dlclose)(void*) = NULL;
+static void* private_ns = NULL;
+typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
+
 
 // Scan the phdrs for an entry that looks like ours, and nab the DYNAMIC section
 static ElfW(Addr) self_baseaddr;
@@ -120,6 +123,24 @@ void hpcrun_init_fake_auditor() {
   real_dlopen = dlsym(RTLD_NEXT, "dlopen");
   real_dlclose = dlsym(RTLD_NEXT, "dlclose");
   real_dlmopen = dlsym(RTLD_NEXT, "dlmopen");
+
+  // Load the private namespace and get the binding function out of it
+  private_ns = dlmopen(LM_ID_NEWLM, HPCTOOLKIT_INSTALL_PREFIX "/lib/hpctoolkit/libhpcrun_private_ns.so", RTLD_NOW);
+  if (private_ns == NULL) {
+    fprintf(stderr, "[fake audit] ERROR: Unable to create private linkage namespace: %s", dlerror());
+    abort();
+  }
+  pfn_iterate_phdr_t** hpcrun_iterate_phdr = dlsym(private_ns, "hpcrun_iterate_phdr");
+  if (hpcrun_iterate_phdr == NULL) {
+    fprintf(stderr, "ERROR: Unable to get private dl_iterate_phdr override: %s", dlerror());
+    abort();
+  }
+  *hpcrun_iterate_phdr = &hooks.dl_iterate_phdr;
+  exports.hpcrun_bind_v = dlsym(private_ns, "hpcrun_bind_v");
+  if (exports.hpcrun_bind_v == NULL) {
+    fprintf(stderr, "ERROR: Unable to get private binding function: %s", dlerror());
+    abort();
+  }
 
   exports.pipe = NULL;
   exports.close = NULL;

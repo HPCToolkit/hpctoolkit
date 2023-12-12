@@ -49,6 +49,7 @@
 
 #include <link.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 #include "include/hpctoolkit-config.h"
 
@@ -92,6 +93,10 @@ typedef struct auditor_hooks_t {
   // previous modifications. If `additive` is true, the link map was being
   // added to directly before this call.
   void (*stable)(bool additive);
+
+  // Called when iterating back over the list of loaded objects in the private namespace.
+  int (*dl_iterate_phdr)(int (*cb)(struct dl_phdr_info * info, size_t size, void* data),
+                         void *data);
 } auditor_hooks_t;
 
 typedef struct auditor_exports_t {
@@ -102,6 +107,10 @@ typedef struct auditor_exports_t {
 
   // Purified environment that has our effects (mostly) removed.
   char** pure_environ;
+
+  // Called to load and bind new libraries in the auditor's namespace.
+  // Same semantics as #hpcrun_bind_v.
+  void (*hpcrun_bind_v)(const char*, va_list);
 
   // Exports from libc to aid in wrapper evasion
   int (*pipe)(int[2]);

@@ -5,6 +5,7 @@
 #include <libunwind.h>
 
 #include <messages/messages.h>
+#include <unwind/common/libunwind-interface.h>
 
 #define MYMSG(f,...) hpcrun_pmsg(#f, __VA_ARGS__)
 
@@ -20,7 +21,7 @@ cursor_set(unw_context_t *uc, unw_cursor_t *cursor,
   uc->uc_mcontext.gregs[REG_RSP] = (long) sp;
   uc->uc_mcontext.gregs[REG_RIP] = (long) ip;
 
-  unw_init_local(cursor, uc);
+  libunwind_init_local(cursor, uc);
 }
 
 static void
@@ -29,9 +30,9 @@ cursor_get(unw_context_t *uc, unw_cursor_t *cursor,
 {
   unw_word_t uip, usp, ubp;
 
-  unw_get_reg(cursor, UNW_TDEP_IP, &uip);
-  unw_get_reg(cursor, UNW_TDEP_SP, &usp);
-  unw_get_reg(cursor, UNW_TDEP_BP, &ubp);
+  libunwind_get_reg(cursor, UNW_TDEP_IP, &uip);
+  libunwind_get_reg(cursor, UNW_TDEP_SP, &usp);
+  libunwind_get_reg(cursor, UNW_TDEP_BP, &ubp);
 
   *sp = (void **) usp;
   *bp = (void **) ubp;
@@ -50,7 +51,7 @@ libunwind_step(void ***sp, void ***bp, void **ip)
   return 0;
 
   cursor_set(&uc, &cursor, *sp, *bp, *ip);
-  status = unw_step(&cursor) > 0;
+  status = libunwind_step(&cursor) > 0;
   if (status) {
     cursor_get(&uc, &cursor, sp, bp, ip);
   }
@@ -62,11 +63,11 @@ void show_backtrace (void) {
   unw_cursor_t cursor; unw_context_t uc;
   unw_word_t ip, sp;
 
-  unw_getcontext(&uc);
-  unw_init_local(&cursor, &uc);
-  while (unw_step(&cursor) > 0) {
-    unw_get_reg(&cursor, UNW_TDEP_IP, &ip);
-    unw_get_reg(&cursor, UNW_TDEP_SP, &sp);
+  libunwind_getcontext(&uc);
+  libunwind_init_local(&cursor, &uc);
+  while (libunwind_step(&cursor) > 0) {
+    libunwind_get_reg(&cursor, UNW_TDEP_IP, &ip);
+    libunwind_get_reg(&cursor, UNW_TDEP_SP, &sp);
     MYMSG(LIBUNWIND, "ip = %lx, sp = %lx\n", (long) ip, (long) sp);
   }
 }

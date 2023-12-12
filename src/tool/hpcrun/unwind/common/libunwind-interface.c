@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,40 +44,33 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// Override dl_iterate_phdr() from libunwind and supply an answer from
-// hpcrun without calling the real version.  dl_iterate_phdr acquires
-// a lock which may deadlock when called from a signal handler.
-//
-// Note: we only track dlopen/dlclose in the dynamic case.  Libunwind
-// doesn't distinguish between static and dynamic cases and needs a
-// real answer (more than just one module) even in the static case,
-// or else it gives 100% bad unwinds (on arm).
-//
-// Currently, we fallback to calling the real version in the static
-// case.  But a static program probably doesn't call dlopen/dlclose,
-// so there is not much chance of deadlock.
+#include "libunwind-interface.h"
 
-//----------------------------------------------------------------------
+#include "../../audit/binding.h"
+#include "hpctoolkit-config.h"
 
-#define _GNU_SOURCE  1
+#include <stddef.h>
 
-#include <sys/types.h>
-#include <link.h>
-#include "loadmap.h"
+pfn_unw_getcontext_t libunwind_getcontext = NULL;
+pfn_unw_init_local_t libunwind_init_local = NULL;
+pfn_unw_init_local2_t libunwind_init_local2 = NULL;
+pfn_unw_step_t libunwind_step = NULL;
+pfn_unw_reg_states_iterate_t libunwind_reg_states_iterate = NULL;
+pfn_unw_apply_reg_state_t libunwind_apply_reg_state = NULL;
+pfn_unw_get_reg_t libunwind_get_reg = NULL;
+pfn_set_reg_t libunwind_set_reg = NULL;
+pfn_unw_get_save_loc_t libunwind_get_save_loc = NULL;
 
-int
-hpcrun_real_dl_iterate_phdr (
-  int (*callback) (struct dl_phdr_info * info, size_t size, void * data),
-  void *data
-)
-{
-#ifdef HPCRUN_STATIC_LINK
-  // statically, we have no replacement, so call the real version
-  return dl_iterate_phdr(callback, data);
-
-#else
-  // dynamically, call our replacement version
-  return hpcrun_loadmap_iterate(callback, data);
-
-#endif
+void libunwind_bind() {
+  hpcrun_bind_private(HPCTOOLKIT_INSTALL_PREFIX "/lib/hpctoolkit/libhpcrun_unwind.so",
+    "libunwind_getcontext", &libunwind_getcontext,
+    "libunwind_init_local", &libunwind_init_local,
+    "libunwind_init_local2", &libunwind_init_local2,
+    "libunwind_step", &libunwind_step,
+    "libunwind_reg_states_iterate", &libunwind_reg_states_iterate,
+    "libunwind_apply_reg_state", &libunwind_apply_reg_state,
+    "libunwind_get_reg", &libunwind_get_reg,
+    "libunwind_set_reg", &libunwind_set_reg,
+    "libunwind_get_save_loc", &libunwind_get_save_loc,
+    NULL);
 }

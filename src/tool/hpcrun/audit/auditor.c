@@ -76,6 +76,7 @@
 
 #include "audit-api.h"
 
+#include "binding.h"
 
 
 //******************************************************************************
@@ -147,15 +148,23 @@ static void mainlib_disconnect();
 static auditor_exports_t exports = {
   .mainlib_connected = mainlib_connected,
   .mainlib_disconnect = mainlib_disconnect,
+  .hpcrun_bind_v = hpcrun_bind_v,
   .pipe = pipe, .close = close, .waitpid = waitpid,
   .clone = clone, .execve = execve
 };
 
+typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
+extern pfn_iterate_phdr_t* hpcrun_iterate_phdr;
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+__attribute__((constructor))
+static void init() {
+  hpcrun_iterate_phdr = &hooks.dl_iterate_phdr;
+}
 
 // Wrapper for pread that makes multiple calls until everything requested is
 // read. Returns true on success.

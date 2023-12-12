@@ -17,3 +17,8 @@ test('Measurement of simple-exception unwound Python',
 test('Measurement of simple-signals unwound Python',
     _tst, args: [hpctesttool, hpcrun, hpcprof, python.full_path(), files('simple-signals'), '1'],
     suite: ['hpcrun', 'python'])
+
+_tst = find_program(files('tst-python-simple-noaudit'))
+test('Measurement of simple-1thread unwound Python w/o auditor',
+    _tst, args: [hpctesttool, hpcrun, hpcprof, python.full_path(), files('simple-1thread'), '1'],
+    suite: ['hpcrun', 'python'])

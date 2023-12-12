@@ -44,67 +44,45 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/* a driver for programs that are going to manually call into the library */
+#define UNW_LOCAL_ONLY
 
-#include <libunwind.h>
+#include "libunwind-pvt.h"
 
-#include "state.h"
-#include "structs.h"
-
-void
-hpcrun_record_sample(unsigned long amount)
-{
-  hpcrun_state_t *state = hpcrun_get_state();
-  unw_context_t ctx;
-  unw_cursor_t frame;
-
-  if(state != NULL) {
-    /* force insertion from the root */
-    state->treenode = NULL;
-    state->bufstk = state->bufend;
-    state = hpcrun_check_for_new_epoch(state);
-
-    /* FIXME: error checking */
-    unw_get_context(&ctx);
-    unw_init_local(&frame, &ctx);
-    unw_step(&frame);           /* step out into our caller */
-
-    hpcrun_sample_callstack_from_frame(state, amount, &frame);
-  }
+void libunwind_bind() {
 }
 
-void
-hpcrun_driver_init(hpcrun_state_t *state, hpcrun_options_t *options)
-{
+int libunwind_getcontext(unw_context_t* uc) {
+  return unw_getcontext(uc);
 }
 
-void
-hpcrun_driver_fini(hpcrun_state_t *state, hpcrun_options_t *options)
-{
+int libunwind_init_local(unw_cursor_t* cur, unw_context_t* uc) {
+  return unw_init_local(cur, uc);
 }
 
-#ifdef CSPROF_THREADS
-void
-hpcrun_driver_thread_init(hpcrun_state_t *state)
-{
-    /* no support required */
+int libunwind_init_local2(unw_cursor_t* cur, unw_context_t* uc, int f) {
+  return unw_init_local2(cur, uc, f);
 }
 
-void
-hpcrun_driver_thread_fini(hpcrun_state_t *state)
-{
-    /* no support required */
-}
-#endif
-
-void
-hpcrun_driver_suspend(hpcrun_state_t *state)
-{
-    /* no support required */
+int libunwind_step(unw_cursor_t* cur) {
+  return unw_step(cur);
 }
 
-void
-hpcrun_driver_resume(hpcrun_state_t *state)
-{
-    /* no support required */
+int libunwind_reg_states_iterate(unw_cursor_t* cur, unw_reg_states_callback cb, void* ud) {
+  return unw_reg_states_iterate(cur, cb, ud);
+}
+
+int libunwind_apply_reg_state(unw_cursor_t* cur, void* st) {
+  return unw_apply_reg_state(cur, st);
+}
+
+int libunwind_get_reg(unw_cursor_t* cur, int reg, unw_word_t* val) {
+  return unw_get_reg(cur, reg, val);
+}
+
+int libunwind_set_reg(unw_cursor_t* cur, int reg, unw_word_t val) {
+  return unw_set_reg(cur, reg, val);
+}
+
+int libunwind_get_save_loc(unw_cursor_t* cur, int x, unw_save_loc_t* y) {
+  return unw_get_save_loc(cur, x, y);
 }

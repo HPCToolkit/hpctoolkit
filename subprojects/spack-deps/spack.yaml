@@ -17,9 +17,9 @@ spack:
   - 'elfutils ~nls @0.186:'  # SPEC
   - 'intel-tbb +shared @2020.3'  # SPEC
   - 'libmonitor +hpctoolkit ~dlopen @2023.03.15:'  # SPEC
-  - 'xz +pic libs=static @5.2.5:5.2.6,5.2.10:'  # SPEC
+  - 'xz @5.2.5:5.2.6,5.2.10:'  # SPEC
   - 'zlib +shared @1.2.13:1.2'  # SPEC
-  - 'libunwind +xz +pic @1.6.2:'  # SPEC
+  - 'libunwind +xz @1.6.2:'  # SPEC
   - 'libpfm4 @4.11.0:'  # SPEC
   - 'xerces-c transcoder=iconv @3.2.3:'  # SPEC
   - 'libiberty +pic @2.37:'  # SPEC
