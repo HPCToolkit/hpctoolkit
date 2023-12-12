@@ -28,6 +28,9 @@ spack:
     - 'xerces-c transcoder=iconv @3.2.3:'
     - 'libiberty +pic @2.37:'
     - 'yaml-cpp +shared @0.7.0:'
+  - when: env["VERMODE"] != "bare"
+    core:
+    - 'xxhash @0.8.1:'
   - when: env["VERMODE"] == "minimum"
     core:
     - boost @1.71.0
@@ -42,6 +45,7 @@ spack:
     - xerces-c @3.2.3
     - libiberty @2.37
     - yaml-cpp @0.7.0
+    - xxhash @0.8.1
   # Optional dependencies.
   - optional: []
   - when: env["VERMODE"] != "bare"

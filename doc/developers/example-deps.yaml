@@ -49,6 +49,7 @@ spack:
     - 'xerces-c transcoder=iconv @3.2.3:'
     - 'libiberty +pic @2.37:'
     - 'yaml-cpp +shared @0.7.0:'
+    - 'xxhash @0.8.1:'  # Optional, available as wrap
 
     # The following dependencies are optional, but when present enable additional
     # functionality in HPCToolkit. Uncomment to enable the desired feature, but
