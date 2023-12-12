@@ -3330,6 +3330,7 @@ XED2_HPCLINK_LIBS=
 XED2_PROF_MPI_LIBS=
 no_xed_for_hpcrun=no
 no_xed_for_hpclink=no
+xed_displacement_int64=no
 
 XED2="$default_xed_prefix"
 
@@ -3395,6 +3396,27 @@ int my_xed_init(void)
 }
 ]])], [xed2_static_fpic=yes], [xed2_static_fpic=no])
     AC_MSG_RESULT([$xed2_static_fpic])
+
+    #-------------------------------------------------
+    #
+    # Test for xed_operand_values_get_branch_displacement_int64().
+    # XED <= 2023.07.09 uses _int32, and >= 2023.08.21 uses _int64.
+    #
+    CFLAGS="-I${XED2}/include"
+    AC_MSG_CHECKING([if xed uses xed_operand_values_get_branch_displacement_int64])
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <stdio.h>
+#include <xed-operand-values-interface.h>
+int main(int argc, char **argv)
+{
+  long xyzzy = xed_operand_values_get_branch_displacement_int64(NULL);
+  printf("xyzzy = %ld\n", xyzzy);
+  return 0;
+}
+]])], [xed_displacement_int64=yes])
+    AC_MSG_RESULT([$xed_displacement_int64])
+
     AC_LANG_POP
     CFLAGS="$ORIG_CFLAGS"
     LIBS="$ORIG_LIBS"
@@ -3412,6 +3434,11 @@ int my_xed_init(void)
   XED2_PROF_MPI_LIBS="$XED2_LIB_FLAGS"
 
   AC_MSG_NOTICE([xed2 hpcrun libs: $XED2_HPCRUN_LIBS])
+fi
+
+if test "$xed_displacement_int64" = yes ; then
+  AC_DEFINE(XED_DISPLACEMENT_INT64, 1,
+      [xed uses xed_operand_values_get_branch_displacement_int64])
 fi
 
 AC_SUBST([XED2_INC])
