@@ -134,7 +134,7 @@ static const char *IGNORE_FNS[] = {
   "amd_dbgapi_initialize",     // amd debug library
   "hipKernelNameRefByPtr",     // amd hip runtime
   "hsa_init",                  // amd hsa runtime
-  "hpcrun_malloc"              // hpcrun library
+  "hpcrun_malloc",             // hpcrun library
   "clIcdGetPlatformIDsKHR",    // libigdrcl.so(intel opencl)
   "zeKernelCreate"             // libze_intel_gpu.so (intel L0) ISSUE: not getting ignored
 };
