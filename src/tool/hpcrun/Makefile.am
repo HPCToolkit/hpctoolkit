@@ -903,15 +903,15 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_la_LIBADD =  \
 	$(PROF_LEAN_A)  \
-	$(SUPPORT_LEAN_A)
+	$(SUPPORT_LEAN_A) \
+	$(LZMA_LDFLAGS_DYN)
 
 libhpcrun_la_LDFLAGS +=  \
 	-L$(LIBMONITOR_LIB) -lmonitor  \
 	-lpthread -lrt  \
 	-L$(LIBELF_LIB) -lelf  \
 	$(PERFMON_LDFLAGS_DYN)  \
-	$(OPT_ROCM_LDFLAGS)	\
-	$(LZMA_LDFLAGS_DYN)
+	$(OPT_ROCM_LDFLAGS)
 
 libhpcrun_unwind_la_LDFLAGS +=	\
 	$(LIBUNWIND_LDFLAGS_DYN)
