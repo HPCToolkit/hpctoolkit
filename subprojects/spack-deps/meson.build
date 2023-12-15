@@ -35,8 +35,11 @@ endif
 spack = [find_program('spack', version: '>=0.20.1', native: true), '--env-dir', _spack_env]
 
 # If we generated the environment, concretize it. Otherwise leave it to the user.
-if get_option('spack_env') == '' \
-   or (get_option('spack_mode') == 'install' and not fs.exists(_spack_env / 'spack.lock'))
+if (
+  get_option('spack_env') == ''
+  or (get_option('spack_mode') == 'install'
+  and not fs.exists(_spack_env / 'spack.lock'))
+)
   message(f'Spack concretizing the environment: @_spack_env@')
   run_command(spack, 'concretize', check: true)
 endif
@@ -71,9 +74,11 @@ foreach package, spec : specs
           'prefix': _find_prefix.stdout().strip(),
           'link_args': ' '.join(_link_args),
         },
-      )
+      ),
     }
-    message('Located Spack installation for @0@: @1@'.format(package, _find_prefix.stdout().strip()))
+    message(
+      'Located Spack installation for @0@: @1@'.format(package, _find_prefix.stdout().strip()),
+    )
   endif
 endforeach
 

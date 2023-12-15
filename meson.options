@@ -1,13 +1,25 @@
 option('hpcprof_mpi', type: 'feature', description: 'Build hpcprof-mpi')
 
-option('python', type: 'feature', description: 'Enable Python unwinder (experimental)')
+option(
+  'python',
+  type: 'feature',
+  description: 'Enable Python unwinder (experimental)',
+)
 
 option('papi', type: 'feature', description: 'Enable PAPI metrics')
 option('cuda', type: 'feature', description: 'Enable CUDA metrics')
 option('level0', type: 'feature', description: 'Enable Level 0 metrics')
-option('gtpin', type: 'feature', description: 'Enable Level 0 instrumentation metrics')
+option(
+  'gtpin',
+  type: 'feature',
+  description: 'Enable Level 0 instrumentation metrics',
+)
 option('opencl', type: 'feature', description: 'Enable OpenCL metrics')
 option('rocm', type: 'feature', description: 'Enable ROCm metrics')
 
-option('valgrind_annotations', type: 'boolean', value: false,
-       description: 'Inject annotations for Valgrind debugging')
+option(
+  'valgrind_annotations',
+  type: 'boolean',
+  value: false,
+  description: 'Inject annotations for Valgrind debugging',
+)

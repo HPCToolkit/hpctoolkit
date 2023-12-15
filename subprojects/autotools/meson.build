@@ -8,7 +8,7 @@ if host_machine.cpu_family() in ['x86', 'x86_64']
   _markers += ['SPECX86']
 endif
 specs = {}
-foreach line :  fs.read(files('spack.yaml')).split('\n')
+foreach line : fs.read(files('spack.yaml')).split('\n')
   foreach marker : _markers
     if line.strip().endswith(marker)
       _spec_bits = line.strip().split('#')[0].strip().strip('-').strip().strip('\'').split()
@@ -35,8 +35,11 @@ endif
 spack = [find_program('spack', version: '>=0.20.1', native: true), '--env-dir', _spack_env]
 
 # If we generated the environment, concretize it. Otherwise leave it to the user.
-if get_option('spack_env') == '' \
-   or (get_option('spack_mode') == 'install' and not fs.exists(_spack_env / 'spack.lock'))
+if (
+  get_option('spack_env') == ''
+  or (get_option('spack_mode') == 'install'
+  and not fs.exists(_spack_env / 'spack.lock'))
+)
   message(f'Spack concretizing the environment: @_spack_env@')
   run_command(spack, 'concretize', check: true)
 endif
@@ -62,7 +65,7 @@ foreach package, spec : specs
         variables: {
           'prefix': _find_prefix.stdout().strip(),
         },
-      )
+      ),
     }
   endif
 endforeach

@@ -9,19 +9,31 @@ _tst = find_program(files('tst-lexical-structure'))
 foreach name, opt : _compile_options
   _has_debug = 'debug=true' in opt
   assert(_has_debug or 'debug=false' in opt)
-  test(f'Analysis of tstlib-inlines+loops-@name@ is lexically accurate',
-      _tst, args: [hpctesttool, hpcstruct,
-          shared_library(f'tstlib-inlines+loops-@name@', files('inlines+loops.c'),
-                         build_by_default: false, override_options: opt),
-          files('inlines+loops.c'), (_has_debug ? '--debug' : '--no-debug')],
-      suite: 'hpcstruct')
+  test(
+    f'Analysis of tstlib-inlines+loops-@name@ is lexically accurate',
+    _tst,
+    args: [
+      hpctesttool,
+      hpcstruct,
+      shared_library(
+        f'tstlib-inlines+loops-@name@',
+        files('inlines+loops.c'),
+        build_by_default: false,
+        override_options: opt,
+      ),
+      files('inlines+loops.c'),
+      (_has_debug ? '--debug' : '--no-debug'),
+    ],
+    suite: 'hpcstruct',
+  )
 endforeach
 
 _tst = find_program(files('tst-consistent'))
 foreach name, struct : testdata_struct
   _threads = [1, 16]
   _args = [
-    hpctesttool, hpcstruct,
+    hpctesttool,
+    hpcstruct,
     struct['structfile'],
     struct['binary']['file'],
     '--gpucfg=' + (struct['gpucfg'] ? 'yes' : 'no'),
@@ -40,9 +52,12 @@ foreach name, struct : testdata_struct
   endif
 
   foreach threads : _threads
-    test(f'Analysis of @name@ is consistent (-j@threads@@_suffix@)',
-         _tst, args: _args + [f'-j@threads@'],
-         suite: 'hpcstruct', is_parallel: 'binary' not in struct or threads == 1,
+    test(
+      f'Analysis of @name@ is consistent (-j@threads@@_suffix@)',
+      _tst,
+      args: _args + [f'-j@threads@'],
+      suite: 'hpcstruct',
+      is_parallel: 'binary' not in struct or threads == 1,
     )
   endforeach
 endforeach
