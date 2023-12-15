@@ -250,9 +250,14 @@ run_command(
   env: _autoenv,
 )
 
+# Start collecting arguments to pass to ./configure
+_autogoo_args = [
+  '--enable-silent-rules',
+]
+
 # Generate the full set of --with-* arguments and LDFLAGS for ./configure.
 # This propagates the dependencies to the actual build.
-_autogoo_args = [
+_autogoo_args += [
   '--@0@-valgrind-annotations'.format(get_option('valgrind_annotations') ? 'enable' : 'disable'),
   '--with-boost=@0@'.format(boost_exdep.get_variable(internal: 'prefix')),
   '--with-bzip=@0@'.format(bzip_exdep.get_variable(internal: 'prefix')),
