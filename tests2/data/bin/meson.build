@@ -9,7 +9,10 @@ testdata_bin = {
   'inlines+loops-sm_87-nvcc118-dr': {'file': files('inlines+loops-sm_87-nvcc118-dr'), 'cuda': true},
   'inlines+loops-sm_87-nvcc118-r': {'file': files('inlines+loops-sm_87-nvcc118-r'), 'cuda': true},
   'inlines+loops-sm_90a-nvcc120-0': {'file': files('inlines+loops-sm_90a-nvcc120-0'), 'cuda': true},
-  'inlines+loops-sm_90a-nvcc120-dr': {'file': files('inlines+loops-sm_90a-nvcc120-dr'), 'cuda': true},
+  'inlines+loops-sm_90a-nvcc120-dr': {
+    'file': files('inlines+loops-sm_90a-nvcc120-dr'),
+    'cuda': true,
+  },
   'inlines+loops-sm_90a-nvcc120-r': {'file': files('inlines+loops-sm_90a-nvcc120-r'), 'cuda': true},
   'inlines+loops-x86_64-gcc10-0': {'file': files('inlines+loops-x86_64-gcc10-0')},
   'inlines+loops-x86_64-gcc10-d': {'file': files('inlines+loops-x86_64-gcc10-d')},

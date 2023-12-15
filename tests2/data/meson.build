@@ -17,8 +17,11 @@ _regen = {
 }
 foreach dst, src : testdata_files
   _orig = _regen[src['tag']]
-  _patch = custom_target(output: fs.name(dst) + '.patch', capture: true,
-      command: [_git, '-C', '@SOURCE_ROOT@', 'diff', '--binary', 'HEAD', '--', dst])
+  _patch = custom_target(
+    output: fs.name(dst) + '.patch',
+    capture: true,
+    command: [_git, '-C', '@SOURCE_ROOT@', 'diff', '--binary', 'HEAD', '--', dst],
+  )
   _new = {
     'cmd': _orig['cmd'] + [src['src'], dst],
     'depends': _orig['depends'] + src.get('depends', []),
