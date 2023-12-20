@@ -156,7 +156,6 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   // ---------------------------------------------------------
   // Step through bichords
   // ---------------------------------------------------------
-  unsigned int unw_len = 0;
   lush_step_t ty = LUSH_STEP_NULL;
 
   while ( (ty = lush_step_bichord(&cursor)) != LUSH_STEP_END_PROJ
@@ -221,7 +220,6 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     // ---------------------------------------------------------
     frame_t* chord_end;
     chord_end = canonicalize_chord(chord_beg, as, pchord_len, lchord_len);
-    unw_len++;
 
     td->btbuf_cur = chord_end;
   }

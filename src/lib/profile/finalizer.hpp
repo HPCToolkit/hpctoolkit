@@ -80,7 +80,7 @@ public:
   /// Query for the ExtensionClass this Finalizer will depend on.
   /// Cannot overlap with the result from provides().
   // MT: Safe (const)
-  virtual ExtensionClass requires() const noexcept = 0;
+  virtual ExtensionClass requirements() const noexcept = 0;
 
   /// Generate an ID to the given object. Must be unique among all objects of the
   /// same type, and preferably dense towards 0.

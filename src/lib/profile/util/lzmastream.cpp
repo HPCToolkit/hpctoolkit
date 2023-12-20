@@ -77,6 +77,8 @@ static lzma_ret maybeThrowLZMA_decoder(lzma_ret ret) {
     throw std::runtime_error("LZMA decoder failed (multiple times) to make progress (4K is too small a buffer size?)");
   case LZMA_PROG_ERROR:
     throw std::runtime_error("LZMA decoder encountered a really bad error");
+  default:
+    throw std::runtime_error("LZMA decoder returned an unknown error code");
   }
   return ret;
 }

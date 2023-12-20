@@ -73,7 +73,7 @@ public:
     return ds::attributes | ds::threads | ds::contexts | ds::ctxTimepoints;
   }
 
-  ExtensionClass requires() const noexcept override {
+  ExtensionClass requirements() const noexcept override {
     using es = ExtensionClass;
     return es::identifier;
   }

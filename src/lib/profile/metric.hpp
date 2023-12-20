@@ -131,7 +131,7 @@ public:
   StatisticPartial(const StatisticPartial&) = delete;
   StatisticPartial(StatisticPartial&&) = default;
   StatisticPartial& operator=(const StatisticPartial&) = delete;
-  StatisticPartial& operator=(StatisticPartial&&) = default;
+  StatisticPartial& operator=(StatisticPartial&&) = delete;
 
   /// Get the Expression representing the "accumulate" function for this
   /// Partial. Single-variable (which is 0).
@@ -150,7 +150,6 @@ private:
   friend class Metric;
   friend class PerThreadTemporary;
   friend class StatisticAccumulator;
-  StatisticPartial() = default;
   StatisticPartial(Expression a, Statistic::combination_t c, std::size_t idx)
     : m_accum(std::move(a)), m_combin(std::move(c)), m_idx(idx) {};
 };

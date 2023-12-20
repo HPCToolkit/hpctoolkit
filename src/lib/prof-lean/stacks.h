@@ -201,9 +201,9 @@
 
 typedef struct s_element_ptr_t {
 #ifndef __cplusplus
-  _Atomic(struct s_element_ptr_t *) aptr;
+  _Atomic(struct s_element_t *) aptr;
 #else
-  std::atomic<struct s_element_ptr_t *> aptr;
+  std::atomic<struct s_element_t *> aptr;
 #endif
 } s_element_ptr_t;
 

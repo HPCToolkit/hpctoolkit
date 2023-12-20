@@ -137,7 +137,7 @@ struct fatal final : public detail::MessageBuffer {
   fatal();
   [[noreturn]] ~fatal();
 
-  fatal(fatal&&) = default;
+  fatal(fatal&&) = delete;
   fatal(const fatal&) = delete;
   fatal& operator=(fatal&&) = default;
   fatal& operator=(const fatal&) = delete;
@@ -149,7 +149,7 @@ struct error final : public detail::MessageBuffer {
   error();
   ~error();
 
-  error(error&&) = default;
+  error(error&&) = delete;
   error(const error&) = delete;
   error& operator=(error&&) = default;
   error& operator=(const error&) = delete;
@@ -161,7 +161,7 @@ struct verror final : public detail::MessageBuffer {
   verror();
   ~verror();
 
-  verror(verror&&) = default;
+  verror(verror&&) = delete;
   verror(const verror&) = delete;
   verror& operator=(verror&&) = default;
   verror& operator=(const verror&) = delete;
@@ -173,7 +173,7 @@ struct warning final : public detail::MessageBuffer {
   warning();
   ~warning();
 
-  warning(warning&&) = default;
+  warning(warning&&) = delete;
   warning(const warning&) = delete;
   warning& operator=(warning&&) = default;
   warning& operator=(const warning&) = delete;
@@ -185,7 +185,7 @@ struct vwarning final : public detail::MessageBuffer {
   vwarning();
   ~vwarning();
 
-  vwarning(vwarning&&) = default;
+  vwarning(vwarning&&) = delete;
   vwarning(const vwarning&) = delete;
   vwarning& operator=(vwarning&&) = default;
   vwarning& operator=(const vwarning&) = delete;
@@ -197,7 +197,7 @@ struct argsinfo final : public detail::MessageBuffer {
   argsinfo();
   ~argsinfo();
 
-  argsinfo(argsinfo&&) = default;
+  argsinfo(argsinfo&&) = delete;
   argsinfo(const argsinfo&) = delete;
   argsinfo& operator=(argsinfo&&) = default;
   argsinfo& operator=(const argsinfo&) = delete;
@@ -209,7 +209,7 @@ struct info final : public detail::MessageBuffer {
   info();
   ~info();
 
-  info(info&&) = default;
+  info(info&&) = delete;
   info(const info&) = delete;
   info& operator=(info&&) = default;
   info& operator=(const info&) = delete;
@@ -221,7 +221,7 @@ struct debug final : public detail::MessageBuffer {
   debug();
   ~debug();
 
-  debug(debug&&) = default;
+  debug(debug&&) = delete;
   debug(const debug&) = delete;
   debug& operator=(debug&&) = default;
   debug& operator=(const debug&) = delete;

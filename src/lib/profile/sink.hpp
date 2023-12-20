@@ -89,7 +89,7 @@ public:
 
   /// Query what Classes of extended data this Sink needs to function.
   // MT: Safe (const)
-  virtual ExtensionClass requires() const noexcept = 0;
+  virtual ExtensionClass requirements() const noexcept = 0;
 
   /// Notify the Sink that a requested wavefront has passed. The argument
   /// specifies the set of currently passed wavefronts.

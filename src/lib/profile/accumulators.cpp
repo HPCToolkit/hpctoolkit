@@ -121,7 +121,7 @@ void StatisticAccumulator::PartialRef::addRaw(const raw_t& v) noexcept {
 }
 
 StatisticAccumulator::PartialCRef StatisticAccumulator::get(const StatisticPartial& p) const noexcept {
-  return {partials[p.m_idx], p};
+  return {partials[p.m_idx]};
 }
 StatisticAccumulator::PartialRef StatisticAccumulator::get(const StatisticPartial& p) noexcept {
   return {partials[p.m_idx], p};
@@ -206,7 +206,6 @@ void PerThreadTemporary::finalize() noexcept {
       assert(factors.size() == finals.size());
       for(const auto& [m, va]: input.citerate()) {
         if(auto v = va.get(MetricScope::point)) {
-          auto handling = r->graph().handler()(m);
           for(size_t i = 0; i < finals.size(); i++)
             add(finals[i], m, factors[i] * *v);
         }
@@ -275,7 +274,6 @@ void PerThreadTemporary::finalize() noexcept {
           assert(factors.size() == finals.size());
           for(const auto& [m, va]: input.citerate()) {
             if(auto v = va.get(MetricScope::point)) {
-              auto handling = fg.handler()(m);
               for(size_t i = 0; i < finals.size(); i++)
                 add(finals[i], m, factors[i] * *v);
             }

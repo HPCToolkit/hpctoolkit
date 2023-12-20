@@ -622,7 +622,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     std::fseek(f, trace_off, SEEK_SET);
     hpctrace_fmt_datum_t tpoint;
     while(1) {
-      int err = hpctrace_fmt_datum_fread(&tpoint, {0}, f);
+      int err = hpctrace_fmt_datum_fread(&tpoint, 0, f);
       if(err == HPCFMT_EOF) break;
       else if(err != HPCFMT_OK) {
         util::log::info{} << "Error reading trace datum from "

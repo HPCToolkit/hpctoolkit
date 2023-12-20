@@ -129,6 +129,6 @@ x86_dump_ins(void *ins)
               ins, (int) xed_error);
   }
   EMSG(errbuf);
-  fprintf(stderr, errbuf);
+  fprintf(stderr, "%s", errbuf);
   fflush(stderr);
 }

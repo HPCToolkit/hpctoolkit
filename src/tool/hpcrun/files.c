@@ -230,7 +230,7 @@ hpcrun_files_next_id(struct fileid *id)
 
   id->gen++;
   if (id->gen >= FILES_RANDOM_GEN) {
-    long randval;
+    long randval = 0;
     // give up and use a random host id
     fd = open("/dev/urandom", O_RDONLY);
     if (fd >= 0) {

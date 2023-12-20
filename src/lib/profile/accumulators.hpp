@@ -185,7 +185,7 @@ public:
 
   MetricAccumulator(const MetricAccumulator&) = delete;
   MetricAccumulator& operator=(const MetricAccumulator&) = delete;
-  MetricAccumulator(MetricAccumulator&&) = default;
+  MetricAccumulator(MetricAccumulator&&) = delete;
   MetricAccumulator& operator=(MetricAccumulator&&) = delete;
 
   /// Add some value to this Accumulator. Only point-Scope is allowed.
@@ -305,7 +305,7 @@ private:
 
     Partial(const Partial&) = delete;
     Partial& operator=(const Partial&) = delete;
-    Partial(Partial&&) = default;
+    Partial(Partial&&) = delete;
     Partial& operator=(Partial&&) = delete;
 
   private:
@@ -328,7 +328,7 @@ public:
     PartialRef(const PartialRef&) = delete;
     PartialRef& operator=(const PartialRef&) = delete;
     PartialRef(PartialRef&&) = default;
-    PartialRef& operator=(PartialRef&&) = default;
+    PartialRef& operator=(PartialRef&&) = delete;
 
     ~PartialRef() {
       assert(added && "Created a PartialRef but did not add any value!");
@@ -369,7 +369,7 @@ public:
     PartialCRef(const PartialCRef&) = delete;
     PartialCRef& operator=(const PartialCRef&) = delete;
     PartialCRef(PartialCRef&&) = default;
-    PartialCRef& operator=(PartialCRef&&) = default;
+    PartialCRef& operator=(PartialCRef&&) = delete;
 
     /// Get this Partial's accumulation, for a particular MetricScope.
     // MT: Safe (const), Unstable (before `metrics` wavefront)
@@ -386,11 +386,10 @@ public:
 
   private:
     friend class StatisticAccumulator;
-    PartialCRef(const Partial& p, const StatisticPartial& sp)
-      : partial(p), statpart(sp) {};
+    PartialCRef(const Partial& p)
+      : partial(p) {};
 
     const Partial& partial;
-    const StatisticPartial& statpart;
   };
 
   explicit StatisticAccumulator(const Metric&);

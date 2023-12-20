@@ -78,7 +78,7 @@ public:
     ~StructPartialMatch() = default;
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
-    ExtensionClass requires() const noexcept override { return {}; }
+    ExtensionClass requirements() const noexcept override { return {}; }
     std::optional<std::pair<util::optional_ref<Context>, Context&>>
     classify(Context&, NestedScope&) noexcept override;
     bool resolve(ContextFlowGraph&) noexcept override;
@@ -103,7 +103,7 @@ public:
     ExtensionClass provides() const noexcept override {
       return ExtensionClass::statistics;
     }
-    ExtensionClass requires() const noexcept override { return {}; }
+    ExtensionClass requirements() const noexcept override { return {}; }
 
     void appendStatistics(const Metric&, Metric::StatsAccess) noexcept override;
 
@@ -118,7 +118,7 @@ public:
     ~Prefixer() = default;
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::resolvedPath; }
-    ExtensionClass requires() const noexcept override { return {}; }
+    ExtensionClass requirements() const noexcept override { return {}; }
     std::optional<stdshim::filesystem::path> resolvePath(const File&) noexcept override;
     std::optional<stdshim::filesystem::path> resolvePath(const Module&) noexcept override;
 

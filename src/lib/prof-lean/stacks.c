@@ -186,7 +186,7 @@ cstack_ptr_set
  s_element_t *v
 )
 {
-  atomic_init(&Ap(e), (s_element_ptr_t *) v);
+  atomic_init(&Ap(e), v);
 }
 
 

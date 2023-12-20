@@ -81,7 +81,7 @@ public:
 
   void write() override {}
   DataClass accepts() const noexcept override { return DataClass::threads; }
-  ExtensionClass requires() const noexcept override { return {}; }
+  ExtensionClass requirements() const noexcept override { return {}; }
   DataClass wavefronts() const noexcept override { return DataClass::threads; }
   void notifyWavefront(DataClass wave) override {
     if(wave.hasThreads()) {
@@ -100,7 +100,7 @@ public:
   ThreadIdProvider(std::size_t offset) : nextId((unsigned int)offset) {};
 
   ExtensionClass provides() const noexcept override { return ExtensionClass::identifier; }
-  ExtensionClass requires() const noexcept override { return {}; }
+  ExtensionClass requirements() const noexcept override { return {}; }
   std::optional<unsigned int> identify(const Thread&) noexcept override {
     return nextId.fetch_add(1, std::memory_order_relaxed);
   }

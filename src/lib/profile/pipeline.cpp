@@ -98,7 +98,7 @@ Settings& Settings::operator<<(std::unique_ptr<ProfileSource>&& sp) {
 }
 
 Settings& Settings::operator<<(ProfileSink& s) {
-  auto req = s.requires();
+  auto req = s.requirements();
   requested += req;
   assert(req - available == ExtensionClass() && "Sink requires unavailable extended data!");
   auto wav = s.wavefronts();
@@ -118,7 +118,7 @@ Settings& Settings::operator<<(std::unique_ptr<ProfileSink>&& sp) {
 
 Settings& Settings::operator<<(ProfileFinalizer& f) {
   auto pro = f.provides();
-  auto req = f.requires();
+  auto req = f.requirements();
   assert(req - available == ExtensionClass() && "Finalizer requires unavailable extended data!");
   requested += req;
   available += pro;

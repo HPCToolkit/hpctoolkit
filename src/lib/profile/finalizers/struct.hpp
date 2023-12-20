@@ -90,7 +90,7 @@ public:
   ExtensionClass provides() const noexcept override {
     return ExtensionClass::classification;
   }
-  ExtensionClass requires() const noexcept override {
+  ExtensionClass requirements() const noexcept override {
     return ExtensionClass::resolvedPath;
   }
 

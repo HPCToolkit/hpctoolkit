@@ -259,7 +259,6 @@ show_info(char *event )
   pfm_pmu_info_t pinfo;
   pfm_event_info_t info;
   int i, j, ret, match = 0, pname;
-  int profilable = 0;
 
   memset(&pinfo, 0, sizeof(pinfo));
   memset(&info, 0, sizeof(info));
@@ -290,7 +289,7 @@ show_info(char *event )
       if (ret != PFM_SUCCESS)
         EMSG( "cannot get event info: %s", pfm_strerror(ret));
       else {
-        profilable |= show_event_info(&info);
+        show_event_info(&info);
         match++;
       }
     }

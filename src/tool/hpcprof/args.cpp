@@ -683,15 +683,6 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
 
   // Allocate extra strings to ranks with available slots.
   if(avails && extras) {
-    std::size_t numextra = 0;
-    std::size_t numnearavail = 0;
-    std::size_t numavail = 0;
-    for(std::size_t r = 0; r < mpi::World::size(); r++) {
-      numextra += extras.value()[r].size();
-      if(avails.value()[r] > 1) numnearavail += avails.value()[r]-1;
-      numavail += avails.value()[r];
-    }
-
     std::vector<std::vector<std::string>> allocations(mpi::World::size());
     std::size_t next = 0;
     bool nearfull = false;

@@ -61,7 +61,7 @@ public:
   DataClass accepts() const noexcept override {
     return DataClass::contexts + DataClass::attributes;
   }
-  ExtensionClass requires() const noexcept override {
+  ExtensionClass requirements() const noexcept override {
     return ExtensionClass::identifier;
   }
   DataClass wavefronts() const noexcept override {
@@ -83,7 +83,7 @@ public:
   ExtensionClass provides() const noexcept override {
     return ExtensionClass::identifier + ExtensionClass::classification;
   }
-  ExtensionClass requires() const noexcept override { return {}; }
+  ExtensionClass requirements() const noexcept override { return {}; }
 
   std::optional<unsigned int> identify(const Context&) noexcept override;
   std::optional<Metric::Identifier> identify(const Metric&) noexcept override;

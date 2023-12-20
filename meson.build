@@ -141,6 +141,15 @@ else
   mpiexec = [_sh.full_path(), '-c', 'exit 77']
 endif
 
+# Enable a handful of useful non-default warnings
+foreach lang : ['c', 'cpp']
+  _warnings = meson.get_compiler(lang).get_supported_arguments(
+      '-Wstack-usage=65536',  # Warn if any functions use a lot or unbounded stack
+  )
+  set_variable(f'_@lang@_warnings', _warnings)
+  add_project_arguments(_warnings, language: lang)
+endforeach
+
 # --- START AUTOGOO STUB ---------------------
 # The build system is really Autotools, which is vastly different from Meson. We will eventually
 # switch over from Autotools to Meson, but until we do this "stub" acts as the bridge between the
@@ -356,7 +365,7 @@ if mpicxx.found()
 endif
 
 # Collect and translate the raw compiler flags
-_c2flags = ['-Wstack-usage=65536']
+_c2flags = []
 if get_option('debug')
   _c2flags += ['-g']
 endif
@@ -383,12 +392,12 @@ if (
   _c2flags += ['-DNDEBUG']
 endif
 
-_cflags = [get_option('c_args')]
+_cflags = _c_warnings + [get_option('c_args')]
 if get_option('c_std') != 'none'
   _cflags += ['-std=@0@'.format(get_option('c_std'))]
 endif
 
-_cppflags = [get_option('cpp_args')]
+_cppflags = _cpp_warnings + [get_option('cpp_args')]
 if get_option('cpp_std') != 'none'
   _cppflags += ['-std=@0@'.format(get_option('cpp_std'))]
 endif

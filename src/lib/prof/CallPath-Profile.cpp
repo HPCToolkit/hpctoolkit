@@ -604,7 +604,7 @@ Profile::fmt_cct_fread(FILE* infs,
   ExprEval eval;
 #endif
 
-  const epoch_flags_t flags = {0};
+  const epoch_flags_t flags = {.bits=0};
 
   for (unsigned int i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------

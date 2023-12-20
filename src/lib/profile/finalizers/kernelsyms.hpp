@@ -65,7 +65,7 @@ public:
 
   void notifyPipeline() noexcept override;
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
-  ExtensionClass requires() const noexcept override { return {}; }
+  ExtensionClass requirements() const noexcept override { return {}; }
 
   std::optional<std::pair<util::optional_ref<Context>, Context&>>
   classify(Context&, NestedScope&) noexcept override;
