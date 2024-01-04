@@ -263,12 +263,16 @@ collapse_callstack
  uint64_t placeholder
 )
 {
-  set_frame(bt->last, placeholder);
-  bt->begin = bt->last;
+  // unify the outermost frame with <program root>
+  bt->last->ip_norm = get_placeholder_norm(hpcrun_placeholder_fence_main);
+
+  // insert this placeholder in the prior frame
+  bt->begin = bt->last - 1;
+  set_frame(bt->begin, placeholder);
+
   bt->bottom_frame_elided = false;
   bt->partial_unwind = false;
   bt->collapsed = true;
-//  bt->fence = FENCE_MAIN;
 }
 
 
