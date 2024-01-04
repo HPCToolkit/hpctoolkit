@@ -5370,12 +5370,6 @@ AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
   [chmod +x src/tool/hpcrun/scripts/hpclink])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcsummary],
   [chmod +x src/tool/hpcrun/scripts/hpcsummary])
-AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
-  [chmod +x src/tool/hpcproftt/hpcproftt])
-AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
-  [chmod +x src/tool/hpcstruct/hpcstruct])
-AC_CONFIG_FILES([src/tool/hpcstruct/dotgraph],
-  [chmod +x src/tool/hpcstruct/dotgraph])
 
 AC_CONFIG_FILES([tests/run-sort],
   [chmod +x tests/run-sort])
