@@ -79,6 +79,10 @@ static constexpr uint64_t align(uint64_t v, uint8_t a) {
 // SparseDB common bits
 //
 
+namespace hpctoolkit::staticdata {
+extern const char formats_md[];
+}
+
 SparseDB::SparseDB(stdshim::filesystem::path dir) {
   if(dir.empty())
     util::log::fatal{} << "SparseDB doesn't allow for dry runs!";
@@ -89,11 +93,17 @@ SparseDB::SparseDB(stdshim::filesystem::path dir) {
   cmf = util::File(dir / "cct.db", true);
 
   // Dump the FORMATS.md file
-  std::error_code ec;
-  if(!stdshim::filesystem::copy_file(HPCTOOLKIT_INSTALL_PREFIX "/share/doc/hpctoolkit/FORMATS.md",
-          dir / "FORMATS.md", ec)) {
-    util::log::warning w;
-    w << "Error while writing out FORMATS.md: " << (ec ? ec.message() : "file exists");
+  try {
+    std::ofstream out(dir / "FORMATS.md", std::ios::out | std::ios::ate);
+    if(out.tellp() > 0) {
+      util::log::warning w;
+      w << "Error while writing out FORMATS.md: file exists";
+    } else {
+      out << staticdata::formats_md;
+    }
+  } catch(std::exception& ex) {
+      util::log::warning w;
+      w << "Error while writing out FORMATS.md: " << ex.what();
   }
 }
 

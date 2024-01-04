@@ -70,7 +70,23 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+static.data.cpp: $(top_srcdir)/doc/FORMATS.md $(top_srcdir)/doc/METRICS.yaml
+	{ \
+		echo 'namespace hpctoolkit::staticdata {' && \
+		echo 'extern const char formats_md[];' && \
+		echo 'const char formats_md[] = R"=========(' && \
+		cat $(top_srcdir)/doc/FORMATS.md && \
+		echo ')=========";' && \
+		echo 'extern const char metrics_yaml[];' && \
+		echo 'const char metrics_yaml[] = R"=========(' && \
+		cat $(top_srcdir)/doc/METRICS.yaml && \
+		echo ')=========";' && \
+		echo '}  // hpctoolkit::staticdata'; \
+	} > $@
+
 MYSOURCES = \
+	static.data.cpp \
+	\
 	stdshim/shared_mutex.cpp stdshim/atomic.cpp stdshim/futex-detail.c \
 	\
 	util/ragged_vector.cpp util/once.cpp util/xml.cpp util/log.cpp \
