@@ -102,7 +102,7 @@ static void (*hpcrun_bind_private_v_real)(const char*, va_list) = NULL;
 
 static once_flag private_once;
 static void private_setup() {
-  private_ns = dlmopen(LM_ID_NEWLM, HPCTOOLKIT_INSTALL_PREFIX "/lib/hpctoolkit/libhpcrun_private_ns.so", RTLD_NOW);
+  private_ns = dlmopen(LM_ID_NEWLM, "libhpcrun_private_ns.so", RTLD_NOW);
   if (private_ns == NULL) {
     EEMSG("Unable to create private linkage namespace: %s", dlerror());
     hpcrun_terminate();

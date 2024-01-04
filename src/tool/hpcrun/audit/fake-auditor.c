@@ -126,7 +126,7 @@ void hpcrun_init_fake_auditor() {
   real_dlmopen = dlsym(RTLD_NEXT, "dlmopen");
 
   // Load the private namespace and get the binding function out of it
-  private_ns = dlmopen(LM_ID_NEWLM, HPCTOOLKIT_INSTALL_PREFIX "/lib/hpctoolkit/libhpcrun_private_ns.so", RTLD_NOW);
+  private_ns = dlmopen(LM_ID_NEWLM, "libhpcrun_private_ns.so", RTLD_NOW);
   if (private_ns == NULL) {
     fprintf(stderr, "[fake audit] ERROR: Unable to create private linkage namespace: %s", dlerror());
     abort();
