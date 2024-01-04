@@ -49,6 +49,7 @@
 //***************************************************************************
 
 #include <assert.h>
+#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -131,7 +132,6 @@
 #include <memory/hpcrun-malloc.h>
 #include <memory/mmap.h>
 #include <tool/hpcrun/sample-sources/gpu/stream-tracing.h>
-#include <monitor-exts/monitor_ext.h>
 
 #include <cct/cct.h>
 
@@ -503,15 +503,13 @@ hpcrun_set_abort_timeout()
 // ** local routines & data to support interval dumping **
 //------------------------------------
 
-siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
-
 #ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
 static sigjmp_buf ivd_jb;
 
 static int
 dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
 {
-  (*hpcrun_get_real_siglongjmp())(ivd_jb, 9);
+  siglongjmp(ivd_jb, 9);
   return 0;
 }
 #endif
@@ -673,7 +671,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_itimer_wallclock_ok(true);
 
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
-  if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
+  if (foilbase_hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
     SAMPLE_SOURCES(start);
   }
 
@@ -973,7 +971,7 @@ hpcrun_wait()
 void hpcrun_prepare_measurement_subsystem(bool is_child);
 
 void
-monitor_start_main_init()
+foilbase_monitor_start_main_init()
 {
   monitor_initialize();
   hpcrun_prepare_measurement_subsystem(false);
@@ -981,7 +979,7 @@ monitor_start_main_init()
 
 
 void*
-monitor_init_process(int *argc, char **argv, void* data)
+foilbase_monitor_init_process(int *argc, char **argv, void* data)
 {
   const char* process_name;
   bool is_child = data && ((fork_data_t *) data)->is_child;
@@ -1079,7 +1077,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
 
 void
-monitor_at_main()
+foilbase_monitor_at_main()
 {
   bool is_child = false;
 
@@ -1156,7 +1154,7 @@ void hpcrun_prepare_measurement_subsystem(bool is_child)
 
 
 void
-monitor_fini_process(int how, void* data)
+foilbase_monitor_fini_process(int how, void* data)
 {
   if (hpcrun_get_disabled()) {
     return;
@@ -1172,7 +1170,7 @@ monitor_fini_process(int how, void* data)
 }
 
 void
-monitor_begin_process_exit(int how)
+foilbase_monitor_begin_process_exit(int how)
 {
 //TODO:Check with John if we should delete this or adjust hpcrun_fini_internal
 #if 0
@@ -1203,7 +1201,7 @@ monitor_begin_process_exit(int how)
 static fork_data_t from_fork;
 
 void*
-monitor_pre_fork(void)
+foilbase_monitor_pre_fork(void)
 {
   if (!hpcrun_is_initialized()) {
     monitor_initialize();
@@ -1232,7 +1230,7 @@ monitor_pre_fork(void)
 
 
 void
-monitor_post_fork(pid_t child, void* data)
+foilbase_monitor_post_fork(pid_t child, void* data)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -1263,7 +1261,7 @@ monitor_post_fork(pid_t child, void* data)
 // IBM BlueGene and Cray XK6 (interlagos).
 //
 void
-monitor_mpi_pre_init(void)
+foilbase_monitor_mpi_pre_init(void)
 {
   if (!hpcrun_is_initialized()) {
     monitor_initialize();
@@ -1282,7 +1280,7 @@ monitor_mpi_pre_init(void)
 
 
 void
-monitor_init_mpi(int *argc, char ***argv)
+foilbase_monitor_init_mpi(int *argc, char ***argv)
 {
   hpcrun_safe_enter();
 
@@ -1304,7 +1302,7 @@ monitor_init_mpi(int *argc, char ***argv)
 // library init and before start.
 
 void*
-monitor_thread_pre_create(void)
+foilbase_monitor_thread_pre_create(void)
 {
   if (!hpcrun_local_rank_enabled()) {
     hpcrun_set_disabled();
@@ -1373,7 +1371,7 @@ monitor_thread_pre_create(void)
 
 
 void
-monitor_thread_post_create(void* data)
+foilbase_monitor_thread_post_create(void* data)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -1387,7 +1385,7 @@ monitor_thread_post_create(void* data)
 }
 
 void*
-monitor_init_thread(int tid, void* data)
+foilbase_monitor_init_thread(int tid, void* data)
 {
 #ifdef USE_GCC_THREAD
   monitor_tid = tid;
@@ -1425,7 +1423,7 @@ monitor_init_thread(int tid, void* data)
 
 
 void
-monitor_fini_thread(void* init_thread_data)
+foilbase_monitor_fini_thread(void* init_thread_data)
 {
   sigset_t oldset;
   hpcrun_block_profile_signal(&oldset);
@@ -1448,7 +1446,7 @@ monitor_fini_thread(void* init_thread_data)
 
 
 size_t
-monitor_reset_stacksize(size_t old_size)
+foilbase_monitor_reset_stacksize(size_t old_size)
 {
   static const size_t MEG = (1024 * 1024);
 
@@ -1460,92 +1458,6 @@ monitor_reset_stacksize(size_t old_size)
   return new_size;
 }
 
-
-//***************************************************************************
-// (sig)longjmp for trampoline (via monitor extensions)
-//***************************************************************************
-
-// FIXME: Comment-out the overrides of longjmp() and siglongjmp() for
-// now.  We currently don't use them and _FORTIFY_SOURCE in newer gnu
-// libc breaks this code.
-//
-// Before re-enabling, we need to better understand how gnu libc and
-// <bits/setjmp2.h> map longjmp() and siglongjmp() to __longjmp_chk()
-// and what is the right way to intercept them.  Also, find a way
-// around the 3-1 name mapping.
-//
-// Note: be sure to reset 'monitor_wrap_names' in hpclink.
-
-#if 1
-
-static siglongjmp_fcn *real_siglongjmp = NULL;
-
-siglongjmp_fcn*
-hpcrun_get_real_siglongjmp(void)
-{
-  return real_siglongjmp;
-}
-
-void
-hpcrun_set_real_siglongjmp(void)
-{
-  MONITOR_EXT_GET_NAME(real_siglongjmp, siglongjmp);
-}
-
-#else
-
-typedef void longjmp_fcn(jmp_buf, int);
-
-#ifdef HPCRUN_STATIC_LINK
-extern longjmp_fcn    __real_longjmp;
-extern siglongjmp_fcn __real_siglongjmp;
-#endif
-
-static longjmp_fcn    *real_longjmp = NULL;
-static siglongjmp_fcn *real_siglongjmp = NULL;
-
-
-siglongjmp_fcn*
-hpcrun_get_real_siglongjmp(void)
-{
-  return real_siglongjmp;
-}
-
-void
-hpcrun_set_real_siglongjmp(void)
-{
-  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
-}
-
-void
-MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
-{
-  hpcrun_safe_enter();
-  MONITOR_EXT_GET_NAME_WRAP(real_longjmp, longjmp);
-
-  hpcrun_safe_exit();
-  (*real_longjmp)(buf, val);
-
-  // Never reached, but silence a compiler warning.
-  EEMSG("return from real longjmp(), should never get here");
-  _exit(1);
-}
-
-
-void
-MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
-{
-  hpcrun_safe_enter();
-  hpcrun_get_real_siglongjmp();
-
-  hpcrun_safe_exit();
-  (*real_siglongjmp)(buf, val);
-
-  // Never reached, but silence a compiler warning.
-  EEMSG("return from real siglongjmp(), should never get here");
-  _exit(1);
-}
-#endif
 
 //***************************************************************************
 // thread control (via our monitoring extensions)
@@ -1895,6 +1807,7 @@ static void auditor_stable(bool additive) {
 }
 
 const auditor_exports_t* auditor_exports;
+__attribute__((visibility("default")))
 void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* hooks) {
   auditor_exports = exports;
   hooks->open = auditor_open;

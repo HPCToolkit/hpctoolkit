@@ -98,6 +98,7 @@ SUBDIRS = utilities/bgq-cnk
 endif
 
 pkglibdir = @my_pkglibdir@
+force_pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
 plugin_srcdir = $(srcdir)/plugins
@@ -119,7 +120,7 @@ include_HEADERS += hpctoolkit.h
 endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
-noinst_LTLIBRARIES = libhpcrun.la
+pkglib_LTLIBRARIES += libhpcrun.la
 pkglib_LTLIBRARIES += libhpcrun_unwind.la
 pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
 pkglib_LTLIBRARIES += libhpcrun_private_ns.la
@@ -135,7 +136,7 @@ bin_SCRIPTS += scripts/hpcrun
 endif
 
 if OPT_ENABLE_HPCRUN_STATIC
-noinst_PROGRAMS  = libhpcrun.o
+force_pkglib_PROGRAMS  = libhpcrun.o
 pkglib_LIBRARIES += libhpcrun_wrap.a
 pkglib_LIBRARIES += libhpcrun_ga_wrap.a
 pkglib_LIBRARIES += libhpcrun_gprof_wrap.a
@@ -278,12 +279,14 @@ MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\
 	-DINLINE_FN=1 \
 	-DLOCAL_BUILD=1 \
-	-D__HIP_PLATFORM_HCC__=1
+	-D__HIP_PLATFORM_HCC__=1 \
+	-fvisibility=hidden
 
 MY_BASE_FILES =				\
 	utilities/first_func.c		\
 	\
 	main.h main.c			\
+	foil/foil.c			\
 	disabled.c			\
 	closure-registry.c              \
 	cct_insert_backtrace.c          \
@@ -314,11 +317,15 @@ MY_BASE_FILES =				\
 	sample-sources/display.c		\
 	sample-sources/exclude.c	\
 	sample-sources/ga.c		\
+	sample-sources/ga-overrides.c	\
 	sample-sources/io.c 		\
+	sample-sources/io-over.c	\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
 	sample-sources/memleak.c	\
+	sample-sources/memleak-overrides.c	\
 	sample-sources/pthread-blame.c  \
+	sample-sources/pthread-blame-overrides.c	\
 	sample-sources/none.c           \
 	sample-sources/retcnt.c         \
 	sample-sources/sync.c           \
@@ -419,11 +426,6 @@ MY_BASE_FILES =				\
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	\
-	syscalls/poll.c	\
-	syscalls/ppoll.c \
-	syscalls/select.c \
-	syscalls/sysv_signal.c \
-	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/hpcrun-nanotime.h  utilities/hpcrun-nanotime.c  \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -483,7 +485,14 @@ MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
-	custom-init-dynamic.c
+	custom-init-dynamic.c		\
+	foil/hpctoolkit-preload.c	\
+	foil/monitor-preload.c		\
+	foil/ompt-preload.c		\
+	foil/syscalls/poll-preload.c	\
+	foil/syscalls/ppoll-preload.c	\
+	foil/syscalls/select-preload.c	\
+	foil/syscalls/sysv_signal-preload.c
 
 MY_STATIC_FILES = 			\
 	fnbounds/fnbounds_static.c      \
@@ -565,7 +574,7 @@ MY_OPENCL_FILES = \
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
-libhpcrun_opencl_la_SOURCES   = gpu/opencl/opencl-api-wrappers.c
+libhpcrun_opencl_la_SOURCES   = foil/opencl-preload.c
 libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
 libhpcrun_opencl_la_LDFLAGS   += $(OPT_OCL_BH_LDFLAGS)
 endif
@@ -593,7 +602,8 @@ MY_ROCM_FILES =\
 	gpu/amd/hip-api.c \
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c \
-	gpu/amd/rocprofiler-api.c
+	gpu/amd/rocprofiler-api.c \
+	foil/rocm-preload.c
 endif
 
 if OPT_ENABLE_LEVEL0
@@ -689,35 +699,33 @@ libhpcrun_o_SOURCES = 			\
 
 
 libhpcrun_wrap_a_SOURCES =		\
-	monitor-exts/openmp.c
+	foil/hpctoolkit-wrap.c	\
+	foil/monitor-wrap.c		\
+	foil/ompt-wrap.c		\
+	foil/syscalls/poll-wrap.c	\
+	foil/syscalls/ppoll-wrap.c	\
+	foil/syscalls/select-wrap.c	\
+	foil/syscalls/sysv_signal-wrap.c
 
-libhpcrun_ga_la_SOURCES = 		\
-	sample-sources/ga-overrides.c
+libhpcrun_ga_la_SOURCES = foil/ga-preload.c
 
-libhpcrun_ga_wrap_a_SOURCES = 		\
-	sample-sources/ga-overrides.c
+libhpcrun_ga_wrap_a_SOURCES = foil/ga-wrap.c
 
-libhpcrun_gprof_la_SOURCES = gprof.c
+libhpcrun_gprof_la_SOURCES = foil/gprof-preload.c
 
-libhpcrun_gprof_wrap_a_SOURCES = gprof.c
+libhpcrun_gprof_wrap_a_SOURCES = foil/gprof-wrap.c
 
-libhpcrun_io_la_SOURCES = 		\
-	sample-sources/io-over.c
+libhpcrun_io_la_SOURCES = foil/io-preload.c
 
-libhpcrun_io_wrap_a_SOURCES = 		\
-	sample-sources/io-over.c
+libhpcrun_io_wrap_a_SOURCES = foil/io-wrap.c
 
-libhpcrun_memleak_la_SOURCES = 		\
-	sample-sources/memleak-overrides.c
+libhpcrun_memleak_la_SOURCES = foil/memleak-preload.c
 
-libhpcrun_memleak_wrap_a_SOURCES = 	\
-	sample-sources/memleak-overrides.c
+libhpcrun_memleak_wrap_a_SOURCES = foil/memleak-wrap.c
 
-libhpcrun_pthread_la_SOURCES = 		\
-	sample-sources/pthread-blame-overrides.c
+libhpcrun_pthread_la_SOURCES = foil/pthread-blame-preload.c
 
-libhpcrun_pthread_wrap_a_SOURCES = 	\
-	sample-sources/pthread-blame-overrides.c
+libhpcrun_pthread_wrap_a_SOURCES = foil/pthread-blame-wrap.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	./mpi-overrides.c
@@ -903,15 +911,16 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_la_LIBADD =  \
 	$(PROF_LEAN_A)  \
-	$(SUPPORT_LEAN_A)
+	$(SUPPORT_LEAN_A) \
+	$(LZMA_LDFLAGS_DYN)
 
 libhpcrun_la_LDFLAGS +=  \
+	-Wl,--exclude-libs=ALL \
 	-L$(LIBMONITOR_LIB) -lmonitor  \
 	-lpthread -lrt  \
 	-L$(LIBELF_LIB) -lelf  \
 	$(PERFMON_LDFLAGS_DYN)  \
-	$(OPT_ROCM_LDFLAGS)	\
-	$(LZMA_LDFLAGS_DYN)
+	$(OPT_ROCM_LDFLAGS)
 
 libhpcrun_unwind_la_LDFLAGS +=	\
 	$(LIBUNWIND_LDFLAGS_DYN)
@@ -920,6 +929,9 @@ libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
 	$(PERFMON_LDFLAGS_STAT)
+
+libhpcrun_o_LDFLAGS =  \
+	-Wl,--exclude-libs=ALL
 
 if HOST_CPU_X86_FAMILY
 libhpcrun_la_LIBADD += $(XED2_HPCRUN_LIBS)
@@ -940,6 +952,7 @@ MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS)
 if HOST_CPU_MIPS
 libhpcrun_la_SOURCES  += $(MY_MIPS_FILES)
 libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
@@ -963,6 +976,7 @@ if HOST_CPU_PPC
 libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
 libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
 libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -982,6 +996,7 @@ endif
 if HOST_CPU_X86_FAMILY
 libhpcrun_la_SOURCES  += $(MY_X86_FILES)
 libhpcrun_o_SOURCES   += $(MY_X86_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
 if OPT_ENABLE_GTPIN
@@ -1007,6 +1022,7 @@ endif
 if HOST_CPU_IA64
 libhpcrun_la_SOURCES  += $(MY_IA64_FILES)
 libhpcrun_o_SOURCES   += $(MY_IA64_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
@@ -1023,6 +1039,7 @@ endif
 if HOST_CPU_AARCH64
 libhpcrun_la_SOURCES  += $(MY_AARCH64_FILES)
 libhpcrun_o_SOURCES   += $(MY_AARCH64_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
@@ -1156,6 +1173,7 @@ libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
 libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
 libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
@@ -1229,62 +1247,6 @@ endif
 #-----------------------------------------------------------
 # Manual install targets
 #-----------------------------------------------------------
-
-# Take over the last stage of building and installing libhpcrun.so and
-# libhpcrun.o.  Objcopy works to hide (localize) symbol names, but
-# only on object files (.o and .a), not on shared (.so) libraries.
-#
-# We change libhpcrun to no-install targets and automake builds an
-# (.a) archive of (.o) files with fPIC.  Then, we manually unpack the
-# archive, link in the 3rd-party libraries (libunwind, etc, with
-# fPIC), hide the symbols, and then link as a shared library.
-#
-# Note: (1) for dynamic libhpcrun.so, use LIBADD for (.a) archives
-# with fPIC (libunwind, etc) that are linked in and hidden at link
-# time, and LDFLAGS (-L, -l) for other dependency libraries.
-#
-# (2) for static libhpcrun.o, use LDADD for archives that are linked
-# and hidden into libhpcrun.o.  Other dependencies go into hpclink.
-# Don't use LDFLAGS for static case.
-
-MONITOR_NAMES = -G 'monitor_*'
-HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*' -G 'OnLoadToolProp' -G 'OnLoad' -G 'OnUnloadTool'
-MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
-OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
-LIBOMPTARGET_NAMES = -G '__tgt_register_lib'
-
-DYN_SYSCALL_LIST = poll ppoll pselect select __sysv_signal
-DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
-
-STAT_WRAP_NAMES = -w -G '__wrap_*'
-
-WORK_DYN = work-dyn
-WORK_STAT = work-stat
-
-install-exec-hook:
-if OPT_ENABLE_HPCRUN
-	@echo "building and installing libhpcrun.so ..."
-	rm -rf $(WORK_DYN)
-	mkdir $(WORK_DYN)
-	cd $(WORK_DYN) && $(AR) x ../.libs/libhpcrun.a
-	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
-	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES) $(OPENCL_NAMES) \
-		$(LIBOMPTARGET_NAMES) $(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
-	$(CC) -shared $(WORK_DYN)/part2.o $(LDFLAGS) $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
-	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)
-else
-	@echo "skipping libhpcrun.so"
-endif
-if OPT_ENABLE_HPCRUN_STATIC
-	@echo "building and installing libhpcrun.o ..."
-	rm -rf $(WORK_STAT)
-	mkdir $(WORK_STAT)
-	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(STAT_WRAP_NAMES) $(MISC_NAMES)  \
-		libhpcrun.o $(WORK_STAT)/libhpcrun.o
-	$(INSTALL) -m 0644 $(WORK_STAT)/libhpcrun.o $(DESTDIR)$(pkglibdir)
-else
-	@echo "skipping libhpcrun.o"
-endif
 
 # Install the plugin config files.
 

@@ -2,6 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
+// $HeadURL$
+// $Id$
+//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -41,24 +44,13 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// local includes
-//******************************************************************************
+#define _GNU_SOURCE
 
+#include "foil.h"
+#include "gpu/opencl/opencl-api-wrappers.h"
 #include <lib/prof-lean/hpcrun-opencl.h>
-#include "opencl-api-wrappers.h"
 
-
-
-//******************************************************************************
-// OpenCL public API override
-//******************************************************************************
-
-
-//#ifdef ENABLE_GTPIN
-#if 1
-// one downside of this approach is that we may override the callback provided by user
-cl_int
+HPCRUN_EXPOSED cl_int
 clBuildProgram
 (
  cl_program program,
@@ -69,14 +61,14 @@ clBuildProgram
  void* user_data
 )
 {
-  return hpcrun_clBuildProgram(program, num_devices, device_list,
+  LOOKUP_FOIL_BASE(base, clBuildProgram);
+  return base(program, num_devices, device_list,
                         options, pfn_notify,
                         user_data);
 }
-#endif // ENABLE_GTPIN
 
 
-cl_context
+HPCRUN_EXPOSED cl_context
 clCreateContext
 (
  const cl_context_properties *properties,
@@ -87,11 +79,12 @@ clCreateContext
  cl_int *errcode_ret
 )
 {
-  return hpcrun_clCreateContext(properties, num_devices, devices, pfn_notify, user_data, errcode_ret);
+  LOOKUP_FOIL_BASE(base, clCreateContext);
+  return base(properties, num_devices, devices, pfn_notify, user_data, errcode_ret);
 }
 
 
-cl_command_queue
+HPCRUN_EXPOSED cl_command_queue
 clCreateCommandQueue
 (
  cl_context context,
@@ -100,11 +93,12 @@ clCreateCommandQueue
  cl_int *errcode_ret
 )
 {
-  return hpcrun_clCreateCommandQueue(context, device,
+  LOOKUP_FOIL_BASE(base, clCreateCommandQueue);
+  return base(context, device,
         properties,errcode_ret);
 }
 
-cl_command_queue
+HPCRUN_EXPOSED cl_command_queue
 clCreateCommandQueueWithProperties
 (
  cl_context context,
@@ -113,12 +107,13 @@ clCreateCommandQueueWithProperties
  cl_int* errcode_ret
 )
 {
-  return hpcrun_clCreateCommandQueueWithProperties(
+  LOOKUP_FOIL_BASE(base, clCreateCommandQueueWithProperties);
+  return base(
                               context, device, properties, errcode_ret);
 }
 
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clEnqueueNDRangeKernel
 (
  cl_command_queue command_queue,
@@ -132,13 +127,14 @@ clEnqueueNDRangeKernel
  cl_event *event
 )
 {
-  return hpcrun_clEnqueueNDRangeKernel(
+  LOOKUP_FOIL_BASE(base, clEnqueueNDRangeKernel);
+  return base(
        command_queue, ocl_kernel, work_dim, global_work_offset,
         global_work_size, local_work_size, num_events_in_wait_list,
         event_wait_list, event);
 }
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clEnqueueTask
 (
  cl_command_queue command_queue,
@@ -148,14 +144,15 @@ clEnqueueTask
  cl_event* event
 )
 {
-  return hpcrun_clEnqueueTask(
+  LOOKUP_FOIL_BASE(base, clEnqueueTask);
+  return base(
       command_queue, kernel, num_events_in_wait_list,
       event_wait_list, event
   );
 }
 
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clEnqueueReadBuffer
 (
  cl_command_queue command_queue,
@@ -169,13 +166,14 @@ clEnqueueReadBuffer
  cl_event *event
 )
 {
-  return hpcrun_clEnqueueReadBuffer(
+  LOOKUP_FOIL_BASE(base, clEnqueueReadBuffer);
+  return base(
       command_queue, buffer, blocking_read, offset,
           cb, ptr, num_events_in_wait_list,
           event_wait_list, event);
 }
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clEnqueueWriteBuffer
 (
  cl_command_queue command_queue,
@@ -189,14 +187,15 @@ clEnqueueWriteBuffer
  cl_event *event
 )
 {
-  return hpcrun_clEnqueueWriteBuffer(
+  LOOKUP_FOIL_BASE(base, clEnqueueWriteBuffer);
+  return base(
       command_queue, buffer, blocking_write, offset, cb,
       ptr, num_events_in_wait_list, event_wait_list, event
   );
 }
 
 
-void*
+HPCRUN_EXPOSED void*
 clEnqueueMapBuffer
 (
  cl_command_queue command_queue,
@@ -211,7 +210,8 @@ clEnqueueMapBuffer
  cl_int* errcode_ret
 )
 {
-  return hpcrun_clEnqueueMapBuffer(
+  LOOKUP_FOIL_BASE(base, clEnqueueMapBuffer);
+  return base(
       command_queue, buffer, blocking_map, map_flags,
       offset, size, num_events_in_wait_list,
       event_wait_list, event, errcode_ret
@@ -219,7 +219,7 @@ clEnqueueMapBuffer
 }
 
 
-cl_mem
+HPCRUN_EXPOSED cl_mem
 clCreateBuffer
 (
  cl_context context,
@@ -229,11 +229,12 @@ clCreateBuffer
  cl_int* errcode_ret
 )
 {
-  return hpcrun_clCreateBuffer(context, flags, size, host_ptr, errcode_ret);
+  LOOKUP_FOIL_BASE(base, clCreateBuffer);
+  return base(context, flags, size, host_ptr, errcode_ret);
 }
 
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clSetKernelArg
 (
  cl_kernel kernel,
@@ -242,57 +243,63 @@ clSetKernelArg
  const void* arg_value
 )
 {
-  return hpcrun_clSetKernelArg(kernel, arg_index, arg_size, arg_value);
+  LOOKUP_FOIL_BASE(base, clSetKernelArg);
+  return base(kernel, arg_index, arg_size, arg_value);
 }
 
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clReleaseMemObject
 (
  cl_mem mem
 )
 {
-  return hpcrun_clReleaseMemObject(mem);
+  LOOKUP_FOIL_BASE(base, clReleaseMemObject);
+  return base(mem);
 }
 
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clReleaseKernel
 (
  cl_kernel kernel
 )
 {
-  return hpcrun_clReleaseKernel(kernel);
+  LOOKUP_FOIL_BASE(base, clReleaseKernel);
+  return base(kernel);
 }
 
 
 // comment if opencl blame-shifting is disabled
-cl_int
+HPCRUN_EXPOSED cl_int
 clWaitForEvents
 (
         cl_uint num_events,
         const cl_event* event_list
 )
 {
-        return hpcrun_clWaitForEvents(num_events, event_list);
+        LOOKUP_FOIL_BASE(base, clWaitForEvents);
+        return base(num_events, event_list);
 }
 
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clReleaseCommandQueue
 (
  cl_command_queue command_queue
 )
 {
-  return hpcrun_clReleaseCommandQueue(command_queue);
+  LOOKUP_FOIL_BASE(base, clReleaseCommandQueue);
+  return base(command_queue);
 }
 
 
-cl_int
+HPCRUN_EXPOSED cl_int
 clFinish
 (
         cl_command_queue command_queue
 )
 {
-        return hpcrun_clFinish(command_queue);
+        LOOKUP_FOIL_BASE(base, clFinish);
+        return base(command_queue);
 }

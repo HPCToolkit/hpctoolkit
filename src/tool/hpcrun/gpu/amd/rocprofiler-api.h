@@ -51,7 +51,6 @@
 #include <stdint.h>
 
 
-
 //******************************************************************************
 // macro definitions
 //******************************************************************************
@@ -145,6 +144,11 @@ rocprofiler_register_counter_callbacks
 (
   void
 );
+
+// NB: The argument is a pointer to a rocprofiler_settings_t
+void foilbase_OnLoadToolProp(void* settings);
+
+void foilbase_OnUnloadTool();
 
 
 #endif

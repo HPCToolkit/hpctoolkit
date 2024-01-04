@@ -79,6 +79,8 @@
 //
 //***************************************************************************
 
+#include "io-over.h"
+
 /******************************************************************************
  * standard include files
  *****************************************************************************/
@@ -100,7 +102,6 @@
 #include <thread_data.h>
 
 #include <messages/messages.h>
-#include <monitor-exts/monitor_ext.h>
 #include <sample-sources/io.h>
 
 
@@ -149,7 +150,7 @@ extern fwrite_fn_t  real_fwrite;
  *****************************************************************************/
 
 ssize_t
-MONITOR_EXT_WRAP_NAME(read)(int fd, void *buf, size_t count)
+foilbase_read(int fd, void *buf, size_t count)
 {
   ucontext_t uc;
   ssize_t ret;
@@ -186,7 +187,7 @@ MONITOR_EXT_WRAP_NAME(read)(int fd, void *buf, size_t count)
 
 
 ssize_t
-MONITOR_EXT_WRAP_NAME(write)(int fd, const void *buf, size_t count)
+foilbase_write(int fd, const void *buf, size_t count)
 {
   ucontext_t uc;
   size_t ret;
@@ -223,7 +224,7 @@ MONITOR_EXT_WRAP_NAME(write)(int fd, const void *buf, size_t count)
 
 
 size_t
-MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
+foilbase_fread(void *ptr, size_t size, size_t count, FILE *stream)
 {
   ucontext_t uc;
   size_t ret;
@@ -258,8 +259,7 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
 
 
 size_t
-MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
-                              FILE *stream)
+foilbase_fwrite(const void *ptr, size_t size, size_t count, FILE *stream)
 {
   ucontext_t uc;
   size_t ret;

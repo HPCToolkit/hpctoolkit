@@ -51,8 +51,11 @@
 extern "C" {
 #endif
 
+__attribute__((visibility("default")))
 void hpctoolkit_sampling_start(void);
+__attribute__((visibility("default")))
 void hpctoolkit_sampling_stop(void);
+__attribute__((visibility("default")))
 int  hpctoolkit_sampling_is_active(void);
 
 #ifdef __cplusplus

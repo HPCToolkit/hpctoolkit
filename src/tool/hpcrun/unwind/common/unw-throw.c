@@ -90,7 +90,7 @@ hpcrun_unw_drop(void)
   td->btbuf_cur = td->btbuf_beg; // flush any collected backtrace frames
 
   sigjmp_buf_t *it = &(td->bad_unwind);
-  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+  siglongjmp(it->jb, 9);
 }
 
 void
@@ -105,5 +105,5 @@ hpcrun_unw_throw(void)
   hpcrun_up_pmsg_count();
 
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
-  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+  siglongjmp(it->jb, 9);
 }

@@ -712,7 +712,7 @@ t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
     hpcrun_up_pmsg_count();
 
     sigjmp_buf_t *it = &(TD_GET(bad_unwind));
-    (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+    siglongjmp(it->jb, 9);
   }
 
   return STEP_ERROR;

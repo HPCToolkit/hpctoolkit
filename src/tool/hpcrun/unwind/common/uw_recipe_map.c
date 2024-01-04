@@ -628,7 +628,6 @@ uw_recipe_map_init(void)
     msg_sent = true;
   }
 
-  hpcrun_set_real_siglongjmp();
 #if UW_RECIPE_MAP_DEBUG
   fprintf(stderr, "uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
 #endif

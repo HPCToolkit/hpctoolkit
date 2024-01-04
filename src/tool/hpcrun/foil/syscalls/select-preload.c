@@ -57,12 +57,9 @@
 //   but not for poll(), ppoll() or pselect().
 //------------------------------------------------------------------------------
 
+#define _GNU_SOURCE
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#define _GNU_SOURCE  1
+#include "../foil.h"
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -72,62 +69,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifndef HPCRUN_STATIC_LINK
-#include <dlfcn.h>
-#endif
-
-#include <monitor-exts/monitor_ext.h>
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef int select_fn
-(
- int nfds,
- fd_set *read_fds,
- fd_set *write_fds,
- fd_set *except_fds,
- struct timeval *timeout
-);
-
-
-//******************************************************************************
-// local data
-//******************************************************************************
-
-#ifdef HPCRUN_STATIC_LINK
-extern select_fn  __real_select;
-#endif
-
-static select_fn *real_select = NULL;
-
-
-//******************************************************************************
-// local operations
-//******************************************************************************
-
-static void
-find_select(void)
-{
-#ifdef HPCRUN_STATIC_LINK
-  real_select = __real_select;
-#else
-  real_select = (select_fn *) dlsym(RTLD_NEXT, "select");
-#endif
-
-  if (real_select == NULL)
-    hpcrun_terminate();  // select is not available
-}
-
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-int
-MONITOR_EXT_WRAP_NAME(select)
+HPCRUN_EXPOSED int select
 (
   int nfds,
   fd_set *read_fds,
@@ -136,14 +83,13 @@ MONITOR_EXT_WRAP_NAME(select)
   struct timeval *timeout
 )
 {
-  static pthread_once_t initialized = PTHREAD_ONCE_INIT;
-  pthread_once(&initialized, find_select);
+  FOIL_DLSYM(real_select, select);
 
   int retval;
   int incoming_errno = errno; // save incoming errno
 
   for(;;) {
-    retval = (* real_select) (nfds, read_fds, write_fds, except_fds, timeout);
+    retval = real_select(nfds, read_fds, write_fds, except_fds, timeout);
 
     if (retval == -1) {
       if (errno == EINTR) {

@@ -97,8 +97,6 @@
 #endif
 
 
-#define PUBLIC_API __attribute__((visibility("default")))
-
 #define FORALL_ROCPROFILER_ROUTINES(macro)                      \
   macro(rocprofiler_open)   \
   macro(rocprofiler_close)   \
@@ -755,12 +753,14 @@ roctracer_codeobj_callback
 //******************************************************************************
 
 // This is necessary for rocprofiler callback to work
-extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
+void foilbase_OnLoadToolProp(void* v_settings){
+  rocprofiler_settings_t* settings = v_settings;
+
   // Enable hsa interception for getting code object URIs
   settings->hsa_intercepting = 1;
 }
 
-extern PUBLIC_API void OnUnloadTool() {
+void foilbase_OnUnloadTool() {
   // Must be provided. Otherwise rocprofiler
   // will refuse to work
 }

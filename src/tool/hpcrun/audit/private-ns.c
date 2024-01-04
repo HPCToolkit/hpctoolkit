@@ -55,6 +55,7 @@
 #include <stdlib.h>
 #include <link.h>
 
+__attribute__((visibility("default")))
 void hpcrun_bind_v(const char* libname, va_list bindings) {
   // Before anything else, try to load the library.
   void* handle = dlopen(libname, RTLD_NOW | RTLD_LOCAL);
@@ -84,7 +85,9 @@ void hpcrun_bind_v(const char* libname, va_list bindings) {
 // The pointer must be filled with a suitable override before any calls to the function occur.
 
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
+__attribute__((visibility("default")))
 pfn_iterate_phdr_t* hpcrun_iterate_phdr = NULL;
+__attribute__((visibility("default")))
 int dl_iterate_phdr(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data) {
   if (hpcrun_iterate_phdr == NULL) {
     assert(false && "dl_iterate_phdr called but hpcrun_iterate_phdr override pointer not yet set!");

@@ -53,12 +53,9 @@
 //   restart.
 //------------------------------------------------------------------------------
 
+#define _GNU_SOURCE
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#define _GNU_SOURCE  1
+#include "../foil.h"
 
 #include <sys/types.h>
 #include <errno.h>
@@ -67,62 +64,16 @@
 #include <stdlib.h>
 #include <time.h>
 
-#ifndef HPCRUN_STATIC_LINK
-#include <dlfcn.h>
-#endif
-
-#include <monitor-exts/monitor_ext.h>
 
 #define MILLION     1000000
 #define THOUSAND       1000
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef int poll_fn (struct pollfd *fds, nfds_t nfds, int timeout);
-
-
-//******************************************************************************
-// local data
-//******************************************************************************
-
-#ifdef HPCRUN_STATIC_LINK
-extern poll_fn  __real_poll;
-#endif
-
-static poll_fn *real_poll = NULL;
-
-
-//******************************************************************************
-// local operations
-//******************************************************************************
-
-static void
-find_poll(void)
-{
-#ifdef HPCRUN_STATIC_LINK
-  real_poll = __real_poll;
-#else
-  real_poll = (poll_fn *) dlsym(RTLD_NEXT, "poll");
-#endif
-
-  if (real_poll == NULL)
-    hpcrun_terminate();  // poll is not available
-}
-
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-int
-MONITOR_EXT_WRAP_NAME(poll)
-  (struct pollfd *fds, nfds_t nfds, int init_timeout)
-{
-  static pthread_once_t initialized = PTHREAD_ONCE_INIT;
-  pthread_once(&initialized, find_poll);
+HPCRUN_EXPOSED int poll(struct pollfd *fds, nfds_t nfds, int init_timeout) {
+  FOIL_DLSYM(real_poll, poll);
 
   struct timespec start, now;
   int incoming_errno = errno; // save incoming errno
@@ -136,7 +87,7 @@ MONITOR_EXT_WRAP_NAME(poll)
 
   for(;;) {
     // call the libc poll operation
-    ret = (* real_poll) (fds, nfds, timeout);
+    ret = real_poll(fds, nfds, timeout);
 
     if (! (ret < 0 && errno == EINTR)) {
       // normal (non-signal) return

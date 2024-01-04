@@ -54,11 +54,9 @@
 //  otherwise, just pass on the original value.
 //
 
-//******************************************************************************
-// system includes, typedefs
-//******************************************************************************
+#define _GNU_SOURCE
 
-#define _GNU_SOURCE  1
+#include "../foil.h"
 
 #include <sys/types.h>
 #include <sys/select.h>
@@ -70,59 +68,10 @@
 #include <stdlib.h>
 #include <time.h>
 
-#ifndef HPCRUN_STATIC_LINK
-#include <dlfcn.h>
-#endif
-
-#include <monitor-exts/monitor_ext.h>
 
 #define BILLION  1000000000
 #define INIT_TIME(x) x.tv_sec = 0; x.tv_nsec = 0;
 
-typedef int ppoll_fn (struct pollfd *, nfds_t,
-                      const struct timespec *, const sigset_t *);
-
-typedef int pselect_fn (int, fd_set *, fd_set *, fd_set *,
-                        const struct timespec *, const sigset_t *);
-
-#ifdef HPCRUN_STATIC_LINK
-extern ppoll_fn    __real_ppoll;
-extern pselect_fn  __real_pselect;
-#endif
-
-static ppoll_fn   *real_ppoll = NULL;
-static pselect_fn *real_pselect = NULL;
-
-
-//******************************************************************************
-// local operations
-//******************************************************************************
-
-static void
-find_ppoll(void)
-{
-#ifdef HPCRUN_STATIC_LINK
-  real_ppoll = __real_ppoll;
-#else
-  real_ppoll = (ppoll_fn *) dlsym(RTLD_NEXT, "ppoll");
-#endif
-
-  if (real_ppoll == NULL)
-    hpcrun_terminate();  // ppoll is not available
-}
-
-static void
-find_pselect(void)
-{
-#ifdef HPCRUN_STATIC_LINK
-  real_pselect = __real_pselect;
-#else
-  real_pselect = (pselect_fn *) dlsym(RTLD_NEXT, "pselect");
-#endif
-
-  if (real_pselect == NULL)
-    hpcrun_terminate();  // pselect is not available
-}
 
 //----------------------------------------------------------------------
 //
@@ -163,13 +112,11 @@ tspec_sub(struct timespec *result, const struct timespec *a, const struct timesp
 // interface operations
 //******************************************************************************
 
-int
-MONITOR_EXT_WRAP_NAME(ppoll)
+HPCRUN_EXPOSED int ppoll
   (struct pollfd *fds, nfds_t nfds,
    const struct timespec *init_timeout, const sigset_t *sigmask)
 {
-  static pthread_once_t initialized = PTHREAD_ONCE_INIT;
-  pthread_once(&initialized, find_ppoll);
+  FOIL_DLSYM(real_ppoll, ppoll);
 
   struct timespec end, now, my_timeout, *timeout_ptr;
   int init_errno = errno;
@@ -197,7 +144,7 @@ MONITOR_EXT_WRAP_NAME(ppoll)
   }
 
   for (;;) {
-    ret = (* real_ppoll) (fds, nfds, timeout_ptr, sigmask);
+    ret = real_ppoll(fds, nfds, timeout_ptr, sigmask);
 
     if (! (ret < 0 && errno == EINTR)) {
       // normal (non-signal) return
@@ -226,13 +173,11 @@ MONITOR_EXT_WRAP_NAME(ppoll)
 
 //----------------------------------------------------------------------
 
-int
-MONITOR_EXT_WRAP_NAME(pselect)
+HPCRUN_EXPOSED int pselect
   (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
    const struct timespec *init_timeout, const sigset_t *sigmask)
 {
-  static pthread_once_t initialized = PTHREAD_ONCE_INIT;
-  pthread_once(&initialized, find_pselect);
+  FOIL_DLSYM(real_pselect, pselect);
 
   struct timespec end, now, my_timeout, *timeout_ptr;
   int init_errno = errno;
@@ -260,7 +205,7 @@ MONITOR_EXT_WRAP_NAME(pselect)
   }
 
   for (;;) {
-    ret = (* real_pselect) (nfds, readfds, writefds, exceptfds, timeout_ptr, sigmask);
+    ret = real_pselect(nfds, readfds, writefds, exceptfds, timeout_ptr, sigmask);
 
     if (! (ret < 0 && errno == EINTR)) {
       // normal (non-signal) return

@@ -77,8 +77,8 @@ MYSOURCES = \
 	CallPath-Profile.hpp CallPath-Profile.cpp
 
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) -fvisibility=hidden
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) -fvisibility=hidden
 
 if IS_HOST_AR
 MYAR = @HOST_AR@

@@ -44,31 +44,17 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//------------------------------------------------------------------------------
-// File: sysv_signal.c
-//
-// Purpose:
-//   translate calls to deprecated __sysv_signal into calls to signal,
-//   which gets intercepted by libmonitor. __sysv_signal is not intercepted
-//   by libmonitor.
-//------------------------------------------------------------------------------
+#ifndef HPCRUN_SS_IO_OVER_H
+#define HPCRUN_SS_IO_OVER_H
 
-
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <signal.h>
+#include <stddef.h>
+#include <unistd.h>
 #include <stdio.h>
 
+extern ssize_t foilbase_read(int fd, void *buf, size_t count);
+extern ssize_t foilbase_write(int fd, const void *buf, size_t count);
+extern size_t foilbase_fread(void *ptr, size_t size, size_t count, FILE *stream);
+extern size_t foilbase_fwrite(const void *ptr, size_t size, size_t count, FILE *stream);
 
 
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-__sighandler_t
-__sysv_signal(int signo, __sighandler_t handler)
-{
-  return signal(signo, handler);
-}
+#endif  // HPCRUN_SS_IO_OVER_H
