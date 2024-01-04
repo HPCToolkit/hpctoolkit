@@ -88,6 +88,7 @@ $ meson setup --prefix=/path/to/prefix \
     [options...] builddir/
 $ cd builddir/
 $ meson compile  # -OR- ninja
+$ meson test     # -OR- ninja test
 $ meson install  # -OR- ninja install
 ```
 
@@ -113,9 +114,6 @@ Note that many of the features above require additional dependencies that will n
 
 HPCToolkit's Meson support is a work-in-progress, the actual build mixes build systems between Meson and Autotools. This has consequences for developers used to the conveniences of Meson.
 Until this is resolved, keep the following caveats in mind:
-
-- The provided regression test suite accessible via `meson test` (or `ninja test`) tests the *installed* software, not the *built* software.
-  Before running `meson test` and after making changes, you must manually `meson compile && meson install` (or `ninja && ninja install`).
 
 - The typical `meson compile --clean` (or `ninja clean`) command will only clean Meson-built files, it will not clean the internal Autotools build tree.
   To fully clean the build directory, additionally run `meson compile makeclean` (or `ninja makeclean`).
