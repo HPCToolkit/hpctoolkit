@@ -43,7 +43,6 @@ foreach package : [
   'zlib',
   'libiberty',
   'xed',
-  'memkind',
   'yaml_cpp',
   'papi',
   'perfmon',
@@ -84,7 +83,6 @@ libiberty_exdep = dependency('libiberty-hpctoolkit', fallback: ['spack-deps', 'l
 if host_machine.cpu_family() in ['x86', 'x86_64']
   xed_exdep = dependency('xed-hpctoolkit', fallback: ['spack-deps', 'xed_dep'])
 endif
-memkind_exdep = dependency('memkind-hpctoolkit', fallback: ['spack-deps', 'memkind_dep'])
 yaml_cpp_exdep = dependency('yaml_cpp-hpctoolkit', fallback: ['spack-deps', 'yaml_cpp_dep'])
 papi_exdep = dependency('papi-hpctoolkit', required: get_option('papi'))
 if not papi_exdep.found()
@@ -276,7 +274,6 @@ _autogoo_args += [
   '--with-lzma=@0@'.format(lzma_exdep.get_variable(internal: 'prefix')),
   '--with-zlib=@0@'.format(zlib_exdep.get_variable(internal: 'prefix')),
   '--with-libiberty=@0@'.format(libiberty_exdep.get_variable(internal: 'prefix')),
-  '--with-memkind=@0@'.format(memkind_exdep.get_variable(internal: 'prefix')),
   '--with-yaml-cpp=@0@'.format(yaml_cpp_exdep.get_variable(internal: 'prefix')),
 ]
 _ldflags = get_option('cpp_link_args')
@@ -291,7 +288,6 @@ _ldflags += xerces_exdep.get_variable(internal: 'link_args', default_value: '').
 _ldflags += lzma_exdep.get_variable(internal: 'link_args', default_value: '').split()
 _ldflags += zlib_exdep.get_variable(internal: 'link_args', default_value: '').split()
 _ldflags += libiberty_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += memkind_exdep.get_variable(internal: 'link_args', default_value: '').split()
 _ldflags += yaml_cpp_exdep.get_variable(internal: 'link_args', default_value: '').split()
 _autogoo_env = {}
 if host_machine.cpu_family() in ['x86', 'x86_64']

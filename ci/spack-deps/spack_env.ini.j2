@@ -39,7 +39,6 @@ c_link_args = [
     {{ rpath("zlib") }}
     {{ rpath("libiberty") }}
     {{ rpath("intel-xed") }}
-    {{ rpath("memkind") }}
     {{ rpath("yaml-cpp") }}
     {{ rpath("papi") }}
     {{ rpath("libpfm4") }}
@@ -57,7 +56,6 @@ cpp_link_args = [
     {{ rpath("zlib") }}
     {{ rpath("libiberty") }}
     {{ rpath("intel-xed") }}
-    {{ rpath("memkind") }}
     {{ rpath("yaml-cpp") }}
     {{ rpath("papi") }}
     {{ rpath("libpfm4") }}
@@ -76,7 +74,6 @@ prefix_lzma = '{{ pfxpath("xz") }}'
 prefix_zlib = '{{ pfxpath("zlib") }}'
 prefix_libiberty = '{{ pfxpath("libiberty") }}'
 prefix_xed = '{{ pfxpath("intel-xed") }}'
-prefix_memkind = '{{ pfxpath("memkind") }}'
 prefix_yaml_cpp = '{{ pfxpath("yaml-cpp") }}'
 prefix_papi = '{{ pfxpath("papi") }}'
 prefix_perfmon = '{{ pfxpath("libpfm4") }}'

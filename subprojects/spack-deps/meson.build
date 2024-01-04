@@ -98,7 +98,6 @@ libunwind_dep = _basic_deps['libunwind']
 perfmon_dep = _basic_deps['libpfm4']
 xerces_dep = _basic_deps['xerces-c']
 libiberty_dep = _basic_deps['libiberty']
-memkind_dep = _basic_deps['memkind']
 yaml_cpp_dep = _basic_deps['yaml-cpp']
 if 'intel-xed' in specs
   xed_dep = _basic_deps['intel-xed']
