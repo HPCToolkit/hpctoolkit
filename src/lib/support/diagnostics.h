@@ -146,7 +146,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 #include "Exception.hpp"
 
-#define DIAG_CERR std::cout
+#define DIAG_CERR std::cerr
 #define DIAG_ENDL std::endl /*<< std::flush*/
 
 // All of these macros have a parameter named 'streamArgs' for one or
@@ -235,29 +235,29 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 #define DIAG_MsgIf(ifexpr, ...)                                     \
   if (ifexpr) {                                                     \
-    fputs("msg: ", stdout);                                         \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
+    fputs("msg: ", stderr);                                         \
+    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIAG_Msg(level, ...)                                        \
   if (level <= DIAG_DBG_LVL_PUB) {                                  \
-    fprintf(stdout, "msg [%d]: ", level);                   \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
+    fprintf(stderr, "msg [%d]: ", level);                   \
+    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIAG_DevMsg(level, ...)                                     \
   if (level <= DIAG_DBG_LVL) {                                      \
-    fprintf(stdout, "msg* [%d]: ", level);                  \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
+    fprintf(stderr, "msg* [%d]: ", level);                  \
+    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIAG_EMsg(...)                                              \
-  { fputs("ERROR: ", stdout);                                       \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout);              \
+  { fputs("ERROR: ", stderr);                                       \
+    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr);              \
   }
 
 #define DIAG_DevEMsg(...)                                              \
-  { fputs("ERROR: ", stdout);                                       \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout);              \
+  { fputs("ERROR: ", stderr);                                       \
+    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr);              \
     if (DIAG_DBG_LVL_PUB) {                                         \
-      fprintf(stdout, "\t[%s:%d]\n", __FILE__, __LINE__); }         \
+      fprintf(stderr, "\t[%s:%d]\n", __FILE__, __LINE__); }         \
   }
 
 //#define DIAG_Assert(expr, ...) // cf. Open64's FmtAssert
