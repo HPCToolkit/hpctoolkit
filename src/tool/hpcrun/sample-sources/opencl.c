@@ -157,7 +157,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-#if ENABLE_OPENCL
+#ifdef ENABLE_OPENCL
   return hpcrun_ev_is(ev_str, OPENCL_OPTION);
 #else
   return false;
@@ -237,7 +237,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-#if ENABLE_OPENCL
+#ifdef ENABLE_OPENCL
   printf("===========================================================================\n");
   printf("Available events for monitoring GPU operations atop OpenCL\n");
   printf("===========================================================================\n");
