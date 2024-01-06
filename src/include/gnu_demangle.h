@@ -65,7 +65,11 @@
 #define HAVE_DECL_BASENAME  1
 #endif
 
+#if __has_include(<libiberty/demangle.h>)
+#include <libiberty/demangle.h>
+#else
 #include <demangle.h>
+#endif
 
 /* Undo possibly mischievous macros in binutils/include/ansidecl.h */
 #undef inline
