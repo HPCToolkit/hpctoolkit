@@ -27,6 +27,10 @@ test(
   protocol: 'gtest',
   verbose: true,
   env: _env,
-  args: [files('pytest-as-gtest.py'), meson.current_source_dir() / 'hpctesttool'],
+  args: [
+    files('pytest-as-gtest.py'),
+    '--override-ini=cache_dir=@0@'.format(meson.current_build_dir() / '.pytest_cache'),
+    meson.current_source_dir() / 'hpctesttool',
+  ],
   workdir: meson.current_build_dir(),
 )
