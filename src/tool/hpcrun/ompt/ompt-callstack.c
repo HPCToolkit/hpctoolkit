@@ -121,7 +121,7 @@ static closure_t ompt_callstack_init_closure;
 static int ompt_eager_context = 0;
 
 #if OMPT_DEBUG
-static int ompt_callstack_debug = 0;
+__thread int ompt_callstack_debug = 0;
 #endif
 
 
@@ -256,6 +256,18 @@ set_frame
 }
 
 
+static bool
+needs_main_fence
+(
+  void
+)
+{
+  cct_node_t *omp_task_context = TD_GET(omp_task_context);
+  if (omp_task_context == 0) return true;
+  return !(omp_task_context != task_data_invalid);
+}
+
+
 static void
 collapse_callstack
 (
@@ -263,11 +275,16 @@ collapse_callstack
  uint64_t placeholder
 )
 {
-  // unify the outermost frame with <program root>
-  bt->last->ip_norm = get_placeholder_norm(hpcrun_placeholder_fence_main);
+  if (needs_main_fence()) {
+    // unify the outermost frame with <program root>
+    bt->last->ip_norm = get_placeholder_norm(hpcrun_placeholder_fence_main);
 
-  // insert this placeholder in the prior frame
-  bt->begin = bt->last - 1;
+    bt->begin = bt->last - 1;
+  } else {
+    bt->begin = bt->last;
+  }
+
+  // insert placeholder in begin frame
   set_frame(bt->begin, placeholder);
 
   bt->bottom_frame_elided = false;
@@ -309,17 +326,22 @@ ompt_elide_runtime_frame(
   case ompt_state_wait_barrier_implicit_workshare:
   case ompt_state_wait_barrier_implementation:
   case ompt_state_wait_barrier_teams:
-
     // collapse barriers on non-master ranks
     if (hpcrun_ompt_get_thread_num(0) != 0) {
+      elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer, region_id);
+      elide_frame_dump();
       collapse_callstack(bt, hpcrun_placeholder_ompt_barrier_wait_state);
+      elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id);
       goto return_label;
     }
     break;
   case ompt_state_idle:
     // collapse idle state
+    elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer, region_id);
+    elide_frame_dump();
     TD_GET(omp_task_context) = 0;
     collapse_callstack(bt, hpcrun_placeholder_ompt_idle_state);
+    elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id);
     goto return_label;
   default:
     break;
@@ -549,10 +571,10 @@ ompt_elide_runtime_frame(
   {
     int master = TD_GET(master);
     if (!master) {
-      set_frame(*bt_outer, hpcrun_placeholder_ompt_idle_state);
-      *bt_inner = *bt_outer;
-      bt->bottom_frame_elided = false;
-      bt->partial_unwind = false;
+      // collapse idle state
+      TD_GET(omp_task_context) = 0;
+      collapse_callstack(bt, hpcrun_placeholder_ompt_idle_state);
+      elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id);
       goto return_label;
     }
 
