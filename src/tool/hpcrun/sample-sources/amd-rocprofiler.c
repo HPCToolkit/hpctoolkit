@@ -61,7 +61,7 @@
 #include "../lush/lush-backtrace.h"
 #include "../../../lib/prof-lean/hpcrun-fmt.h"
 
-#include <roctracer_hip.h>
+#include <roctracer/roctracer_hip.h>
 
 
 

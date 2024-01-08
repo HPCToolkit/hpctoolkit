@@ -23,11 +23,3 @@ indent_size = tab
 [.gitmodules]
 indent_style = tab
 indent_size = tab
-
-# This file comes from Autotools, do not touch.
-[/aclocal.m4]
-trim_trailing_whitespace = unset
-insert_final_newline = unset
-indent_style = unset
-indent_size = unset
-max_line_length = unset

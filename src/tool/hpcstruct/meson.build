@@ -1,11 +1,16 @@
-# hpcstruct is built by Autotools. This executable wraps it so we can use functions that
-# expect an executable instead of a string-path.
-hpcstruct = executable(
-  'hpcstruct',
-  exec_src,
-  c_args: ['-DCMD_PATH=@0@'.format(autotools_build / 'src/tool/hpcstruct/hpcstruct')],
-  link_depends: [autotools_tgt],
+_srcs = files(
+  'Args.cpp',
+  'main.cpp',
+  'MeasDir.cpp',
+  'SingleBin.cpp',
+  'Structure-Cache.cpp',
+  'Structure-Version.cpp',
 )
+
+hpcstruct = executable('hpcstruct', config_h, _srcs,
+  link_with: [analysis_lib, banal_lib, prof_lib, binutils_lib, prof_lean_lib, xml_lib, support_lib, support_lean_lib],
+  dependencies: [xed_dep, dyninst_dep, boost_dep, libelf_dep, libdw_dep, igc_dep, iga_dep, lzma_dep, xerces_dep],
+  install: true)
 
 hpcstruct_test_depends = [hpcproflm]
 test_depends += hpcstruct_test_depends
@@ -18,6 +23,7 @@ foreach k,v : _env
   test_env.set(k, v)
 endforeach
 
-_devenv = hpcstruct_test_env
-_devenv.prepend('PATH', meson.current_build_dir())
-meson.add_devenv(_devenv)
+
+dotgraph = executable('dotgraph', config_h, 'DotGraph.cpp',
+  link_with: [analysis_lib, banal_lib, prof_lib, binutils_lib, prof_lean_lib, xml_lib, support_lib, support_lean_lib],
+  dependencies: [xed_dep, dyninst_dep, boost_dep, libelf_dep, libdw_dep, igc_dep, iga_dep, lzma_dep, xerces_dep])

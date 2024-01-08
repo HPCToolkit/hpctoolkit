@@ -17,6 +17,7 @@
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 host_arm='@HOST_CPU_AARCH64@'
+# shellcheck disable=SC2034
 prog_name=hpcrun
 
 #------------------------------------------------------------
@@ -58,11 +59,11 @@ export UCX_ERROR_SIGNALS=ILL,FPE,BUS
 #------------------------------------------------------------
 
 here="$(dirname "$(realpath "$0")")"
-if [ -e "$here"/.libs/libhpcrun.so ]; then
+if [ -e "$here"/libhpcrun.so ]; then
   # This is (almost certainly) the build directory, not the installed version.
   # In this case, we don't have HPCTOOLKIT, HPCRUN_FNBOUNDS_CMD needs to be set,
   # and hpcrun_dir is where the libs are built.
-  hpcrun_dir="$here"/.libs
+  hpcrun_dir="$here"
   hpcfnbounds_dir=/nonexistent
   if [ -z "$HPCRUN_FNBOUNDS_CMD" ]; then
     echo "hpcrun: Detected as in build directory, must have HPCRUN_FNBOUNDS_CMD set" >&2
@@ -70,6 +71,7 @@ if [ -e "$here"/.libs/libhpcrun.so ]; then
   fi
 else
   # Use the usual method based around the install prefix
+  # shellcheck disable=SC2034
   hpc_path_to_root=..
   @export_hpctoolkit@
 
@@ -706,6 +708,7 @@ if test "$opt_have_rocm" = yes; then
     # Fill in ROCP_METRICS and HSA_TOOLS_LIB from the ROCProfiler installation
     if test "$rocm_envs_rocprofiler_path"; then
         for trial in \
+            "${rocm_envs_rocprofiler_path}/metrics.xml" \
             "${rocm_envs_rocprofiler_path}/lib/rocprofiler/metrics.xml" \
             "${rocm_envs_rocprofiler_path}/lib/metrics.xml" \
             "${rocm_envs_rocprofiler_path}/rocprofiler/lib/metrics.xml"
@@ -717,6 +720,8 @@ if test "$opt_have_rocm" = yes; then
         done
 
         for trial in \
+            "${rocm_envs_rocprofiler_path}/librocprofiler64.so.1" \
+            "${rocm_envs_rocprofiler_path}/librocprofiler64.so.2" \
             "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.1" \
             "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.2" \
             "${rocm_envs_rocprofiler_path}/rocprofiler/lib/librocprofiler64.so.1"
@@ -764,12 +769,12 @@ if test -x "$command" && test "$file_exists" = yes ; then
     # For dynamic binaries, verify that the application and libhpcrun
     # have the same wordsize, both 32-bit or both 64-bit.
     #
-    cmd_file_out=`file -L "$command" 2>/dev/null`
+    cmd_file_out=$(file -L "$command" 2>/dev/null)
     echo "$cmd_file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
     if test $? -eq 0 ; then
-        appl_bit=`expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
-        file_out=`file -L "${hpcrun_dir}/libhpcrun.so"`
-        hpcrun_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+        appl_bit=$(expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)')
+        file_out=$(file -L "${hpcrun_dir}/libhpcrun.so")
+        hpcrun_bit=$(expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)')
         if test "$appl_bit" != "$hpcrun_bit" ; then
             echo "hpcrun: cannot profile application: $command" 1>&2
             echo "application is $appl_bit but hpctoolkit is $hpcrun_bit" 1>&2
@@ -804,6 +809,7 @@ if test $? -eq 0 ; then
 fi
 
 # Enable core files.
+# shellcheck disable=SC3045
 ulimit -S -c unlimited >/dev/null 2>&1
 
 #------------------------------------------------------------

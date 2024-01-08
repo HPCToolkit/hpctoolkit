@@ -4,30 +4,26 @@
   {%- endif -%}
 {%- endmacro -%}
 
-[built-in options]
+[constants]
 {%- macro rpath(spec) -%}
   {%- if spack_prefix(spec) -%}
     {%- for libdir in ["lib64", "lib"] %}'-Wl,-rpath={{ pfxpath(spec, libdir) }}', {% endfor -%}
   {%- endif -%}
 {%- endmacro %}
-c_link_args = [
-    {{ rpath("boost") }}
-    {{ rpath("bzip2") }}
-    {{ rpath("dyninst") }}
-    {{ rpath("elfutils") }}
-    {{ rpath("intel-tbb") }}
-    {{ rpath("libmonitor") }}
-    {{ rpath("libunwind") }}
-    {{ rpath("xerces-c") }}
-    {{ rpath("xz") }}
-    {{ rpath("zlib") }}
-    {{ rpath("libiberty") }}
-    {{ rpath("intel-xed") }}
-    {{ rpath("yaml-cpp") }}
-    {{ rpath("papi") }}
-    {{ rpath("libpfm4") }}
+{%- macro ldir(spec) -%}
+  {%- if spack_prefix(spec) -%}
+    {%- for libdir in ["lib64", "lib"] %}'-L{{ pfxpath(spec, libdir) }}', {% endfor -%}
+  {%- endif -%}
+{%- endmacro %}
+{%- macro idir(spec) -%}
+  {%- if spack_prefix(spec) -%}
+    '-I{{ pfxpath(spec, "include") }}',
+  {%- endif -%}
+{%- endmacro %}
+_cc_args = [
+    {{ idir("opencl-c-headers") }}
   ]
-cpp_link_args = [
+_link_args = [
     {{ rpath("boost") }}
     {{ rpath("bzip2") }}
     {{ rpath("dyninst") }}
@@ -45,20 +41,22 @@ cpp_link_args = [
     {{ rpath("libpfm4") }}
   ]
 
+[built-in options]
+c_args = _cc_args
+cpp_args = _cc_args
+c_link_args = _link_args
+cpp_link_args = _link_args
+
+cmake_prefix_path = [
+  {%- for spec in spack_all_specs() -%}
+    '{{ pfxpath(spec) }}',
+  {%- endfor -%}
+  ]
+pkg_config_path = [
+  {%- for spec in spack_all_specs() -%}
+    '{{ pfxpath(spec, "lib/pkgconfig") }}',
+  {%- endfor -%}
+  ]
+
 [properties]
-prefix_boost = '{{ pfxpath("boost") }}'
-prefix_bzip = '{{ pfxpath("bzip2") }}'
-prefix_dyninst = '{{ pfxpath("dyninst") }}'
-prefix_elfutils = '{{ pfxpath("elfutils") }}'
-prefix_tbb = '{{ pfxpath("intel-tbb") }}'
-prefix_libmonitor = '{{ pfxpath("libmonitor") }}'
-prefix_libunwind = '{{ pfxpath("libunwind") }}'
-prefix_xerces = '{{ pfxpath("xerces-c") }}'
-prefix_lzma = '{{ pfxpath("xz") }}'
-prefix_zlib = '{{ pfxpath("zlib") }}'
-prefix_libiberty = '{{ pfxpath("libiberty") }}'
-prefix_xed = '{{ pfxpath("intel-xed") }}'
-prefix_yaml_cpp = '{{ pfxpath("yaml-cpp") }}'
-prefix_papi = '{{ pfxpath("papi") }}'
-prefix_perfmon = '{{ pfxpath("libpfm4") }}'
-prefix_opencl = '{{ pfxpath("opencl-c-headers") }}'
+boost_root = '{{ pfxpath("boost") }}'

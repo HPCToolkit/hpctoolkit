@@ -1,16 +1,15 @@
-if not get_option('hpcprof_mpi').enable_auto_if(mpicxx.found()).enabled()
+if not get_option('hpcprof_mpi').enable_auto_if(mpi_dep.found()).enabled()
   subdir_done()
 endif
 
-# hpcprof-mpi is built by Autotools. This executable wraps it so we can use functions that
-# expect an executable instead of a string-path.
-hpcprof_mpi = executable(
-  'hpcprof-mpi',
-  exec_src,
-  c_args: ['-DCMD_PATH=@0@'.format(autotools_build / 'src/tool/hpcprof-mpi/hpcprof-mpi')],
-  link_depends: [autotools_tgt],
+_srcs = files(
+  '../hpcprof/args.cpp',
+  'main.cpp',
+  'mpi.cpp',
+  'tree.cpp',
 )
 
-_devenv = environment()
-_devenv.prepend('PATH', meson.current_build_dir())
-meson.add_devenv(_devenv)
+hpcprof_mpi = executable('hpcprof-mpi', config_h, _srcs,
+  link_with: [profile_lib, prof_lean_lib, support_lean_lib],
+  dependencies: [mpi_dep, boost_dep, xerces_dep, lzma_dep, yaml_cpp_dep, libelf_dep, libdw_dep, libiberty_dep],
+  install: true)

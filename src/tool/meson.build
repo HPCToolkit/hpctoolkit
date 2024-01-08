@@ -14,3 +14,4 @@ subdir('hpcprof')
 subdir('hpcprof-mpi')
 
 subdir('hpcproftt')
+subdir('hpctracedump')

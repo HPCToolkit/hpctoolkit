@@ -1,0 +1,9 @@
+namespace hpctoolkit::staticdata {
+
+extern const char formats_md[];
+const char formats_md[] = R"===========(@FORMATS_MD@)===========";
+
+extern const char metrics_yaml[];
+const char metrics_yaml[] = R"===========(@METRICS_YAML@)===========";
+
+}  // hpctoolkit::staticdata

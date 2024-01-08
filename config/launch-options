@@ -10,37 +10,21 @@ install dir: $HPCTOOLKIT
 EOF
         if test "$opt_have_cuda" = yes ; then
             echo "NVIDIA CUDA support: yes"
-            echo "- CUDA: $cuda_dir"
-            if test -n "$cupti_dir" ; then
-                echo "- CUPTI: $cupti_dir"
-            fi
+            echo "- CUDA: $cuda_version"
         else
             echo "NVIDIA CUDA support: no"
         fi
         if test "$opt_have_rocm" = yes ; then
             echo "AMD ROCm support: yes"
-            if test "$rocm_dir" != "no" ; then
-                echo "- ROCm: $rocm_dir"
-            elif test "$hip_dir" = "$hsa_dir" \
-                 && test "$hip_dir" = "$roctracer_dir" \
-                 && test "$hip_dir" = "$rocprofiler_dir"
-            then
-                 echo "- ROCm: $hip_dir"
-            else
-                echo "- HIP: $hip_dir"
-                echo "- HSA: $hsa_dir"
-                echo "- roctracer: $roctracer_dir"
-                echo "- rocprofiler: $rocprofiler_dir"
-            fi
+            echo "- ROCm: $rocm_version"
         else
             echo "AMD ROCm support: no"
         fi
         if test "$opt_have_level0" = yes ; then
             echo "Intel Level Zero support: yes"
-            echo "- Level Zero: $level0_dir"
+            echo "- Level Zero: $level0_version"
             if test "$opt_have_gtpin" = yes ; then
-                echo "- GTPin: $gtpin_dir"
-                echo "- IGC: $igc_dir"
+                echo "- GTPin: $gtpin_version"
             fi
         else
             echo "Intel Level Zero support: no"
