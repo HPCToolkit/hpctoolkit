@@ -66,6 +66,8 @@
 #include <lib/support/diagnostics.h>
 
 
+namespace fs = hpctoolkit::stdshim::filesystem;
+
 
 //****************************************************************************
 // macros
@@ -159,7 +161,7 @@ readLoadmap(FILE *infs, hpcrun_fmt_footer_t &footer, std::unordered_set<std::str
 
 
 static void
-processProfile(const std::filesystem::path &path, std::unordered_set<std::string> &loadModules)
+processProfile(const fs::path &path, std::unordered_set<std::string> &loadModules)
 {
    std::string filename = path;
    const char *fnm = filename.c_str();
@@ -181,15 +183,15 @@ static int
 processMeasurementsDirectory(Args &args)
 {
   int status = 0;
-  const std::filesystem::path path(args.measurements_directory);
+  const fs::path path(args.measurements_directory);
   std::string pathname = path;
 
-  if (!std::filesystem::is_directory(path)) {
+  if (!fs::is_directory(path)) {
     DIAG_EMsg(pathname << " is not a directory");
     status = 1;
   } else {
-    std::vector<std::filesystem::path> hpcrunFiles;
-    for (auto const& dir_entry : std::filesystem::directory_iterator(path)) {
+    std::vector<fs::path> hpcrunFiles;
+    for (auto const& dir_entry : fs::directory_iterator(path)) {
       if (dir_entry.path().extension() == ".hpcrun") {
         hpcrunFiles.push_back(dir_entry.path());
       }
