@@ -17,6 +17,7 @@ foreach name, dbase : testdata_dbase
       args: [hpctesttool, dbase['dir'], hpcprof, f'-j@threads@', dbase['measurements']['dir']],
       suite: 'hpcprof',
       is_parallel: threads == 1,
+      priority: threads == 1 ? 0 : 100,  # High priority to optimize for lack of parallelism
     )
   endforeach
 
@@ -37,7 +38,7 @@ foreach name, dbase : testdata_dbase
           dbase['measurements']['dir'],
         ],
         suite: ['hpcprof', 'mpi'],
-        priority: 10,
+        priority: 100,  # High priority to optimize for lack of parallelism
         is_parallel: false,
         timeout: 90,
       )
