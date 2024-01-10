@@ -132,7 +132,7 @@ pkglib_LTLIBRARIES += libhpcrun_io.la
 pkglib_LTLIBRARIES += libhpcrun_memleak.la
 pkglib_LTLIBRARIES += libhpcrun_pthread.la
 pkglib_LTLIBRARIES += libhpctoolkit.la
-bin_SCRIPTS += scripts/hpcrun
+bin_SCRIPTS += hpcrun
 endif
 
 if OPT_ENABLE_HPCRUN_STATIC
@@ -887,15 +887,15 @@ libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 PROF_LEAN_A = $(top_builddir)/src/lib/prof-lean/.libs/libHPCprof-lean.a
 SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 
-libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -ldl -Wl,-rpath='$$ORIGIN'
 
 libhpcrun_unwind_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl -Wl,-rpath='$$ORIGIN'
 
-libhpcrun_private_ns_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+libhpcrun_private_ns_la_LDFLAGS = -Wl,-Bsymbolic -ldl -Wl,-rpath='$$ORIGIN'
 
-libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl -Wl,-rpath='$$ORIGIN'
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 

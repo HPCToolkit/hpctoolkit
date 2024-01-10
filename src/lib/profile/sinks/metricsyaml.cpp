@@ -60,6 +60,10 @@ using namespace hpctoolkit;
 using namespace sinks;
 namespace fs = stdshim::filesystem;
 
+namespace hpctoolkit::staticdata {
+extern const char metrics_yaml[];
+}
+
 MetricsYAML::MetricsYAML(stdshim::filesystem::path p)
   : dir(std::move(p)) {};
 
@@ -70,13 +74,17 @@ void MetricsYAML::notifyWavefront(DataClass dc) {
 
   // Create the directory and write out all the files
   stdshim::filesystem::create_directories(outdir);
-  {
-    std::error_code ec;
-    if(!stdshim::filesystem::copy_file(HPCTOOLKIT_INSTALL_PREFIX "/share/doc/hpctoolkit/METRICS.yaml",
-            outdir / "METRICS.yaml.ex", ec)) {
+  try {
+    std::ofstream out(outdir / "METRICS.yaml.ex", std::ios::out | std::ios::ate);
+    if(out.tellp() > 0) {
       util::log::warning w;
-      w << "Error while writing out METRICS.yaml.ex: " << (ec ? ec.message() : "file exists");
+      w << "Error while writing out METRICS.yaml.ex: file exists";
+    } else {
+      out << staticdata::metrics_yaml;
     }
+  } catch(std::exception& ex) {
+      util::log::warning w;
+      w << "Error while writing out METRICS.yaml.ex: " << ex.what();
   }
   {
     std::ofstream out(outdir / "default.yaml");

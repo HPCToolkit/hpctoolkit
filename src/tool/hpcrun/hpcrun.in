@@ -68,27 +68,32 @@ export UCX_ERROR_SIGNALS=ILL,FPE,BUS
 # Find path to this script
 #------------------------------------------------------------
 
-hpc_path_to_root=..
-@export_hpctoolkit@
+here="$(dirname "$(realpath "$0")")"
+if [ -e "$here"/.libs/libhpcrun.so ]; then
+  # This is (almost certainly) the build directory, not the installed version.
+  # In this case, we don't have HPCTOOLKIT, HPCRUN_FNBOUNDS_CMD needs to be set,
+  # and hpcrun_dir is where the libs are built.
+  hpcrun_dir="$here"/.libs
+  hpcfnbounds_dir=/nonexistent
+  if [ -z "$HPCRUN_FNBOUNDS_CMD" ]; then
+    echo "hpcrun: Detected as in build directory, must have HPCRUN_FNBOUNDS_CMD set" >&2
+    exit 2
+  fi
+else
+  # Use the usual method based around the install prefix
+  hpc_path_to_root=..
+  @export_hpctoolkit@
 
-# Relative paths are relative to HPCTOOLKIT.
-case "$hpcfnbounds_dir" in
-    /* ) ;;
-    * ) hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
-esac
-case "$hpcrun_dir" in
-    /* ) ;;
-    * ) hpcrun_dir="${HPCTOOLKIT}/${hpcrun_dir}" ;;
-esac
-case "$libmonitor_dir" in
-    /* ) ;;
-    * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
-esac
-case "$papi_libdir" in
-    '' ) ;;
-    /* ) ;;
-    * ) papi_libdir="${HPCTOOLKIT}/${papi_libdir}" ;;
-esac
+  # Relative paths are relative to HPCTOOLKIT.
+  case "$hpcfnbounds_dir" in
+      /* ) ;;
+      * ) hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
+  esac
+  case "$hpcrun_dir" in
+      /* ) ;;
+      * ) hpcrun_dir="${HPCTOOLKIT}/${hpcrun_dir}" ;;
+  esac
+fi
 
 #------------------------------------------------------------
 # Usage Message

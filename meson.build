@@ -242,7 +242,7 @@ run_command(
   # Passed to AC_CONFIG_FILES(...):
   files('doc/man/HPCToolkitVersionInfo.tex.in'),
   files('tests/Makefile.spack.in'),
-  files('src/tool/hpcrun/scripts/hpcrun.in'),
+  files('src/tool/hpcrun/hpcrun.in'),
   files('src/tool/hpcrun/scripts/hpclink.in'),
   files('src/tool/hpcrun/scripts/hpcsummary.in'),
   files('tests/run-sort.in'),
@@ -421,10 +421,10 @@ run_command(
 
 # Build and install by deferring to a parallel make
 _makepy = files('meson' / 'make')
-_autogoo_builddir = meson.project_build_root() / 'autotools-build'
-_makecmd = [_make, '-C', _autogoo_builddir, 'MAKE=@0@'.format(_make.full_path())]
+autotools_build = meson.project_build_root() / 'autotools-build'
+_makecmd = [_make, '-C', autotools_build, 'MAKE=@0@'.format(_make.full_path())]
 run_target('makeclean', command: _makecmd + ['clean'], env: _autogoo_env)
-custom_target(
+autotools_tgt = custom_target(
   'make -j',
   command: [python, _makepy] + _makecmd,
   console: true,
@@ -438,7 +438,7 @@ meson.add_install_script(
   _makepy,
   _make,
   '-C',
-  _autogoo_builddir,
+  autotools_build,
   'MAKE=@0@'.format(_make.full_path()),
   'install',
 )

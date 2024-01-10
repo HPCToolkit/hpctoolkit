@@ -363,11 +363,17 @@ doMeasurementsDir
 
   // Construct full paths for hpcproflm and hpcstruct
   //
-  string hpcproflm_path = string(HPCTOOLKIT_INSTALL_PREFIX)
-    + "/libexec/hpctoolkit/hpcproflm";
+  string hpcproflm_path;
+  {
+    char* path = getenv("HPCTOOLKIT_HPCPROFLM");
+    hpcproflm_path = path != NULL && path[0] != '\0' ? path : HPCTOOLKIT_INSTALL_PREFIX "/libexec/hpctoolkit/hpcproflm";
+  }
 
-  string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX)
-    + "/bin/hpcstruct";
+  string hpcstruct_path;
+  {
+    char* path = getenv("HPCTOOLKIT_HPCSTRUCT");
+    hpcstruct_path = path != NULL && path[0] != '\0' ? path : HPCTOOLKIT_INSTALL_PREFIX "/bin/hpcstruct";
+  }
 
   //
   // Write Makefile and launch analysis.

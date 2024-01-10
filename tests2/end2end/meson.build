@@ -6,5 +6,7 @@ foreach exe : [tstexe_1loop]
     args: [hpctesttool, hpcrun, hpcstruct, hpcprof, exe],
     suite: 'end2end',
     timeout: 90,
+    env: test_env,
+    depends: test_depends,
   )
 endforeach

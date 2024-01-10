@@ -5317,8 +5317,8 @@ AC_CONFIG_FILES([ \
 ])
 
 
-AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcrun],
-  [chmod +x src/tool/hpcrun/scripts/hpcrun])
+AC_CONFIG_FILES([src/tool/hpcrun/hpcrun],
+  [chmod +x src/tool/hpcrun/hpcrun])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
   [chmod +x src/tool/hpcrun/scripts/hpclink])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcsummary],

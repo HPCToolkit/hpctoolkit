@@ -62,7 +62,7 @@ pfn_set_reg_t libunwind_set_reg = NULL;
 pfn_unw_get_save_loc_t libunwind_get_save_loc = NULL;
 
 void libunwind_bind() {
-  hpcrun_bind_private(HPCTOOLKIT_INSTALL_PREFIX "/lib/hpctoolkit/libhpcrun_unwind.so",
+  hpcrun_bind_private("libhpcrun_unwind.so",
     "libunwind_getcontext", &libunwind_getcontext,
     "libunwind_init_local", &libunwind_init_local,
     "libunwind_init_local2", &libunwind_init_local2,

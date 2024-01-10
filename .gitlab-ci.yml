@@ -370,7 +370,7 @@ validate:
   variables:
     JOB_CC: gcc
   script:
-  - meson setup --native-file image.ini --native-file "$JOB_CC".ini --prefix /tmp/installdir /tmp/builddir
+  - meson setup --native-file image.ini --native-file "$JOB_CC".ini /tmp/builddir
   - mkdir -p logs/"$CI_JOB_NAME"
   - |
     build() {
@@ -380,8 +380,8 @@ validate:
 
       echo -e "\e[32m$ meson configure $* /tmp/builddir\e[0m"
       meson configure "$@" /tmp/builddir || return $?
-      echo -e "\e[32m$ meson compile -C /tmp/builddir && meson install -C /tmp/builddir\e[0m"
-      { meson compile -C /tmp/builddir && meson install -C /tmp/builddir; } > "$logfile" 2>&1 \
+      echo -e "\e[32m$ meson compile -C /tmp/builddir\e[0m"
+      { meson compile -C /tmp/builddir; } > "$logfile" 2>&1 \
         || { code=$?; cat "$logfile"; return $code; }
     }
   - |
@@ -533,10 +533,9 @@ validate:
     - mkdir logs/
     - logfile=logs/"$CI_JOB_NAME".log
     - rm -f "$logfile"
-    - meson setup --native-file image.ini --prefix /tmp/installdir /tmp/builddir
+    - meson setup --native-file image.ini /tmp/builddir
   - &check_compile
     - meson compile -C /tmp/builddir >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
-    - meson install -C /tmp/builddir >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
   - &check_test
     - meson test -C /tmp/builddir --maxfail=10 --repeat=${JOB_TEST_REPEAT:-7} ${JOB_TEST_SUITE:+--suite=$JOB_TEST_SUITE}
   after_script:

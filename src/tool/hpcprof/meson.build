@@ -1,7 +1,12 @@
-# Once HPCToolkit is installed, hpcprof will be available at this path. This wrapper executable
-# allows Meson to "execute" it before installation, even though it will fail.
+# hpcprof is built by Autotools. This executable wraps it so we can use functions that
+# expect an executable instead of a string-path.
 hpcprof = executable(
   'hpcprof',
   exec_src,
-  c_args: ['-DCMD_PATH=@0@'.format(get_option('prefix') / 'bin' / 'hpcprof')],
+  c_args: ['-DCMD_PATH=@0@'.format(autotools_build / 'src/tool/hpcprof/hpcprof')],
+  link_depends: [autotools_tgt],
 )
+
+_devenv = environment()
+_devenv.prepend('PATH', meson.current_build_dir())
+meson.add_devenv(_devenv)
