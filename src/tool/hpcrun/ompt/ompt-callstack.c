@@ -268,6 +268,17 @@ needs_main_fence
 }
 
 
+static frame_t *
+get_second_frame_slot
+(
+void
+)
+{
+  thread_data_t *td = hpcrun_get_thread_data();
+  return td->btbuf_beg + 1;
+}
+
+
 static void
 collapse_callstack
 (
@@ -276,11 +287,19 @@ collapse_callstack
 )
 {
   if (needs_main_fence()) {
-    // unify the outermost frame with <program root>
+    // ensure the unwind frames are recorded within the backtrace buffer:
+    //   put outermost frame in the second slot of the backtrace buffer
+    //   so that the inner placeholder frame can go in the first slot
+    bt->last = get_second_frame_slot();
+
+    // set the outermost frame to <program root>
     bt->last->ip_norm = get_placeholder_norm(hpcrun_placeholder_fence_main);
 
+    // innermost frame goes in first buffer slot
     bt->begin = bt->last - 1;
   } else {
+    // the only frame in the backtrace buffer will be the last frame
+    // containing the placeholder
     bt->begin = bt->last;
   }
 
