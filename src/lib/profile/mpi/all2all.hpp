@@ -231,8 +231,13 @@ std::optional<std::vector<std::vector<std::basic_string<C,T>>>> gather(std::vect
     result[root] = std::move(data);
     for(std::size_t r = 0; r < World::size(); r++) {
       result[r].reserve(lengths[r].size());
-      for(std::size_t i = 0, idx = 0; i < lengths[r].size(); idx += lengths[r][i], i++)
-        result[r].emplace_back(&strips[r][idx], lengths[r][i]);
+      for(std::size_t i = 0, idx = 0; i < lengths[r].size(); idx += lengths[r][i], i++) {
+        if(lengths[r][i] > 0) {
+          result[r].emplace_back(&strips[r][idx], lengths[r][i]);
+        } else {
+          result[r].emplace_back();
+        }
+      }
     }
     return std::move(result);
   }
@@ -280,8 +285,13 @@ std::vector<std::basic_string<C,T>> scatter(std::vector<std::vector<std::basic_s
   auto strip = scatter(std::vector<std::vector<C>>{}, root);
   std::vector<std::basic_string<C,T>> result;
   result.reserve(lengths.size());
-  for(std::size_t i = 0, idx = 0; i < lengths.size(); idx += lengths[i], i++)
-    result.emplace_back(&strip[idx], lengths[i]);
+  for(std::size_t i = 0, idx = 0; i < lengths.size(); idx += lengths[i], i++) {
+    if(lengths[i] > 0) {
+      result.emplace_back(&strip[idx], lengths[i]);
+    } else {
+      result.emplace_back();
+    }
+  }
   return result;
 }
 
