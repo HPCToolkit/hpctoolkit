@@ -1536,7 +1536,7 @@ int main(int argc, char **argv)
   return 0;
 }
 EOF
-  $CXX -c $ACTUAL_CXXFLAGS -o "$hello_o" "$hello_src" >/dev/null 2>&1
+  $CXX -c $ACTUAL_CXXFLAGS -o "$hello_o" "$hello_src" -fPIC >/dev/null 2>&1
   $MPICXX -o "$hello_bin" "$hello_o" >"$hello_out" 2>&1
 
   if test $? -eq 0 && test -f "$hello_bin" ; then
@@ -2534,15 +2534,7 @@ esac
 AC_MSG_RESULT([$LZMA])
 AC_MSG_NOTICE([lzma.a static archive: $lzma_static])
 
-#
-# hpcprof-mpi: static if fully static, else default
-#
-echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
-if test $? = 0 ; then
-  LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
-else
-  LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
-fi
+LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
 
 AC_SUBST([LZMA_IFLAGS])
 AC_SUBST([LZMA_LDFLAGS_DYN])
