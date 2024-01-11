@@ -57,14 +57,12 @@
 
 #include <sys/stat.h>
 
-#ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
 #undef _GNU_SOURCE
 #define _GNU_SOURCE
 #include <link.h>          // dl_iterate_phdr
 #include <linux/limits.h>  // PATH_MAX
 #include <string.h>        // strstr
-#endif
 
 #include <monitor.h>
 
@@ -541,7 +539,6 @@ CUPTI_FN
 // private operations
 //******************************************************************************
 
-#ifndef HPCRUN_STATIC_LINK
 int
 cuda_path
 (
@@ -640,7 +637,6 @@ cupti_path
   return path;
 }
 
-#endif
 
 int
 cupti_bind
@@ -648,8 +644,6 @@ cupti_bind
   void
 )
 {
-#ifndef HPCRUN_STATIC_LINK
-  // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(cupti, cupti_path(), RTLD_NOW | RTLD_GLOBAL);
   hpcrun_force_dlopen(false);
@@ -662,9 +656,6 @@ cupti_bind
 #undef CUPTI_BIND
 
   return DYNAMIC_BINDING_STATUS_OK;
-#else
-  return DYNAMIC_BINDING_STATUS_ERROR;
-#endif // ! HPCRUN_STATIC_LINK
 }
 
 

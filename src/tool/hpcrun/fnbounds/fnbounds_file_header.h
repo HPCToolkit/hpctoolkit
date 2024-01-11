@@ -7,9 +7,7 @@
 // inside hpcrun between fnbounds and the loadmap.
 //
 // Note: this struct does not need to be platform-independent because
-// we never write it to a file or share it across machines.  In the
-// static case, we write these fields as source code and the compiler
-// generates the correct format.
+// we never write it to a file or share it across machines.
 
 struct fnbounds_file_header {
   unsigned long  num_entries;

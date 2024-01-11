@@ -243,7 +243,6 @@ run_command(
   files('doc/man/HPCToolkitVersionInfo.tex.in'),
   files('tests/Makefile.spack.in'),
   files('src/tool/hpcrun/hpcrun.in'),
-  files('src/tool/hpcrun/scripts/hpclink.in'),
   files('src/tool/hpcrun/scripts/hpcsummary.in'),
   files('tests/run-sort.in'),
   # Passed to AC_SUBST_FILE(...):

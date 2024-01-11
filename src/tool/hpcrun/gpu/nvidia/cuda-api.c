@@ -138,7 +138,6 @@
 // static data
 //******************************************************************************
 
-#ifndef HPCRUN_STATIC_LINK
 CUDA_FN
 (
  cuDeviceGetAttribute,
@@ -208,10 +207,6 @@ CUDA_RUNTIME_FN
 );
 
 
-#endif
-
-
-
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -223,8 +218,6 @@ cuda_bind
   void
 )
 {
-#ifndef HPCRUN_STATIC_LINK
-  // dynamic libraries only availabile in non-static case
   CHK_DLOPEN(cuda, "libcuda.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLSYM(cuda, cuDeviceGetAttribute);
@@ -239,13 +232,9 @@ cuda_bind
   CHK_DLSYM(cudart, cudaMemcpy);
 
   return DYNAMIC_BINDING_STATUS_OK;
-#else
-  return DYNAMIC_BINDING_STATUS_ERROR;
-#endif // ! HPCRUN_STATIC_LINK
 }
 
 
-#ifndef HPCRUN_STATIC_LINK
 static int
 cuda_device_sm_blocks_query
 (
@@ -262,7 +251,6 @@ cuda_device_sm_blocks_query
     return 8;
   }
 }
-#endif
 
 
 
@@ -275,7 +263,6 @@ cuda_device_compute_capability
   int *minor
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
@@ -283,9 +270,6 @@ cuda_device_compute_capability
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
 
   return 0;
-#else
-  return -1;
-#endif
 }
 
 
@@ -296,12 +280,8 @@ cuda_device_id
   int *device_id
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_RUNTIME_CALL(cudaGetDevice, (device_id));
   return 0;
-#else
-  return -1;
-#endif
 }
 
 
@@ -312,12 +292,8 @@ cuda_runtime_version
   int *rt_version
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_RUNTIME_CALL(cudaRuntimeGetVersion, (rt_version));
   return 0;
-#else
-  return -1;
-#endif
 }
 
 
@@ -333,12 +309,8 @@ cuda_context
  CUcontext *ctx
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuCtxGetCurrent, (ctx));
   return 0;
-#else
-  return -1;
-#endif
 }
 
 int
@@ -348,7 +320,6 @@ cuda_device_property_query
  cuda_device_property_t *property
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
@@ -382,9 +353,6 @@ cuda_device_property_query
   property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
 
   return 0;
-#else
-  return -1;
-#endif
 }
 
 
@@ -424,12 +392,8 @@ cuda_get_module
  CUfunction fn
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuFuncGetModule, (mod, fn));
   return 0;
-#else
-  return -1;
-#endif
 }
 
 
@@ -440,7 +404,6 @@ cuda_get_driver_version
  int *minor
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   int version;
 
   HPCRUN_CUDA_API_CALL(cuDriverGetVersion, (&version));
@@ -449,9 +412,6 @@ cuda_get_driver_version
   *minor = version - *major * 1000;
 
   return 0;
-#else
-  return -1;
-#endif
 }
 
 
@@ -463,10 +423,6 @@ cuda_get_code
  size_t bytes
 )
 {
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_RUNTIME_CALL(cudaMemcpy, (host, dev, bytes, cudaMemcpyDeviceToHost));
   return 0;
-#else
-  return -1;
-#endif
 }

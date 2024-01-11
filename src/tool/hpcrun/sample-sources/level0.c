@@ -56,9 +56,7 @@
 
 #include <pthread.h>
 
-#ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
-#endif
 
 
 
@@ -189,13 +187,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-#ifndef HPCRUN_STATIC_LINK
   return strncmp(ev_str, LEVEL0, strlen(LEVEL0)) == 0;
-#else
-  return false;
-#endif
-
-
 }
 
 static void
@@ -224,12 +216,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-#ifndef HPCRUN_STATIC_LINK
   if (level0_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to Level0 library %s\n", dlerror());
     monitor_real_exit(-1);
   }
-#endif
 
   level0_init(&level0_instrumentation_options);
 

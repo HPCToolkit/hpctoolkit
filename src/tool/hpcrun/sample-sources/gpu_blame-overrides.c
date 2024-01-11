@@ -631,11 +631,8 @@ HPCRUN_CONSTRUCTOR(CpuGpuBlameShiftInit)(void)
   hpcrun_disable_papi_cuda();
   if (getenv("DEBUG_HPCRUN_GPU_CONS"))
     fprintf(stderr, "CPU-GPU blame shift constructor called\n");
-  // no dlopen calls in static case
-  // #ifndef HPCRUN_STATIC_LINK
   PopulateEntryPointesToWrappedCalls();
   InitCpuGpuBlameShiftDataStructs();
-  // #endif // ! HPCRUN_STATIC_LINK
 }
 
 /******************** END CONSTRUCTORS ****/

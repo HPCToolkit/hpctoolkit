@@ -123,7 +123,7 @@ sampling sources.  hpcrun profiles complex applications that use forks,
 execs, threads, and dynamic linking/unlinking; it may be used in conjunction
 with parallel process launchers such as MPICH's mpiexec and SLURM's srun.
 
-To profile a statically linked executable, make sure to link with hpclink.
+Note that hpcrun is unable to profile static executables.
 
 To configure hpcrun's sampling sources, specify events and periods using
 the -e/--event option.  For an event 'e' and period 'p', after every 'p'
@@ -790,17 +790,13 @@ if test -x "$command" && test "$file_exists" = yes ; then
         fi
     fi
     #
-    # For static binaries, verify that hpcrun is linked in.  Use
-    # strings instead of nm to handle stripped binaries.
+    # Static binaries do not work, so fail early.
     #
     echo "$cmd_file_out" | grep -E -i -e 'elf.*static' >/dev/null 2>&1
     if test $? -eq 0 ; then
-        strings "$command" 2>&1 | grep -e hpcrun >/dev/null 2>&1
-        if test $? -ne 0 ; then
-            echo "hpcrun: static binary is missing libhpcrun: $command" 1>&2
-            echo "rebuild the application with hpclink" 1>&2
-            exit 1
-        fi
+        echo "hpcrun: refusing attempt to launch static binary: $command" 1>&2
+        echo "rebuild the application as a dynamic executable to proceed" 1>&2
+        exit 1
     fi
 fi
 

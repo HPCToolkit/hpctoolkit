@@ -101,32 +101,5 @@ hpcrun_get_rank(void)
     return rank;
   }
 
-  // Dmapp only runs on Cray systems which pretty much run only static
-  // binaries.  The dynamic case probably works but is currently
-  // untested (because there are few or no examples), so ifdef it out
-  // for now.
-  //
-#ifdef HPCRUN_STATIC_LINK
-  struct jobinfo info;
-  if (dmapp_get_jobinfo(&info) == 0) {
-    rank = info.pe;
-    if (rank >= 0) {
-      return rank;
-    }
-  }
-#endif
-
-  // Gasnet stores the rank in a global variable and <gasnet.h> makes
-  // heavy use of macros.  So, there is no gasnet_mynode() function to
-  // call.  We can catch the variable statically via hpclink, but
-  // basically there's no hope for the dynamic case.
-  //
-#ifdef HPCRUN_STATIC_LINK
-  rank = (int) gasneti_mynode;
-  if (rank >= 0) {
-    return rank;
-  }
-#endif
-
   return -1;
 }

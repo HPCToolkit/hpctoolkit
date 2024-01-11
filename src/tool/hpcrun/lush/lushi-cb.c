@@ -91,10 +91,6 @@ LUSHCB_loadmap_find(void* addr,
                     void** end)
 {
   int r = 0;
-#ifdef HPCRUN_STATIC_LINK
-  EMSG("LUSHCB_loadmap_find: HPCRUN_STATIC_LINK not implemented");
-#else
   r = dylib_find_module_containing_addr(addr, module_name, start, end);
-#endif
   return r;
 }

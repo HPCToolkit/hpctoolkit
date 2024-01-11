@@ -68,7 +68,6 @@ MYSOURCES = \
 	hpctoolkit.tex \
 	\
 	hpcrun.tex \
-	hpclink.tex \
 	\
 	hpcstruct.tex \
 	\
@@ -94,7 +93,6 @@ MYMANHTML = $(patsubst %.tex,%.html,$(MYSOURCES))
 man_MANS = \
 	hpctoolkit.1hpctoolkit \
 	hpcrun.1hpctoolkit \
-	hpclink.1hpctoolkit \
 	hpcstruct.1hpctoolkit \
 	hpcprof.1hpctoolkit \
 	hpcproftt.1hpctoolkit \

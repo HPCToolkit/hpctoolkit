@@ -47,7 +47,6 @@
 #include "openmp.h"
 
 #include <messages/messages.h>
-
 // The PGI OpenMP compiler does some strange things with their thread
 // stacks.  We use _mp_init() as our test for this and then adjust the
 // unwind heuristics if found.

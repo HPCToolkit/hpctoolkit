@@ -141,19 +141,11 @@ typedef void *realloc_fcn(void *, size_t);
 #define HPCRUN_MEMLEAK_PROB  "HPCRUN_MEMLEAK_PROB"
 #define DEFAULT_PROB  0.1
 
-#ifdef HPCRUN_STATIC_LINK
-#define real_memalign   __real_memalign
-#define real_valloc   __real_valloc
-#define real_malloc   __real_malloc
-#define real_free     __real_free
-#define real_realloc  __real_realloc
-#else
 #define real_memalign   __libc_memalign
 #define real_valloc   __libc_valloc
 #define real_malloc   __libc_malloc
 #define real_free     __libc_free
 #define real_realloc  __libc_realloc
-#endif
 
 extern memalign_fcn       real_memalign;
 extern valloc_fcn         real_valloc;

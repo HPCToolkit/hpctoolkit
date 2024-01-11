@@ -541,8 +541,6 @@ roctracer_bind
   setenv("HSA_ENABLE_INTERRUPT", "0", 1);
 #endif
 
-#ifndef HPCRUN_STATIC_LINK
-  // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(roctracer, roctracer_path(), RTLD_NOW | RTLD_GLOBAL);
 
@@ -557,9 +555,6 @@ roctracer_bind
 #undef ROCTRACER_BIND
 
   return DYNAMIC_BINDING_STATUS_OK;
-#else
-  return DYNAMIC_BINDING_STATUS_ERROR;
-#endif // ! HPCRUN_STATIC_LINK
 }
 
 void

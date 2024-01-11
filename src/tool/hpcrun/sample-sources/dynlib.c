@@ -76,13 +76,9 @@ dynlib_open
   int flags
 )
 {
-#ifdef HPCRUN_STATIC_LINK
-  int retval = 1;
-#else
   *handle = monitor_real_dlopen(libname, flags);
 
   int retval = (*handle == NULL);
-#endif
   return retval;
 }
 
@@ -96,15 +92,11 @@ dynlib_sym
    void **fn
 )
 {
-#ifdef HPCRUN_STATIC_LINK
-  int retval = 1;
-#else
   (void) dlerror(); // clear any error that may be pending
 
   *fn = dlsym(handle, fname);
   char* e = dlerror();
 
   int retval = (e != NULL);
-#endif
   return retval;
 }

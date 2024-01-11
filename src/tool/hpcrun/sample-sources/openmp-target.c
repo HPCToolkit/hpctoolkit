@@ -13,9 +13,7 @@
 
 #include <pthread.h>
 
-#ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
-#endif
 
 
 
@@ -131,13 +129,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-#ifndef HPCRUN_STATIC_LINK
     return hpcrun_ev_is(ev_str, OPENMP_TARGET);
-#else
-    return false;
-#endif
-
-
 }
 
 static void

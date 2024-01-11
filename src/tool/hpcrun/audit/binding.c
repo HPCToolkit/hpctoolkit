@@ -49,6 +49,7 @@
 #include "binding.h"
 
 #include "../messages/messages.h"
+#include "audit-api.h"
 
 #include <dlfcn.h>
 #include <stddef.h>
@@ -79,45 +80,8 @@ void hpcrun_bind_v(const char* libname, va_list bindings) {
   }
 }
 
-#ifndef HPCRUN_STATIC_LINK
-
-#include "audit-api.h"
-
 // In the dynamic case, the private namespace is the auditor's namespace, and as such
 // hpcrun_bind_private_v is implemented by the the auditor API.
 void hpcrun_bind_private_v(const char* libname, va_list bindings) {
   return auditor_exports->hpcrun_bind_v(libname, bindings);
 }
-
-#else  // ! HPCRUN_STATIC_LINK
-
-#include <threads.h>
-
-#include "hpctoolkit-config.h"
-
-// In the static case, we load the private namespace ourselves, exactly once.
-
-static void* private_ns = NULL;
-static void (*hpcrun_bind_private_v_real)(const char*, va_list) = NULL;
-
-static once_flag private_once;
-static void private_setup() {
-  private_ns = dlmopen(LM_ID_NEWLM, "libhpcrun_private_ns.so", RTLD_NOW);
-  if (private_ns == NULL) {
-    EEMSG("Unable to create private linkage namespace: %s", dlerror());
-    hpcrun_terminate();
-  }
-
-  hpcrun_bind_private_v_real = dlsym(private_ns, "hpcrun_bind_v");
-  if (hpcrun_bind_private_v_real == NULL) {
-    EEMSG("Unable to get private binding function: %s", dlerror());
-    hpcrun_terminate();
-  }
-}
-
-void hpcrun_bind_private_v(const char* libname, va_list bindings) {
-  call_once(&private_once, private_setup);
-  return hpcrun_bind_private_v_real(libname, bindings);
-}
-
-#endif  // HPCRUN_STATIC_LINK
