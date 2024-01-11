@@ -37,6 +37,7 @@ test(
   depends: hpcrun_test_depends,
   env: hpcrun_test_env,
   is_parallel: false,  # CUPTI does not allow multiple processes to sample the GPU
+  priority: 100,  # High priority to optimize for lack of parallelism
 )
 test(
   'Measurement of tstexe-vecadd-cuda w/ PC + tracing produces profiles',
@@ -46,6 +47,7 @@ test(
   depends: hpcrun_test_depends,
   env: hpcrun_test_env,
   is_parallel: false,  # CUPTI does not allow multiple processes to sample the GPU
+  priority: 100,  # High priority to optimize for lack of parallelism
 )
 test(
   'Measurement of tstexe-vecadd-cuda w/ PC + boosted tracing produces profiles',
@@ -55,4 +57,5 @@ test(
   depends: hpcrun_test_depends,
   env: hpcrun_test_env,
   is_parallel: false,  # CUPTI does not allow multiple processes to sample the GPU
+  priority: 100,  # High priority to optimize for lack of parallelism
 )
