@@ -41,14 +41,6 @@ RUN \
     'meson>=1.1.0,<2' \
   && : # END
 
-# Debian/Ubuntu stores libraries in "multilib" directories, e.g. /usr/lib/x86_64-linux-gnu.
-# Configure currently only understands RHEL-like installations (/usr/lib64), so symlink the
-# difference away. Same issue for (some) headers.
-# TODO: Remove whenever possible.
-RUN \
-  cp -rsTn /usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/ /usr/lib64/ \
-  && cp -rsTn /usr/include/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/ /usr/include/
-
 
 # OS native-file side-stage: Collect and compose a native file for the OS software
 FROM os-install as os-native
