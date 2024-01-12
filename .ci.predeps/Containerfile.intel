@@ -28,8 +28,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   rm -f /etc/apt/apt.conf.d/docker-clean \
   && apt-get update -yqq \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    autoconf \
-    automake \
     ccache \
     clang clang-9 clang-10 clang-11 \
     cmake \
@@ -40,8 +38,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libigc-dev \
     libigdfcl-dev \
     libomp-dev \
-    libtool \
-    make \
     ninja-build \
     libopenmpi-dev \
     pkg-config \
