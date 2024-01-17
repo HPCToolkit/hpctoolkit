@@ -44,8 +44,8 @@
 #ifndef __CUSTOM_EVENT_H__
 #define __CUSTOM_EVENT_H__
 
-#include "sample_event.h"
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../../sample_event.h"
+#include "../../../../lib/prof-lean/hpcrun-fmt.h"
 
 
 // forward type declaration from perf-util.h

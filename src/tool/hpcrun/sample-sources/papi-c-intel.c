@@ -19,14 +19,14 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/thread_data.h>
-#include <messages/messages.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_sources_all.h>
-#include <hpcrun/gpu/gpu-activity.h>
-#include <sample-sources/common.h>
-#include <sample-sources/ss-obj-name.h>
+#include "../thread_data.h"
+#include "../messages/messages.h"
+#include "../sample_event.h"
+#include "../safe-sampling.h"
+#include "../sample_sources_all.h"
+#include "../gpu/gpu-activity.h"
+#include "common.h"
+#include "ss-obj-name.h"
 
 #include "papi-c.h"
 #include "papi-c-extended-info.h"

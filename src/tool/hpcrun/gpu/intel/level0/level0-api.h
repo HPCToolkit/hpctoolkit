@@ -59,7 +59,7 @@
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
 
-#include <gpu/gpu-instrumentation.h>
+#include "../../gpu-instrumentation.h"
 
 
 

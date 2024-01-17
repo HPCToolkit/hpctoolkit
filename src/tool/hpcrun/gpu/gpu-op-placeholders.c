@@ -55,11 +55,11 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>
+#include "../cct/cct.h"
 
-#include <messages/errors.h>
+#include "../messages/errors.h"
 
-#include "lib/prof-lean/placeholders.h"
+#include "../../../lib/prof-lean/placeholders.h"
 #include "gpu-op-placeholders.h"
 
 

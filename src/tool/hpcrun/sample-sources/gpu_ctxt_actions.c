@@ -1,4 +1,4 @@
-#include <messages/messages.h>
+#include "../messages/messages.h"
 #include "gpu_ctxt_actions.h"
 
 // ******** CUDA API *************
@@ -17,8 +17,8 @@
 
 
 // ********** (table of) cuda API functions **************
-#include "gpu_blame-cuda-runtime-header.h"
-#include "gpu_blame-cuda-driver-header.h"
+#include <gpu_blame-cuda-runtime-header.h>
+#include <gpu_blame-cuda-driver-header.h>
 // *******************************************************
 
 // keep count of # of contexts

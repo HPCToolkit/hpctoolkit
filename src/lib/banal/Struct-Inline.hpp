@@ -70,11 +70,11 @@
 #include <list>
 #include <map>
 
-#include <lib/isa/ISATypes.hpp>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/SrcFile.hpp>
-#include <lib/support/StringTable.hpp>
+#include "../isa/ISATypes.hpp"
+#include "../support/FileUtil.hpp"
+#include "../support/RealPathMgr.hpp"
+#include "../support/SrcFile.hpp"
+#include "../support/StringTable.hpp"
 
 #include <Symtab.h>
 #include <Function.h>

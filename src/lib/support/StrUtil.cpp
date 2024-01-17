@@ -78,7 +78,7 @@ using std::string;
 
 //*************************** User Include Files *****************************
 
-#include <include/gcc-attr.h>
+#include "../../include/gcc-attr.h"
 
 #include "StrUtil.hpp"
 #include "diagnostics.h"

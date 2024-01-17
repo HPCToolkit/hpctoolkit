@@ -63,29 +63,29 @@
 #include "level0-fence-map.h"
 #include "level0-command-queue-map.h"
 
-#include <utilities/linuxtimer.h>
+#include "../../../utilities/linuxtimer.h"
 
-#include <hpcrun/main.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
-#include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/gpu-application-thread-api.h>
-#include <hpcrun/gpu/gpu-operation-multiplexer.h>
-#include <hpcrun/gpu/gpu-kernel-table.h>
+#include "../../../main.h"
+#include "../../../memory/hpcrun-malloc.h"
+#include "../../../sample-sources/libdl.h"
+#include "../../gpu-monitoring-thread-api.h"
+#include "../../gpu-application-thread-api.h"
+#include "../../gpu-operation-multiplexer.h"
+#include "../../gpu-kernel-table.h"
 
 #ifdef ENABLE_GTPIN
-#include <hpcrun/gpu/intel/gtpin/gtpin-instrumentation.h>
+#include "../gtpin/gtpin-instrumentation.h"
 #endif
 
 //******************************************************************************
 // macros
 //******************************************************************************
 #define DEBUG 0
-#include "hpcrun/gpu/gpu-print.h"
+#include "../../gpu-print.h"
 
 #define GPU_FLUSH_ALARM_ENABLED 1
 #define GPU_FLUSH_ALARM_TEST_ENABLED 0
-#include "hpcrun/gpu/gpu-flush-alarm.h"
+#include "../../gpu-flush-alarm.h"
 
 #define FORALL_LEVEL0_ROUTINES(macro)                   \
   macro(zeInit)   \

@@ -66,10 +66,10 @@
 // local include files
 //*****************************************************************************
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/gpu/gpu-instrumentation.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/utilities/ip-normalized.h>
+#include "../../../cct/cct.h"
+#include "../../gpu-instrumentation.h"
+#include "../../gpu-op-placeholders.h"
+#include "../../../utilities/ip-normalized.h"
 
 #include "gtpin-hpcrun-api.h"
 

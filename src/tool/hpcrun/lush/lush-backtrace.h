@@ -73,7 +73,7 @@
 
 #include "lush.h"
 
-#include <epoch.h>
+#include "../epoch.h"
 
 //*************************** Forward Declarations **************************
 

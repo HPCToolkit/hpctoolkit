@@ -50,8 +50,8 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/bistack.h>
-#include <hpcrun/gpu/gpu-activity.h>
+#include "../../../../lib/prof-lean/bistack.h"
+#include "../gpu-activity.h"
 
 #ifndef __cplusplus
 #include <stdatomic.h>

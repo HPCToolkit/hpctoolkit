@@ -73,8 +73,8 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	main.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
+MYCFLAGS   = @HOST_CFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@

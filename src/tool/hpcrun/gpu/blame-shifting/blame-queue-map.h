@@ -6,7 +6,7 @@
 //******************************************************************************
 
 #include "blame-kernel-map.h"
-#include <hpcrun/cct/cct.h>                   // cct_node_t
+#include "../../cct/cct.h"                   // cct_node_t
 #ifndef __cplusplus
 #include <stdatomic.h>
 #else

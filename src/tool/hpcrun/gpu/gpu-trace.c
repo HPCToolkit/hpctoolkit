@@ -63,16 +63,16 @@
 //******************************************************************************
 
 #include <stdatomic.h>
-#include <lib/support-lean/OSUtil.h>
+#include "../../../lib/support-lean/OSUtil.h"
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <hpcrun/control-knob.h>
-#include <hpcrun/rank.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/threadmgr.h>
-#include <hpcrun/trace.h>
-#include <hpcrun/write_data.h>
+#include "../cct/cct.h"
+#include "../utilities/hpcrun-nanotime.h"
+#include "../control-knob.h"
+#include "../rank.h"
+#include "../thread_data.h"
+#include "../threadmgr.h"
+#include "../trace.h"
+#include "../write_data.h"
 
 #include "gpu-context-id-map.h"
 #include "gpu-monitoring.h"

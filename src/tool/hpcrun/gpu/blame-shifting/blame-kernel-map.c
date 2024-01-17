@@ -12,10 +12,10 @@
 
 #include "blame-kernel-map.h"           // kernel_node_t, queue_node_t
 
-#include <hpcrun/gpu/gpu-splay-allocator.h>
-#include <lib/prof-lean/splay-uint64.h>
-#include <lib/prof-lean/spinlock.h>
-#include <messages/messages.h>
+#include "../gpu-splay-allocator.h"
+#include "../../../../lib/prof-lean/splay-uint64.h"
+#include "../../../../lib/prof-lean/spinlock.h"
+#include "../../messages/messages.h"
 
 
 

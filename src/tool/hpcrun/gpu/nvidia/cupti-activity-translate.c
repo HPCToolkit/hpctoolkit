@@ -65,13 +65,13 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/cct/cct_addr.h>
-#include <hpcrun/utilities/ip-normalized.h>
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-function-id-map.h>
-#include <hpcrun/gpu/gpu-host-correlation-map.h>
+#include "../../cct/cct.h"
+#include "../../cct/cct_addr.h"
+#include "../../utilities/ip-normalized.h"
+#include "../gpu-activity.h"
+#include "../gpu-correlation-id-map.h"
+#include "../gpu-function-id-map.h"
+#include "../gpu-host-correlation-map.h"
 
 #include "cuda-device-map.h"
 #include "cupti-activity-translate.h"

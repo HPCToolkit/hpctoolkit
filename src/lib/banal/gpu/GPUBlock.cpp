@@ -62,7 +62,7 @@
 // HPCToolkit includes
 //***************************************************************************
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 #include "GPUBlock.hpp"
 
 

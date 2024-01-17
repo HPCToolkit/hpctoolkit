@@ -9,8 +9,8 @@
  * local includes
  *****************************************************************************/
 
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../messages/messages.h"
+#include "../memory/hpcrun-malloc.h"
 #include "cct-node-vector.h"
 
 /******************************************************************************

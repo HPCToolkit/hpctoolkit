@@ -61,35 +61,35 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-binary.h>
-#include <hpcrun/gpu/gpu-operation-multiplexer.h>
-#include <hpcrun/gpu/gpu-correlation-channel.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-application-thread-api.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
+#include "../../safe-sampling.h"
+#include "../../sample-sources/libdl.h"
+#include "../gpu-activity.h"
+#include "../gpu-activity-channel.h"
+#include "../gpu-activity-process.h"
+#include "../gpu-binary.h"
+#include "../gpu-operation-multiplexer.h"
+#include "../gpu-correlation-channel.h"
+#include "../gpu-correlation-id-map.h"
+#include "../gpu-application-thread-api.h"
+#include "../gpu-metrics.h"
+#include "../gpu-monitoring-thread-api.h"
+#include "../gpu-op-placeholders.h"
 #ifdef ENABLE_GTPIN
-#include <hpcrun/gpu/intel/gtpin/gtpin-instrumentation.h>
+#include "../intel/gtpin/gtpin-instrumentation.h"
 #endif
-#include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/gpu/blame-shifting/opencl/opencl-blame.h>
-#include <hpcrun/files.h>
-#include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <lib/prof-lean/crypto-hash.h>
-#include <lib/prof-lean/elf-extract.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/splay-uint64.h>
+#include "intel/papi/papi-metric-collector.h"
+#include "../../messages/messages.h"
+#include "../../sample-sources/libdl.h"
+#include "../blame-shifting/opencl/opencl-blame.h"
+#include "../../files.h"
+#include "../../utilities/hpcrun-nanotime.h"
+#include "../../../../lib/prof-lean/crypto-hash.h"
+#include "../../../../lib/prof-lean/elf-extract.h"
+#include "../../../../lib/prof-lean/hpcrun-opencl.h"
+#include "../../../../lib/prof-lean/spinlock.h"
+#include "../../../../lib/prof-lean/splay-uint64.h"
 #include <stdatomic.h>
-#include <lib/prof-lean/usec_time.h>
+#include "../../../../lib/prof-lean/usec_time.h"
 
 #include "opencl-api.h"
 #include "opencl-api-wrappers.h"

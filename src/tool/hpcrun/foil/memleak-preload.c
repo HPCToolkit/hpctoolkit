@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #include "foil.h"
-#include "sample-sources/memleak-overrides.h"
+#include "../sample-sources/memleak-overrides.h"
 #include <unistd.h>
 
 HPCRUN_EXPOSED int posix_memalign(void **memptr, size_t alignment, size_t bytes) {

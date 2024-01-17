@@ -3,8 +3,8 @@
 #include <fcntl.h>   // open
 #include <limits.h>  // PATH_MAX
 
-#include <hpcrun/loadmap.h>
-#include <hpcrun/module-ignore-map.h>
+#include "loadmap.h"
+#include "module-ignore-map.h"
 
 
 static void

@@ -66,7 +66,7 @@
 // global includes
 //*****************************************************************************
 
-#include <lib/prof-lean/spinlock.h>
+#include "../../../lib/prof-lean/spinlock.h"
 
 
 
@@ -74,8 +74,8 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/spinlock.h>
-#include <messages/fmt.h>
+#include "../../../lib/prof-lean/spinlock.h"
+#include "fmt.h"
 
 
 //*****************************************************************************

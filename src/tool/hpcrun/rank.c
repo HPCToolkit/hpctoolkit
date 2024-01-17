@@ -64,7 +64,7 @@
 
 #include <stdint.h>
 #include <monitor.h>
-#include "lib/support-lean/OSUtil.h"
+#include "../../lib/support-lean/OSUtil.h"
 #include "rank.h"
 
 struct jobinfo {

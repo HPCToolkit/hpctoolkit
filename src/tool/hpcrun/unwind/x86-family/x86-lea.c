@@ -49,7 +49,7 @@
 #include "x86-lea.h"
 #include "x86-interval-arg.h"
 
-#include <lib/isa-lean/x86/instruction-set.h>
+#include "../../../../lib/isa-lean/x86/instruction-set.h"
 
 unwind_interval *
 process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)

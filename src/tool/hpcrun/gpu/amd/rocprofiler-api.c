@@ -60,27 +60,27 @@
 #include <rocprofiler/rocprofiler.h>
 #include <rocprofiler/activity.h>
 
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-correlation-channel.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/gpu-application-thread-api.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
+#include "../gpu-activity.h"
+#include "../gpu-activity-channel.h"
+#include "../gpu-activity-process.h"
+#include "../gpu-correlation-channel.h"
+#include "../gpu-correlation-id-map.h"
+#include "../gpu-metrics.h"
+#include "../gpu-monitoring-thread-api.h"
+#include "../gpu-application-thread-api.h"
+#include "../gpu-op-placeholders.h"
 
-#include <hpcrun/thread_data.h>
-#include <hpcrun/sample-sources/libdl.h>
+#include "../../thread_data.h"
+#include "../../sample-sources/libdl.h"
 
-#include <hpcrun/utilities/hpcrun-nanotime.h>
+#include "../../utilities/hpcrun-nanotime.h"
 
-#include <lib/prof-lean/spinlock.h>
+#include "../../../../lib/prof-lean/spinlock.h"
 #include <pthread.h>
 
 #define DEBUG 0
 
-#include "hpcrun/gpu/gpu-print.h"
+#include "../gpu-print.h"
 
 
 

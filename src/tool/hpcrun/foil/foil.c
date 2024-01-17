@@ -48,17 +48,17 @@
 
 #include "hpctoolkit-config.h"
 
-#include "main.h"
-#include "start-stop.h"
-#include "ompt/ompt-interface.h"
-#include "monitor-exts/openmp.h"
-#include "sample-sources/io-over.h"
-#include "sample-sources/memleak-overrides.h"
-#include "sample-sources/ga-overrides.h"
-#include "sample-sources/pthread-blame-overrides.h"
+#include "../main.h"
+#include "../start-stop.h"
+#include "../ompt/ompt-interface.h"
+#include "../monitor-exts/openmp.h"
+#include "../sample-sources/io-over.h"
+#include "../sample-sources/memleak-overrides.h"
+#include "../sample-sources/ga-overrides.h"
+#include "../sample-sources/pthread-blame-overrides.h"
 
 #ifdef USE_ROCM
-#include "gpu/amd/rocprofiler-api.h"
+#include "../gpu/amd/rocprofiler-api.h"
 #endif
 
 #ifdef USE_LEVEL0
@@ -66,7 +66,7 @@
 #endif
 
 #ifdef ENABLE_OPENCL
-#include "gpu/opencl/opencl-api-wrappers.h"
+#include "../gpu/opencl/opencl-api-wrappers.h"
 #endif
 
 #include <assert.h>

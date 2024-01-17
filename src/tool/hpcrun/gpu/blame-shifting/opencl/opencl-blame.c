@@ -12,14 +12,14 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/safe-sampling.h>             // hpcrun_safe_enter, hpcrun_safe_exit
+#include "../../../safe-sampling.h"             // hpcrun_safe_enter, hpcrun_safe_exit
 
 #include "../blame.h"                         // sync_prologue, sync_epilogue, etc
-#include <hpcrun/gpu/opencl/opencl-api.h>     // place_cct_under_opencl_kernel
+#include "../../opencl/opencl-api.h"     // place_cct_under_opencl_kernel
 #include "opencl-blame.h"
 #include "../blame-kernel-cleanup-map.h"      // kernel_cleanup_map_insert
-#include <hpcrun/gpu/gpu-activity-channel.h>                        // gpu_activity_channel_get
-#include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>     // add_kernel_to_incomplete_list, remove_kernel_from_incomplete_list
+#include "../../gpu-activity-channel.h"                        // gpu_activity_channel_get
+#include "../../opencl/intel/papi/papi-metric-collector.h"     // add_kernel_to_incomplete_list, remove_kernel_from_incomplete_list
 
 
 

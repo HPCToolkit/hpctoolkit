@@ -45,7 +45,7 @@
 #ifndef gpu_operation_multiplexer_h
 #define gpu_operation_multiplexer_h
 
-#include <hpcrun/thread_data.h>
+#include "../thread_data.h"
 #include "gpu-operation-channel.h"
 
 #ifndef __cplusplus

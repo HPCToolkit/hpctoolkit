@@ -11,8 +11,8 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/memory/hpcrun-malloc.h>    // hpcrun_malloc
-#include <lib/prof-lean/splay-uint64.h>     // splay_visit_t
+#include "../../memory/hpcrun-malloc.h"    // hpcrun_malloc
+#include "../../../../lib/prof-lean/splay-uint64.h"     // splay_visit_t
 #include <stdatomic.h>        // atomic_fetch_add
 
 #include "blame-kernel-map.h"               // kernel_node_t

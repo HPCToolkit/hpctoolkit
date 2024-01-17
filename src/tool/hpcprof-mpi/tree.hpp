@@ -44,9 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "lib/profile/sinks/packed.hpp"
-#include "lib/profile/sources/packed.hpp"
-#include "lib/profile/pipeline.hpp"
+#include "../../lib/profile/sinks/packed.hpp"
+#include "../../lib/profile/sources/packed.hpp"
+#include "../../lib/profile/pipeline.hpp"
 
 #include <vector>
 

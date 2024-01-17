@@ -4,8 +4,8 @@
 // local include files
 //***************************************************************************
 
-#include <utilities/arch/context-pc.h>
-#include <utilities/arch/mcontext.h>
+#include "../context-pc.h"
+#include "../mcontext.h"
 
 //****************************************************************************
 // interface functions

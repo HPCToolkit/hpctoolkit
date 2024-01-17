@@ -44,8 +44,8 @@
 #ifndef gpu_kernel_table_h
 #define gpu_kernel_table_h
 
-#include "utilities/ip-normalized.h"
-#include "logical/common.h"
+#include "../utilities/ip-normalized.h"
+#include "../logical/common.h"
 
 //******************************************************************************
 // interface operations

@@ -70,11 +70,11 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
+#include "../../../include/gcc-attr.h"
 
 #include "lush-pthread.h"
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 
 //*************************** Forward Declarations **************************

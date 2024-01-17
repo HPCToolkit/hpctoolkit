@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 // This file contains the routines that scan instructions to identify functions
 
-#include <fnbounds.h>
-#include <scan.h>
+#include "fnbounds.h"
+#include "scan.h"
 #include <endian.h>
 
 uint64_t

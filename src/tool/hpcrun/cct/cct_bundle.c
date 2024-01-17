@@ -56,12 +56,12 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/placeholders.h>
+#include "../../../lib/prof-lean/hpcrun-fmt.h"
+#include "../../../lib/prof-lean/placeholders.h"
 
-#include <hpcrun/hpcrun_return_codes.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/unresolved.h>
+#include "../hpcrun_return_codes.h"
+#include "../messages/messages.h"
+#include "../unresolved.h"
 
 #include "cct_bundle.h"
 #include "cct_addr.h"

@@ -8,6 +8,6 @@
 #ifndef UNW_DATATYPES_SPECIFIC_H
 #define UNW_DATATYPES_SPECIFIC_H
 
-#include <unwind/common/std_unw_cursor.h>
+#include "../common/std_unw_cursor.h"
 
 #endif // UNW_DATATYPES_SPECIFIC_H

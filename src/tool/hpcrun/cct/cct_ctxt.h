@@ -48,7 +48,7 @@
 #define CCT_CTXT_H
 #include <stdint.h>
 
-#include <cct/cct.h>
+#include "cct.h"
 
 //
 // data type [abstract part]

@@ -45,7 +45,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 
 #include "gpu-activity.h"
 #include "gpu-activity-channel.h"

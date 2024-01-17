@@ -61,15 +61,15 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/bichannel.h>
+#include "../../../lib/prof-lean/bichannel.h"
 
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 
 #include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"
 #include "gpu-print.h"
-#include "thread_data.h"
+#include "../thread_data.h"
 
 //******************************************************************************
 // macros

@@ -44,8 +44,8 @@
 #include <linux/types.h>
 #include <linux/perf_event.h>
 
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <sample_event.h>
+#include "../../../../lib/prof-lean/hpcrun-fmt.h"
+#include "../../sample_event.h"
 
 #include "perf_constants.h"
 #include "event_custom.h"

@@ -43,7 +43,7 @@
 #define __KERNEL_BLOCKING_H__
 
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
-#include <sample_event.h> // sample_val_t
+#include "../../sample_event.h" // sample_val_t
 
 void kernel_blocking_init();
 

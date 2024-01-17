@@ -4,8 +4,8 @@
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
-#include <messages/messages.h>
-#include <unwind/common/libunwind-interface.h>
+#include "../../messages/messages.h"
+#include "../common/libunwind-interface.h"
 
 #define MYMSG(f,...) hpcrun_pmsg(#f, __VA_ARGS__)
 

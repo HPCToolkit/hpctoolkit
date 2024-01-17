@@ -61,12 +61,12 @@ using std::string;
 
 #include "Args.hpp"
 
-#include <lib/analysis/Util.hpp>
+#include "../../lib/analysis/Util.hpp"
 
-#include <lib/analysis/Raw.hpp>
+#include "../../lib/analysis/Raw.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/NaN.h>
+#include "../../lib/support/diagnostics.h"
+#include "../../lib/support/NaN.h"
 
 //************************ Forward Declarations ******************************
 

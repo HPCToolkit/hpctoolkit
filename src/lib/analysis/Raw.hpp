@@ -66,8 +66,8 @@
 
 //*************************** User Include Files ****************************
 
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/id-tuple.h>
+#include "../prof-lean/hpcrun-fmt.h"
+#include "../prof-lean/id-tuple.h"
 
 //*************************** Forward Declarations ***************************
 

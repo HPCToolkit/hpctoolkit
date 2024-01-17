@@ -70,8 +70,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "extern/valgrind/helgrind.h"
-#include "extern/valgrind/drd.h"
+#include "../../extern/valgrind/helgrind.h"
+#include "../../extern/valgrind/drd.h"
 
 #include <algorithm>
 #include <map>
@@ -82,16 +82,16 @@
 #include <ostream>
 #include <sstream>
 
-#include <lib/binutils/BinUtils.hpp>
-#include <lib/binutils/VMAInterval.hpp>
-#include <lib/binutils/ElfHelper.hpp>
-#include <lib/binutils/InputFile.hpp>
-#include <lib/support/FileNameMap.hpp>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/StringTable.hpp>
-#include <lib/support/diagnostics.h>
-#include <lib/support/dictionary.h>
+#include "../binutils/BinUtils.hpp"
+#include "../binutils/VMAInterval.hpp"
+#include "../binutils/ElfHelper.hpp"
+#include "../binutils/InputFile.hpp"
+#include "../support/FileNameMap.hpp"
+#include "../support/FileUtil.hpp"
+#include "../support/RealPathMgr.hpp"
+#include "../support/StringTable.hpp"
+#include "../support/diagnostics.h"
+#include "../support/dictionary.h"
 
 #include <boost/atomic.hpp>
 
@@ -105,7 +105,7 @@
 #include <Region.h>
 #include <Symtab.h>
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 #include "Struct.hpp"
 #include "Struct-Inline.hpp"

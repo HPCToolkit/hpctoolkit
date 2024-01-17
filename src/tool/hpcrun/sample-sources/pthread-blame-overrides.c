@@ -56,14 +56,14 @@
 #include <semaphore.h>
 #include <stdio.h>
 
-#include <sample-sources/blame-shift/blame-map.h>
-#include <sample-sources/pthread-blame.h>
-#include <hpcrun/thread_data.h>
+#include "blame-shift/blame-map.h"
+#include "pthread-blame.h"
+#include "../thread_data.h"
 
-#include <hpcrun/hpctoolkit.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <messages/messages.h>
+#include "../hpctoolkit.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../messages/messages.h"
 
 //
 // NOTE 1: the following functions (apparently) need dlvsym instead of dlsym to obtain the

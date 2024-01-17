@@ -77,11 +77,11 @@
 
 #include "lush.h"
 
-#include <lib/prof-lean/lush/lush-support.h>
+#include "../../../lib/prof-lean/lush/lush-support.h"
 
-#include <unwind/common/unwind.h> // hpcrun_unw_step()
+#include "../unwind/common/unwind.h" // hpcrun_unw_step()
 
-#include <memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 
 
 //*************************** Forward Declarations **************************

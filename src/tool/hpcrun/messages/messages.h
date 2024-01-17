@@ -58,9 +58,9 @@
 // local includes
 //*****************************************************************************
 
-#include <messages/debug-flag.h>
-#include <messages/fmt.h>
-#include <messages/errors.h>
+#include "debug-flag.h"
+#include "fmt.h"
+#include "errors.h"
 
 //*****************************************************************************
 // macros

@@ -57,9 +57,9 @@
 // local includes
 //*****************************************************************************
 
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
 
 #include "omp-tools.h"
 

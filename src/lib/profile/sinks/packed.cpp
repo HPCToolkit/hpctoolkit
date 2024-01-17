@@ -44,7 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "lib/profile/util/vgannotations.hpp"
+#include "../util/vgannotations.hpp"
 
 #include "packed.hpp"
 

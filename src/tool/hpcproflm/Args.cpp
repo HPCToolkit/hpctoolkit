@@ -67,16 +67,16 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/hpctoolkit-config.h>
-#include <include/gcc-attr.h>
+#include "hpctoolkit-config.h"
+#include "../../include/gcc-attr.h"
 
 #include "Args.hpp"
 
-#include <lib/analysis/Util.hpp>
+#include "../../lib/analysis/Util.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/Trace.hpp>
-#include <lib/support/StrUtil.hpp>
+#include "../../lib/support/diagnostics.h"
+#include "../../lib/support/Trace.hpp"
+#include "../../lib/support/StrUtil.hpp"
 
 //*************************** Forward Declarations **************************
 

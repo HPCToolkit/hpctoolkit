@@ -49,15 +49,15 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/placeholders.h>
+#include "../../../lib/prof-lean/placeholders.h"
 
-#include <hpcrun/cct_backtrace_finalize.h>
-#include <hpcrun/hpcrun-initializers.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/thread_finalize.h>
-#include <hpcrun/trace.h>
-#include <hpcrun/unresolved.h>
+#include "../cct_backtrace_finalize.h"
+#include "../hpcrun-initializers.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
+#include "../thread_finalize.h"
+#include "../trace.h"
+#include "../unresolved.h"
 
 #include "ompt-callstack.h"
 #include "ompt-defer.h"

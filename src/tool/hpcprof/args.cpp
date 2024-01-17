@@ -44,20 +44,20 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "lib/profile/util/vgannotations.hpp"
+#include "../../lib/profile/util/vgannotations.hpp"
 
 #include "args.hpp"
 
-#include "lib/profile/source.hpp"
-#include "lib/profile/sources/hpcrun4.hpp"
-#include "lib/profile/finalizers/kernelsyms.hpp"
-#include "lib/profile/finalizers/struct.hpp"
-#include "include/hpctoolkit-config.h"
-#include "include/hpctoolkit-version.h"
-#include "lib/profile/mpi/all.hpp"
+#include "../../lib/profile/source.hpp"
+#include "../../lib/profile/sources/hpcrun4.hpp"
+#include "../../lib/profile/finalizers/kernelsyms.hpp"
+#include "../../lib/profile/finalizers/struct.hpp"
+#include "hpctoolkit-config.h"
+#include "../../include/hpctoolkit-version.h"
+#include "../../lib/profile/mpi/all.hpp"
 
-#include "lib/prof-lean/cpuset_hwthreads.h"
-#include "lib/prof-lean/hpcrun-fmt.h"
+#include "../../lib/prof-lean/cpuset_hwthreads.h"
+#include "../../lib/prof-lean/hpcrun-fmt.h"
 
 #include <cassert>
 #include <getopt.h>

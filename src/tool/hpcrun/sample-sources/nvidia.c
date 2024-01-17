@@ -75,21 +75,21 @@
 #include "common.h"
 #include "nvidia.h"
 
-#include <hpcrun/control-knob.h>
+#include "../control-knob.h"
 
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/gpu-monitoring.h>
+#include "../gpu/gpu-metrics.h"
+#include "../gpu/gpu-monitoring.h"
 
-#include <hpcrun/gpu/gpu-trace.h>
-#include <hpcrun/gpu/nvidia/cuda-api.h>
-#include <hpcrun/gpu/nvidia/cupti-api.h>
+#include "../gpu/gpu-trace.h"
+#include "../gpu/nvidia/cuda-api.h"
+#include "../gpu/nvidia/cupti-api.h"
 
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/device-finalizers.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/utilities/tokenize.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trace.h>
+#include "../messages/messages.h"
+#include "../device-finalizers.h"
+#include "../sample_sources_registered.h"
+#include "../utilities/tokenize.h"
+#include "../thread_data.h"
+#include "../trace.h"
 
 
 

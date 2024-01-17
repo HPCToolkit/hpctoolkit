@@ -68,10 +68,10 @@
 
 #if REGION_DEBUG
 
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/queues.h>
+#include "../../../lib/prof-lean/spinlock.h"
+#include "../../../lib/prof-lean/queues.h"
 
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 
 
 

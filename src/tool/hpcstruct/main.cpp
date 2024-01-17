@@ -96,20 +96,20 @@ using std::endl;
 #include <string.h>
 #include <unistd.h>
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 #include "Args.hpp"
 #include "Structure-Cache.hpp"
 
-#include <lib/banal/Struct.hpp>
-#include <lib/prof-lean/cpuset_hwthreads.h>
-#include <lib/prof-lean/gpu-binary-naming.h>
-#include <lib/prof-lean/hpcio.h>
-#include <lib/support/diagnostics.h>
-#include <lib/support/realpath.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/IOUtil.hpp>
-#include <lib/support/RealPathMgr.hpp>
+#include "../../lib/banal/Struct.hpp"
+#include "../../lib/prof-lean/cpuset_hwthreads.h"
+#include "../../lib/prof-lean/gpu-binary-naming.h"
+#include "../../lib/prof-lean/hpcio.h"
+#include "../../lib/support/diagnostics.h"
+#include "../../lib/support/realpath.h"
+#include "../../lib/support/FileUtil.hpp"
+#include "../../lib/support/IOUtil.hpp"
+#include "../../lib/support/RealPathMgr.hpp"
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>

@@ -71,7 +71,7 @@
 #include <papiStdEventDefs.h>
 #include <papi.h>
 
-#include "hpcrun_events.h"
+#include <hpcrun_events.h>
 
 papi_event_t hpcrun_event_table[] = {
 { PAPI_L1_DCM,  "PAPI_L1_DCM",  "Level 1 data cache misses" },

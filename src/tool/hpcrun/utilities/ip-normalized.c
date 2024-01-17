@@ -54,10 +54,10 @@
 
 //*************************** User Include Files ****************************
 
-#include "lib/prof-lean/placeholders.h"
+#include "../../../lib/prof-lean/placeholders.h"
 
 #include "ip-normalized.h"
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 //*************************** Forward Declarations **************************
 

@@ -60,19 +60,19 @@
 
 #include "trace.h"
 #include "sample_sources_registered.h"
-#include "newmem.h"
+#include "memory/newmem.h"
 #include "epoch.h"
 #include "cct2metrics.h"
 #include "core_profile_trace_data.h"
 #include "ompt/omp-tools.h"
 #include "logical/common.h"
 
-#include <lush/lush-pthread.i>
-#include <unwind/common/backtrace.h>
-#include <unwind/common/uw_hash.h>
+#include "lush/lush-pthread.i"
+#include "unwind/common/backtrace.h"
+#include "unwind/common/uw_hash.h"
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcio-buffer.h>
+#include "../../lib/prof-lean/hpcio.h"
+#include "../../lib/prof-lean/hpcio-buffer.h"
 
 #define TOOL_THREAD_ID (-1)
 

@@ -57,8 +57,8 @@
 
 #include "level0-api.h"
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
+#include "../../../cct/cct.h"
+#include "../../gpu-activity-channel.h"
 #ifndef __cplusplus
 #include <stdatomic.h>
 #else

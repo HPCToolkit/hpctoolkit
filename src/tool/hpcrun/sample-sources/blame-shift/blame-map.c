@@ -61,9 +61,9 @@
 
 #include "blame-map.h"
 
-#include <hpcrun/messages/messages.h>
+#include "../../messages/messages.h"
 #include <stdatomic.h>
-#include <memory/hpcrun-malloc.h>
+#include "../../memory/hpcrun-malloc.h"
 
 /******************************************************************************
  * macros

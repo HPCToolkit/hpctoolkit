@@ -62,11 +62,11 @@
 #include "unwind.h"
 
 #include "backtrace.h"
-#include "epoch.h"
-#include "monitor.h"
-#include "sample_event.h"
+#include "../../epoch.h"
+#include <monitor.h>
+#include "../../sample_event.h"
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
 //***************************************************************************
 //

@@ -65,12 +65,12 @@
 //******************************************************************************
 
 #include "trampoline.h"
-#include <hpcrun/thread_data.h>
-#include <cct/cct.h>
-#include <messages/messages.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <sample-sources/retcnt.h>
+#include "../../thread_data.h"
+#include "../../cct/cct.h"
+#include "../../messages/messages.h"
+#include "../../safe-sampling.h"
+#include "../../sample_event.h"
+#include "../../sample-sources/retcnt.h"
 #include <monitor.h>
 
 extern bool hpcrun_get_retain_recursion_mode();

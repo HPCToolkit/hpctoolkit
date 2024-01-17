@@ -58,25 +58,25 @@
 // local includes
 //*********************************************************************
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 #include "disabled.h"
 #include "env.h"
 #include "files.h"
-#include "monitor.h"
+#include <monitor.h>
 #include "rank.h"
-#include "string.h"
+#include <string.h>
 #include "trace.h"
 #include "thread_data.h"
 #include "sample_prob.h"
 
-#include <memory/hpcrun-malloc.h>
-#include <messages/messages.h>
+#include "memory/hpcrun-malloc.h"
+#include "messages/messages.h"
 
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcio-buffer.h>
+#include "../../lib/prof-lean/hpcfmt.h"
+#include "../../lib/prof-lean/hpcrun-fmt.h"
+#include "../../lib/prof-lean/hpcio.h"
+#include "../../lib/prof-lean/hpcio-buffer.h"
 
 //*********************************************************************
 // local macros

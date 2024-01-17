@@ -63,10 +63,10 @@
 //*****************************************************************************
 
 #include "dylib.h"
-#include "fnbounds_interface.h"
+#include "../../fnbounds/fnbounds_interface.h"
 
-#include <lib/prof-lean/vdso.h>
-#include <messages/messages.h>
+#include "../../../../lib/prof-lean/vdso.h"
+#include "../../messages/messages.h"
 
 
 

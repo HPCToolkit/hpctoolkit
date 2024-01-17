@@ -56,7 +56,7 @@
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
-#include "zlib.h"
+#include <zlib.h>
 #include <stdint.h>
 #include <cstdio>
 

@@ -47,7 +47,7 @@
 #ifndef EVENT_INFO_H
 #define EVENT_INFO_H
 
-#include <sample-sources/sample_source_obj.h>
+#include "sample-sources/sample_source_obj.h"
 
 typedef struct {
   sample_source_t sample_source; /* what kind of event is used */

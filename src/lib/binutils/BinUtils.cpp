@@ -49,8 +49,8 @@ using std::string;
 
 #include <cstdlib> // for 'free'
 
-#include <lib/support-lean/hpctoolkit_demangle.h>
-#include <lib/support/ProcNameMgr.hpp>
+#include "../support-lean/hpctoolkit_demangle.h"
+#include "../support/ProcNameMgr.hpp"
 
 #include "BinUtils.hpp"
 

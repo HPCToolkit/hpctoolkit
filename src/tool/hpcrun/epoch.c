@@ -56,10 +56,10 @@
 #include "name.h"
 #include "thread_data.h"
 #include "hpcrun_return_codes.h"
-#include "monitor.h"
-#include <trampoline/common/trampoline.h>
-#include <messages/messages.h>
-#include <cct/cct_bundle.h>
+#include <monitor.h>
+#include "trampoline/common/trampoline.h"
+#include "messages/messages.h"
+#include "cct/cct_bundle.h"
 
 void
 hpcrun_reset_epoch(epoch_t* epoch)

@@ -64,10 +64,10 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/messages/messages.h>
+#include "../../messages/messages.h"
 
 #include "cubin-symbols.h"
-#include "lib/prof-lean/elf-helper.h"
+#include "../../../../lib/prof-lean/elf-helper.h"
 
 //******************************************************************************
 // macros

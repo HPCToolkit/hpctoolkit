@@ -47,8 +47,8 @@
 #include "hpcrun4.hpp"
 
 #include "../util/log.hpp"
-#include "lib/prof-lean/hpcrun-fmt.h"
-#include "lib/prof-lean/placeholders.h"
+#include "../../prof-lean/hpcrun-fmt.h"
+#include "../../prof-lean/placeholders.h"
 
 // TODO: Remove and change this once new-cupti is finalized
 #define HPCRUN_GPU_ROOT_NODE 65533

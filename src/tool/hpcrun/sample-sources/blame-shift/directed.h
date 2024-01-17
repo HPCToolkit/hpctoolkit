@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "sample-sources/blame-shift/blame-map.h"
+#include "blame-map.h"
 
 
 /******************************************************************************

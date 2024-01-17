@@ -45,9 +45,9 @@
 // ******************************************************* EndRiceCopyright *
 
 #include "foil.h"
-#include "start-stop.h"
+#include "../start-stop.h"
 
-#include "hpctoolkit.h"
+#include "../hpctoolkit.h"
 
 HPCRUN_EXPOSED int hpctoolkit_sampling_is_active() {
   LOOKUP_FOIL_BASE(base, hpctoolkit_sampling_is_active);

@@ -72,7 +72,7 @@
 
 #include "Args.hpp"
 
-#include <lib/prof/Struct-Tree.hpp>
+#include "../prof/Struct-Tree.hpp"
 
 //*************************** Forward Declarations ***************************
 

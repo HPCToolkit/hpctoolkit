@@ -72,9 +72,9 @@ using std::string;
 
 #include "Args.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/realpath.h>
+#include "../support/diagnostics.h"
+#include "../support/FileUtil.hpp"
+#include "../support/realpath.h"
 
 
 //*************************** Forward Declarations **************************

@@ -47,7 +47,18 @@
 #ifndef MCONTEXT_H
 #define MCONTEXT_H
 
-#include "_mcontext.h"  // do NOT qualify this. The selection is based on arch-specific
-                        // subdir being chosen via a "-I" arg to the compile
+#include "hpctoolkit-config.h"
+
+#if defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64)
+#include "x86-family/_mcontext.h"
+#elif defined(HOST_CPU_PPC)
+#include "ppc64/_mcontext.h"
+#elif defined(HOST_CPU_IA64)
+#include "ia64/_mcontext.h"
+#elif defined(HOST_CPU_ARM64)
+#include "aarch64/_mcontext.h"
+#else
+#error No valid HOST_CPU_* defined
+#endif
 
 #endif // MCONTEXT_H

@@ -70,7 +70,7 @@
 //***************************************************************************
 
 const char *HPCSTRUCT_VERSION_STRING =
-#include <lib/xml/hpc-structure.dtd.version.h>
+#include "../../lib/xml/hpc-structure.dtd.version.h"
   ;
 
 

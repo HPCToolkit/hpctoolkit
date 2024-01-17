@@ -54,8 +54,8 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/stacks.h>
-#include <hpcrun/utilities/ip-normalized.h>
+#include "../../../lib/prof-lean/stacks.h"
+#include "../utilities/ip-normalized.h"
 
 #ifndef __cplusplus
 #include <stdatomic.h>

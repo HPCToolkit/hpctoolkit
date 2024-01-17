@@ -48,7 +48,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/unwind/x86-family/x86-decoder.h>
+#include "../unwind/x86-family/x86-decoder.h"
 
 
 

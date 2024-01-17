@@ -67,10 +67,10 @@
  * local includes
  *****************************************************************************/
 
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/splay-macros.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../../../lib/prof-lean/spinlock.h"
+#include "../../../lib/prof-lean/splay-macros.h"
+#include "../messages/messages.h"
+#include "../memory/hpcrun-malloc.h"
 
 #include "ompt-device-map.h"
 

@@ -41,9 +41,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <hpcrun/control-knob.h>
+#include "../control-knob.h"
 #include <stdatomic.h>
-#include <memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 #include <pthread.h>
 
 

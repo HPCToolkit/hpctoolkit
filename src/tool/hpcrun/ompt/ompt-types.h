@@ -65,7 +65,7 @@
 #include <atomic>
 #endif
 
-#include <hpcrun/cct/cct.h>
+#include "../cct/cct.h"
 
 
 

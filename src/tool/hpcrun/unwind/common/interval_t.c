@@ -10,7 +10,7 @@
 // local include files
 //******************************************************************************
 
-#include <lib/prof-lean/mcs-lock.h>
+#include "../../../../lib/prof-lean/mcs-lock.h"
 #include "interval_t.h"
 
 static char

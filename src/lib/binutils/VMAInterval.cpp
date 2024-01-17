@@ -76,8 +76,8 @@ using std::string;
 
 #include "VMAInterval.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/StrUtil.hpp>
+#include "../support/diagnostics.h"
+#include "../support/StrUtil.hpp"
 
 //*************************** Forward Declarations **************************
 

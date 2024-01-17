@@ -51,10 +51,10 @@
 
 #include "control-knob.h"
 #include "sample_sources_registered.h"
-#include <sample-sources/sample_source_obj.h>
-#include <sample-sources/ss-obj-name.h>
+#include "sample-sources/sample_source_obj.h"
+#include "sample-sources/ss-obj-name.h"
 
-#include <messages/messages.h>
+#include "messages/messages.h"
 
 
 //------------------------------------------------------------------------------
@@ -63,7 +63,7 @@
 
 // external declarations for each of the sample source constructors
 #define SAMPLE_SOURCE_DECL_MACRO(name) void SS_OBJ_CONSTRUCTOR(name)(void);
-#include <sample-sources/ss-list.h>
+#include "sample-sources/ss-list.h"
 #undef SAMPLE_SOURCE_DECL_MACRO
 
 
@@ -86,7 +86,7 @@ hpcrun_sample_sources_register(void)
 
 // invoke each of the sample source constructors
 #define SAMPLE_SOURCE_DECL_MACRO(name) SS_OBJ_CONSTRUCTOR(name)();
-#include <sample-sources/ss-list.h>
+#include "sample-sources/ss-list.h"
 #undef SAMPLE_SOURCE_DECL_MACRO
 
 }

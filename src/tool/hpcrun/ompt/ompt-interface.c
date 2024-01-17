@@ -57,19 +57,19 @@
 // local includes
 //*****************************************************************************
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/cct/cct-node-vector.h>
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/device-finalizers.h>
-#include <hpcrun/hpcrun-initializers.h>
-#include <hpcrun/main.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample-sources/blame-shift/blame-shift.h>
-#include <hpcrun/sample-sources/blame-shift/directed.h>
-#include <hpcrun/sample-sources/blame-shift/undirected.h>
-#include <hpcrun/sample-sources/sample-filters.h>
-#include <hpcrun/thread_data.h>
+#include "../cct/cct.h"
+#include "../cct/cct-node-vector.h"
+#include "../cct2metrics.h"
+#include "../device-finalizers.h"
+#include "../hpcrun-initializers.h"
+#include "../main.h"
+#include "../memory/hpcrun-malloc.h"
+#include "../safe-sampling.h"
+#include "../sample-sources/blame-shift/blame-shift.h"
+#include "../sample-sources/blame-shift/directed.h"
+#include "../sample-sources/blame-shift/undirected.h"
+#include "../sample-sources/sample-filters.h"
+#include "../thread_data.h"
 
 #include <monitor.h>
 
