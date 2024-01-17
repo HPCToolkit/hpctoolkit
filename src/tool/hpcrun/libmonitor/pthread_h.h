@@ -41,10 +41,7 @@
 #ifndef _MONITOR_THREAD_H_
 #define _MONITOR_THREAD_H_
 
-#include "config.h"
-#ifdef MONITOR_USE_PTHREADS
 #include <pthread.h>
-#endif
 #include "queue.h"
 
 #define MONITOR_TN_MAGIC  0x6d746e00
@@ -53,10 +50,8 @@ typedef void *pthread_start_fcn_t(void *);
 
 struct monitor_thread_node {
     LIST_ENTRY(monitor_thread_node) tn_links;
-#ifdef MONITOR_USE_PTHREADS
     pthread_t  tn_self;
     pthread_start_fcn_t  *tn_start_routine;
-#endif
     int    tn_magic;
     int    tn_tid;
     void  *tn_arg;

@@ -79,21 +79,4 @@ extern bool hpcrun_suppress_sample();
 
 extern void hpcrun_prepare_measurement_subsystem(bool is_child);
 
-// Foil base functions
-extern void foilbase_monitor_at_main();
-extern void foilbase_monitor_begin_process_exit(int);
-extern void foilbase_monitor_fini_process(int, void*);
-extern void foilbase_monitor_fini_thread(void*);
-extern void foilbase_monitor_init_mpi(int *argc, char ***argv);
-extern void* foilbase_monitor_init_process(int *argc, char **argv, void* data);
-extern void* foilbase_monitor_init_thread(int tid, void* data);
-extern void foilbase_monitor_mpi_pre_init();
-extern void foilbase_monitor_post_fork(pid_t child, void* data);
-extern void* foilbase_monitor_pre_fork();
-extern size_t foilbase_monitor_reset_stacksize(size_t old_size);
-extern void foilbase_monitor_start_main_init();
-extern void foilbase_monitor_thread_post_create(void* data);
-extern void* foilbase_monitor_thread_pre_create();
-
-
 #endif  // ! main_h

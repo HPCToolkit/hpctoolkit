@@ -60,7 +60,7 @@
 // libmonitor includes
 //******************************************************************************
 
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 
 
 

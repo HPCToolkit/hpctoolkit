@@ -63,7 +63,7 @@
 //***************************************************************************
 
 #include <stdint.h>
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 #include "../../lib/support-lean/OSUtil.h"
 #include "rank.h"
 

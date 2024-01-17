@@ -75,7 +75,7 @@
 
 #include "../../include/queue.h"
 
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 
 //******************************************************************************
 // macro

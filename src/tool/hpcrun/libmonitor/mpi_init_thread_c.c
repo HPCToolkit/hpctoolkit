@@ -7,15 +7,11 @@
  *  $Id$
  */
 
-#include "config.h"
 #include "common.h"
 #include "monitor.h"
 
 typedef int mpi_init_thread_fcn_t(int *, char ***, int, int *);
 
-#ifdef MONITOR_STATIC
-extern mpi_init_thread_fcn_t  __real_MPI_Init_thread;
-#endif
 static mpi_init_thread_fcn_t  *real_mpi_init_thread = NULL;
 
 int

@@ -81,34 +81,6 @@ HPCRUN_EXPOSED void* hpcrun_foil_base_lookup(const char* name) {
   // TODO: Replace the slow lookup process below with a Gprof hash table.
 
   // Core always-on foils
-  if (strcmp(name, "monitor_at_main") == 0)
-    return foilbase_monitor_at_main;
-  if (strcmp(name, "monitor_begin_process_exit") == 0)
-    return foilbase_monitor_begin_process_exit;
-  if (strcmp(name, "monitor_fini_process") == 0)
-    return foilbase_monitor_fini_process;
-  if (strcmp(name, "monitor_fini_thread") == 0)
-    return foilbase_monitor_fini_thread;
-  if (strcmp(name, "monitor_init_mpi") == 0)
-    return foilbase_monitor_init_mpi;
-  if (strcmp(name, "monitor_init_process") == 0)
-    return foilbase_monitor_init_process;
-  if (strcmp(name, "monitor_init_thread") == 0)
-    return foilbase_monitor_init_thread;
-  if (strcmp(name, "monitor_mpi_pre_init") == 0)
-    return foilbase_monitor_mpi_pre_init;
-  if (strcmp(name, "monitor_post_fork") == 0)
-    return foilbase_monitor_post_fork;
-  if (strcmp(name, "monitor_pre_fork") == 0)
-    return foilbase_monitor_pre_fork;
-  if (strcmp(name, "monitor_reset_stacksize") == 0)
-    return foilbase_monitor_reset_stacksize;
-  if (strcmp(name, "monitor_start_main_init") == 0)
-    return foilbase_monitor_start_main_init;
-  if (strcmp(name, "monitor_thread_post_create") == 0)
-    return foilbase_monitor_thread_post_create;
-  if (strcmp(name, "monitor_thread_pre_create") == 0)
-    return foilbase_monitor_thread_pre_create;
   if (strcmp(name, "hpctoolkit_sampling_is_active") == 0)
     return foilbase_hpctoolkit_sampling_is_active;
   if (strcmp(name, "hpctoolkit_sampling_start") == 0)

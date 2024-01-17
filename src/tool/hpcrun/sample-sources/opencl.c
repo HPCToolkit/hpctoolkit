@@ -47,7 +47,7 @@
 
 #include "common.h"
 
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 #include <pthread.h>
 
 #include "../audit/audit-api.h"

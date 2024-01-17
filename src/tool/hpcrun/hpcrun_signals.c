@@ -72,7 +72,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 #include "hpcrun_signals.h"
 #include "audit/audit-api.h"
 

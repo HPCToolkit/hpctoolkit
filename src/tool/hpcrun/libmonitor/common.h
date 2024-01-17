@@ -37,28 +37,13 @@
 #ifndef _MONITOR_COMMON_H_
 #define _MONITOR_COMMON_H_
 
-#include "config.h"
 
 #include <sys/types.h>
-#ifdef MONITOR_DYNAMIC
 #include <dlfcn.h>
-#endif
 #include <err.h>
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
-
-/*
- *  Exactly one of MONITOR_STATIC and MONITOR_DYNAMIC must be defined,
- *  preferably on the compile line (to allow for multiple builds of
- *  the same file).
- */
-#if !defined(MONITOR_STATIC) && !defined(MONITOR_DYNAMIC)
-#error Must define MONITOR_STATIC or MONITOR_DYNAMIC.
-#endif
-#if defined(MONITOR_STATIC) && defined(MONITOR_DYNAMIC)
-#error Must not define both MONITOR_STATIC and MONITOR_DYNAMIC.
-#endif
 
 #ifndef RTLD_NEXT
 #define RTLD_NEXT  ((void *) -1l)
@@ -130,25 +115,13 @@ void *monitor_dlsym(const char *symbol);
     }                                                   \
 } while (0)
 
-#ifdef MONITOR_STATIC
-#define MONITOR_WRAP_NAME_HELP(name)  __wrap_##name
-#define MONITOR_GET_REAL_NAME_HELP(var, name)  do {             \
-    var = &name;                                                \
-    MONITOR_DEBUG("%s() = %p\n", #name , var);                  \
-} while (0)
-#define MONITOR_GET_REAL_NAME_WRAP_HELP(var, name)  do {        \
-    var = &__real_##name;                                       \
-    MONITOR_DEBUG("%s() = %p\n", "__real_" #name , var);        \
-} while (0)
-#else
 #define MONITOR_WRAP_NAME_HELP(name)  name
 #define MONITOR_GET_REAL_NAME_HELP(var, name)  \
     MONITOR_REQUIRE_DLSYM(var, #name )
 #define MONITOR_GET_REAL_NAME_WRAP_HELP(var, name)  \
     MONITOR_REQUIRE_DLSYM(var, #name )
-#endif
 
-#define MONITOR_WRAP_NAME(name)  MONITOR_WRAP_NAME_HELP(name)
+#define MONITOR_WRAP_NAME(name)  __attribute__((visibility("default"))) MONITOR_WRAP_NAME_HELP(name)
 #define MONITOR_GET_REAL_NAME(var, name)  \
     MONITOR_GET_REAL_NAME_HELP(var, name)
 #define MONITOR_GET_REAL_NAME_WRAP(var, name)  \

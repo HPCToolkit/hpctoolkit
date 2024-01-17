@@ -66,7 +66,7 @@
 #include "../../hpcrun_stats.h"
 #include "../../control-knob.h"
 
-#include <monitor.h>
+#include "../../libmonitor/monitor.h"
 
 #include "../../trampoline/common/trampoline.h"
 #include "dbg_backtrace.h"

@@ -77,7 +77,7 @@
 #include "cct_insert_backtrace.h"
 #include "utilities/arch/context-pc.h"
 
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 
 #include "messages/messages.h"
 

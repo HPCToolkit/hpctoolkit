@@ -7,16 +7,11 @@
  *  $Id$
  */
 
-#include "config.h"
 #include "common.h"
 #include "monitor.h"
 
 typedef void mpi_comm_fcn_t(int *, int *, int *);
 
-#ifdef MONITOR_STATIC
-extern mpi_comm_fcn_t  mpi_comm_size;
-extern mpi_comm_fcn_t  __real_mpi_comm_rank;
-#endif
 static mpi_comm_fcn_t  *real_mpi_comm_size = NULL;
 static mpi_comm_fcn_t  *real_mpi_comm_rank = NULL;
 

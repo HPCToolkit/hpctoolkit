@@ -7,15 +7,11 @@
  *  $Id$
  */
 
-#include "config.h"
 #include "common.h"
 #include "monitor.h"
 
 typedef void mpi_finalize_fcn_t(int *);
 
-#ifdef MONITOR_STATIC
-extern mpi_finalize_fcn_t  __real_mpi_finalize;
-#endif
 static mpi_finalize_fcn_t  *real_mpi_finalize = NULL;
 
 void

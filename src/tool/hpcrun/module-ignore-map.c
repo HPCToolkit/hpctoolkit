@@ -81,7 +81,7 @@
 // local includes
 //***************************************************************************
 
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 
 #include "../../lib/prof-lean/pfq-rwlock.h"
 #include "loadmap.h"

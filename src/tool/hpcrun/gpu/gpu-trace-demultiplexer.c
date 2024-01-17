@@ -54,7 +54,7 @@
 #include "gpu-trace-demultiplexer.h"
 #include "gpu-print.h"
 
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 
 //******************************************************************************
 // type declarations

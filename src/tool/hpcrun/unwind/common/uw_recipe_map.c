@@ -93,7 +93,7 @@
 #include "../../messages/messages.h"
 
 // libmonitor functions
-#include <monitor.h>
+#include "../../libmonitor/monitor.h"
 
 //******************************************************************************
 // global include files

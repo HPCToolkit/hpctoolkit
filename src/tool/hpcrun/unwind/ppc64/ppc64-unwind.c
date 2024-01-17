@@ -61,7 +61,7 @@
 
 //************************ External Include Files *************************
 
-#include <monitor.h>
+#include "../../libmonitor/monitor.h"
 
 
 //*************************** User Include Files ****************************

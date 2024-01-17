@@ -106,7 +106,7 @@ extern "C"
 #include "../../../../../lib/prof-lean/spinlock.h"
 #include "../../../../../lib/prof-lean/crypto-hash.h"
 #include "../../../messages/messages.h"
-#include <monitor.h>
+#include "../../../libmonitor/monitor.h"
 };
 
 #include "../../../../../lib/profile/util/locked_unordered.hpp"

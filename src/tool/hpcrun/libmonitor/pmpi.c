@@ -43,7 +43,6 @@
  *  to put it all in one file.
  */
 
-#include "config.h"
 #include "common.h"
 #include "monitor.h"
 #include <stdio.h>

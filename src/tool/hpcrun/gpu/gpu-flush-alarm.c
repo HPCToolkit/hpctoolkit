@@ -68,7 +68,7 @@
 //******************************************************************************
 
 #include "gpu-flush-alarm.h"
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 #include "../messages/messages.h"
 #include "../utilities/linuxtimer.h"
 

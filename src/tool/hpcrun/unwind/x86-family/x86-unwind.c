@@ -66,7 +66,7 @@
 // external includes
 //***************************************************************************
 
-#include <monitor.h>
+#include "../../libmonitor/monitor.h"
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 

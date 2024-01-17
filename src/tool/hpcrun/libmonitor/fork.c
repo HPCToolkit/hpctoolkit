@@ -39,19 +39,12 @@
  *    execl, execlp, execle, execv, execvp, execve
  *    system
  *
- *  Support functions:
- *
- *    monitor_real_execve
- *    monitor_real_system
  */
 
-#include "config.h"
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
-#ifdef MONITOR_DYNAMIC
 #include <dlfcn.h>
-#endif
 #include <err.h>
 #include <errno.h>
 #include <limits.h>
@@ -64,6 +57,8 @@
 
 #include "common.h"
 #include "monitor.h"
+
+#include "../audit/audit-api.h"
 
 extern char **environ;
 
@@ -88,16 +83,6 @@ typedef int sigaction_fcn_t(int, const struct sigaction *,
 typedef int sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
 typedef int system_fcn_t(const char *);
 typedef void *malloc_fcn_t(size_t);
-
-#ifdef MONITOR_STATIC
-extern fork_fcn_t    __real_fork;
-extern execv_fcn_t   __real_execv;
-extern execv_fcn_t   __real_execvp;
-extern execve_fcn_t  __real_execve;
-extern sigaction_fcn_t    __real_sigaction;
-extern sigprocmask_fcn_t  __real_sigprocmask;
-extern system_fcn_t       __real_system;
-#endif
 
 static fork_fcn_t    *real_fork = NULL;
 static execv_fcn_t   *real_execv = NULL;
@@ -141,9 +126,7 @@ monitor_fork_init(void)
 }
 
 /*
- *  Copy the process's environment and omit LD_PRELOAD.  This is used
- *  by monitor_real_system() so that we don't monitor the system
- *  function.
+ *  Copy the process's environment and omit LD_PRELOAD.
  *
  *  For most binaries, unsetenv(LD_PRELOAD) would work.  But inside
  *  bash, unsetenv() doesn't seem to change environ (why!?).  Also,
@@ -364,9 +347,7 @@ monitor_execv(const char *path, char *const argv[])
                   (int)getpid(), path);
     if (is_exec) {
         monitor_end_process_fcn(MONITOR_EXIT_EXEC);
-#ifdef MONITOR_DYNAMIC
         monitor_end_library_fcn();
-#endif
     }
     ret = (*real_execv)(path, argv);
 
@@ -393,9 +374,7 @@ monitor_execvp(const char *file, char *const argv[])
                   (int)getpid(), file);
     if (is_exec) {
         monitor_end_process_fcn(MONITOR_EXIT_EXEC);
-#ifdef MONITOR_DYNAMIC
         monitor_end_library_fcn();
-#endif
     }
     ret = (*real_execvp)(file, argv);
 
@@ -422,9 +401,7 @@ monitor_execve(const char *path, char *const argv[], char *const envp[])
                   (int)getpid(), path);
     if (is_exec) {
         monitor_end_process_fcn(MONITOR_EXIT_EXEC);
-#ifdef MONITOR_DYNAMIC
         monitor_end_library_fcn();
-#endif
     }
     ret = (*real_execve)(path, argv, envp);
 
@@ -578,7 +555,7 @@ monitor_system(const char *command, int callback)
         arglist[3] = NULL;
         (*real_execve)(SHELL, arglist,
                        callback ? environ : monitor_copy_environ(environ));
-        monitor_real_exit(127);
+        auditor_exports->exit(127);
     }
     else {
         /* Parent process. */
@@ -618,39 +595,4 @@ MONITOR_WRAP_NAME(system)(const char *command)
     }
 
     return ret;
-}
-
-/*
- *----------------------------------------------------------------------
- *  CLIENT SUPPORT FUNCTIONS
- *----------------------------------------------------------------------
- */
-
-/*
- *  Don't call fini process and remove LD_PRELOAD from the environment
- *  so the new program won't be monitored.
- */
-int
-monitor_real_execve(const char *path, char *const argv[], char *const envp[])
-{
-    monitor_fork_init();
-    MONITOR_DEBUG("command = %s\n", path);
-
-    if (path == NULL || argv == NULL || envp == NULL) {
-        MONITOR_DEBUG("error: null arg: path: %s, argv: %p, envp: %p\n",
-                      path, argv, envp);
-        errno = EACCES;
-        return -1;
-    }
-
-    return (*real_execve)(path, argv, monitor_copy_environ(envp));
-}
-
-/*
- *  Run command unmonitored and without callbacks.
- */
-int
-monitor_real_system(const char *command)
-{
-    return monitor_system(command, FALSE);
 }

@@ -68,7 +68,7 @@
 #include "../../sample-sources/libdl.h"
 
 #include "../../utilities/hpcrun-nanotime.h"
-#include <monitor.h>
+#include "../../libmonitor/monitor.h"
 
 
 

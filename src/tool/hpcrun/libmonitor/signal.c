@@ -34,11 +34,8 @@
  *  $Id$
  */
 
-#include "config.h"
 #include <sys/types.h>
-#ifdef MONITOR_DYNAMIC
 #include <dlfcn.h>
-#endif
 #include <err.h>
 #include <errno.h>
 #include <limits.h>
@@ -68,11 +65,6 @@ typedef int  sigaction_fcn_t(int, const struct sigaction *,
                              struct sigaction *);
 typedef int  sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
 typedef void sighandler_fcn_t(int);
-
-#ifdef MONITOR_STATIC
-extern sigaction_fcn_t    __real_sigaction;
-extern sigprocmask_fcn_t  __real_sigprocmask;
-#endif
 
 static sigaction_fcn_t    *real_sigaction = NULL;
 static sigprocmask_fcn_t  *real_sigprocmask = NULL;
@@ -105,9 +97,6 @@ static int monitor_signal_avoid_list[] = {
  *  On BG/Q, sig 37 = SIGMUFIFOFULL is non-terminating.
  */
 static int monitor_signal_noterm_list[] = {
-#ifdef MONITOR_BLUE_GENE_Q
-    37,
-#endif
     SIGCHLD, SIGCONT, SIGURG, SIGWINCH, -1
 };
 
@@ -129,7 +118,7 @@ static int monitor_signal_stop_list[] = {
  *  comes from the --enable-client-signals option in configure.
  */
 static int monitor_signal_open_list[] = {
-    MONITOR_CLIENT_SIGNALS_LIST  -1
+    SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38, -1
 };
 
 /*  Signals that monitor tries for thread shootdown.  We build this
@@ -249,9 +238,7 @@ monitor_signal_handler(int sig, siginfo_t *info, void *context)
         }
 
         monitor_end_process_fcn(MONITOR_EXIT_SIGNAL);
-#ifdef MONITOR_DYNAMIC
         monitor_end_library_fcn();
-#endif
         action.sa_handler = SIG_DFL;
         action.sa_flags = 0;
         sigemptyset(&action.sa_mask);
@@ -498,7 +485,7 @@ monitor_choose_shootdown_early(void)
     /*
      * See if this was set in configure.
      */
-    sig = MONITOR_CONFIG_SHOOTDOWN_SIGNAL;
+    sig = 0;
     if (sig > 0 && sig < MONITOR_NSIG
         && !monitor_signal_array[sig].mse_avoid
         && !monitor_signal_array[sig].mse_invalid
@@ -540,173 +527,6 @@ monitor_shootdown_signal(void)
     monitor_choose_shootdown_early();
     return shootdown_signal;
 }
-
-#if 0
-/*
- *  Old, delayed way of choosing the shootdown signal and keeping the
- *  client signals open.  The libunwind use case makes this approach
- *  of delaying the shootdown choice near impossible.
- */
-
-/*
- *  Delete from "set" any signals on the keep open list.  Always leave
- *  at least one unmasked signal to use for thread shootdown.
- */
-void
-monitor_remove_client_signals(sigset_t *set)
-{
-    struct monitor_signal_entry *mse;
-    int i, sig, old_avail, new_avail;
-
-    if (set == NULL) {
-        return;
-    }
-
-#if MONITOR_CHOOSE_SHOOTDOWN_EARLY
-
-    for (sig = 1; sig < MONITOR_NSIG; sig++) {
-        mse = &monitor_signal_array[sig];
-        if (!mse->mse_avoid && !mse->mse_invalid && mse->mse_keep_open) {
-            sigdelset(set, sig);
-        }
-    }
-    return;
-
-#else
-    /*
-     * The old, delayed way of choosing the shootdown signal is broken
-     * when using interrupts (deadlocks with sigprocmask).  This could
-     * be fixed with a non-blocking data structure, but the libunwind
-     * use case makes that pointless.
-     */
-    MONITOR_SIGNAL_LOCK;
-
-    if (shootdown_signal < 0) {
-        /*
-         * Try to find unblocked signals in the old and new sets.  The
-         * new mask could cover all available signals, but unless
-         * something strange happens, there should always at least one
-         * available signal in the old mask.
-         */
-        old_avail = -1;
-        new_avail = -1;
-        for (i = 0; monitor_shootdown_list[i] > 0; i++) {
-            sig = monitor_shootdown_list[i];
-            mse = &monitor_signal_array[sig];
-            if (! mse->mse_blocked) {
-                if (old_avail < 0) {
-                    old_avail = sig;
-                }
-                if (sigismember(set, sig) == 0) {
-                    new_avail = sig;
-                    break;
-                }
-            }
-        }
-        /*
-         * If the new mask covers all available signals, then choose
-         * the shootdown signal now and keep it open.
-         */
-        if (old_avail > 0 && new_avail < 0) {
-            shootdown_signal = old_avail;
-            monitor_signal_array[old_avail].mse_keep_open = 1;
-        }
-    }
-    /*
-     * Remove the keep open signals from the set and update the
-     * blocked list.
-     */
-    for (sig = 1; sig < MONITOR_NSIG; sig++) {
-        mse = &monitor_signal_array[sig];
-        if (!mse->mse_avoid && !mse->mse_invalid) {
-            if (mse->mse_keep_open) {
-                sigdelset(set, sig);
-            }
-            else if (sigismember(set, sig) == 1) {
-                mse->mse_blocked = 1;
-            }
-        }
-    }
-    MONITOR_SIGNAL_UNLOCK;
-
-#endif
-}
-
-/*
- *  Return a signal unused by the client or application, if possible.
- */
-int
-monitor_shootdown_signal(void)
-{
-    if (shootdown_signal > 0) {
-        return shootdown_signal;
-    }
-
-#if MONITOR_CHOOSE_SHOOTDOWN_EARLY
-
-    monitor_signal_init();
-    monitor_choose_shootdown_early();
-    return shootdown_signal;
-
-#else
-
-    struct monitor_signal_entry *mse;
-    int i, sig, ans1, ans2, ans3;
-
-    MONITOR_SIGNAL_LOCK;
-
-    /*
-     * Order of preference for the shootdown signal.
-     *  1. unblocked and no client or application handler,
-     *  2. unblocked and no client handler,
-     *  3. any unblocked signal.
-     */
-    ans1 = -1;
-    ans2 = -1;
-    ans3 = -1;
-    for (i = 0; monitor_shootdown_list[i] > 0; i++) {
-        sig = monitor_shootdown_list[i];
-        mse = &monitor_signal_array[sig];
-        if (! mse->mse_blocked) {
-            if (ans3 < 0) {
-                ans3 = sig;
-            }
-            if (mse->mse_client_handler == NULL) {
-                if (ans2 < 0) {
-                    ans2 = sig;
-                }
-                if (! mse->mse_appl_hand) {
-                    ans1 = sig;
-                    break;
-                }
-            }
-        }
-    }
-    if (ans1 > 0) {
-        shootdown_signal = ans1;
-    }
-    else if (ans2 > 0) {
-        shootdown_signal = ans2;
-    }
-    else if (ans3 > 0) {
-        shootdown_signal = ans3;
-    }
-    else {
-        /* Probably can never get here. */
-        MONITOR_DEBUG("warning: unable to find satisfactory signal, "
-                      "using: %d\n", last_resort_signal);
-        shootdown_signal = last_resort_signal;
-    }
-
-    MONITOR_SIGNAL_UNLOCK;
-
-    return shootdown_signal;
-
-#endif
-}
-
-#endif  // end of old shootdown, client signals code
-
 
 /*
  *----------------------------------------------------------------------
@@ -770,29 +590,6 @@ monitor_sigaction(int sig, monitor_sighandler_t *handler,
     }
 
     return (0);
-}
-
-/*
- *  Client function for generating a core file.  Reset the default
- *  signal handler, clear the signal mask and raise SIGABRT.
- */
-void
-monitor_real_abort(void)
-{
-    struct sigaction action;
-
-    MONITOR_DEBUG1("\n");
-    MONITOR_GET_REAL_NAME_WRAP(real_sigaction, sigaction);
-    MONITOR_GET_REAL_NAME_WRAP(real_sigprocmask, sigprocmask);
-
-    action.sa_handler = SIG_DFL;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    (*real_sigaction)(SIGABRT, &action, NULL);
-    (*real_sigprocmask)(SIG_SETMASK, &action.sa_mask, NULL);
-    raise(SIGABRT);
-
-    MONITOR_ERROR1("raise failed\n");
 }
 
 /*

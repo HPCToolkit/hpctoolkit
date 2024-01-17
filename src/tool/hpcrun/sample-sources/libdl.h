@@ -70,7 +70,7 @@
 // local include files
 //*****************************************************************************
 
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 
 
 

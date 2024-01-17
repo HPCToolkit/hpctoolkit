@@ -85,7 +85,7 @@
 
 #include "../gpu/ompt/ompt-gpu-api.h"
 
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 
 #ifdef ENABLE_CUDA
 #include "../gpu/nvidia/cuda-api.h"

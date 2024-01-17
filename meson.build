@@ -107,17 +107,6 @@ endif
 # These dependencies don't ship any dependency files, so we use CMake by default and fall back to
 # compiler checks as a robustness case. The final fallback to dependency() in each stanza is to
 # provide a better error message and enable wrap fallbacks.
-libmonitor_dep = dependency('Libmonitor', method: 'cmake', cmake_module_path: 'cmake', required: false)
-if not libmonitor_dep.found()
-  _libmonitor_lib = cc.find_library('monitor', has_headers: ['monitor.h'], required: false)
-  if _libmonitor_lib.found()
-    libmonitor_dep = declare_dependency(dependencies: _libmonitor_lib, version: 'unknown')
-  endif
-endif
-if not libmonitor_dep.found()
-  libmonitor_dep = dependency('libmonitor', method: 'system')
-endif
-
 libiberty_dep = dependency('Libiberty', method: 'cmake', cmake_module_path: 'cmake', required: false)
 if not libiberty_dep.found() and (cc.has_header('libiberty/demangle.h') or cc.has_header('demangle.h'))
   _libiberty_lib = cc.find_library('iberty', required: false)

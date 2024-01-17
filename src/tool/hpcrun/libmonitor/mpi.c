@@ -39,7 +39,6 @@
  *  for defining weak versions of these functions in main.c.
  */
 
-#include "config.h"
 #include "common.h"
 #include "monitor.h"
 

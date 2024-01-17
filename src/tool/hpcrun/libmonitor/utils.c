@@ -37,7 +37,6 @@
 #include <signal.h>
 #include <stdio.h>
 
-#include "config.h"
 #include "common.h"
 
 /*

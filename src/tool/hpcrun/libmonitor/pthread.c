@@ -50,18 +50,14 @@
  *    monitor_stack_bottom
  *    monitor_in_start_func_wide
  *    monitor_in_start_func_narrow
- *    monitor_real_pthread_sigmask
  *    monitor_broadcast_signal
  *    monitor_get_addr_thread_start
  */
 
-#include "config.h"
 #include <sys/time.h>
 #include <sys/types.h>
 #include <alloca.h>
-#ifdef MONITOR_DYNAMIC
 #include <dlfcn.h>
-#endif
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
@@ -89,19 +85,12 @@
 /*
  *  On some systems, pthread_equal() and pthread_cleanup_push/pop()
  *  are macros and sometimes they're library functions.
+ *  NB: We don't actually override these symbols, so we don't care whether they're functions or
+ *  macros, we can call them all the same like so.
  */
-#ifdef  MONITOR_PTHREAD_EQUAL_IS_FCN
-#define PTHREAD_EQUAL(t1, t2)  ((*real_pthread_equal)((t1), (t2)))
-#else
 #define PTHREAD_EQUAL(t1, t2)  pthread_equal((t1), (t2))
-#endif
-#ifdef  MONITOR_PTHREAD_CLEANUP_PUSH_IS_FCN
-#define PTHREAD_CLEANUP_PUSH(fcn, arg)  ((*real_pthread_cleanup_push)((fcn), (arg)))
-#define PTHREAD_CLEANUP_POP(arg)        ((*real_pthread_cleanup_pop)(arg))
-#else
 #define PTHREAD_CLEANUP_PUSH(fcn, arg)  pthread_cleanup_push((fcn), (arg))
 #define PTHREAD_CLEANUP_POP(arg)        pthread_cleanup_pop(arg)
-#endif
 
 /*
  *  External functions.
@@ -116,7 +105,6 @@ typedef int   pthread_create_fcn_t(PTHREAD_CREATE_PARAM_LIST);
 typedef int   pthread_attr_init_fcn_t(pthread_attr_t *);
 typedef int   pthread_attr_getstacksize_fcn_t(const pthread_attr_t *, size_t *);
 typedef int   pthread_attr_setstacksize_fcn_t(pthread_attr_t *, size_t);
-typedef int   pthread_equal_fcn_t(pthread_t, pthread_t);
 typedef void  pthread_exit_fcn_t(void *);
 typedef int   pthread_key_create_fcn_t(pthread_key_t *, void (*)(void *));
 typedef int   pthread_key_delete_fcn_t(pthread_key_t);
@@ -124,8 +112,6 @@ typedef int   pthread_kill_fcn_t(pthread_t, int);
 typedef pthread_t pthread_self_fcn_t(void);
 typedef void *pthread_getspecific_fcn_t(pthread_key_t);
 typedef int   pthread_setspecific_fcn_t(pthread_key_t, const void *);
-typedef void  pthread_cleanup_push_fcn_t(void (*)(void *), void *);
-typedef void  pthread_cleanup_pop_fcn_t(int);
 typedef int   pthread_setcancelstate_fcn_t(int, int *);
 typedef int   sigaction_fcn_t(int, const struct sigaction *,
                               struct sigaction *);
@@ -135,23 +121,11 @@ typedef int   sigtimedwait_fcn_t(const sigset_t *, siginfo_t *,
                                  const struct timespec *);
 typedef void *malloc_fcn_t(size_t);
 
-#ifdef MONITOR_STATIC
-extern pthread_create_fcn_t  __real_pthread_create;
-extern pthread_exit_fcn_t    __real_pthread_exit;
-extern sigwaitinfo_fcn_t     __real_sigwaitinfo;
-extern sigtimedwait_fcn_t    __real_sigtimedwait;
-#ifdef MONITOR_USE_SIGNALS
-extern sigaction_fcn_t    __real_sigaction;
-extern sigprocmask_fcn_t  __real_pthread_sigmask;
-#endif
-#endif
-
 static pthread_create_fcn_t  *real_pthread_create;
 static pthread_attr_init_fcn_t  *real_pthread_attr_init;
 static pthread_attr_init_fcn_t  *real_pthread_attr_destroy;
 static pthread_attr_getstacksize_fcn_t  *real_pthread_attr_getstacksize;
 static pthread_attr_setstacksize_fcn_t  *real_pthread_attr_setstacksize;
-static pthread_equal_fcn_t  *real_pthread_equal;
 static pthread_exit_fcn_t   *real_pthread_exit;
 static pthread_key_create_fcn_t   *real_pthread_key_create;
 static pthread_key_delete_fcn_t   *real_pthread_key_delete;
@@ -159,8 +133,6 @@ static pthread_kill_fcn_t  *real_pthread_kill;
 static pthread_self_fcn_t  *real_pthread_self;
 static pthread_getspecific_fcn_t  *real_pthread_getspecific;
 static pthread_setspecific_fcn_t  *real_pthread_setspecific;
-static pthread_cleanup_push_fcn_t  *real_pthread_cleanup_push;
-static pthread_cleanup_pop_fcn_t   *real_pthread_cleanup_pop;
 static pthread_setcancelstate_fcn_t  *real_pthread_setcancelstate;
 static sigaction_fcn_t    *real_sigaction;
 static sigprocmask_fcn_t  *real_pthread_sigmask;
@@ -247,27 +219,15 @@ monitor_thread_name_init(void)
     MONITOR_GET_REAL_NAME(real_pthread_attr_destroy, pthread_attr_destroy);
     MONITOR_GET_REAL_NAME(real_pthread_attr_getstacksize, pthread_attr_getstacksize);
     MONITOR_GET_REAL_NAME(real_pthread_attr_setstacksize, pthread_attr_setstacksize);
-#ifdef MONITOR_PTHREAD_EQUAL_IS_FCN
-    MONITOR_GET_REAL_NAME(real_pthread_equal, pthread_equal);
-#endif
     MONITOR_GET_REAL_NAME(real_pthread_key_create, pthread_key_create);
     MONITOR_GET_REAL_NAME(real_pthread_key_delete, pthread_key_delete);
     MONITOR_GET_REAL_NAME(real_pthread_kill, pthread_kill);
     MONITOR_GET_REAL_NAME(real_pthread_self, pthread_self);
     MONITOR_GET_REAL_NAME(real_pthread_getspecific,  pthread_getspecific);
     MONITOR_GET_REAL_NAME(real_pthread_setspecific,  pthread_setspecific);
-#ifdef MONITOR_PTHREAD_CLEANUP_PUSH_IS_FCN
-    MONITOR_GET_REAL_NAME(real_pthread_cleanup_push, pthread_cleanup_push);
-    MONITOR_GET_REAL_NAME(real_pthread_cleanup_pop,  pthread_cleanup_pop);
-#endif
     MONITOR_GET_REAL_NAME(real_pthread_setcancelstate, pthread_setcancelstate);
-#ifdef MONITOR_USE_SIGNALS
     MONITOR_GET_REAL_NAME_WRAP(real_sigaction, sigaction);
     MONITOR_GET_REAL_NAME_WRAP(real_pthread_sigmask, pthread_sigmask);
-#else
-    MONITOR_GET_REAL_NAME(real_sigaction, sigaction);
-    MONITOR_GET_REAL_NAME(real_pthread_sigmask, pthread_sigmask);
-#endif
     MONITOR_GET_REAL_NAME_WRAP(real_sigwaitinfo, sigwaitinfo);
     MONITOR_GET_REAL_NAME_WRAP(real_sigtimedwait, sigtimedwait);
 }
@@ -474,35 +434,6 @@ monitor_shootdown_handler(int sig)
     (*real_pthread_setcancelstate)(old_state, NULL);
 }
 
-#if 0
-/*
- *  Call monitor_thread_support.
- */
-static inline void
-monitor_call_thread_support(void)
-{
-    if (monitor_thread_support_done) {
-        MONITOR_WARN1("attempted to call thread support twice\n");
-        return;
-    }
-    MONITOR_DEBUG1("calling monitor_init_thread_support() ...\n");
-    monitor_init_thread_support();
-    monitor_thread_support_done = 1;
-}
-
-/*
- *  Called from main.c at begin process time to release threads
- *  waiting on deferred thread support.
- */
-void
-monitor_thread_release(void)
-{
-    if (monitor_has_used_threads)
-        monitor_call_thread_support();
-
-    monitor_has_reached_main = 1;
-}
-#endif
 
 /*
  *  Called from main.c at end process time for possible thread cleanup.
@@ -743,17 +674,6 @@ monitor_in_start_func_narrow(void *addr)
 }
 
 /*
- *  Client access to the real pthread_sigmask().
- */
-int
-monitor_real_pthread_sigmask(int how, const sigset_t *set,
-                             sigset_t *oldset)
-{
-    monitor_thread_name_init();
-    return (*real_pthread_sigmask)(how, set, oldset);
-}
-
-/*
  *  Send signal 'sig' to every thread except ourself.  Note: we call
  *  this function from a signal handler, so to avoid deadlock, we
  *  can't wait on a lock.  Instead, we can only try the lock and fail
@@ -946,22 +866,6 @@ monitor_begin_thread(void *arg)
 
     MONITOR_ASM_LABEL(monitor_thread_fence1);
     MONITOR_DEBUG1("\n");
-
-#if 0
-    /*
-     * Wait for monitor_init_thread_support() to finish in the main
-     * thread before this thread runs.
-     *
-     * Note: if this thread is created before libc_start_main (OpenMP
-     * does this), then this will wait for both init_process and
-     * thread_support to finish from libc_start_main.  And that has
-     * the potential to deadlock if the application waits for this
-     * thread to accomplish something before it finishes its library
-     * init.  (An evil thing for it to do, but it's possible.)
-     */
-    while (! monitor_thread_support_done)
-        usleep(MONITOR_POLL_USLEEP_TIME);
-#endif
 
     /*
      * Don't create any new threads after someone has called exit().
@@ -1203,7 +1107,6 @@ MONITOR_WRAP_NAME(pthread_exit)(void *data)
  *  Allow the application to modify the thread signal mask, but don't
  *  let it change the mask for any signal in the keep open list.
  */
-#ifdef MONITOR_USE_SIGNALS
 int
 MONITOR_WRAP_NAME(pthread_sigmask)(int how, const sigset_t *set,
                                    sigset_t *oldset)
@@ -1222,7 +1125,6 @@ MONITOR_WRAP_NAME(pthread_sigmask)(int how, const sigset_t *set,
 
     return (*real_pthread_sigmask)(how, set, oldset);
 }
-#endif
 
 /*
  *----------------------------------------------------------------------

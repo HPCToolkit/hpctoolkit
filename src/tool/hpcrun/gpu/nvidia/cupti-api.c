@@ -65,7 +65,7 @@
 #include <linux/limits.h>  // PATH_MAX
 #include <string.h>        // strstr
 
-#include <monitor.h>
+#include "../../libmonitor/monitor.h"
 #include "../../audit/binding.h"
 #include "../../audit/audit-api.h"
 

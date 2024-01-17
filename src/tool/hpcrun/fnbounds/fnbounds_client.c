@@ -105,7 +105,7 @@
 #include "../main.h"
 #include "../messages/messages.h"
 #include "../sample_sources_all.h"
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 #include "../audit/audit-api.h"
 #else
 #include "../../hpcfnbounds/syserv-mesg.h"

@@ -63,7 +63,7 @@
 #include "disabled.h"
 #include "env.h"
 #include "files.h"
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 #include "rank.h"
 #include <string.h>
 #include "trace.h"
