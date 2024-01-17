@@ -98,35 +98,35 @@ MONITOR_WRAP_NAME(PMPI_Init)(int *argc, char ***argv)
     MONITOR_GET_REAL_NAME_WRAP(real_pmpi_init, PMPI_Init);
     count = monitor_mpi_init_count(1);
     if (count == 1) {
-	MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
-	monitor_mpi_pre_init();
+        MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
+        monitor_mpi_pre_init();
     }
     ret = (*real_pmpi_init)(argc, argv);
     if (count == 1) {
-	MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
-	monitor_init_mpi(argc, argv);
+        MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
+        monitor_init_mpi(argc, argv);
     }
     monitor_mpi_init_count(-1);
 
     return (ret);
 }
 
-#define FORTRAN_INIT_BODY(var_name, fcn_name)			\
-    int argc, count;						\
-    char **argv;						\
-    MONITOR_DEBUG1("\n");					\
-    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);		\
-    count = monitor_mpi_init_count(1);				\
-    if (count == 1) {						\
-	MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n"); \
-	monitor_mpi_pre_init();					\
-    }								\
-    (*var_name)(ierror);					\
-    if (count == 1) {						\
-	MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");	\
-	monitor_get_main_args(&argc, &argv, NULL);		\
-	monitor_init_mpi(&argc, &argv);				\
-    }								\
+#define FORTRAN_INIT_BODY(var_name, fcn_name)                   \
+    int argc, count;                                            \
+    char **argv;                                                \
+    MONITOR_DEBUG1("\n");                                       \
+    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);             \
+    count = monitor_mpi_init_count(1);                          \
+    if (count == 1) {                                           \
+        MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n"); \
+        monitor_mpi_pre_init();                                 \
+    }                                                           \
+    (*var_name)(ierror);                                        \
+    if (count == 1) {                                           \
+        MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");     \
+        monitor_get_main_args(&argc, &argv, NULL);              \
+        monitor_init_mpi(&argc, &argv);                         \
+    }                                                           \
     monitor_mpi_init_count(-1);
 
 void
@@ -155,7 +155,7 @@ MONITOR_WRAP_NAME(pmpi_init__)(int *ierror)
 
 int
 MONITOR_WRAP_NAME(PMPI_Init_thread)(int *argc, char ***argv,
-				    int required, int *provided)
+                                    int required, int *provided)
 {
     int ret, count;
 
@@ -163,35 +163,35 @@ MONITOR_WRAP_NAME(PMPI_Init_thread)(int *argc, char ***argv,
     MONITOR_GET_REAL_NAME_WRAP(real_pmpi_init_thread, PMPI_Init_thread);
     count = monitor_mpi_init_count(1);
     if (count == 1) {
-	MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
-	monitor_mpi_pre_init();
+        MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
+        monitor_mpi_pre_init();
     }
     ret = (*real_pmpi_init_thread)(argc, argv, required, provided);
     if (count == 1) {
-	MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
-	monitor_init_mpi(argc, argv);
+        MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
+        monitor_init_mpi(argc, argv);
     }
     monitor_mpi_init_count(-1);
 
     return (ret);
 }
 
-#define FORTRAN_INIT_THREAD_BODY(var_name, fcn_name)		\
-    int argc, count;						\
-    char **argv;						\
-    MONITOR_DEBUG1("\n");					\
-    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);		\
-    count = monitor_mpi_init_count(1);				\
-    if (count == 1) {						\
-	MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");	\
-	monitor_mpi_pre_init();					\
-    }								\
-    (*var_name)(required, provided, ierror);			\
-    if (count == 1) {						\
-	MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");	\
-	monitor_get_main_args(&argc, &argv, NULL);		\
-	monitor_init_mpi(&argc, &argv);				\
-    }								\
+#define FORTRAN_INIT_THREAD_BODY(var_name, fcn_name)            \
+    int argc, count;                                            \
+    char **argv;                                                \
+    MONITOR_DEBUG1("\n");                                       \
+    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);             \
+    count = monitor_mpi_init_count(1);                          \
+    if (count == 1) {                                           \
+        MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n"); \
+        monitor_mpi_pre_init();                                 \
+    }                                                           \
+    (*var_name)(required, provided, ierror);                    \
+    if (count == 1) {                                           \
+        MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");     \
+        monitor_get_main_args(&argc, &argv, NULL);              \
+        monitor_init_mpi(&argc, &argv);                         \
+    }                                                           \
     monitor_mpi_init_count(-1);
 
 void
@@ -227,35 +227,35 @@ MONITOR_WRAP_NAME(PMPI_Finalize)(void)
     MONITOR_GET_REAL_NAME_WRAP(real_pmpi_finalize, PMPI_Finalize);
     count = monitor_mpi_fini_count(1);
     if (count == 1) {
-	MONITOR_DEBUG("calling monitor_fini_mpi(), size = %d, rank = %d ...\n",
-		      monitor_mpi_comm_size(), monitor_mpi_comm_rank());
-	monitor_fini_mpi();
+        MONITOR_DEBUG("calling monitor_fini_mpi(), size = %d, rank = %d ...\n",
+                      monitor_mpi_comm_size(), monitor_mpi_comm_rank());
+        monitor_fini_mpi();
     }
     ret = (*real_pmpi_finalize)();
     if (count == 1) {
-	MONITOR_DEBUG1("calling monitor_mpi_post_fini() ...\n");
-	monitor_mpi_post_fini();
+        MONITOR_DEBUG1("calling monitor_mpi_post_fini() ...\n");
+        monitor_mpi_post_fini();
     }
     monitor_mpi_fini_count(-1);
 
     return (ret);
 }
 
-#define FORTRAN_FINALIZE_BODY(var_name, fcn_name)	\
-    int count;						\
-    MONITOR_DEBUG1("\n");				\
-    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);	\
-    count = monitor_mpi_fini_count(1);			\
-    if (count == 1) {					\
-	MONITOR_DEBUG("calling monitor_fini_mpi(), size = %d, rank = %d ...\n",  \
-		      monitor_mpi_comm_size(), monitor_mpi_comm_rank());  \
-	monitor_fini_mpi();				\
-    }							\
-    (*var_name)(ierror);				\
-    if (count == 1) {					\
-	MONITOR_DEBUG1("calling monitor_mpi_post_fini() ...\n");  \
-	monitor_mpi_post_fini();			\
-    }							\
+#define FORTRAN_FINALIZE_BODY(var_name, fcn_name)       \
+    int count;                                          \
+    MONITOR_DEBUG1("\n");                               \
+    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);     \
+    count = monitor_mpi_fini_count(1);                  \
+    if (count == 1) {                                   \
+        MONITOR_DEBUG("calling monitor_fini_mpi(), size = %d, rank = %d ...\n",  \
+                      monitor_mpi_comm_size(), monitor_mpi_comm_rank());  \
+        monitor_fini_mpi();                             \
+    }                                                   \
+    (*var_name)(ierror);                                \
+    if (count == 1) {                                   \
+        MONITOR_DEBUG1("calling monitor_mpi_post_fini() ...\n");  \
+        monitor_mpi_post_fini();                        \
+    }                                                   \
     monitor_mpi_fini_count(-1);
 
 void
@@ -302,12 +302,12 @@ MONITOR_WRAP_NAME(PMPI_Comm_rank)(void *comm, int *rank)
 }
 
 #define FORTRAN_COMM_RANK_BODY(size_var, size_fcn, rank_var, rank_fcn)  \
-    int size = -1;					\
-    MONITOR_DEBUG("comm = %d\n", *comm);		\
-    MONITOR_GET_REAL_NAME(size_var, size_fcn);		\
-    MONITOR_GET_REAL_NAME_WRAP(rank_var, rank_fcn);	\
-    (*size_var)(comm, &size, ierror);			\
-    (*rank_var)(comm, rank, ierror);			\
+    int size = -1;                                      \
+    MONITOR_DEBUG("comm = %d\n", *comm);                \
+    MONITOR_GET_REAL_NAME(size_var, size_fcn);          \
+    MONITOR_GET_REAL_NAME_WRAP(rank_var, rank_fcn);     \
+    (*size_var)(comm, &size, ierror);                   \
+    (*rank_var)(comm, rank, ierror);                    \
     monitor_set_mpi_size_rank(size, *rank);
 
 /*
@@ -317,19 +317,19 @@ void
 MONITOR_WRAP_NAME(pmpi_comm_rank)(int *comm, int *rank, int *ierror)
 {
     FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f0, pmpi_comm_size,
-			   real_pmpi_comm_rank_f0, pmpi_comm_rank);
+                           real_pmpi_comm_rank_f0, pmpi_comm_rank);
 }
 
 void
 MONITOR_WRAP_NAME(pmpi_comm_rank_)(int *comm, int *rank, int *ierror)
 {
     FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f1, pmpi_comm_size_,
-			   real_pmpi_comm_rank_f1, pmpi_comm_rank_);
+                           real_pmpi_comm_rank_f1, pmpi_comm_rank_);
 }
 
 void
 MONITOR_WRAP_NAME(pmpi_comm_rank__)(int *comm, int *rank, int *ierror)
 {
     FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f2, pmpi_comm_size__,
-			   real_pmpi_comm_rank_f2, pmpi_comm_rank__);
+                           real_pmpi_comm_rank_f2, pmpi_comm_rank__);
 }

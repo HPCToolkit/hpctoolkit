@@ -82,7 +82,7 @@ monitor_dlopen_init(void)
     static int init_done = 0;
 
     if (init_done)
-	return;
+        return;
 
     MONITOR_GET_REAL_NAME_WRAP(real_dlopen, dlopen);
     MONITOR_GET_REAL_NAME_WRAP(real_dlclose, dlclose);

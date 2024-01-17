@@ -106,10 +106,10 @@
 /*
  *  External functions.
  */
-#define PTHREAD_CREATE_PARAM_LIST		\
-    pthread_t *thread,				\
-    const pthread_attr_t *attr,			\
-    pthread_start_fcn_t *start_routine,		\
+#define PTHREAD_CREATE_PARAM_LIST               \
+    pthread_t *thread,                          \
+    const pthread_attr_t *attr,                 \
+    pthread_start_fcn_t *start_routine,         \
     void *arg
 
 typedef int   pthread_create_fcn_t(PTHREAD_CREATE_PARAM_LIST);
@@ -128,11 +128,11 @@ typedef void  pthread_cleanup_push_fcn_t(void (*)(void *), void *);
 typedef void  pthread_cleanup_pop_fcn_t(int);
 typedef int   pthread_setcancelstate_fcn_t(int, int *);
 typedef int   sigaction_fcn_t(int, const struct sigaction *,
-			      struct sigaction *);
+                              struct sigaction *);
 typedef int   sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
 typedef int   sigwaitinfo_fcn_t(const sigset_t *, siginfo_t *);
 typedef int   sigtimedwait_fcn_t(const sigset_t *, siginfo_t *,
-				 const struct timespec *);
+                                 const struct timespec *);
 typedef void *malloc_fcn_t(size_t);
 
 #ifdef MONITOR_STATIC
@@ -225,13 +225,13 @@ monitor_get_tn(void)
     struct monitor_thread_node *tn;
 
     if (monitor_has_used_threads) {
-	tn = (*real_pthread_getspecific)(monitor_pthread_key);
-	if (tn != NULL && tn->tn_magic != MONITOR_TN_MAGIC) {
-	    MONITOR_WARN_NO_TID("bad magic in thread node: %p\n", tn);
-	    tn = NULL;
-	}
+        tn = (*real_pthread_getspecific)(monitor_pthread_key);
+        if (tn != NULL && tn->tn_magic != MONITOR_TN_MAGIC) {
+            MONITOR_WARN_NO_TID("bad magic in thread node: %p\n", tn);
+            tn = NULL;
+        }
     } else {
-	tn = monitor_get_main_tn();
+        tn = monitor_get_main_tn();
     }
 
     return (tn);
@@ -297,19 +297,19 @@ monitor_thread_list_init(void)
 
     ret = (*real_pthread_key_create)(&monitor_pthread_key, NULL);
     if (ret != 0) {
-	MONITOR_ERROR("pthread_key_create failed (%d)\n", ret);
+        MONITOR_ERROR("pthread_key_create failed (%d)\n", ret);
     }
     /*
      * main_tn's thread-specific data.
      */
     main_tn = monitor_get_main_tn();
     if (main_tn == NULL || main_tn->tn_magic != MONITOR_TN_MAGIC) {
-	MONITOR_ERROR1("monitor_get_main_tn failed\n");
+        MONITOR_ERROR1("monitor_get_main_tn failed\n");
     }
     main_tn->tn_self = (*real_pthread_self)();
     ret = (*real_pthread_setspecific)(monitor_pthread_key, main_tn);
     if (ret != 0) {
-	MONITOR_ERROR("pthread_setspecific failed (%d)\n", ret);
+        MONITOR_ERROR("pthread_setspecific failed (%d)\n", ret);
     }
 }
 
@@ -326,7 +326,7 @@ monitor_reset_thread_list(struct monitor_thread_node *main_tn)
     struct monitor_thread_node *tn;
 
     if (! monitor_has_used_threads)
-	return;
+        return;
 
     MONITOR_DEBUG1("\n");
     /*
@@ -334,15 +334,15 @@ monitor_reset_thread_list(struct monitor_thread_node *main_tn)
      */
     tn = monitor_get_tn();
     if (tn == NULL) {
-	MONITOR_WARN1("tn should not be NULL here\n");
+        MONITOR_WARN1("tn should not be NULL here\n");
     }
     else if (tn != main_tn) {
-	memset(main_tn, 0, sizeof(struct monitor_thread_node));
-	main_tn->tn_magic = MONITOR_TN_MAGIC;
-	main_tn->tn_tid = 0;
-	main_tn->tn_user_data = tn->tn_user_data;
-	main_tn->tn_stack_bottom = tn->tn_stack_bottom;
-	main_tn->tn_is_main = 1;
+        memset(main_tn, 0, sizeof(struct monitor_thread_node));
+        main_tn->tn_magic = MONITOR_TN_MAGIC;
+        main_tn->tn_tid = 0;
+        main_tn->tn_user_data = tn->tn_user_data;
+        main_tn->tn_stack_bottom = tn->tn_stack_bottom;
+        main_tn->tn_is_main = 1;
     }
     /*
      * Free the thread list and the pthread key.  Technically, this
@@ -353,8 +353,8 @@ monitor_reset_thread_list(struct monitor_thread_node *main_tn)
     LIST_INIT(&monitor_free_list);
     monitor_tn_array_pos = 0;
     if ((*real_pthread_key_delete)(monitor_pthread_key) != 0) {
-	MONITOR_WARN1("pthread_key_delete failed\n");
-    }	
+        MONITOR_WARN1("pthread_key_delete failed\n");
+    }
     monitor_has_used_threads = 0;
 }
 
@@ -371,24 +371,24 @@ monitor_make_thread_node(void)
 
     tn = LIST_FIRST(&monitor_free_list);
     if (tn != NULL) {
-	/* Use the head of the free list. */
-	LIST_REMOVE(tn, tn_links);
+        /* Use the head of the free list. */
+        LIST_REMOVE(tn, tn_links);
     }
     else if (monitor_tn_array_pos < MONITOR_TN_ARRAY_SIZE) {
-	/* Use the next element in the tn array. */
-	tn = &monitor_tn_array[monitor_tn_array_pos];
-	monitor_tn_array_pos++;
+        /* Use the next element in the tn array. */
+        tn = &monitor_tn_array[monitor_tn_array_pos];
+        monitor_tn_array_pos++;
     }
     else {
-	/* Malloc a new tn array. */
-	MONITOR_GET_REAL_NAME(real_malloc, malloc);
-	monitor_tn_array =
-	    (*real_malloc)(MONITOR_TN_ARRAY_SIZE * sizeof(struct monitor_thread_node));
-	if (monitor_tn_array == NULL) {
-	    MONITOR_ERROR1("malloc failed\n");
-	}
-	tn = &monitor_tn_array[0];
-	monitor_tn_array_pos = 1;
+        /* Malloc a new tn array. */
+        MONITOR_GET_REAL_NAME(real_malloc, malloc);
+        monitor_tn_array =
+            (*real_malloc)(MONITOR_TN_ARRAY_SIZE * sizeof(struct monitor_thread_node));
+        if (monitor_tn_array == NULL) {
+            MONITOR_ERROR1("malloc failed\n");
+        }
+        tn = &monitor_tn_array[0];
+        monitor_tn_array_pos = 1;
     }
 
     memset(tn, 0, sizeof(struct monitor_thread_node));
@@ -409,8 +409,8 @@ monitor_link_thread_node(struct monitor_thread_node *tn)
     MONITOR_THREAD_LOCK;
 
     if (monitor_in_exit_cleanup) {
-	MONITOR_THREAD_UNLOCK;
-	return (1);
+        MONITOR_THREAD_UNLOCK;
+        return (1);
     }
     tn->tn_tid = ++monitor_thread_num;
     LIST_INSERT_HEAD(&monitor_thread_list, tn, tn_links);
@@ -428,12 +428,12 @@ monitor_unlink_thread_node(struct monitor_thread_node *tn)
      * node as finished.
      */
     if (monitor_in_exit_cleanup) {
-	tn->tn_fini_started = 1;
-	tn->tn_fini_done = 1;
+        tn->tn_fini_started = 1;
+        tn->tn_fini_done = 1;
     } else {
-	LIST_REMOVE(tn, tn_links);
-	memset(tn, 0, sizeof(struct monitor_thread_node));
-	LIST_INSERT_HEAD(&monitor_free_list, tn, tn_links);
+        LIST_REMOVE(tn, tn_links);
+        memset(tn, 0, sizeof(struct monitor_thread_node));
+        LIST_INSERT_HEAD(&monitor_free_list, tn, tn_links);
     }
     MONITOR_THREAD_UNLOCK;
 }
@@ -446,29 +446,29 @@ monitor_shootdown_handler(int sig)
 
     tn = (*real_pthread_getspecific)(monitor_pthread_key);
     if (tn == NULL) {
-	MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
-		      "pthread_getspecific() failed\n");
-	return;
+        MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
+                      "pthread_getspecific() failed\n");
+        return;
     }
     if (tn->tn_magic != MONITOR_TN_MAGIC) {
-	MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
-		      "bad magic in thread node\n");
-	return;
+        MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
+                      "bad magic in thread node\n");
+        return;
     }
     if (!tn->tn_appl_started || tn->tn_fini_started || tn->tn_block_shootdown) {
-	/* fini-thread has already run, or else we don't want it to run. */
-	return;
+        /* fini-thread has already run, or else we don't want it to run. */
+        return;
     }
     if (monitor_fini_thread_done) {
-	MONITOR_WARN("unable to deliver monitor_fini_thread callback (tid %d): "
-		     "monitor_fini_process() has begun\n", tn->tn_tid);
-	return;
+        MONITOR_WARN("unable to deliver monitor_fini_thread callback (tid %d): "
+                     "monitor_fini_process() has begun\n", tn->tn_tid);
+        return;
     }
 
     (*real_pthread_setcancelstate)(PTHREAD_CANCEL_DISABLE, &old_state);
     tn->tn_fini_started = 1;
     MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
-		  tn->tn_user_data, tn->tn_tid);
+                  tn->tn_user_data, tn->tn_tid);
     monitor_fini_thread(tn->tn_user_data);
     tn->tn_fini_done = 1;
     (*real_pthread_setcancelstate)(old_state, NULL);
@@ -482,8 +482,8 @@ static inline void
 monitor_call_thread_support(void)
 {
     if (monitor_thread_support_done) {
-	MONITOR_WARN1("attempted to call thread support twice\n");
-	return;
+        MONITOR_WARN1("attempted to call thread support twice\n");
+        return;
     }
     MONITOR_DEBUG1("calling monitor_init_thread_support() ...\n");
     monitor_init_thread_support();
@@ -498,7 +498,7 @@ void
 monitor_thread_release(void)
 {
     if (monitor_has_used_threads)
-	monitor_call_thread_support();
+        monitor_call_thread_support();
 
     monitor_has_reached_main = 1;
 }
@@ -520,8 +520,8 @@ monitor_thread_shootdown(void)
     int num_finished, num_unfinished, old_state;
 
     if (! monitor_has_used_threads) {
-	MONITOR_DEBUG1("(no threads)\n");
-	return;
+        MONITOR_DEBUG1("(no threads)\n");
+        return;
     }
 
     (*real_pthread_setcancelstate)(PTHREAD_CANCEL_DISABLE, &old_state);
@@ -542,7 +542,7 @@ monitor_thread_shootdown(void)
     my_action.sa_mask = empty_set;
     my_action.sa_flags = SA_RESTART;
     if ((*real_sigaction)(shootdown_signal, &my_action, NULL) != 0) {
-	MONITOR_ERROR1("sigaction failed\n");
+        MONITOR_ERROR1("sigaction failed\n");
     }
 
     /*
@@ -553,10 +553,10 @@ monitor_thread_shootdown(void)
     self = (*real_pthread_self)();
     main_tn = monitor_get_main_tn();
     if (! PTHREAD_EQUAL(self, main_tn->tn_self)) {
-	main_tn->tn_appl_started = 1;
-	main_tn->tn_fini_started = 0;
-	main_tn->tn_fini_done = 0;
-	LIST_INSERT_HEAD(&monitor_thread_list, main_tn, tn_links);
+        main_tn->tn_appl_started = 1;
+        main_tn->tn_fini_started = 0;
+        main_tn->tn_fini_done = 0;
+        LIST_INSERT_HEAD(&monitor_thread_list, main_tn, tn_links);
     }
 
     /*
@@ -573,48 +573,48 @@ monitor_thread_shootdown(void)
     gettimeofday(&last, NULL);
     last_started = 0;
     for (;;) {
-	num_started = 0;
-	num_unstarted = 0;
-	num_finished = 0;
-	num_unfinished = 0;
-	for (tn = LIST_FIRST(&monitor_thread_list);
-	     tn != NULL;
-	     tn = LIST_NEXT(tn, tn_links))
-	{
-	    if (PTHREAD_EQUAL(self, tn->tn_self)) {
-		my_tn = tn;
-		continue;
-	    }
-	    if (tn->tn_appl_started) {
-		if (tn->tn_fini_started) {
-		    num_started++;
-		} else {
-		    (*real_pthread_kill)(tn->tn_self, shootdown_signal);
-		    num_unstarted++;
-		}
-		if (tn->tn_fini_done)
-		    num_finished++;
-		else
-		    num_unfinished++;
-	    }
-	}
-	MONITOR_DEBUG("started: %d, unstarted: %d, finished: %d, unfinished: %d\n",
-		      num_started, num_unstarted, num_finished, num_unfinished);
-	if (num_unfinished == 0)
-	    break;
+        num_started = 0;
+        num_unstarted = 0;
+        num_finished = 0;
+        num_unfinished = 0;
+        for (tn = LIST_FIRST(&monitor_thread_list);
+             tn != NULL;
+             tn = LIST_NEXT(tn, tn_links))
+        {
+            if (PTHREAD_EQUAL(self, tn->tn_self)) {
+                my_tn = tn;
+                continue;
+            }
+            if (tn->tn_appl_started) {
+                if (tn->tn_fini_started) {
+                    num_started++;
+                } else {
+                    (*real_pthread_kill)(tn->tn_self, shootdown_signal);
+                    num_unstarted++;
+                }
+                if (tn->tn_fini_done)
+                    num_finished++;
+                else
+                    num_unfinished++;
+            }
+        }
+        MONITOR_DEBUG("started: %d, unstarted: %d, finished: %d, unfinished: %d\n",
+                      num_started, num_unstarted, num_finished, num_unfinished);
+        if (num_unfinished == 0)
+            break;
 
-	gettimeofday(&now, NULL);
-	if (num_started > last_started) {
-	    last = now;
-	    last_started = num_started;
-	} else if (now.tv_sec > last.tv_sec + MONITOR_SHOOTDOWN_TIMEOUT
-		   && num_unstarted > 0) {
-	    MONITOR_WARN("timeout exceeded (%d): unable to deliver "
-			 "monitor_fini_thread() to %d threads\n",
-			 MONITOR_SHOOTDOWN_TIMEOUT, num_unstarted);
-	    break;
-	}
-	usleep(MONITOR_POLL_USLEEP_TIME);
+        gettimeofday(&now, NULL);
+        if (num_started > last_started) {
+            last = now;
+            last_started = num_started;
+        } else if (now.tv_sec > last.tv_sec + MONITOR_SHOOTDOWN_TIMEOUT
+                   && num_unstarted > 0) {
+            MONITOR_WARN("timeout exceeded (%d): unable to deliver "
+                         "monitor_fini_thread() to %d threads\n",
+                         MONITOR_SHOOTDOWN_TIMEOUT, num_unstarted);
+            break;
+        }
+        usleep(MONITOR_POLL_USLEEP_TIME);
     }
     monitor_fini_thread_done = 1;
 
@@ -622,11 +622,11 @@ monitor_thread_shootdown(void)
      * See if we need to run fini_thread from this thread.
      */
     if (my_tn != NULL && !my_tn->tn_fini_started) {
-	my_tn->tn_fini_started = 1;
-	MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
-		      my_tn->tn_user_data, my_tn->tn_tid);
-	monitor_fini_thread(my_tn->tn_user_data);
-	my_tn->tn_fini_done = 1;
+        my_tn->tn_fini_started = 1;
+        MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
+                      my_tn->tn_user_data, my_tn->tn_tid);
+        monitor_fini_thread(my_tn->tn_user_data);
+        my_tn->tn_fini_done = 1;
     }
 
     (*real_pthread_setcancelstate)(old_state, NULL);
@@ -658,8 +658,8 @@ monitor_get_user_data(void)
 
     tn = monitor_get_tn();
     if (tn == NULL) {
-	MONITOR_DEBUG1("unable to find thread node\n");
-	return (NULL);
+        MONITOR_DEBUG1("unable to find thread node\n");
+        return (NULL);
     }
     return (tn->tn_user_data);
 }
@@ -697,7 +697,7 @@ int
 monitor_unwind_thread_bottom_frame(void *addr)
 {
     return (&monitor_thread_fence1 <= (char *) addr
-	    && (char *) addr <= &monitor_thread_fence4);
+            && (char *) addr <= &monitor_thread_fence4);
 }
 
 /*
@@ -711,8 +711,8 @@ monitor_stack_bottom(void)
 
     tn = monitor_get_tn();
     if (tn == NULL) {
-	MONITOR_DEBUG1("unable to find thread node\n");
-	return (NULL);
+        MONITOR_DEBUG1("unable to find thread node\n");
+        return (NULL);
     }
     return (tn->tn_stack_bottom);
 }
@@ -725,8 +725,8 @@ int
 monitor_in_start_func_wide(void *addr)
 {
     return monitor_in_main_start_func_wide(addr) ||
-	(&monitor_thread_fence1 <= (char *) addr
-	 && (char *) addr <= &monitor_thread_fence4);
+        (&monitor_thread_fence1 <= (char *) addr
+         && (char *) addr <= &monitor_thread_fence4);
 }
 
 /*
@@ -738,8 +738,8 @@ int
 monitor_in_start_func_narrow(void *addr)
 {
     return monitor_in_main_start_func_narrow(addr) ||
-	(&monitor_thread_fence2 <= (char *) addr 
-	 && (char *) addr <= &monitor_thread_fence3);
+        (&monitor_thread_fence2 <= (char *) addr
+         && (char *) addr <= &monitor_thread_fence3);
 }
 
 /*
@@ -747,7 +747,7 @@ monitor_in_start_func_narrow(void *addr)
  */
 int
 monitor_real_pthread_sigmask(int how, const sigset_t *set,
-			     sigset_t *oldset)
+                             sigset_t *oldset)
 {
     monitor_thread_name_init();
     return (*real_pthread_sigmask)(how, set, oldset);
@@ -768,25 +768,25 @@ monitor_broadcast_signal(int sig)
     pthread_t self;
 
     if (! monitor_has_used_threads)
-	return (SUCCESS);
+        return (SUCCESS);
 
     if (MONITOR_THREAD_TRYLOCK != 0)
-	return (FAILURE);
+        return (FAILURE);
 
     self = (*real_pthread_self)();
     for (tn = LIST_FIRST(&monitor_thread_list);
-	 tn != NULL;
-	 tn = LIST_NEXT(tn, tn_links)) {
+         tn != NULL;
+         tn = LIST_NEXT(tn, tn_links)) {
 
-	if (!PTHREAD_EQUAL(self, tn->tn_self) &&
-	    tn->tn_appl_started && !tn->tn_fini_started) {
-	    (*real_pthread_kill)(tn->tn_self, sig);
-	}
+        if (!PTHREAD_EQUAL(self, tn->tn_self) &&
+            tn->tn_appl_started && !tn->tn_fini_started) {
+            (*real_pthread_kill)(tn->tn_self, sig);
+        }
     }
 
     tn = monitor_get_main_tn();
     if (tn != NULL && !PTHREAD_EQUAL(self, tn->tn_self))
-	(*real_pthread_kill)(tn->tn_self, sig);
+        (*real_pthread_kill)(tn->tn_self, sig);
 
     MONITOR_THREAD_UNLOCK;
     return (SUCCESS);
@@ -806,8 +806,8 @@ monitor_block_shootdown(void)
 
     tn = monitor_get_tn();
     if (tn == NULL) {
-	MONITOR_DEBUG1("unable to find thread node\n");
-	return 0;
+        MONITOR_DEBUG1("unable to find thread node\n");
+        return 0;
     }
     tn->tn_block_shootdown = 1;
 
@@ -821,8 +821,8 @@ monitor_unblock_shootdown(void)
 
     tn = monitor_get_tn();
     if (tn == NULL) {
-	MONITOR_DEBUG1("unable to find thread node\n");
-	return;
+        MONITOR_DEBUG1("unable to find thread node\n");
+        return;
     }
     tn->tn_block_shootdown = 0;
 }
@@ -839,8 +839,8 @@ monitor_disable_new_threads(void)
 
     tn = monitor_get_tn();
     if (tn == NULL) {
-	MONITOR_DEBUG1("unable to find thread node\n");
-	return;
+        MONITOR_DEBUG1("unable to find thread node\n");
+        return;
     }
     tn->tn_ignore_threads = 1;
 }
@@ -852,8 +852,8 @@ monitor_enable_new_threads(void)
 
     tn = monitor_get_tn();
     if (tn == NULL) {
-	MONITOR_DEBUG1("unable to find thread node\n");
-	return;
+        MONITOR_DEBUG1("unable to find thread node\n");
+        return;
     }
     tn->tn_ignore_threads = 0;
 }
@@ -876,8 +876,8 @@ monitor_get_new_thread_info(struct monitor_thread_info *mti)
 
     tn = monitor_get_tn();
     if (tn == NULL) {
-	MONITOR_DEBUG1("unable to find thread node\n");
-	return 1;
+        MONITOR_DEBUG1("unable to find thread node\n");
+        return 1;
     }
 
     /* Called from outside pthread_create(). */
@@ -906,28 +906,28 @@ monitor_pthread_cleanup_routine(void *arg)
     struct monitor_thread_node *tn = arg;
 
     if (tn == NULL) {
-	MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
-		      "missing cleanup handler argument\n");
-	return;
+        MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
+                      "missing cleanup handler argument\n");
+        return;
     }
     if (tn->tn_magic != MONITOR_TN_MAGIC) {
-	MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
-		      "bad magic in thread node\n");
-	return;
+        MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
+                      "bad magic in thread node\n");
+        return;
     }
     if (!tn->tn_appl_started || tn->tn_fini_started || tn->tn_block_shootdown) {
-	/* fini-thread has already run, or else we don't want it to run. */
-	return;
+        /* fini-thread has already run, or else we don't want it to run. */
+        return;
     }
     if (monitor_fini_thread_done) {
-	MONITOR_WARN("unable to deliver monitor_fini_thread callback (tid %d): "
-		     "monitor_fini_process() has begun\n", tn->tn_tid);
-	return;
+        MONITOR_WARN("unable to deliver monitor_fini_thread callback (tid %d): "
+                     "monitor_fini_process() has begun\n", tn->tn_tid);
+        return;
     }
 
     tn->tn_fini_started = 1;
     MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
-		  tn->tn_user_data, tn->tn_tid);
+                  tn->tn_user_data, tn->tn_tid);
     monitor_fini_thread(tn->tn_user_data);
     tn->tn_fini_done = 1;
 
@@ -960,7 +960,7 @@ monitor_begin_thread(void *arg)
      * init.  (An evil thing for it to do, but it's possible.)
      */
     while (! monitor_thread_support_done)
-	usleep(MONITOR_POLL_USLEEP_TIME);
+        usleep(MONITOR_POLL_USLEEP_TIME);
 #endif
 
     /*
@@ -970,20 +970,20 @@ monitor_begin_thread(void *arg)
     tn->tn_stack_bottom = alloca(8);
     strncpy(tn->tn_stack_bottom, "stakbot", 8);
     if ((*real_pthread_setspecific)(monitor_pthread_key, tn) != 0) {
-	MONITOR_ERROR1("pthread_setspecific failed\n");
+        MONITOR_ERROR1("pthread_setspecific failed\n");
     }
     if (monitor_link_thread_node(tn) != 0) {
-	MONITOR_DEBUG1("warning: trying to create new thread during "
-		       "exit cleanup: thread not started\n");
-	return (NULL);
+        MONITOR_DEBUG1("warning: trying to create new thread during "
+                       "exit cleanup: thread not started\n");
+        return (NULL);
     }
 
     PTHREAD_CLEANUP_PUSH(monitor_pthread_cleanup_routine, tn);
 
     MONITOR_DEBUG("tid = %d, self = %p, start_routine = %p\n",
-		  tn->tn_tid, (void *)tn->tn_self, tn->tn_start_routine);
+                  tn->tn_tid, (void *)tn->tn_self, tn->tn_start_routine);
     MONITOR_DEBUG("calling monitor_init_thread(tid = %d, data = %p) ...\n",
-		  tn->tn_tid, tn->tn_user_data);
+                  tn->tn_tid, tn->tn_user_data);
     tn->tn_user_data = monitor_init_thread(tn->tn_tid, tn->tn_user_data);
 
     tn->tn_appl_started = 1;
@@ -1011,8 +1011,8 @@ monitor_begin_thread(void *arg)
  */
 pthread_attr_t *
 monitor_adjust_stack_size(pthread_attr_t *orig_attr,
-			  pthread_attr_t *default_attr,
-			  int *restore, int *destroy, size_t *old_size)
+                          pthread_attr_t *default_attr,
+                          int *restore, int *destroy, size_t *old_size)
 {
     pthread_attr_t *attr;
     size_t new_size;
@@ -1020,34 +1020,34 @@ monitor_adjust_stack_size(pthread_attr_t *orig_attr,
     *restore = 0;
     *destroy = 0;
     if (orig_attr != NULL)
-	attr = orig_attr;
+        attr = orig_attr;
     else {
-	if ((*real_pthread_attr_init)(default_attr) != 0) {
-	    MONITOR_WARN1("pthread_attr_init failed\n");
-	    return (orig_attr);
-	}
-	*destroy = 1;
-	attr = default_attr;
+        if ((*real_pthread_attr_init)(default_attr) != 0) {
+            MONITOR_WARN1("pthread_attr_init failed\n");
+            return (orig_attr);
+        }
+        *destroy = 1;
+        attr = default_attr;
     }
 
     if ((*real_pthread_attr_getstacksize)(attr, old_size) != 0) {
-	MONITOR_WARN1("pthread_attr_getstacksize failed\n");
-	return (orig_attr);
+        MONITOR_WARN1("pthread_attr_getstacksize failed\n");
+        return (orig_attr);
     }
 
     new_size = monitor_reset_stacksize(*old_size);
     if (new_size == *old_size)
-	return (orig_attr);
+        return (orig_attr);
 
     if ((*real_pthread_attr_setstacksize)(attr, new_size) != 0) {
-	MONITOR_WARN1("pthread_attr_setstacksize failed\n");
-	return (orig_attr);
+        MONITOR_WARN1("pthread_attr_setstacksize failed\n");
+        return (orig_attr);
     }
     if (attr == orig_attr)
-	*restore = 1;
+        *restore = 1;
 
     MONITOR_DEBUG("old size = %ld, new size = %ld\n",
-		  (long)*old_size, (long)new_size);
+                  (long)*old_size, (long)new_size);
 
     return (attr);
 }
@@ -1074,8 +1074,8 @@ MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
      * callback functions.
      */
     if (! monitor_has_used_threads) {
-	monitor_thread_list_init();
-	monitor_has_used_threads = 1;
+        monitor_thread_list_init();
+        monitor_has_used_threads = 1;
     }
 
     /*
@@ -1088,7 +1088,7 @@ MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
 
     my_tn = monitor_get_tn();
     if (my_tn != NULL) {
-	my_tn->tn_thread_info = &mti;
+        my_tn->tn_thread_info = &mti;
     }
 
     /*
@@ -1103,8 +1103,8 @@ MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
      * give any callbacks.
      */
     if (my_tn == NULL || my_tn->tn_ignore_threads) {
-	MONITOR_DEBUG("launching ignored thread: start = %p\n", start_routine);
-	return (*real_pthread_create)(thread, attr, start_routine, arg);
+        MONITOR_DEBUG("launching ignored thread: start = %p\n", start_routine);
+        return (*real_pthread_create)(thread, attr, start_routine, arg);
     }
 
     /*
@@ -1112,9 +1112,9 @@ MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
      * no longer defer this.
      */
     if (! monitor_thread_support_done) {
-	MONITOR_DEBUG1("calling monitor_init_thread_support() ...\n");
-	monitor_thread_support_done = 1;
-	monitor_init_thread_support();
+        MONITOR_DEBUG1("calling monitor_init_thread_support() ...\n");
+        monitor_thread_support_done = 1;
+        monitor_init_thread_support();
     }
 
     /*
@@ -1123,15 +1123,15 @@ MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
      * and thread_support are done.
      */
     MONITOR_DEBUG("calling monitor_thread_pre_create(start_routine = %p) ...\n",
-		  start_routine);
+                  start_routine);
     void * user_data = monitor_thread_pre_create();
 
     /*
      * Allow the client to ignore this new thread.
      */
     if (user_data == MONITOR_IGNORE_NEW_THREAD) {
-	MONITOR_DEBUG("launching ignored thread: start = %p\n", start_routine);
-	return (*real_pthread_create)(thread, attr, start_routine, arg);
+        MONITOR_DEBUG("launching ignored thread: start = %p\n", start_routine);
+        return (*real_pthread_create)(thread, attr, start_routine, arg);
     }
 
     tn = monitor_make_thread_node();
@@ -1146,26 +1146,26 @@ MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
      * increasing its size).
      */
     attr = monitor_adjust_stack_size((pthread_attr_t *)attr, &default_attr,
-				     &restore, &destroy, &old_size);
+                                     &restore, &destroy, &old_size);
 
     MONITOR_DEBUG("launching monitored thread: monitor = %p, start = %p\n",
-		  monitor_begin_thread, start_routine);
+                  monitor_begin_thread, start_routine);
     ret = (*real_pthread_create)(thread, attr, monitor_begin_thread,
-				 (void *)tn);
+                                 (void *)tn);
 
     if (restore) {
-	(*real_pthread_attr_setstacksize)((pthread_attr_t *)attr, old_size);
+        (*real_pthread_attr_setstacksize)((pthread_attr_t *)attr, old_size);
     }
     if (destroy) {
-	(*real_pthread_attr_destroy)(&default_attr);
+        (*real_pthread_attr_destroy)(&default_attr);
     }
     if (ret != 0) {
-	MONITOR_DEBUG("real_pthread_create failed: start_routine = %p, ret = %d\n",
-		      start_routine, ret);
+        MONITOR_DEBUG("real_pthread_create failed: start_routine = %p, ret = %d\n",
+                      start_routine, ret);
     }
 
     MONITOR_DEBUG("calling monitor_thread_post_create(start_routine = %p) ...\n",
-		  start_routine);
+                  start_routine);
     monitor_thread_post_create(tn->tn_user_data);
 
     /* The thread info struct's lifetime ends here. */
@@ -1188,8 +1188,8 @@ MONITOR_WRAP_NAME(pthread_exit)(void *data)
 
     tn = monitor_get_tn();
     if (tn != NULL && tn->tn_is_main) {
-	MONITOR_DEBUG1("pthread_exit called from main thread\n");
-	monitor_end_process_fcn(MONITOR_EXIT_NORMAL);
+        MONITOR_DEBUG1("pthread_exit called from main thread\n");
+        monitor_end_process_fcn(MONITOR_EXIT_NORMAL);
     }
 
     MONITOR_GET_REAL_NAME_WRAP(real_pthread_exit, pthread_exit);
@@ -1206,7 +1206,7 @@ MONITOR_WRAP_NAME(pthread_exit)(void *data)
 #ifdef MONITOR_USE_SIGNALS
 int
 MONITOR_WRAP_NAME(pthread_sigmask)(int how, const sigset_t *set,
-				   sigset_t *oldset)
+                                   sigset_t *oldset)
 {
     sigset_t my_set;
 
@@ -1214,10 +1214,10 @@ MONITOR_WRAP_NAME(pthread_sigmask)(int how, const sigset_t *set,
     monitor_thread_name_init();
 
     if (set != NULL) {
-	MONITOR_DEBUG1("\n");
-	my_set = *set;
-	monitor_remove_client_signals(&my_set, how);
-	set = &my_set;
+        MONITOR_DEBUG1("\n");
+        my_set = *set;
+        monitor_remove_client_signals(&my_set, how);
+        set = &my_set;
     }
 
     return (*real_pthread_sigmask)(how, set, oldset);
@@ -1236,7 +1236,7 @@ MONITOR_WRAP_NAME(pthread_sigmask)(int how, const sigset_t *set,
  */
 static int
 monitor_sigwait_helper(const sigset_t *set, int sig, int sigwait_errno,
-		       siginfo_t *info, ucontext_t *context)
+                       siginfo_t *info, ucontext_t *context)
 {
     struct monitor_thread_node *tn;
     int old_state;
@@ -1246,7 +1246,7 @@ monitor_sigwait_helper(const sigset_t *set, int sig, int sigwait_errno,
      * other errors back to the application.
      */
     if (sig < 0) {
-	return (sigwait_errno == EINTR);
+        return (sigwait_errno == EINTR);
     }
 
     /*
@@ -1254,22 +1254,22 @@ monitor_sigwait_helper(const sigset_t *set, int sig, int sigwait_errno,
      */
     tn = monitor_get_tn();
     if (sig == shootdown_signal
-	&& monitor_in_exit_cleanup
-	&& !monitor_fini_thread_done
-	&& tn != NULL
-	&& tn->tn_appl_started
-	&& !tn->tn_fini_started
-	&& !tn->tn_block_shootdown)
+        && monitor_in_exit_cleanup
+        && !monitor_fini_thread_done
+        && tn != NULL
+        && tn->tn_appl_started
+        && !tn->tn_fini_started
+        && !tn->tn_block_shootdown)
     {
-	(*real_pthread_setcancelstate)(PTHREAD_CANCEL_DISABLE, &old_state);
-	tn->tn_fini_started = 1;
-	MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
-		      tn->tn_user_data, tn->tn_tid);
-	monitor_fini_thread(tn->tn_user_data);
-	tn->tn_fini_done = 1;
-	(*real_pthread_setcancelstate)(old_state, NULL);
+        (*real_pthread_setcancelstate)(PTHREAD_CANCEL_DISABLE, &old_state);
+        tn->tn_fini_started = 1;
+        MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
+                      tn->tn_user_data, tn->tn_tid);
+        monitor_fini_thread(tn->tn_user_data);
+        tn->tn_fini_done = 1;
+        (*real_pthread_setcancelstate)(old_state, NULL);
 
-	return 1;
+        return 1;
     }
 
     /*
@@ -1277,14 +1277,14 @@ monitor_sigwait_helper(const sigset_t *set, int sig, int sigwait_errno,
      * monitor_sigaction().
      */
     if (monitor_sigwait_handler(sig, info, context) == 0) {
-	return 1;
+        return 1;
     }
 
     /*
      * A signal not in 'set' is treated as EINTR and restarted.
      */
     if (! sigismember(set, sig)) {
-	return 1;
+        return 1;
     }
 
     /*
@@ -1303,22 +1303,22 @@ MONITOR_WRAP_NAME(sigwait)(const sigset_t *set, int *sig)
 
     monitor_thread_name_init();
     if (monitor_debug) {
-	monitor_sigset_string(buf, MONITOR_SIG_BUF_SIZE, set);
-	MONITOR_DEBUG("waiting on:%s\n", buf);
+        monitor_sigset_string(buf, MONITOR_SIG_BUF_SIZE, set);
+        MONITOR_DEBUG("waiting on:%s\n", buf);
     }
 
     getcontext(&context);
     do {
-	ret = real_sigwaitinfo(set, &my_info);
-	save_errno = errno;
+        ret = real_sigwaitinfo(set, &my_info);
+        save_errno = errno;
     }
     while (monitor_sigwait_helper(set, ret, save_errno, &my_info, &context));
 
     if (ret < 0) {
-	return save_errno;
+        return save_errno;
     }
     if (sig != NULL) {
-	*sig = ret;
+        *sig = ret;
     }
     return 0;
 }
@@ -1333,15 +1333,15 @@ MONITOR_WRAP_NAME(sigwaitinfo)(const sigset_t *set, siginfo_t *info)
 
     monitor_thread_name_init();
     if (monitor_debug) {
-	monitor_sigset_string(buf, MONITOR_SIG_BUF_SIZE, set);
-	MONITOR_DEBUG("waiting on:%s\n", buf);
+        monitor_sigset_string(buf, MONITOR_SIG_BUF_SIZE, set);
+        MONITOR_DEBUG("waiting on:%s\n", buf);
     }
 
     getcontext(&context);
     info_ptr = (info != NULL) ? info : &my_info;
     do {
-	ret = real_sigwaitinfo(set, info_ptr);
-	save_errno = errno;
+        ret = real_sigwaitinfo(set, info_ptr);
+        save_errno = errno;
     }
     while (monitor_sigwait_helper(set, ret, save_errno, info_ptr, &context));
 
@@ -1351,7 +1351,7 @@ MONITOR_WRAP_NAME(sigwaitinfo)(const sigset_t *set, siginfo_t *info)
 
 int
 MONITOR_WRAP_NAME(sigtimedwait)(const sigset_t *set, siginfo_t *info,
-				const struct timespec *timeout)
+                                const struct timespec *timeout)
 {
     char buf[MONITOR_SIG_BUF_SIZE];
     siginfo_t my_info, *info_ptr;
@@ -1360,8 +1360,8 @@ MONITOR_WRAP_NAME(sigtimedwait)(const sigset_t *set, siginfo_t *info,
 
     monitor_thread_name_init();
     if (monitor_debug) {
-	monitor_sigset_string(buf, MONITOR_SIG_BUF_SIZE, set);
-	MONITOR_DEBUG("waiting on:%s\n", buf);
+        monitor_sigset_string(buf, MONITOR_SIG_BUF_SIZE, set);
+        MONITOR_DEBUG("waiting on:%s\n", buf);
     }
 
     /*
@@ -1371,8 +1371,8 @@ MONITOR_WRAP_NAME(sigtimedwait)(const sigset_t *set, siginfo_t *info,
     getcontext(&context);
     info_ptr = (info != NULL) ? info : &my_info;
     do {
-	ret = real_sigtimedwait(set, info_ptr, timeout);
-	save_errno = errno;
+        ret = real_sigtimedwait(set, info_ptr, timeout);
+        save_errno = errno;
     }
     while (monitor_sigwait_helper(set, ret, save_errno, info_ptr, &context));
 

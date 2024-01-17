@@ -3,22 +3,22 @@
  *
  *  Copyright (c) 2007-2023, Rice University.
  *  All rights reserved.
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
  *  met:
- *  
+ *
  *  * Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *  
+ *
  *  * Neither the name of Rice University (RICE) nor the names of its
  *    contributors may be used to endorse or promote products derived from
  *    this software without specific prior written permission.
- *  
+ *
  *  This software is provided by RICE and contributors "as is" and any
  *  express or implied warranties, including, but not limited to, the
  *  implied warranties of merchantability and fitness for a particular
@@ -86,30 +86,30 @@
  *  compilers don't accept the ##__VA_ARGS__ syntax for the case of
  *  empty args, so split the macros into two.
  */
-#define MONITOR_DEBUG_ARGS(fmt, ...)  do {			\
-    if (monitor_debug) {					\
-	fprintf(stderr, "monitor debug [%d,%d] %s: " fmt ,	\
-		getpid(), monitor_get_thread_num(),		\
-		__VA_ARGS__ );					\
-    }							       	\
+#define MONITOR_DEBUG_ARGS(fmt, ...)  do {                      \
+    if (monitor_debug) {                                        \
+        fprintf(stderr, "monitor debug [%d,%d] %s: " fmt ,      \
+                getpid(), monitor_get_thread_num(),             \
+                __VA_ARGS__ );                                  \
+    }                                                           \
 } while (0)
 
-#define MONITOR_WARN_ARGS(fmt, ...)  do {			\
-    fprintf(stderr, "monitor warning [%d,%d] %s: " fmt ,	\
-	    getpid(), monitor_get_thread_num(),			\
-	    __VA_ARGS__ );					\
+#define MONITOR_WARN_ARGS(fmt, ...)  do {                       \
+    fprintf(stderr, "monitor warning [%d,%d] %s: " fmt ,        \
+            getpid(), monitor_get_thread_num(),                 \
+            __VA_ARGS__ );                                      \
 } while (0)
 
-#define MONITOR_WARN_NO_TID_ARGS(fmt, ...)  do {		\
-    fprintf(stderr, "monitor warning [%d,--] %s: " fmt ,	\
-	    getpid(), __VA_ARGS__ );				\
+#define MONITOR_WARN_NO_TID_ARGS(fmt, ...)  do {                \
+    fprintf(stderr, "monitor warning [%d,--] %s: " fmt ,        \
+            getpid(), __VA_ARGS__ );                            \
 } while (0)
 
-#define MONITOR_ERROR_ARGS(fmt, ...)  do {			\
-    fprintf(stderr, "monitor error [%d,%d] %s: " fmt ,		\
-	    getpid(), monitor_get_thread_num(),			\
-	    __VA_ARGS__ );					\
-    errx(1, "%s:" fmt , __VA_ARGS__ );				\
+#define MONITOR_ERROR_ARGS(fmt, ...)  do {                      \
+    fprintf(stderr, "monitor error [%d,%d] %s: " fmt ,          \
+            getpid(), monitor_get_thread_num(),                 \
+            __VA_ARGS__ );                                      \
+    errx(1, "%s:" fmt , __VA_ARGS__ );                          \
 } while (0)
 
 #define MONITOR_DEBUG1(fmt)      MONITOR_DEBUG_ARGS(fmt, __func__)
@@ -124,21 +124,21 @@
 
 void *monitor_dlsym(const char *symbol);
 
-#define MONITOR_REQUIRE_DLSYM(var, name)  do {		\
-    if (var == NULL) {					\
+#define MONITOR_REQUIRE_DLSYM(var, name)  do {          \
+    if (var == NULL) {                                  \
         var = monitor_dlsym(name);                      \
-    }							\
+    }                                                   \
 } while (0)
 
 #ifdef MONITOR_STATIC
 #define MONITOR_WRAP_NAME_HELP(name)  __wrap_##name
-#define MONITOR_GET_REAL_NAME_HELP(var, name)  do {		\
-    var = &name;						\
-    MONITOR_DEBUG("%s() = %p\n", #name , var);			\
+#define MONITOR_GET_REAL_NAME_HELP(var, name)  do {             \
+    var = &name;                                                \
+    MONITOR_DEBUG("%s() = %p\n", #name , var);                  \
 } while (0)
-#define MONITOR_GET_REAL_NAME_WRAP_HELP(var, name)  do {	\
-    var = &__real_##name;					\
-    MONITOR_DEBUG("%s() = %p\n", "__real_" #name , var);	\
+#define MONITOR_GET_REAL_NAME_WRAP_HELP(var, name)  do {        \
+    var = &__real_##name;                                       \
+    MONITOR_DEBUG("%s() = %p\n", "__real_" #name , var);        \
 } while (0)
 #else
 #define MONITOR_WRAP_NAME_HELP(name)  name
@@ -154,13 +154,13 @@ void *monitor_dlsym(const char *symbol);
 #define MONITOR_GET_REAL_NAME_WRAP(var, name)  \
     MONITOR_GET_REAL_NAME_WRAP_HELP(var, name)
 
-#define MONITOR_ASM_LABEL(name)		\
-    asm volatile (".globl " #name );	\
+#define MONITOR_ASM_LABEL(name)         \
+    asm volatile (".globl " #name );    \
     asm volatile ( #name ":" )
 
-#define MONITOR_RUN_ONCE(var)				\
-    static char monitor_has_run_##var = 0;		\
-    if ( monitor_has_run_##var ) { return; }		\
+#define MONITOR_RUN_ONCE(var)                           \
+    static char monitor_has_run_##var = 0;              \
+    if ( monitor_has_run_##var ) { return; }            \
     monitor_has_run_##var = 1
 
 extern int monitor_debug;

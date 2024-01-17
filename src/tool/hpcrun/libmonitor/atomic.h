@@ -64,9 +64,9 @@ compare_and_swap(volatile long *ptr, long old, long new)
     long prev;
 
     __asm__ __volatile__ (
-	"\tlock; cmpxchgq %3, (%1)"
-	: "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory"
-	);
+        "\tlock; cmpxchgq %3, (%1)"
+        : "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory"
+        );
 
     return prev;
 }
@@ -79,9 +79,9 @@ compare_and_swap(volatile long *ptr, long old, long new)
     long prev;
 
     __asm__ __volatile__ (
-	"\tlock; cmpxchg %3, (%1)"
-	: "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory"
-	);
+        "\tlock; cmpxchg %3, (%1)"
+        : "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory"
+        );
 
     return prev;
 }
@@ -96,8 +96,8 @@ load_linked(volatile long *ptr)
     volatile long ret;
 
     __asm__ __volatile__ (
-	"ldarx %0,0,%1" : "=r" (ret) : "r" (ptr)
-	);
+        "ldarx %0,0,%1" : "=r" (ret) : "r" (ptr)
+        );
 
     return ret;
 }
@@ -108,12 +108,12 @@ store_conditional(volatile long *ptr, long val)
     int ret;
 
     __asm__ __volatile__ (
-	"stdcx. %2,0,%1 \n\t"
-	"bne    $+12    \n\t"
-	"li     %0,1    \n\t"
-	"b      $+8     \n\t"
-	"li     %0,0" : "=&r" (ret) : "r" (ptr), "r" (val) : "cr0", "memory"
-	);
+        "stdcx. %2,0,%1 \n\t"
+        "bne    $+12    \n\t"
+        "li     %0,1    \n\t"
+        "b      $+8     \n\t"
+        "li     %0,0" : "=&r" (ret) : "r" (ptr), "r" (val) : "cr0", "memory"
+        );
 
     return ret;
 }
@@ -126,8 +126,8 @@ load_linked(volatile long *ptr)
     volatile long ret;
 
     __asm__ __volatile__ (
-	"lwarx %0,0,%1" : "=r" (ret) : "r" (ptr)
-	);
+        "lwarx %0,0,%1" : "=r" (ret) : "r" (ptr)
+        );
 
     return ret;
 }
@@ -138,12 +138,12 @@ store_conditional(volatile long *ptr, long val)
     volatile int ret;
 
     __asm__ __volatile__ (
-	"stwcx. %2,0,%1 \n\t"
-	"bne    $+12    \n\t"
-	"li     %0,1    \n\t"
-	"b      $+8     \n\t"
-	"li     %0,0" : "=&r" (ret) : "r" (ptr), "r" (val) : "cr0", "memory"
-	);
+        "stwcx. %2,0,%1 \n\t"
+        "bne    $+12    \n\t"
+        "li     %0,1    \n\t"
+        "b      $+8     \n\t"
+        "li     %0,0" : "=&r" (ret) : "r" (ptr), "r" (val) : "cr0", "memory"
+        );
 
     return ret;
 }
@@ -159,10 +159,10 @@ compare_and_swap(volatile long *ptr, long old, long new)
     long prev;
 
     for (;;) {
-	prev = load_linked(ptr);
-	if (prev != old || store_conditional(ptr, new)) {
-	    break;
-	}
+        prev = load_linked(ptr);
+        if (prev != old || store_conditional(ptr, new)) {
+            break;
+        }
     }
 
     return prev;
@@ -176,12 +176,12 @@ compare_and_swap(volatile long *ptr, long old, long new)
     long prev;
 
     __asm__ __volatile__ (
-	"mov ar.ccv=%0;;" :: "rO" (old)
-	);
+        "mov ar.ccv=%0;;" :: "rO" (old)
+        );
     __asm__ __volatile__ (
-	"cmpxchg8.acq %0=[%1],%2,ar.ccv"
-	: "=r" (prev) : "r" (ptr), "r" (new) : "memory"
-	);
+        "cmpxchg8.acq %0=[%1],%2,ar.ccv"
+        : "=r" (prev) : "r" (ptr), "r" (new) : "memory"
+        );
 
     return prev;
 }

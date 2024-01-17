@@ -65,7 +65,7 @@ monitor_mpi_init_count(int inc)
 {
     mpi_init_count += inc;
     if (mpi_init_count > max_init_count)
-	max_init_count = mpi_init_count;
+        max_init_count = mpi_init_count;
     return (mpi_init_count);
 }
 
@@ -91,10 +91,10 @@ monitor_set_size_rank(int size, int rank)
     static int first = 1;
 
     if (first) {
-	MONITOR_DEBUG("setting size = %d, rank = %d\n", size, rank);
-	mpi_size = size;
-	mpi_rank = rank;
-	first = 0;
+        MONITOR_DEBUG("setting size = %d, rank = %d\n", size, rank);
+        mpi_size = size;
+        mpi_rank = rank;
+        first = 0;
     }
 }
 
@@ -113,8 +113,8 @@ monitor_set_mpi_size_rank(int size, int rank)
     static int first = 1;
 
     if (first && mpi_init_count == 0 && max_init_count > 0) {
-	monitor_set_size_rank(size, rank);
-	first = 0;
+        monitor_set_size_rank(size, rank);
+        first = 0;
     }
 }
 

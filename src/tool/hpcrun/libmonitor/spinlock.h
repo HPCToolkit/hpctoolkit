@@ -59,11 +59,11 @@ static inline void
 spinlock_lock(spinlock_t *lock)
 {
     for (;;) {
-	while (lock->val != 0)
-	    ;
-	if (compare_and_swap(&lock->val, 0, 1) == 0) {
-	    break;
-	}
+        while (lock->val != 0)
+            ;
+        if (compare_and_swap(&lock->val, 0, 1) == 0) {
+            break;
+        }
     }
 
 #if defined(__powerpc__)
@@ -90,9 +90,9 @@ spinlock_trylock(spinlock_t *lock)
 {
     if (compare_and_swap(&lock->val, 0, 1) == 0) {
 #if defined(__powerpc__)
-	__asm__ __volatile__ ("isync\n");
+        __asm__ __volatile__ ("isync\n");
 #endif
-	return 0;
+        return 0;
     }
 
     return -1;

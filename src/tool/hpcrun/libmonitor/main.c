@@ -86,13 +86,13 @@ int monitor_debug = 0;
 #define AUXVEC_ARG   , auxvec
 #define AUXVEC_DECL  , void * auxvec
 
-#define START_MAIN_PARAM_LIST 		\
-    int  argc,				\
-    char **argv,			\
-    char **envp,			\
-    void *auxp,				\
-    void (*rtld_fini)(void),		\
-    void **stinfo,			\
+#define START_MAIN_PARAM_LIST           \
+    int  argc,                          \
+    char **argv,                        \
+    char **envp,                        \
+    void *auxp,                         \
+    void (*rtld_fini)(void),            \
+    void **stinfo,                      \
     void *stack_end
 
 static void *new_stinfo[4];
@@ -102,13 +102,13 @@ static void *new_stinfo[4];
 #define AUXVEC_ARG
 #define AUXVEC_DECL
 
-#define START_MAIN_PARAM_LIST 		\
+#define START_MAIN_PARAM_LIST           \
     int  (*main)(int, char **, char **),  \
-    int  argc,				\
-    char **argv,			\
-    void (*init)(void),			\
-    void (*fini)(void),			\
-    void (*rtld_fini)(void),		\
+    int  argc,                          \
+    char **argv,                        \
+    void (*init)(void),                 \
+    void (*fini)(void),                 \
+    void (*rtld_fini)(void),            \
     void *stack_end
 
 #endif
@@ -171,8 +171,8 @@ monitor_early_init(void)
     MONITOR_RUN_ONCE(early_init);
 
     if (! monitor_debug) {
-	if (getenv("MONITOR_DEBUG") != NULL)
-	    monitor_debug = 1;
+        if (getenv("MONITOR_DEBUG") != NULL)
+            monitor_debug = 1;
     }
     MONITOR_DEBUG1("\n");
 
@@ -241,7 +241,7 @@ void
 monitor_end_library_fcn(void)
 {
     if (monitor_fini_library_called)
-	return;
+        return;
 
     MONITOR_DEBUG1("calling monitor_fini_library() ...\n");
     monitor_fini_library();
@@ -263,15 +263,15 @@ monitor_begin_process_fcn(void *user_data, int is_fork)
     long val = compare_and_swap(&monitor_init_process_called, 0, 1);
 
     if (is_fork) {
-	/* Fork() always runs the init process callback.
-	 */
-	monitor_reset_thread_list(&monitor_main_tn);
-	monitor_main_tn.tn_user_data = user_data;
+        /* Fork() always runs the init process callback.
+         */
+        monitor_reset_thread_list(&monitor_main_tn);
+        monitor_main_tn.tn_user_data = user_data;
     }
     else if (val) {
-	/* If already called, then skip the init process callback.
-	 */
-	return;
+        /* If already called, then skip the init process callback.
+         */
+        return;
     }
 
     monitor_fini_library_called = 0;
@@ -281,7 +281,7 @@ monitor_begin_process_fcn(void *user_data, int is_fork)
 
     MONITOR_DEBUG1("calling monitor_init_process() ...\n");
     monitor_main_tn.tn_user_data =
-	monitor_init_process(&monitor_argc, monitor_argv, user_data);
+        monitor_init_process(&monitor_argc, monitor_argv, user_data);
 }
 
 /*
@@ -305,38 +305,38 @@ monitor_end_process_fcn(int how)
 
     prev = compare_and_swap(&monitor_end_process_cookie, 0, 1);
     if (prev == 0) {
-	/*
-	 * Race winner: use the first thread that starts process exit
-	 * to launch the fini-thread and fini-process callbacks.
-	 */
-	if (tn != NULL) {
-	    tn->tn_exit_win = 1;
-	}
-	MONITOR_DEBUG("calling monitor_begin_process_exit (how = %d) ...\n", how);
-	monitor_begin_process_exit(how);
+        /*
+         * Race winner: use the first thread that starts process exit
+         * to launch the fini-thread and fini-process callbacks.
+         */
+        if (tn != NULL) {
+            tn->tn_exit_win = 1;
+        }
+        MONITOR_DEBUG("calling monitor_begin_process_exit (how = %d) ...\n", how);
+        monitor_begin_process_exit(how);
 
-	monitor_thread_shootdown();
+        monitor_thread_shootdown();
 
-	MONITOR_DEBUG("calling monitor_fini_process (how = %d) ...\n", how);
-	monitor_fini_process(how, monitor_main_tn.tn_user_data);
+        MONITOR_DEBUG("calling monitor_fini_process (how = %d) ...\n", how);
+        monitor_fini_process(how, monitor_main_tn.tn_user_data);
     }
     else if (tn != NULL && tn->tn_exit_win) {
-	/*
-	 * Repeat winner: somehow this thread has started process exit
-	 * again.  Assume the callbacks have had their chance.
-	 */
-	MONITOR_DEBUG("same thread restarting process exit (how = %d)\n", how);
+        /*
+         * Repeat winner: somehow this thread has started process exit
+         * again.  Assume the callbacks have had their chance.
+         */
+        MONITOR_DEBUG("same thread restarting process exit (how = %d)\n", how);
     }
     else {
-	/*
-	 * Race loser: delay this thread until the fini callbacks are
-	 * finished.
-	 */
-	MONITOR_DEBUG("delay second thread trying to exit (how = %d)\n", how);
-	while (! monitor_fini_process_done) {
-	    usleep(MONITOR_POLL_USLEEP_TIME);
-	}
-	sleep(2);
+        /*
+         * Race loser: delay this thread until the fini callbacks are
+         * finished.
+         */
+        MONITOR_DEBUG("delay second thread trying to exit (how = %d)\n", how);
+        while (! monitor_fini_process_done) {
+            usleep(MONITOR_POLL_USLEEP_TIME);
+        }
+        sleep(2);
     }
 
     monitor_fini_process_done = 1;
@@ -357,13 +357,13 @@ void
 monitor_get_main_args(int *argc_ptr, char ***argv_ptr, char ***env_ptr)
 {
     if (argc_ptr != NULL) {
-	*argc_ptr = monitor_argc;
+        *argc_ptr = monitor_argc;
     }
     if (argv_ptr != NULL) {
-	*argv_ptr = monitor_argv;
+        *argv_ptr = monitor_argv;
     }
     if (env_ptr != NULL) {
-	*env_ptr = monitor_envp;
+        *env_ptr = monitor_envp;
     }
 }
 
@@ -375,7 +375,7 @@ int
 monitor_unwind_process_bottom_frame(void *addr)
 {
     return (&monitor_main_fence1 <= (char *) addr
-	    && (char *) addr <= &monitor_main_fence4);
+            && (char *) addr <= &monitor_main_fence4);
 }
 
 /*
@@ -386,7 +386,7 @@ int
 monitor_in_main_start_func_wide(void *addr)
 {
     return (&monitor_main_fence1 <= (char *) addr
-	    && (char *) addr <= &monitor_main_fence4);
+            && (char *) addr <= &monitor_main_fence4);
 }
 
 /*
@@ -397,7 +397,7 @@ int
 monitor_in_main_start_func_narrow(void *addr)
 {
     return (&monitor_main_fence2 <= (char *) addr
-	    && (char *) addr <= &monitor_main_fence3);
+            && (char *) addr <= &monitor_main_fence3);
 }
 
 /*
@@ -445,7 +445,7 @@ monitor_real_exit(int status)
  */
 int
 monitor_real_sigprocmask(int how, const sigset_t *set,
-			 sigset_t *oldset)
+                         sigset_t *oldset)
 {
     monitor_normal_init();
     return (*real_sigprocmask)(how, set, oldset);
@@ -468,8 +468,8 @@ monitor_real_fork(void)
 
     pid_t ret = (*real_fork)();
     if (ret == 0) {
-	/* child process */
-	monitor_reset_thread_list(&monitor_main_tn);
+        /* child process */
+        monitor_reset_thread_list(&monitor_main_tn);
     }
     return ret;
 #else
@@ -566,7 +566,7 @@ __libc_start_main(START_MAIN_PARAM_LIST)
     monitor_start_main_init();
 
     (*real_start_main)(argc, argv, envp, auxp, rtld_fini,
-		       new_stinfo, stack_end);
+                       new_stinfo, stack_end);
 
 #else
     real_main = main;
@@ -574,7 +574,7 @@ __libc_start_main(START_MAIN_PARAM_LIST)
     monitor_start_main_init();
 
     (*real_start_main)(monitor_main, argc, argv, init, fini,
-		       rtld_fini, stack_end);
+                       rtld_fini, stack_end);
 #endif
 
     /* Never reached. */
@@ -729,7 +729,7 @@ monitor_real_dlclose(void *handle)
 
 int __attribute__ ((weak))
 monitor_real_pthread_sigmask(int how, const sigset_t *set,
-			     sigset_t *oldset)
+                             sigset_t *oldset)
 {
     MONITOR_DEBUG1("(weak)\n");
     return (FAILURE);
@@ -737,7 +737,7 @@ monitor_real_pthread_sigmask(int how, const sigset_t *set,
 
 int __attribute__ ((weak))
 monitor_sigaction(int sig, monitor_sighandler_t *handler,
-		  int flags, struct sigaction *act)
+                  int flags, struct sigaction *act)
 {
     MONITOR_DEBUG1("(weak)\n");
     return (FAILURE);

@@ -27,13 +27,13 @@ MONITOR_WRAP_NAME(MPI_Init)(int *argc, char ***argv)
     MONITOR_GET_REAL_NAME_WRAP(real_mpi_init, MPI_Init);
     count = monitor_mpi_init_count(1);
     if (count == 1) {
-	MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
-	monitor_mpi_pre_init();
+        MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
+        monitor_mpi_pre_init();
     }
     ret = (*real_mpi_init)(argc, argv);
     if (count == 1) {
-	MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
-	monitor_init_mpi(argc, argv);
+        MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
+        monitor_init_mpi(argc, argv);
     }
     monitor_mpi_init_count(-1);
 

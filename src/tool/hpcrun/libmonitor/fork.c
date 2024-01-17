@@ -82,9 +82,9 @@ extern char **environ;
 typedef pid_t fork_fcn_t(void);
 typedef int execv_fcn_t(const char *path, char *const argv[]);
 typedef int execve_fcn_t(const char *path, char *const argv[],
-			 char *const envp[]);
+                         char *const envp[]);
 typedef int sigaction_fcn_t(int, const struct sigaction *,
-			    struct sigaction *);
+                            struct sigaction *);
 typedef int sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
 typedef int system_fcn_t(const char *);
 typedef void *malloc_fcn_t(size_t);
@@ -124,7 +124,7 @@ monitor_fork_init(void)
     static int init_done = 0;
 
     if (init_done)
-	return;
+        return;
 
     monitor_early_init();
     MONITOR_GET_REAL_NAME_WRAP(real_fork, fork);
@@ -166,32 +166,32 @@ monitor_copy_environ(char *const oldenv[])
     /* mmap() a larger array if needed. */
     if (n > MONITOR_INIT_ENVIRON_SIZE) {
 #ifdef _SC_PAGESIZE
-	if ((size = sysconf(_SC_PAGESIZE)) > 0) {
-	    pagesize = size;
-	}
+        if ((size = sysconf(_SC_PAGESIZE)) > 0) {
+            pagesize = size;
+        }
 #endif
-	size = n * sizeof(char *);
-	size = ((size + pagesize - 1)/pagesize) * pagesize;
-	prot = PROT_READ | PROT_WRITE;
+        size = n * sizeof(char *);
+        size = ((size + pagesize - 1)/pagesize) * pagesize;
+        prot = PROT_READ | PROT_WRITE;
 #if defined(MAP_ANONYMOUS)
-	flags = MAP_PRIVATE | MAP_ANONYMOUS;
+        flags = MAP_PRIVATE | MAP_ANONYMOUS;
 #else
-	flags = MAP_PRIVATE | MAP_ANON;
+        flags = MAP_PRIVATE | MAP_ANON;
 #endif
-	newenv = mmap(NULL, size, prot, flags, -1, 0);
-	if (newenv == MAP_FAILED) {
-	    MONITOR_ERROR("mmap failed, size: %ld, errno: %d\n",
-			  size, errno);
-	}
+        newenv = mmap(NULL, size, prot, flags, -1, 0);
+        if (newenv == MAP_FAILED) {
+            MONITOR_ERROR("mmap failed, size: %ld, errno: %d\n",
+                          size, errno);
+        }
     }
 
     /* Copy old environ and omit LD_PRELOAD. */
     n = 0;
     for (k = 0; oldenv[k] != NULL; k++) {
-	if (strstr(oldenv[k], "LD_PRELOAD") == NULL) {
-	    newenv[n] = oldenv[k];
-	    n++;
-	}
+        if (strstr(oldenv[k], "LD_PRELOAD") == NULL) {
+            newenv[n] = oldenv[k];
+            n++;
+        }
     }
     newenv[n] = NULL;
 
@@ -210,7 +210,7 @@ monitor_copy_environ(char *const oldenv[])
  */
 static void
 monitor_copy_va_args(char ***argv, char ***envp,
-		     const char *first_arg, va_list arglist)
+                     const char *first_arg, va_list arglist)
 {
     int argc, size = MONITOR_INIT_ARGV_SIZE;
     char *arg, **new_argv;
@@ -221,22 +221,22 @@ monitor_copy_va_args(char ***argv, char ***envp,
     (*argv)[0] = (char *)first_arg;
     argc = 1;
     do {
-	arg = va_arg(arglist, char *);
-	if (argc >= size) {
-	    size *= 2;
-	    MONITOR_GET_REAL_NAME(real_malloc, malloc);
-	    new_argv = (*real_malloc)(size * sizeof(char *));
-	    if (new_argv == NULL) {
-		MONITOR_ERROR1("malloc failed\n");
-	    }
-	    memcpy(new_argv, *argv, argc * sizeof(char *));
-	    *argv = new_argv;
-	}
-	(*argv)[argc++] = arg;
+        arg = va_arg(arglist, char *);
+        if (argc >= size) {
+            size *= 2;
+            MONITOR_GET_REAL_NAME(real_malloc, malloc);
+            new_argv = (*real_malloc)(size * sizeof(char *));
+            if (new_argv == NULL) {
+                MONITOR_ERROR1("malloc failed\n");
+            }
+            memcpy(new_argv, *argv, argc * sizeof(char *));
+            *argv = new_argv;
+        }
+        (*argv)[argc++] = arg;
     } while (arg != NULL);
 
     if (envp != NULL) {
-	*envp = va_arg(arglist, char **);
+        *envp = va_arg(arglist, char **);
     }
 }
 
@@ -258,33 +258,33 @@ monitor_is_executable(const char *file)
     int  file_len, path_len;
 
     if (file == NULL) {
-	MONITOR_DEBUG1("attempt to exec NULL path\n");
-	return (0);
+        MONITOR_DEBUG1("attempt to exec NULL path\n");
+        return (0);
     }
     /*
      * If file contains '/', then try just the file name itself,
      * otherwise, search for it on PATH.
      */
     if (strchr(file, SLASH) != NULL)
-	return (access(file, X_OK) == 0);
+        return (access(file, X_OK) == 0);
 
     file_len = strlen(file);
     path = getenv("PATH");
     path += strspn(path, COLON);
     while (*path != 0) {
-	path_len = strcspn(path, COLON);
-	if (path_len + file_len + 2 > PATH_MAX) {
-	    MONITOR_DEBUG("path length %d exceeds PATH_MAX %d\n",
-			  path_len + file_len + 2, PATH_MAX);
-	}
-	memcpy(buf, path, path_len);
-	buf[path_len] = SLASH;
-	memcpy(&buf[path_len + 1], file, file_len);
-	buf[path_len + 1 + file_len] = 0;
-	if (access(buf, X_OK) == 0)
-	    return (1);
-	path += path_len;
-	path += strspn(path, COLON);
+        path_len = strcspn(path, COLON);
+        if (path_len + file_len + 2 > PATH_MAX) {
+            MONITOR_DEBUG("path length %d exceeds PATH_MAX %d\n",
+                          path_len + file_len + 2, PATH_MAX);
+        }
+        memcpy(buf, path, path_len);
+        buf[path_len] = SLASH;
+        memcpy(&buf[path_len + 1], file, file_len);
+        buf[path_len + 1 + file_len] = 0;
+        if (access(buf, X_OK) == 0)
+            return (1);
+        path += path_len;
+        path += strspn(path, COLON);
     }
 
     return (0);
@@ -315,18 +315,18 @@ monitor_fork(void)
 
     ret = (*real_fork)();
     if (ret != 0) {
-	/* Parent process. */
-	if (ret < 0) {
-	    MONITOR_DEBUG("real fork failed (%d): %s\n",
-			  errno, strerror(errno));
-	}
-	MONITOR_DEBUG1("calling monitor_post_fork() ...\n");
-	monitor_post_fork(ret, user_data);
+        /* Parent process. */
+        if (ret < 0) {
+            MONITOR_DEBUG("real fork failed (%d): %s\n",
+                          errno, strerror(errno));
+        }
+        MONITOR_DEBUG1("calling monitor_post_fork() ...\n");
+        monitor_post_fork(ret, user_data);
     }
     else {
-	/* Child process. */
-	MONITOR_DEBUG("application forked, parent = %d\n", (int)getppid());
-	monitor_begin_process_fcn(user_data, TRUE);
+        /* Child process. */
+        MONITOR_DEBUG("application forked, parent = %d\n", (int)getppid());
+        monitor_begin_process_fcn(user_data, TRUE);
     }
 
     return (ret);
@@ -360,20 +360,20 @@ monitor_execv(const char *path, char *const argv[])
     monitor_fork_init();
     is_exec = access(path, X_OK) == 0;
     MONITOR_DEBUG("about to execv, expecting %s, pid: %d, path: %s\n",
-		  (is_exec ? "success" : "failure"),
-		  (int)getpid(), path);
+                  (is_exec ? "success" : "failure"),
+                  (int)getpid(), path);
     if (is_exec) {
-	monitor_end_process_fcn(MONITOR_EXIT_EXEC);
+        monitor_end_process_fcn(MONITOR_EXIT_EXEC);
 #ifdef MONITOR_DYNAMIC
-	monitor_end_library_fcn();
+        monitor_end_library_fcn();
 #endif
     }
     ret = (*real_execv)(path, argv);
 
     /* We only get here if real_execv fails. */
     if (is_exec) {
-	MONITOR_WARN("unexpected execv failure on pid: %d\n",
-		     (int)getpid());
+        MONITOR_WARN("unexpected execv failure on pid: %d\n",
+                     (int)getpid());
     }
     return (ret);
 }
@@ -389,20 +389,20 @@ monitor_execvp(const char *file, char *const argv[])
     monitor_fork_init();
     is_exec = monitor_is_executable(file);
     MONITOR_DEBUG("about to execvp, expecting %s, pid: %d, file: %s\n",
-		  (is_exec ? "success" : "failure"),
-		  (int)getpid(), file);
+                  (is_exec ? "success" : "failure"),
+                  (int)getpid(), file);
     if (is_exec) {
-	monitor_end_process_fcn(MONITOR_EXIT_EXEC);
+        monitor_end_process_fcn(MONITOR_EXIT_EXEC);
 #ifdef MONITOR_DYNAMIC
-	monitor_end_library_fcn();
+        monitor_end_library_fcn();
 #endif
     }
     ret = (*real_execvp)(file, argv);
 
     /* We only get here if real_execvp fails. */
     if (is_exec) {
-	MONITOR_WARN("unexpected execvp failure on pid: %d\n",
-		     (int)getpid());
+        MONITOR_WARN("unexpected execvp failure on pid: %d\n",
+                     (int)getpid());
     }
     return (ret);
 }
@@ -418,20 +418,20 @@ monitor_execve(const char *path, char *const argv[], char *const envp[])
     monitor_fork_init();
     is_exec = access(path, X_OK) == 0;
     MONITOR_DEBUG("about to execve, expecting %s, pid: %d, path: %s\n",
-		  (is_exec ? "success" : "failure"),
-		  (int)getpid(), path);
+                  (is_exec ? "success" : "failure"),
+                  (int)getpid(), path);
     if (is_exec) {
-	monitor_end_process_fcn(MONITOR_EXIT_EXEC);
+        monitor_end_process_fcn(MONITOR_EXIT_EXEC);
 #ifdef MONITOR_DYNAMIC
-	monitor_end_library_fcn();
+        monitor_end_library_fcn();
 #endif
     }
     ret = (*real_execve)(path, argv, envp);
 
     /* We only get here if real_execve fails. */
     if (is_exec) {
-	MONITOR_WARN("unexpected execve failure on pid: %d\n",
-		     (int)getpid());
+        MONITOR_WARN("unexpected execve failure on pid: %d\n",
+                     (int)getpid());
     }
     return (ret);
 }
@@ -444,7 +444,7 @@ monitor_execve(const char *path, char *const argv[], char *const envp[])
  *    execv(const char *path, char *const argv[])
  *
  *  In execv(), the elements of argv[] are const, but not the strings
- *  they point to.  Since we can't change the system declaratons,
+ *  they point to.  Since we can't change the system declarations,
  *  somewhere we have to drop the const.  (ugh)
  */
 int
@@ -504,7 +504,7 @@ MONITOR_WRAP_NAME(execvp)(const char *path, char *const argv[])
 
 int
 MONITOR_WRAP_NAME(execve)(const char *path, char *const argv[],
-			  char *const envp[])
+                          char *const envp[])
 {
     return monitor_execve(path, argv, envp);
 }
@@ -539,9 +539,9 @@ monitor_system(const char *command, int callback)
      * non-zero if yes.
      */
     if (command == NULL) {
-	status = !access(SHELL, X_OK);
-	MONITOR_DEBUG("(%s) status = %d\n", who, status);
-	return (status);
+        status = !access(SHELL, X_OK);
+        MONITOR_DEBUG("(%s) status = %d\n", who, status);
+        return (status);
     }
     /*
      * Ignore SIGINT and SIGQUIT, and block SIGCHLD.
@@ -552,8 +552,8 @@ monitor_system(const char *command, int callback)
     sigaddset(&sigchld_set, SIGCHLD);
 
     if (callback) {
-	MONITOR_DEBUG("(%s) calling monitor_pre_fork() ...\n", who);
-	user_data = monitor_pre_fork();
+        MONITOR_DEBUG("(%s) calling monitor_pre_fork() ...\n", who);
+        user_data = monitor_pre_fork();
     }
     (*real_sigaction)(SIGINT, &ign_act, &old_int);
     (*real_sigaction)(SIGQUIT, &ign_act, &old_quit);
@@ -561,41 +561,41 @@ monitor_system(const char *command, int callback)
 
     pid = (*real_fork)();
     if (pid < 0) {
-	/* Fork failed. */
-	MONITOR_DEBUG("(%s) real fork failed\n", who);
-	status = -1;
+        /* Fork failed. */
+        MONITOR_DEBUG("(%s) real fork failed\n", who);
+        status = -1;
     }
     else if (pid == 0) {
-	/* Child process. */
-	MONITOR_DEBUG("(%s) child process about to exec, parent = %d\n",
-		      who, getppid());
-	(*real_sigaction)(SIGINT, &old_int, NULL);
-	(*real_sigaction)(SIGQUIT, &old_quit, NULL);
-	(*real_sigprocmask)(SIG_SETMASK, &old_set, NULL);
-	arglist[0] = SHELL;
-	arglist[1] = "-c";
-	arglist[2] = (char *)command;
-	arglist[3] = NULL;
-	(*real_execve)(SHELL, arglist,
-		       callback ? environ : monitor_copy_environ(environ));
-	monitor_real_exit(127);
+        /* Child process. */
+        MONITOR_DEBUG("(%s) child process about to exec, parent = %d\n",
+                      who, getppid());
+        (*real_sigaction)(SIGINT, &old_int, NULL);
+        (*real_sigaction)(SIGQUIT, &old_quit, NULL);
+        (*real_sigprocmask)(SIG_SETMASK, &old_set, NULL);
+        arglist[0] = SHELL;
+        arglist[1] = "-c";
+        arglist[2] = (char *)command;
+        arglist[3] = NULL;
+        (*real_execve)(SHELL, arglist,
+                       callback ? environ : monitor_copy_environ(environ));
+        monitor_real_exit(127);
     }
     else {
-	/* Parent process. */
-	while (waitpid(pid, &status, 0) < 0) {
-	    if (errno != EINTR) {
-		status = -1;
-		break;
-	    }
-	}
+        /* Parent process. */
+        while (waitpid(pid, &status, 0) < 0) {
+            if (errno != EINTR) {
+                status = -1;
+                break;
+            }
+        }
     }
     (*real_sigaction)(SIGINT, &old_int, NULL);
     (*real_sigaction)(SIGQUIT, &old_quit, NULL);
     (*real_sigprocmask)(SIG_SETMASK, &old_set, NULL);
 
     if (callback) {
-	MONITOR_DEBUG("(%s) calling monitor_post_fork() ...\n", who);
-	monitor_post_fork(pid, user_data);
+        MONITOR_DEBUG("(%s) calling monitor_post_fork() ...\n", who);
+        monitor_post_fork(pid, user_data);
     }
 
     MONITOR_DEBUG("(%s) status = %d\n", who, status);
@@ -610,11 +610,11 @@ MONITOR_WRAP_NAME(system)(const char *command)
     monitor_fork_init();
 
     if (override_system) {
-	ret = monitor_system(command, TRUE);
+        ret = monitor_system(command, TRUE);
     }
     else {
-	MONITOR_DEBUG("system (no override): %s\n", command);
-	ret = (*real_system)(command);
+        MONITOR_DEBUG("system (no override): %s\n", command);
+        ret = (*real_system)(command);
     }
 
     return ret;
@@ -637,10 +637,10 @@ monitor_real_execve(const char *path, char *const argv[], char *const envp[])
     MONITOR_DEBUG("command = %s\n", path);
 
     if (path == NULL || argv == NULL || envp == NULL) {
-	MONITOR_DEBUG("error: null arg: path: %s, argv: %p, envp: %p\n",
-		      path, argv, envp);
-	errno = EACCES;
-	return -1;
+        MONITOR_DEBUG("error: null arg: path: %s, argv: %p, envp: %p\n",
+                      path, argv, envp);
+        errno = EACCES;
+        return -1;
     }
 
     return (*real_execve)(path, argv, monitor_copy_environ(envp));
