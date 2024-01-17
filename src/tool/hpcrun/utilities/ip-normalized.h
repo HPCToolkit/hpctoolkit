@@ -51,9 +51,9 @@
 
 //*************************** User Include Files ****************************
 
-#include <hpcrun/loadmap.h>
+#include "../loadmap.h"
 
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../../../lib/prof-lean/hpcrun-fmt.h"
 
 
 

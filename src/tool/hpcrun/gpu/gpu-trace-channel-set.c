@@ -45,11 +45,11 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/stacks.h>
+#include "../../../lib/prof-lean/stacks.h"
 
-#include <hpcrun/memory/hpcrun-malloc.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/control-knob.h>
+#include "../memory/hpcrun-malloc.h"
+#include "../thread_data.h"
+#include "../control-knob.h"
 
 
 #define DEBUG 0

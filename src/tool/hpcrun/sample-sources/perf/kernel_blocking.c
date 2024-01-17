@@ -53,9 +53,9 @@
  * (at least). This file will be updated once we find a way to make it work
  * properly.
  */
-#include <include/linux_info.h>
+#include "../../../../include/linux_info.h"
 
-#include <hpcrun/metrics.h>
+#include "../../metrics.h"
 
 #include "kernel_blocking.h"
 

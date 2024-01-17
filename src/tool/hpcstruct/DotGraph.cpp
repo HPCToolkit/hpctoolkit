@@ -76,18 +76,18 @@
 #include <Symtab.h>
 #include <Instruction.h>
 
-#include <lib/binutils/ElfHelper.hpp>
-#include <lib/binutils/InputFile.hpp>
+#include "../../lib/binutils/ElfHelper.hpp"
+#include "../../lib/binutils/InputFile.hpp"
 
-#include <lib/banal/Struct-Inline.hpp>
+#include "../../lib/banal/Struct-Inline.hpp"
 
-#include <lib/banal/gpu/GPUCFG_Cuda.hpp>
+#include "../../lib/banal/gpu/GPUCFG_Cuda.hpp"
 
 #ifdef ENABLE_IGC
-#include <lib/banal/gpu/GPUCFG_Intel.hpp>
+#include "../../lib/banal/gpu/GPUCFG_Intel.hpp"
 #endif // ENABLE_IGC
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>

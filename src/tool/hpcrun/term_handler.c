@@ -66,8 +66,8 @@
 //***************************************************************************
 
 #include "term_handler.h"
-#include <messages/messages.h>
-#include <utilities/arch/context-pc.h>
+#include "messages/messages.h"
+#include "utilities/arch/context-pc.h"
 
 
 //***************************************************************************

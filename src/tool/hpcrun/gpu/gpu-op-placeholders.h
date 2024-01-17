@@ -58,8 +58,8 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/utilities/ip-normalized.h>
-#include <hpcrun/cct/cct.h>
+#include "../utilities/ip-normalized.h"
+#include "../cct/cct.h"
 
 
 

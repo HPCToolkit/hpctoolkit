@@ -123,15 +123,15 @@
 #include "env.h"
 #include "disabled.h"
 #include "files.h"
-#include "messages.h"
+#include "messages/messages.h"
 #include "thread_data.h"
 #include "loadmap.h"
 #include "sample_prob.h"
 
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/vdso.h>
-#include <lib/prof-lean/crypto-hash.h> // Calculate a hash for vdso
-#include <lib/support-lean/OSUtil.h>
+#include "../../lib/prof-lean/spinlock.h"
+#include "../../lib/prof-lean/vdso.h"
+#include "../../lib/prof-lean/crypto-hash.h" // Calculate a hash for vdso
+#include "../../lib/support-lean/OSUtil.h"
 
 
 //***************************************************************

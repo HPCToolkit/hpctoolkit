@@ -66,8 +66,8 @@
 // local include files
 //*****************************************************************************
 
-#include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/messages/messages.h>
+#include "../../sample-sources/libdl.h"
+#include "../../messages/messages.h"
 
 #include "hip-api.h"
 

@@ -5,13 +5,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <messages/messages.h>
-#include <memory/hpcrun-malloc.h>
-#include <hpcrun/metrics.h>
-#include <cct/cct.h>
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/thread_data.h>
-#include <lib/prof-lean/splay-macros.h>
+#include "messages/messages.h"
+#include "memory/hpcrun-malloc.h"
+#include "metrics.h"
+#include "cct/cct.h"
+#include "cct2metrics.h"
+#include "thread_data.h"
+#include "../../lib/prof-lean/splay-macros.h"
 
 
 //

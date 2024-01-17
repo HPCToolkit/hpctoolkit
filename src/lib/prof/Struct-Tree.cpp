@@ -77,19 +77,19 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
+#include "../../include/gcc-attr.h"
 
 #include "Struct-Tree.hpp"
 
-#include <lib/xml/xml.hpp>
+#include "../xml/xml.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/dictionary.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/Logic.hpp>
-#include <lib/support/SrcFile.hpp>
+#include "../support/diagnostics.h"
+#include "../support/dictionary.h"
+#include "../support/FileUtil.hpp"
+#include "../support/Logic.hpp"
+#include "../support/SrcFile.hpp"
 using SrcFile::ln_NULL;
-#include <lib/support/StrUtil.hpp>
+#include "../support/StrUtil.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -174,7 +174,7 @@ writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
          bool prettyPrint)
 {
   static const char* structureDTD =
-#include <lib/xml/hpc-structure.dtd.h>
+#include "../xml/hpc-structure.dtd.h"
 
   os << "<?xml version=\"1.0\"?>\n";
   os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>\n";

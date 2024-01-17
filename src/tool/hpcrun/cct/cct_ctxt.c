@@ -46,7 +46,7 @@
 
 #include <stdint.h>
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 #include "cct_ctxt.h"
 
 static void

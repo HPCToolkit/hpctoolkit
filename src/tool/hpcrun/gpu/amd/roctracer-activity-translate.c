@@ -54,9 +54,9 @@
 // local includes
 //******************************************************************************
 
-#include <hpctoolkit-config.h>
-#include <hpcrun/gpu/gpu-print.h>
-#include <hpcrun/gpu/gpu-kernel-table.h>
+#include "hpctoolkit-config.h"
+#include "../gpu-print.h"
+#include "../gpu-kernel-table.h"
 
 #include "roctracer-activity-translate.h"
 #include <hip/hip_runtime_api.h>

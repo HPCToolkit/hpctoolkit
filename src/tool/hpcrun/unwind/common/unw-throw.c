@@ -63,10 +63,10 @@
 //*************************************************************************
 //   Local Includes
 //*************************************************************************
-#include <messages/messages.h>
-#include <unwind/common/backtrace.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/main.h>
+#include "../../messages/messages.h"
+#include "backtrace.h"
+#include "../../thread_data.h"
+#include "../../main.h"
 
 #include "unw-throw.h"
 

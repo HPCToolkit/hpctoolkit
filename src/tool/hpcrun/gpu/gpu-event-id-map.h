@@ -58,7 +58,7 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/splay-uint64.h>
+#include "../../../lib/prof-lean/splay-uint64.h"
 
 
 

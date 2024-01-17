@@ -53,8 +53,8 @@
 // local includes
 //*****************************************************************************
 
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/messages/messages.h>
+#include "../gpu-correlation-id-map.h"
+#include "../../messages/messages.h"
 
 #include "cupti-analysis.h"
 #include "cuda-device-map.h"

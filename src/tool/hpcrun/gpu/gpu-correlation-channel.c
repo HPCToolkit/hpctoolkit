@@ -50,9 +50,9 @@
 //******************************************************************************
 
 
-#include <lib/prof-lean/bichannel.h>
+#include "../../../lib/prof-lean/bichannel.h"
 
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 
 #include "gpu-activity-channel.h"
 #include "gpu-correlation.h"

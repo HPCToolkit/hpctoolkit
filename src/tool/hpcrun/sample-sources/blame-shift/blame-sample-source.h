@@ -81,9 +81,9 @@
  * local includes
  *****************************************************************************/
 
-#include <hpcrun/sample-sources/simple_oo.h>
-#include <hpcrun/sample-sources/sample_source_obj.h>
-#include <hpcrun/sample-sources/common.h>
+#include "../simple_oo.h"
+#include "../sample_source_obj.h"
+#include "../common.h"
 
 
 
@@ -199,4 +199,4 @@ METHOD_FN(display_events)
 #define ss_name BLAME_NAME
 #define ss_cls SS_SOFTWARE
 
-#include <hpcrun/sample-sources/ss_obj.h>
+#include "../ss_obj.h"

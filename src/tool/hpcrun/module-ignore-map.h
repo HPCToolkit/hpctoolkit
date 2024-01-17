@@ -60,7 +60,7 @@
 #define _HPCTOOLKIT_MODULE_IGNORE_MAP_H_
 
 #include <stdbool.h>
-#include <hpcrun/loadmap.h>
+#include "loadmap.h"
 
 void
 module_ignore_map_init

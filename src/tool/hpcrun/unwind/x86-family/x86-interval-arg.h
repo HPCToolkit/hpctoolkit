@@ -51,7 +51,7 @@
 
 #include "x86-interval-highwatermark.h"
 
-#include <lib/isa-lean/x86/instruction-set.h>
+#include "../../../../lib/isa-lean/x86/instruction-set.h"
 
 // as extra arguments are added to the process inst routine, better
 // to add fields to the structure, rather than keep changing the function signature

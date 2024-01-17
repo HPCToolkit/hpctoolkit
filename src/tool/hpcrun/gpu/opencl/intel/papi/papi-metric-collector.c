@@ -54,10 +54,10 @@
 //******************************************************************************
 
 #include "papi-metric-collector.h"
-#include <hpcrun/gpu/gpu-activity-channel.h>                            // gpu_activity_channel_get
-#include <hpcrun/gpu/gpu-operation-multiplexer.h>                       // gpu_operation_multiplexer_push
-#include <hpcrun/memory/hpcrun-malloc.h>                                // hpcrun_malloc_safe
-#include <hpcrun/gpu/opencl/intel/papi/papi-kernel-map.h>
+#include "../../../gpu-activity-channel.h"                            // gpu_activity_channel_get
+#include "../../../gpu-operation-multiplexer.h"                       // gpu_operation_multiplexer_push
+#include "../../../../memory/hpcrun-malloc.h"                                // hpcrun_malloc_safe
+#include "papi-kernel-map.h"
 
 
 

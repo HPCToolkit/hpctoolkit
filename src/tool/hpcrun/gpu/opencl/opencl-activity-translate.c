@@ -54,8 +54,8 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-activity.h>
-#include <messages/messages.h>
+#include "../gpu-activity.h"
+#include "../../messages/messages.h"
 
 #include "opencl-activity-translate.h"
 #include "opencl-api.h"

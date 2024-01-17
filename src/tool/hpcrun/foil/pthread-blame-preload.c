@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #include "foil.h"
-#include "sample-sources/pthread-blame-overrides.h"
+#include "../sample-sources/pthread-blame-overrides.h"
 
 static const char symver[] = "GLIBC_2.3.2";
 

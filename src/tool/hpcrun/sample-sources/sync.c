@@ -71,18 +71,18 @@
  * local includes
  *****************************************************************************/
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/disabled.h>
-#include <hpcrun/metrics.h>
-#include <sample_event.h>
+#include "../hpcrun_options.h"
+#include "../disabled.h"
+#include "../metrics.h"
+#include "../sample_event.h"
 #include "sample_source_obj.h"
 #include "common.h"
-#include <hpcrun/sample_sources_registered.h>
+#include "../sample_sources_registered.h"
 #include "simple_oo.h"
-#include <hpcrun/thread_data.h>
-#include <utilities/tokenize.h>
+#include "../thread_data.h"
+#include "../utilities/tokenize.h"
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 
 

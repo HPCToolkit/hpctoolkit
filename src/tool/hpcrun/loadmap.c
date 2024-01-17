@@ -47,18 +47,18 @@
 #include <libgen.h>
 #include <sys/time.h>
 
-#include "cct.h"
+#include "cct/cct.h"
 #include "loadmap.h"
-#include "fnbounds_interface.h"
-#include "fnbounds_file_header.h"
+#include "fnbounds/fnbounds_interface.h"
+#include "fnbounds/fnbounds_file_header.h"
 #include "hpcrun_stats.h"
 #include "sample_event.h"
 #include "epoch.h"
 
-#include <messages/messages.h>
+#include "messages/messages.h"
 
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/spinlock.h>
+#include "../../lib/prof-lean/hpcfmt.h"
+#include "../../lib/prof-lean/spinlock.h"
 
 #define LOADMAP_DEBUG 0
 

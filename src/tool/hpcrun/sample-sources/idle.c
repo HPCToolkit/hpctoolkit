@@ -69,17 +69,17 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
-#include <hpcrun/hpcrun_options.h>
+#include "../hpcrun_options.h"
 
-#include <hpcrun/metrics.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <sample-sources/blame-shift/blame-shift.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trace.h>
-#include <messages/messages.h>
-#include <utilities/tokenize.h>
+#include "../metrics.h"
+#include "../sample_sources_registered.h"
+#include "blame-shift/blame-shift.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
+#include "../trace.h"
+#include "../messages/messages.h"
+#include "../utilities/tokenize.h"
 
 
 /******************************************************************************

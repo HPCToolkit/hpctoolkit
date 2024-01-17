@@ -67,8 +67,8 @@
 // local include files
 //***************************************************************************
 
-#include <unwind/common/unw-datatypes.h>
-#include <hpcrun/utilities/ip-normalized.h>
+#include "unw-datatypes.h"
+#include "../../utilities/ip-normalized.h"
 
 //***************************************************************************
 //

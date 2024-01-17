@@ -7,7 +7,7 @@
 //   stdcx r_src,  addr_offset, r_addr
 //------------------------------------------------------------------------------
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 #if SIZEOF_VOIDP == 8
 #  define LL  "ldarx"

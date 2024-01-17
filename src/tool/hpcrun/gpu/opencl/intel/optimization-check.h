@@ -13,7 +13,7 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/hpcrun-opencl.h>
+#include "../../../../../lib/prof-lean/hpcrun-opencl.h"
 
 
 

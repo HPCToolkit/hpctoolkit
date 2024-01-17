@@ -60,7 +60,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>
+#include "../cct/cct.h"
 
 #include "omp-tools.h"
 

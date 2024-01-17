@@ -81,7 +81,7 @@
 
 #include <ucontext.h>
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 //************************************************
 // external includes
@@ -94,16 +94,16 @@
 // local includes
 //************************************************
 
-#include <fnbounds/fnbounds_interface.h>
-#include <messages/messages.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <unwind/common/unw-datatypes.h>
-#include <unwind/common/unwind.h>
-#include <unwind/common/uw_recipe_map.h>
-#include <unwind/common/binarytree_uwi.h>
-#include <unwind/common/libunw_intervals.h>
-#include <unwind/common/libunwind-interface.h>
-#include <utilities/arch/context-pc.h>
+#include "../../fnbounds/fnbounds_interface.h"
+#include "../../messages/messages.h"
+#include "../../hpcrun_stats.h"
+#include "../common/unw-datatypes.h"
+#include "../common/unwind.h"
+#include "../common/uw_recipe_map.h"
+#include "../common/binarytree_uwi.h"
+#include "../common/libunw_intervals.h"
+#include "../common/libunwind-interface.h"
+#include "../../utilities/arch/context-pc.h"
 
 //************************************************
 // interface functions

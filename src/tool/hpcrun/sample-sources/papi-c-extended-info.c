@@ -3,7 +3,7 @@
 #include "papi-c-extended-info.h"
 #include <papi.h>
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 static sync_info_list_t* registered_sync_components = NULL;
 

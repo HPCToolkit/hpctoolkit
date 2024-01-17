@@ -70,8 +70,8 @@
 //NOTE: included by Struct-Tree.hpp
 //#include "Struct-Tree.hpp"
 
-#include <lib/support/NonUniformDegreeTree.hpp>
-#include <lib/support/WordSet.hpp>
+#include "../support/NonUniformDegreeTree.hpp"
+#include "../support/WordSet.hpp"
 
 //*************************** Forward Declarations **************************
 

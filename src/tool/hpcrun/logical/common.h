@@ -47,16 +47,16 @@
 #ifndef LOGICAL_COMMON_H
 #define LOGICAL_COMMON_H
 
-#include "frame.h"
+#include "../frame.h"
 #include "hpctoolkit-config.h"
-#include "utilities/ip-normalized.h"
-#include "unwind/common/unwind.h"
+#include "../utilities/ip-normalized.h"
+#include "../unwind/common/unwind.h"
 
 #ifdef ENABLE_LOGICAL_PYTHON
-#include "logical/python.h"
+#include "python.h"
 #endif
 
-#include "lib/prof-lean/spinlock.h"
+#include "../../../lib/prof-lean/spinlock.h"
 
 #include <stdint.h>
 #include <stdbool.h>

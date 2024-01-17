@@ -46,7 +46,7 @@
 //******************************************************************************
 
 #include <stdio.h>
-#include <elf.h>
+#include "../../../lib/binutils/intel/elf.h"
 #include <gelf.h>
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
@@ -62,12 +62,12 @@
 //******************************************************************************
 
 
-#include <hpcrun/files.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/loadmap.h>
-#include <lib/prof-lean/crypto-hash.h>
-#include <lib/prof-lean/gpu-binary-naming.h>
-#include <lib/prof-lean/spinlock.h>
+#include "../files.h"
+#include "../messages/messages.h"
+#include "../loadmap.h"
+#include "../../../lib/prof-lean/crypto-hash.h"
+#include "../../../lib/prof-lean/gpu-binary-naming.h"
+#include "../../../lib/prof-lean/spinlock.h"
 
 #include "gpu-binary.h"
 

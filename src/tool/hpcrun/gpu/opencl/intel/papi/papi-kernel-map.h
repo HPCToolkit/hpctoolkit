@@ -5,8 +5,8 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>                   // cct_node_t
-#include <hpcrun/gpu/gpu-activity.h>          // gpu_activity_channel_t
+#include "../../../../cct/cct.h"                   // cct_node_t
+#include "../../../gpu-activity.h"          // gpu_activity_channel_t
 
 
 

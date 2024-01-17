@@ -71,9 +71,9 @@
 #include "sample_sources_all.h"
 
 #include <stdatomic.h>
-#include <lib/prof-lean/spinlock.h>
+#include "../../lib/prof-lean/spinlock.h"
 
-#include <include/queue.h>
+#include "../../include/queue.h"
 
 #include <monitor.h>
 

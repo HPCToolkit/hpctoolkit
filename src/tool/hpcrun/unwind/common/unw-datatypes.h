@@ -47,7 +47,16 @@
 #ifndef UNWIND_DATATYPE_H
 #define UNWIND_DATATYPE_H
 
-// selected by -I to accommodate different data types for different unwinders
-#include "unw-datatypes-specific.h"
+#include "hpctoolkit-config.h"
+
+#if defined(HPCRUN_UNW_X86)
+#include "../x86-family/unw-datatypes-specific.h"
+#elif defined(HPCRUN_UNW_PPC64)
+#include "../ppc64/unw-datatypes-specific.h"
+#elif defined(HPCRUN_UNW_LIBUNWIND)
+#include "../generic-libunwind/unw-datatypes-specific.h"
+#else
+#error No valid HPCRUN_UNW_* defined
+#endif
 
 #endif // UNWIND_DATATYPE_H

@@ -48,8 +48,8 @@
 #define __OMPT_DEVICE_H__
 
 #include <stdbool.h>
-#include <include/hpctoolkit-config.h>
-#include <cct/cct.h>
+#include "hpctoolkit-config.h"
+#include "../cct/cct.h"
 
 void
 prepare_device

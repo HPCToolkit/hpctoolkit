@@ -86,14 +86,14 @@
 #include <map>
 #include <vector>
 
-#include <lib/isa/ISATypes.hpp>
-#include <lib/binutils/ElfHelper.hpp>
-#include <lib/support/StringTable.hpp>
+#include "../isa/ISATypes.hpp"
+#include "../binutils/ElfHelper.hpp"
+#include "../support/StringTable.hpp"
 
 #include "Linemap.hpp"
 
-#include "dwarf.h"
-#include "libdwarf.h"
+#include <dwarf.h>
+#include <libdwarf.h>
 
 using namespace std;
 

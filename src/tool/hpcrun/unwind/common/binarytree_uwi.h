@@ -13,7 +13,7 @@
 // local include files
 //******************************************************************************
 
-#include <lib/prof-lean/mem_manager.h>
+#include "../../../../lib/prof-lean/mem_manager.h"
 #include "interval_t.h"
 
 

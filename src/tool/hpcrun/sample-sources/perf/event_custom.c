@@ -48,9 +48,9 @@
 
 #include <strings.h>       //  strcasecmp
 
-#include "include/queue.h" // Singly-linkled list macros
+#include "../../../../include/queue.h" // Singly-linkled list macros
 
-#include "sample-sources/display.h"
+#include "../display.h"
 
 #include "event_custom.h"
 

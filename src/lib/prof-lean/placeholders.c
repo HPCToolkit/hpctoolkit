@@ -50,7 +50,7 @@
 // global includes
 //*****************************************************************************
 
-#include <hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 #include <stdlib.h>
 

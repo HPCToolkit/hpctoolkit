@@ -67,8 +67,8 @@
 // local includes
 //******************************************************************************
 
-#include <lib/support/StrUtil.hpp>
-#include <include/hpctoolkit-config.h>
+#include "../support/StrUtil.hpp"
+#include "hpctoolkit-config.h"
 
 #include <Elf_X.h>
 

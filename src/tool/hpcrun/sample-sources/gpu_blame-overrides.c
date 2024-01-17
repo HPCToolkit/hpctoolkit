@@ -81,37 +81,37 @@
  * local includes
  *****************************************************************************/
 #include "common.h"
-#include <hpcrun/constructors.h>
-#include "gpu_blame.h"
+#include "../constructors.h"
+#include <gpu_blame.h>
 #include "gpu_ctxt_actions.h"
 
-#include <hpcrun/main.h>
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/write_data.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/memory/mmap.h>
+#include "../main.h"
+#include "../hpcrun_options.h"
+#include "../write_data.h"
+#include "../safe-sampling.h"
+#include "../hpcrun_stats.h"
+#include "../memory/mmap.h"
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trace.h>
+#include "../cct/cct.h"
+#include "../metrics.h"
+#include "../sample_event.h"
+#include "../sample_sources_registered.h"
+#include "../thread_data.h"
+#include "../trace.h"
 
-#include <lush/lush-backtrace.h>
-#include <messages/messages.h>
+#include "../lush/lush-backtrace.h"
+#include "../messages/messages.h"
 
-#include <utilities/tokenize.h>
-#include <utilities/arch/context-pc.h>
+#include "../utilities/tokenize.h"
+#include "../utilities/arch/context-pc.h"
 
-#include <unwind/common/unwind.h>
+#include "../unwind/common/unwind.h"
 
-#include <lib/support-lean/timer.h>
-#include <lib/prof-lean/spinlock.h>
+#include "../../../lib/support-lean/timer.h"
+#include "../../../lib/prof-lean/spinlock.h"
 #include <stdatomic.h>
-#include <lib/prof-lean/splay-macros.h>
-#include <lib/prof-lean/wrapper-macros.h>
+#include "../../../lib/prof-lean/splay-macros.h"
+#include "../../../lib/prof-lean/wrapper-macros.h"
 /******************************************************************************
  * macros
  *****************************************************************************/

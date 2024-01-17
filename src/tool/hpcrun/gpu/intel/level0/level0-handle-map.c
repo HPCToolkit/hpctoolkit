@@ -53,10 +53,10 @@
 
 #include "level0-handle-map.h"
 
-#include "lib/prof-lean/splay-uint64.h"
-#include "lib/prof-lean/spinlock.h"
-#include "hpcrun/memory/hpcrun-malloc.h"
-#include "hpcrun/gpu/gpu-splay-allocator.h"
+#include "../../../../../lib/prof-lean/splay-uint64.h"
+#include "../../../../../lib/prof-lean/spinlock.h"
+#include "../../../memory/hpcrun-malloc.h"
+#include "../../gpu-splay-allocator.h"
 
 //*****************************************************************************
 // macros
@@ -64,7 +64,7 @@
 
 #define DEBUG 0
 
-#include "hpcrun/gpu/gpu-print.h"
+#include "../../gpu-print.h"
 
 
 #define st_insert                               \

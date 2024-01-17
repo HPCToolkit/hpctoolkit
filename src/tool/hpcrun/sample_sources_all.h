@@ -53,7 +53,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include <sample-sources/sample_source_obj.h>
+#include "sample-sources/sample_source_obj.h"
 
 extern void hpcrun_sample_sources_from_eventlist(char *evl);
 extern sample_source_t* hpcrun_fetch_source_by_name(const char *src);

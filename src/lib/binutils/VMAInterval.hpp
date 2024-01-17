@@ -70,9 +70,9 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
+#include "../../include/gcc-attr.h"
 
-#include <lib/isa/ISATypes.hpp>
+#include "../isa/ISATypes.hpp"
 
 //*************************** Forward Declarations **************************
 

@@ -48,7 +48,7 @@
 // local includes
 //*****************************************************************************
 
-#include <include/gpu-metric-names.h>
+#include "../../../include/gpu-metric-names.h"
 
 #include "gpu-activity.h"
 

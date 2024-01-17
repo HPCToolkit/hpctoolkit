@@ -79,8 +79,8 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include <messages/messages.h>
-#include <utilities/linuxtimer.h>
+#include "../../messages/messages.h"
+#include "../../utilities/linuxtimer.h"
 
 
 //----------------------------------------------
@@ -149,35 +149,35 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 // local includes
 //***************************************************************************
 
-#include <hpcrun/files.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/main.h> // hpcrun_force_dlopen
-#include <hpcrun/safe-sampling.h>
+#include "../../files.h"
+#include "../../hpcrun_stats.h"
+#include "../../main.h" // hpcrun_force_dlopen
+#include "../../safe-sampling.h"
 
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-application-thread-api.h>
-#include <hpcrun/gpu/gpu-binary.h>
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/gpu-correlation-channel.h>
-#include <hpcrun/gpu/gpu-correlation-id.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/gpu/gpu-cct.h>
+#include "../gpu-activity-channel.h"
+#include "../gpu-application-thread-api.h"
+#include "../gpu-binary.h"
+#include "../gpu-monitoring-thread-api.h"
+#include "../gpu-correlation-channel.h"
+#include "../gpu-correlation-id.h"
+#include "../gpu-op-placeholders.h"
+#include "../gpu-cct.h"
 
-#include <hpcrun/ompt/ompt-device.h>
+#include "../../ompt/ompt-device.h"
 
-#include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/sample-sources/nvidia.h>
+#include "../../sample-sources/libdl.h"
+#include "../../sample-sources/nvidia.h"
 
-#include <hpcrun/utilities/hpcrun-nanotime.h>
+#include "../../utilities/hpcrun-nanotime.h"
 
-#include <hpcrun/thread_data.h>
+#include "../../thread_data.h"
 
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
 #include "cubin-id-map.h"
 
-//#include "sample_sources_all.h"
+//#include "../../sample_sources_all.h"
 
 
 //******************************************************************************
@@ -186,7 +186,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 
 
 #define DEBUG 0
-#include <hpcrun/gpu/gpu-print.h>
+#include "../gpu-print.h"
 
 
 #define CUPTI_LIBRARY_LOCATION "/lib64/libcupti.so"

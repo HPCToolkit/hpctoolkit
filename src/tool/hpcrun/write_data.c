@@ -58,31 +58,31 @@
 //*****************************************************************************
 
 #include "fname_max.h"
-#include "backtrace.h"
+#include "unwind/common/backtrace.h"
 #include "files.h"
 #include "epoch.h"
 #include "rank.h"
 #include "thread_data.h"
-#include "cct_bundle.h"
+#include "cct/cct_bundle.h"
 #include "hpcrun_return_codes.h"
 #include "write_data.h"
 #include "loadmap.h"
 #include "sample_prob.h"
 #include "cct/cct_bundle.h"
 
-#include <messages/messages.h>
+#include "messages/messages.h"
 
-#include <lush/lush-backtrace.h>
+#include "lush/lush-backtrace.h"
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../../lib/prof-lean/hpcio.h"
+#include "../../lib/prof-lean/hpcfmt.h"
+#include "../../lib/prof-lean/hpcrun-fmt.h"
 
-#include <lib/support-lean/OSUtil.h>
+#include "../../lib/support-lean/OSUtil.h"
 
 #ifdef ENABLE_GTPIN
-#include <hpcrun/gpu/intel/gtpin/gtpin-instrumentation.h>
-#include <hpcrun/gpu/intel/level0/level0-api.h>
+#include "gpu/intel/gtpin/gtpin-instrumentation.h"
+#include "gpu/intel/level0/level0-api.h"
 #endif
 
 //*****************************************************************************

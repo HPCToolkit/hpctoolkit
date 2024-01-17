@@ -68,8 +68,8 @@
 //    Local Includes
 // *****************************************************************************
 
-#include <hpcrun/thread_data.h>
-#include <cct/cct.h>
+#include "../../thread_data.h"
+#include "../../cct/cct.h"
 
 // *****************************************************************************
 //    Constants

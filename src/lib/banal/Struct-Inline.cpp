@@ -84,14 +84,14 @@
 #include <utility>
 #include <vector>
 
-#include <lib/binutils/BinUtils.hpp>
-#include <lib/binutils/ElfHelper.hpp>
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileNameMap.hpp>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/StringTable.hpp>
-#include <lib/support/dictionary.h>
+#include "../binutils/BinUtils.hpp"
+#include "../binutils/ElfHelper.hpp"
+#include "../support/diagnostics.h"
+#include "../support/FileNameMap.hpp"
+#include "../support/FileUtil.hpp"
+#include "../support/RealPathMgr.hpp"
+#include "../support/StringTable.hpp"
+#include "../support/dictionary.h"
 
 #include "Struct-Inline.hpp"
 

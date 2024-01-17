@@ -70,10 +70,10 @@
  * hpcrun includes
  *****************************************************************************/
 
-#include <hpcrun/messages/messages.h>
+#include "../../messages/messages.h"
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 #include "perf_event_open.h"
-#include "sample-sources/display.h"
+#include "../display.h"
 
 /******************************************************************************
  * perfmon

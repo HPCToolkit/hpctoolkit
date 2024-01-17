@@ -45,8 +45,8 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/utilities/ip-normalized.h>
+#include "../cct/cct.h"
+#include "../utilities/ip-normalized.h"
 
 //******************************************************************************
 // interface operations

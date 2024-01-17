@@ -6,8 +6,8 @@
 //
 #include <stdbool.h>
 
-#include <hpcrun/metrics.h>
-#include <cct/cct.h>
+#include "metrics.h"
+#include "cct/cct.h"
 
 
 //

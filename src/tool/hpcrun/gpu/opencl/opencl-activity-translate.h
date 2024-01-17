@@ -50,8 +50,8 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-activity.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
+#include "../gpu-activity.h"
+#include "../../../../lib/prof-lean/hpcrun-opencl.h"
 
 
 

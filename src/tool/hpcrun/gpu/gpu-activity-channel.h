@@ -48,7 +48,7 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/bichannel.h>
+#include "../../../lib/prof-lean/bichannel.h"
 
 #include "gpu-activity.h"
 #include "gpu-channel-common.h"

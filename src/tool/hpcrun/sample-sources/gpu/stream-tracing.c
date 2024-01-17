@@ -2,7 +2,7 @@
 // Created by ax4 on 8/5/19.
 //
 #include "stream-tracing.h"
-#include <tool/hpcrun/threadmgr.h>
+#include "../../threadmgr.h"
 #include "gpu-context-stream-id-map.h"
 
 static atomic_ullong stream_id;

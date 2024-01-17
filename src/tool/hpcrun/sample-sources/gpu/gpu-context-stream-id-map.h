@@ -5,13 +5,13 @@
 #ifndef HPCTOOLKIT_CUPTI_CONTEXT_STREAM_ID_MAP_H
 #define HPCTOOLKIT_CUPTI_CONTEXT_STREAM_ID_MAP_H
 
-#include <lib/prof-lean/producer_wfq.h>
+#include "../../../../lib/prof-lean/producer_wfq.h"
 #include <pthread.h>
-#include <tool/hpcrun/cct/cct.h>
-#include <lib/prof-lean/splay-macros.h>
+#include "../../cct/cct.h"
+#include "../../../../lib/prof-lean/splay-macros.h"
 #include <monitor.h>
-#include "trace.h"
-#include <tool/hpcrun/threadmgr.h>
+#include "../../trace.h"
+#include "../../threadmgr.h"
 
 #ifndef __cplusplus
 #include <stdatomic.h>

@@ -59,36 +59,36 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/placeholders.h>
+#include "../../../lib/prof-lean/placeholders.h"
 
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/device-finalizers.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/utilities/hpcrun-nanotime.h>
+#include "../safe-sampling.h"
+#include "../thread_data.h"
+#include "../device-finalizers.h"
+#include "../messages/messages.h"
+#include "../sample_event.h"
+#include "../utilities/hpcrun-nanotime.h"
 
 #include "ompt-interface.h"
 #include "ompt-device-map.h"
 #include "ompt-device.h"
 
-#include "gpu/gpu-application-thread-api.h"
-#include "gpu/gpu-binary.h"
-#include "gpu/gpu-correlation-channel.h"
-#include "gpu/gpu-correlation-channel-set.h"
-#include "gpu/gpu-correlation-id.h"
-#include "gpu/gpu-metrics.h"
-#include "gpu/gpu-monitoring.h"
-#include "gpu/gpu-monitoring-thread-api.h"
-#include "gpu/gpu-op-placeholders.h"
-#include "gpu/gpu-trace.h"
+#include "../gpu/gpu-application-thread-api.h"
+#include "../gpu/gpu-binary.h"
+#include "../gpu/gpu-correlation-channel.h"
+#include "../gpu/gpu-correlation-channel-set.h"
+#include "../gpu/gpu-correlation-id.h"
+#include "../gpu/gpu-metrics.h"
+#include "../gpu/gpu-monitoring.h"
+#include "../gpu/gpu-monitoring-thread-api.h"
+#include "../gpu/gpu-op-placeholders.h"
+#include "../gpu/gpu-trace.h"
 
-#include "gpu/ompt/ompt-gpu-api.h"
+#include "../gpu/ompt/ompt-gpu-api.h"
 
-#include "monitor.h"
+#include <monitor.h>
 
 #ifdef ENABLE_CUDA
-#include "gpu/nvidia/cuda-api.h"
+#include "../gpu/nvidia/cuda-api.h"
 #endif
 
 

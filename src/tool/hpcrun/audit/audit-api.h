@@ -51,7 +51,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#include "include/hpctoolkit-config.h"
+#include "hpctoolkit-config.h"
 
 // Structure used to represent an active link map entry. Most informational
 // fields are filled by the auditor.

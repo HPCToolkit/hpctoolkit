@@ -46,11 +46,11 @@
 
 #include "kernelsyms.hpp"
 
-#include "lib/support-lean/hpctoolkit_demangle.h"
-#include "pipeline.hpp"
+#include "../../support-lean/hpctoolkit_demangle.h"
+#include "../pipeline.hpp"
 #include "../util/lzmastream.hpp"
 
-#include "include/linux_info.h"
+#include "../../../include/linux_info.h"
 
 #include <limits>
 #include <fstream>

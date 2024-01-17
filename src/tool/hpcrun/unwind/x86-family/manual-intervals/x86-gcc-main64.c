@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 #include <string.h>
-#include "x86-unwind-interval-fixup.h"
-#include "x86-unwind-interval.h"
+#include "../x86-unwind-interval-fixup.h"
+#include "../x86-unwind-interval.h"
 
 static char gcc_main64_signature[] = {
  0x4c, 0x8d, 0x54, 0x24, 0x08,  // lea    0x8(%rsp),%r10

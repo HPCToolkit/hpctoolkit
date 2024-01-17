@@ -74,12 +74,12 @@
 #include <ostream>
 #include <string>
 
-#include <lib/binutils/VMAInterval.hpp>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/StringTable.hpp>
-#include <lib/support/dictionary.h>
+#include "../binutils/VMAInterval.hpp"
+#include "../support/FileUtil.hpp"
+#include "../support/StringTable.hpp"
+#include "../support/dictionary.h"
 
-#include <lib/xml/xml.hpp>
+#include "../xml/xml.hpp"
 
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
@@ -96,7 +96,7 @@ static long gaps_line;
 static bool pretty_print_output;
 
 static const char * hpcstruct_xml_head =
-#include <lib/xml/hpc-structure.dtd.h>
+#include "../xml/hpc-structure.dtd.h"
   ;
 
 // temp options for call <C> tags, target (t) field, and device (d) field

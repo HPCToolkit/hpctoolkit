@@ -65,10 +65,10 @@
 
 
 #include "stack_troll.h"
-#include "fnbounds_interface.h"
+#include "../../fnbounds/fnbounds_interface.h"
 #include "validate_return_addr.h"
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
 static const int TROLL_LIMIT = 16;
 

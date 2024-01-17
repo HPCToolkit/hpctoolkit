@@ -68,7 +68,7 @@
 // user include files
 //***************************************************************************
 
-#include "include/queue.h" // Singly-linkled list macros
+#include "../../include/queue.h" // Singly-linkled list macros
 
 #include "main.h"
 #include "thread_data.h"
@@ -77,8 +77,8 @@
 
 #include "memchk.h"
 
-#include <messages/messages.h>
-#include <utilities/arch/context-pc.h>
+#include "messages/messages.h"
+#include "utilities/arch/context-pc.h"
 
 #include "segv_handler.h"
 

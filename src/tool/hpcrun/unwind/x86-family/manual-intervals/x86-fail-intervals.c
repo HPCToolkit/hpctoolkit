@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 #include <string.h>
-#include "x86-unwind-interval-fixup.h"
-#include "x86-unwind-interval.h"
+#include "../x86-unwind-interval-fixup.h"
+#include "../x86-unwind-interval.h"
 
 #define X86_FAIL_INTERVALS_DEBUG 1
 

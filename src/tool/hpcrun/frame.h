@@ -47,9 +47,9 @@
 #ifndef FRAME_H
 #define FRAME_H
 
-#include <unwind/common/unw-datatypes.h>
-#include <utilities/ip-normalized.h>
-#include <lib/prof-lean/lush/lush-support.h>
+#include "unwind/common/unw-datatypes.h"
+#include "utilities/ip-normalized.h"
+#include "../../lib/prof-lean/lush/lush-support.h"
 #include "../../lib/prof-lean/lush/lush-support.h"
 #include "utilities/ip-normalized.h"
 

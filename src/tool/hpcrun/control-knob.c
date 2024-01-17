@@ -1,5 +1,5 @@
 #include "control-knob.h"
-#include <utilities/tokenize.h>
+#include "utilities/tokenize.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -69,10 +69,10 @@
 // local include files
 //***************************************************************************
 
-#include <hpcrun/utilities/ip-normalized.h>
-#include <unwind/common/unw-datatypes.h>
-#include <unwind/common/backtrace_info.h>
-#include <hpcrun/frame.h>
+#include "../../utilities/ip-normalized.h"
+#include "unw-datatypes.h"
+#include "backtrace_info.h"
+#include "../../frame.h"
 
 //
 // backtrace_t type is a struct holding begin, end, current ptrs

@@ -51,10 +51,10 @@
 
 //#ifdef ENABLE_CUDA
 
-//#include "gpu_blame-cuda-runtime-header.h"
-//#include "gpu_blame-cuda-driver-header.h"
-#include <hpcrun/core_profile_trace_data.h>
-#include <hpcrun/main.h>
+//#include <gpu_blame-cuda-runtime-header.h>
+//#include <gpu_blame-cuda-driver-header.h>
+#include "../core_profile_trace_data.h"
+#include "../main.h"
 
 #ifndef __cplusplus
 #include <stdatomic.h>

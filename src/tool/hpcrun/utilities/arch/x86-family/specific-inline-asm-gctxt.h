@@ -51,7 +51,7 @@
 // local include files
 //***************************************************************************
 
-#include <utilities/arch/ucontext-manip.h>
+#include "../ucontext-manip.h"
 
 
 

@@ -82,16 +82,16 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <utilities/tokenize.h>
-#include <messages/messages.h>
-#include <lush/lush-backtrace.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../hpcrun_options.h"
+#include "../hpcrun_stats.h"
+#include "../metrics.h"
+#include "../sample_sources_registered.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
+#include "../utilities/tokenize.h"
+#include "../messages/messages.h"
+#include "../lush/lush-backtrace.h"
+#include "../../../lib/prof-lean/hpcrun-fmt.h"
 
 
 /******************************************************************************

@@ -68,7 +68,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "newmem.h"
+#include "memory/newmem.h"
 #include "epoch.h"
 #include "handling_sample.h"
 
@@ -77,12 +77,12 @@
 #include "trace.h"
 #include "threadmgr.h"
 
-#include <lush/lush-pthread.h>
-#include <messages/messages.h>
-#include <trampoline/common/trampoline.h>
-#include <memory/mmap.h>
-#include <lib/prof-lean/id-tuple.h>
-#include <lib/support-lean/OSUtil.h>
+#include "lush/lush-pthread.h"
+#include "messages/messages.h"
+#include "trampoline/common/trampoline.h"
+#include "memory/mmap.h"
+#include "../../lib/prof-lean/id-tuple.h"
+#include "../../lib/support-lean/OSUtil.h"
 
 
 //***************************************************************************

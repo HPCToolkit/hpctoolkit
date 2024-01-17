@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #ifndef HPCTOOLKIT_VERSION_STRING
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 #endif
 
 static inline void

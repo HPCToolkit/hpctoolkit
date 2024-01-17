@@ -64,10 +64,10 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/spinlock.h>
+#include "../../../lib/prof-lean/spinlock.h"
 
-#include <hpcrun/trace.h>
-#include <hpcrun/write_data.h>
+#include "../trace.h"
+#include "../write_data.h"
 
 #include "ompt-defer.h"
 #include "ompt-defer-write.h"

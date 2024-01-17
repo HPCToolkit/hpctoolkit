@@ -48,7 +48,7 @@
 // local includes
 //******************************************************************************
 
-#include <lib/isa-lean/power/instruction-set.h>
+#include "../../../lib/isa-lean/power/instruction-set.h"
 
 
 

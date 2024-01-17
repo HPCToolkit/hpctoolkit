@@ -53,7 +53,7 @@
 #include <stdint.h>
 #include <ucontext.h>
 
-#include <lib/isa-lean/power/instruction-set.h>
+#include "../../../../../lib/isa-lean/power/instruction-set.h"
 
 
 #if __WORDSIZE == 32

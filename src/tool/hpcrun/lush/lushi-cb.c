@@ -69,9 +69,9 @@
 //*************************** User Include Files ****************************
 
 #include "lushi-cb.h"
-#include "dylib.h"
+#include "../os/linux/dylib.h"
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 //*************************** Forward Declarations **************************
 

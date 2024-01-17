@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #include "foil.h"
-#include "sample-sources/ga-overrides.h"
+#include "../sample-sources/ga-overrides.h"
 
 extern global_array_t *GA;
 

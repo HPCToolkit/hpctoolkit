@@ -73,7 +73,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
+#include "../../include/gcc-attr.h"
 
 #include "diagnostics.h"
 

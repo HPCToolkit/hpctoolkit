@@ -76,7 +76,7 @@
 
 #include "agent-cilk.h"
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 //*************************** Forward Declarations **************************
 

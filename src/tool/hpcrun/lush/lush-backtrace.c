@@ -71,15 +71,15 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/min-max.h>
+#include "../../../include/min-max.h"
 
 #include "lush.h"
 #include "lush-backtrace.h"
-#include <hpcrun/cct_insert_backtrace.h>
+#include "../cct_insert_backtrace.h"
 
-#include <epoch.h>
-#include <sample_event.h> // hpcrun_drop_sample()
-#include <unwind/common/backtrace.h> // dump_backtrace()
+#include "../epoch.h"
+#include "../sample_event.h" // hpcrun_drop_sample()
+#include "../unwind/common/backtrace.h" // dump_backtrace()
 
 
 //*************************** Forward Declarations **************************

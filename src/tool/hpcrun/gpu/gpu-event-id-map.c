@@ -52,10 +52,10 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/splay-uint64.h>
+#include "../../../lib/prof-lean/splay-uint64.h"
 
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../messages/messages.h"
+#include "../memory/hpcrun-malloc.h"
 
 #include "gpu-event-id-map.h"
 #include "gpu-splay-allocator.h"

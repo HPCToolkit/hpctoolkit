@@ -76,24 +76,24 @@
 #include "common.h"
 #include "ss-errno.h"
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/hpcrun_stats.h>
+#include "../hpcrun_options.h"
+#include "../hpcrun_stats.h"
 
-#include <hpcrun/metrics.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/thread_data.h>
+#include "../metrics.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../sample_sources_registered.h"
+#include "../thread_data.h"
 
-#include <lush/lush-backtrace.h>
-#include <messages/messages.h>
+#include "../lush/lush-backtrace.h"
+#include "../messages/messages.h"
 
-#include <utilities/tokenize.h>
-#include <utilities/arch/context-pc.h>
+#include "../utilities/tokenize.h"
+#include "../utilities/arch/context-pc.h"
 
-#include <unwind/common/unwind.h>
+#include "../unwind/common/unwind.h"
 
-#include <lib/support-lean/timer.h>
+#include "../../../lib/support-lean/timer.h"
 
 /******************************************************************************
  * macros

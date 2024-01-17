@@ -84,7 +84,7 @@
 //    ret = real_function(...);
 //    hpcrun_safe_enter();
 //
-// 5. Be sure to #include <safe-sampling.h> in any file using these
+// 5. Be sure to #include "safe-sampling.h" in any file using these
 // functions or else you'll get 'undefined reference' at runtime.
 //
 // 6. Technically, we don't need atomic test and set here.  There is
@@ -100,10 +100,10 @@
 #ifndef _HPCRUN_SAFE_SAMPLING_H_
 #define _HPCRUN_SAFE_SAMPLING_H_
 
-#include <hpcrun/main.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trampoline/common/trampoline.h>
-#include <hpcrun/utilities/arch/context-pc.h>
+#include "main.h"
+#include "thread_data.h"
+#include "trampoline/common/trampoline.h"
+#include "utilities/arch/context-pc.h"
 
 // Use hpcrun_safe_enter() at entry into our code in a synchronous
 // override.  If unsafe (false), then call the real function and
