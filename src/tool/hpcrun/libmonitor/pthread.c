@@ -960,7 +960,7 @@ monitor_adjust_stack_size(pthread_attr_t *orig_attr,
  *  Override pthread_create().
  */
 int
-MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
+foilbase_pthread_create(void* caller, PTHREAD_CREATE_PARAM_LIST)
 {
     struct monitor_thread_node *tn, *my_tn;
     struct monitor_thread_info mti;
@@ -987,7 +987,7 @@ MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
      * function.  Note: this info is only available during the
      * lifetime of the pthread_create() override.
      */
-    mti.mti_create_return_addr = __builtin_return_address(0);
+    mti.mti_create_return_addr = caller;
     mti.mti_start_routine = (void *) start_routine;
 
     my_tn = monitor_get_tn();
@@ -1086,7 +1086,7 @@ MONITOR_WRAP_NAME(pthread_create)(PTHREAD_CREATE_PARAM_LIST)
  *  it here.
  */
 void
-MONITOR_WRAP_NAME(pthread_exit)(void *data)
+foilbase_pthread_exit(void *data)
 {
     struct monitor_thread_node *tn;
 
@@ -1108,8 +1108,7 @@ MONITOR_WRAP_NAME(pthread_exit)(void *data)
  *  let it change the mask for any signal in the keep open list.
  */
 int
-MONITOR_WRAP_NAME(pthread_sigmask)(int how, const sigset_t *set,
-                                   sigset_t *oldset)
+foilbase_pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset)
 {
     sigset_t my_set;
 
@@ -1196,7 +1195,7 @@ monitor_sigwait_helper(const sigset_t *set, int sig, int sigwait_errno,
 }
 
 int
-MONITOR_WRAP_NAME(sigwait)(const sigset_t *set, int *sig)
+foilbase_sigwait(const sigset_t *set, int *sig)
 {
     char buf[MONITOR_SIG_BUF_SIZE];
     siginfo_t my_info;
@@ -1226,7 +1225,7 @@ MONITOR_WRAP_NAME(sigwait)(const sigset_t *set, int *sig)
 }
 
 int
-MONITOR_WRAP_NAME(sigwaitinfo)(const sigset_t *set, siginfo_t *info)
+foilbase_sigwaitinfo(const sigset_t *set, siginfo_t *info)
 {
     char buf[MONITOR_SIG_BUF_SIZE];
     siginfo_t my_info, *info_ptr;
@@ -1252,7 +1251,7 @@ MONITOR_WRAP_NAME(sigwaitinfo)(const sigset_t *set, siginfo_t *info)
 }
 
 int
-MONITOR_WRAP_NAME(sigtimedwait)(const sigset_t *set, siginfo_t *info,
+foilbase_sigtimedwait(const sigset_t *set, siginfo_t *info,
                                 const struct timespec *timeout)
 {
     char buf[MONITOR_SIG_BUF_SIZE];

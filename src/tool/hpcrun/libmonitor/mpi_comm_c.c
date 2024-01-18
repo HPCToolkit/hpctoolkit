@@ -20,7 +20,7 @@ static mpi_comm_fcn_t  *real_mpi_comm_rank = NULL;
  * compatible with most libraries.
  */
 int
-MONITOR_WRAP_NAME(MPI_Comm_rank)(void *comm, int *rank)
+foilbase_MPI_Comm_rank(void *comm, int *rank)
 {
     int size = -1, ret;
 

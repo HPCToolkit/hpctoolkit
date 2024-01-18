@@ -15,7 +15,7 @@ typedef int mpi_finalize_fcn_t(void);
 static mpi_finalize_fcn_t  *real_mpi_finalize = NULL;
 
 int
-MONITOR_WRAP_NAME(MPI_Finalize)(void)
+foilbase_MPI_Finalize(void)
 {
     int ret, count;
 

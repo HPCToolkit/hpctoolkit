@@ -15,7 +15,7 @@ typedef int mpi_init_fcn_t(int *, char ***);
 static mpi_init_fcn_t  *real_mpi_init = NULL;
 
 int
-MONITOR_WRAP_NAME(MPI_Init)(int *argc, char ***argv)
+foilbase_MPI_Init(int *argc, char ***argv)
 {
     int ret, count;
 

@@ -89,7 +89,7 @@ static f_mpi_comm_fcn_t  *real_pmpi_comm_rank_f2 = NULL;
  */
 
 int
-MONITOR_WRAP_NAME(PMPI_Init)(int *argc, char ***argv)
+foilbase_PMPI_Init(int *argc, char ***argv)
 {
     int ret, count;
 
@@ -129,19 +129,19 @@ MONITOR_WRAP_NAME(PMPI_Init)(int *argc, char ***argv)
     monitor_mpi_init_count(-1);
 
 void
-MONITOR_WRAP_NAME(pmpi_init)(int *ierror)
+foilbase_pmpi_init(int *ierror)
 {
     FORTRAN_INIT_BODY(real_pmpi_init_f0, pmpi_init);
 }
 
 void
-MONITOR_WRAP_NAME(pmpi_init_)(int *ierror)
+foilbase_pmpi_init_(int *ierror)
 {
     FORTRAN_INIT_BODY(real_pmpi_init_f1, pmpi_init_);
 }
 
 void
-MONITOR_WRAP_NAME(pmpi_init__)(int *ierror)
+foilbase_pmpi_init__(int *ierror)
 {
     FORTRAN_INIT_BODY(real_pmpi_init_f2, pmpi_init__);
 }
@@ -153,7 +153,7 @@ MONITOR_WRAP_NAME(pmpi_init__)(int *ierror)
  */
 
 int
-MONITOR_WRAP_NAME(PMPI_Init_thread)(int *argc, char ***argv,
+foilbase_PMPI_Init_thread(int *argc, char ***argv,
                                     int required, int *provided)
 {
     int ret, count;
@@ -194,19 +194,19 @@ MONITOR_WRAP_NAME(PMPI_Init_thread)(int *argc, char ***argv,
     monitor_mpi_init_count(-1);
 
 void
-MONITOR_WRAP_NAME(pmpi_init_thread)(int *required, int *provided, int *ierror)
+foilbase_pmpi_init_thread(int *required, int *provided, int *ierror)
 {
     FORTRAN_INIT_THREAD_BODY(real_pmpi_init_thread_f0, pmpi_init_thread);
 }
 
 void
-MONITOR_WRAP_NAME(pmpi_init_thread_)(int *required, int *provided, int *ierror)
+foilbase_pmpi_init_thread_(int *required, int *provided, int *ierror)
 {
     FORTRAN_INIT_THREAD_BODY(real_pmpi_init_thread_f1, pmpi_init_thread_);
 }
 
 void
-MONITOR_WRAP_NAME(pmpi_init_thread__)(int *required, int *provided, int *ierror)
+foilbase_pmpi_init_thread__(int *required, int *provided, int *ierror)
 {
     FORTRAN_INIT_THREAD_BODY(real_pmpi_init_thread_f2, pmpi_init_thread__);
 }
@@ -218,7 +218,7 @@ MONITOR_WRAP_NAME(pmpi_init_thread__)(int *required, int *provided, int *ierror)
  */
 
 int
-MONITOR_WRAP_NAME(PMPI_Finalize)(void)
+foilbase_PMPI_Finalize(void)
 {
     int ret, count;
 
@@ -258,19 +258,19 @@ MONITOR_WRAP_NAME(PMPI_Finalize)(void)
     monitor_mpi_fini_count(-1);
 
 void
-MONITOR_WRAP_NAME(pmpi_finalize)(int *ierror)
+foilbase_pmpi_finalize(int *ierror)
 {
     FORTRAN_FINALIZE_BODY(real_pmpi_finalize_f0, pmpi_finalize);
 }
 
 void
-MONITOR_WRAP_NAME(pmpi_finalize_)(int *ierror)
+foilbase_pmpi_finalize_(int *ierror)
 {
     FORTRAN_FINALIZE_BODY(real_pmpi_finalize_f1, pmpi_finalize_);
 }
 
 void
-MONITOR_WRAP_NAME(pmpi_finalize__)(int *ierror)
+foilbase_pmpi_finalize__(int *ierror)
 {
     FORTRAN_FINALIZE_BODY(real_pmpi_finalize_f2, pmpi_finalize__);
 }
@@ -286,7 +286,7 @@ MONITOR_WRAP_NAME(pmpi_finalize__)(int *ierror)
  * compatible with most libraries.
  */
 int
-MONITOR_WRAP_NAME(PMPI_Comm_rank)(void *comm, int *rank)
+foilbase_PMPI_Comm_rank(void *comm, int *rank)
 {
     int size = -1, ret;
 
@@ -313,21 +313,21 @@ MONITOR_WRAP_NAME(PMPI_Comm_rank)(void *comm, int *rank)
  * In Fortran, MPI_Comm is always int.
  */
 void
-MONITOR_WRAP_NAME(pmpi_comm_rank)(int *comm, int *rank, int *ierror)
+foilbase_pmpi_comm_rank(int *comm, int *rank, int *ierror)
 {
     FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f0, pmpi_comm_size,
                            real_pmpi_comm_rank_f0, pmpi_comm_rank);
 }
 
 void
-MONITOR_WRAP_NAME(pmpi_comm_rank_)(int *comm, int *rank, int *ierror)
+foilbase_pmpi_comm_rank_(int *comm, int *rank, int *ierror)
 {
     FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f1, pmpi_comm_size_,
                            real_pmpi_comm_rank_f1, pmpi_comm_rank_);
 }
 
 void
-MONITOR_WRAP_NAME(pmpi_comm_rank__)(int *comm, int *rank, int *ierror)
+foilbase_pmpi_comm_rank__(int *comm, int *rank, int *ierror)
 {
     FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f2, pmpi_comm_size__,
                            real_pmpi_comm_rank_f2, pmpi_comm_rank__);

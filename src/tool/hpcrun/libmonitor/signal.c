@@ -659,14 +659,14 @@ monitor_appl_sigaction(int sig, const struct sigaction *act,
 }
 
 int
-MONITOR_WRAP_NAME(sigaction)(int sig, const struct sigaction *act,
+foilbase_sigaction(int sig, const struct sigaction *act,
                              struct sigaction *oldact)
 {
     return monitor_appl_sigaction(sig, act, oldact);
 }
 
 sighandler_fcn_t *
-MONITOR_WRAP_NAME(signal)(int sig, sighandler_fcn_t *handler)
+foilbase_signal(int sig, sighandler_fcn_t *handler)
 {
     struct sigaction act, oldact;
 
@@ -687,7 +687,7 @@ MONITOR_WRAP_NAME(signal)(int sig, sighandler_fcn_t *handler)
  *  change the mask for any signal in the keep open list.
  */
 int
-MONITOR_WRAP_NAME(sigprocmask)(int how, const sigset_t *set,
+foilbase_sigprocmask(int how, const sigset_t *set,
                                sigset_t *oldset)
 {
     sigset_t my_set;

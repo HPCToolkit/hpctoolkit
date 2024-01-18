@@ -15,7 +15,7 @@ typedef int mpi_init_thread_fcn_t(int *, char ***, int, int *);
 static mpi_init_thread_fcn_t  *real_mpi_init_thread = NULL;
 
 int
-MONITOR_WRAP_NAME(MPI_Init_thread)(int *argc, char ***argv,
+foilbase_MPI_Init_thread(int *argc, char ***argv,
                                    int required, int *provided)
 {
     int ret, count;

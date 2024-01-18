@@ -37,6 +37,9 @@
 #ifndef  _MONITOR_H_
 #define  _MONITOR_H_
 
+#include "hpctoolkit-config.h"
+
+#include "pthread_h.h"
 #include <sys/types.h>
 #include <signal.h>
 
@@ -112,6 +115,86 @@ extern int monitor_get_new_thread_info(struct monitor_thread_info *);
  *  Special access to wrapped functions for the application.
  */
 extern int monitor_wrap_main(int, char **, char **);
+
+// Foil bases for libmonitor intercepted functions
+#ifdef HOST_CPU_PPC
+#define START_MAIN_PARAM_LIST           \
+    int  argc,                          \
+    char **argv,                        \
+    char **envp,                        \
+    void *auxp,                         \
+    void (*rtld_fini)(void),            \
+    void **stinfo,                      \
+    void *stack_end
+#else  /* default __libc_start_main() args */
+#define START_MAIN_PARAM_LIST           \
+    int  (*main)(int, char **, char **),  \
+    int  argc,                          \
+    char **argv,                        \
+    void (*init)(void),                 \
+    void (*fini)(void),                 \
+    void (*rtld_fini)(void),            \
+    void *stack_end
+#endif
+
+extern int foilbase_libc_start_main(START_MAIN_PARAM_LIST);
+
+extern pid_t foilbase_fork();
+extern pid_t foilbase_vfork();
+extern int foilbase_execv(const char *path, char *const argv[]);
+extern int foilbase_execvp(const char *path, char *const argv[]);
+extern int foilbase_execve(const char *path, char *const argv[], char *const envp[]);
+extern int foilbase_system(const char *command);
+extern void foilbase_exit(int status);
+extern void foilbase__exit(int status);
+extern void foilbase__Exit(int status);
+extern int foilbase_sigaction(int sig, const struct sigaction *act,
+                              struct sigaction *oldact);
+typedef void (*sighandler_t)(int);
+extern sighandler_t foilbase_signal(int sig, sighandler_t handler);
+extern int foilbase_sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
+extern int foilbase_sigwait(const sigset_t *set, int *sig);
+extern int foilbase_sigwaitinfo(const sigset_t *set, siginfo_t *info);
+extern int foilbase_sigtimedwait(const sigset_t *set, siginfo_t *info,
+                                 const struct timespec *timeout);
+extern int foilbase_pthread_create(void* caller, pthread_t *thread, const pthread_attr_t *attr,
+                                   pthread_start_fcn_t *start_routine, void *arg);
+extern void foilbase_pthread_exit(void *data);
+extern int foilbase_pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset);
+
+extern int foilbase_MPI_Comm_rank(void *comm, int *rank);
+extern void foilbase_mpi_comm_rank(int *comm, int *rank, int *ierror);
+extern void foilbase_mpi_comm_rank_(int *comm, int *rank, int *ierror);
+extern void foilbase_mpi_comm_rank__(int *comm, int *rank, int *ierror);
+extern int foilbase_MPI_Finalize(void);
+extern void foilbase_mpi_finalize(int *ierror);
+extern void foilbase_mpi_finalize_(int *ierror);
+extern void foilbase_mpi_finalize__(int *ierror);
+extern int foilbase_MPI_Init(int *argc, char ***argv);
+extern void foilbase_mpi_init(int *ierror);
+extern void foilbase_mpi_init_(int *ierror);
+extern void foilbase_mpi_init__(int *ierror);
+extern int foilbase_MPI_Init_thread(int *argc, char ***argv, int required, int *provided);
+extern void foilbase_mpi_init_thread(int *required, int *provided, int *ierror);
+extern void foilbase_mpi_init_thread_(int *required, int *provided, int *ierror);
+extern void foilbase_mpi_init_thread__(int *required, int *provided, int *ierror);
+extern int foilbase_PMPI_Init(int *argc, char ***argv);
+extern void foilbase_pmpi_init(int *ierror);
+extern void foilbase_pmpi_init_(int *ierror);
+extern void foilbase_pmpi_init__(int *ierror);
+extern int foilbase_PMPI_Init_thread(int *argc, char ***argv, int required, int *provided);
+extern void foilbase_pmpi_init_thread(int *required, int *provided, int *ierror);
+extern void foilbase_pmpi_init_thread_(int *required, int *provided, int *ierror);
+extern void foilbase_pmpi_init_thread__(int *required, int *provided, int *ierror);
+extern int foilbase_PMPI_Finalize(void);
+extern void foilbase_pmpi_finalize(int *ierror);
+extern void foilbase_pmpi_finalize_(int *ierror);
+extern void foilbase_pmpi_finalize__(int *ierror);
+extern int foilbase_PMPI_Comm_rank(void *comm, int *rank);
+extern void foilbase_pmpi_comm_rank(int *comm, int *rank, int *ierror);
+extern void foilbase_pmpi_comm_rank_(int *comm, int *rank, int *ierror);
+extern void foilbase_pmpi_comm_rank__(int *comm, int *rank, int *ierror);
+
 
 #ifdef __cplusplus
 }

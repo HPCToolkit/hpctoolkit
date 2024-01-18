@@ -50,6 +50,7 @@
 
 #include "../main.h"
 #include "../start-stop.h"
+#include "../libmonitor/monitor.h"
 #include "../ompt/ompt-interface.h"
 #include "../monitor-exts/openmp.h"
 #include "../sample-sources/io-over.h"
@@ -91,6 +92,116 @@ HPCRUN_EXPOSED void* hpcrun_foil_base_lookup(const char* name) {
     return foilbase_ompt_start_tool;
   if (strcmp(name, "_mp_init") == 0)
     return foilbase__mp_init;
+  if (strcmp(name, "libc_start_main") == 0)
+    return foilbase_libc_start_main;
+
+  // Process control
+  if (strcmp(name, "fork") == 0)
+    return foilbase_fork;
+  if (strcmp(name, "vfork") == 0)
+    return foilbase_vfork;
+  if (strcmp(name, "execv") == 0)
+    return foilbase_execv;
+  if (strcmp(name, "execvp") == 0)
+    return foilbase_execvp;
+  if (strcmp(name, "execve") == 0)
+    return foilbase_execve;
+  if (strcmp(name, "system") == 0)
+    return foilbase_system;
+  if (strcmp(name, "exit") == 0)
+    return foilbase_exit;
+  if (strcmp(name, "_exit") == 0)
+    return foilbase__exit;
+  if (strcmp(name, "_Exit") == 0)
+    return foilbase__Exit;
+
+  // Signals
+  if (strcmp(name, "sigaction") == 0)
+    return foilbase_sigaction;
+  if (strcmp(name, "signal") == 0)
+    return foilbase_signal;
+  if (strcmp(name, "sigprocmask") == 0)
+    return foilbase_sigprocmask;
+  if (strcmp(name, "sigwait") == 0)
+    return foilbase_sigwait;
+  if (strcmp(name, "sigwaitinfo") == 0)
+    return foilbase_sigwaitinfo;
+  if (strcmp(name, "sigtimedwait") == 0)
+    return foilbase_sigtimedwait;
+
+  // Threads
+  if (strcmp(name, "pthread_create") == 0)
+    return foilbase_pthread_create;
+  if (strcmp(name, "pthread_exit") == 0)
+    return foilbase_pthread_exit;
+  if (strcmp(name, "pthread_sigmask") == 0)
+    return foilbase_pthread_sigmask;
+
+  // MPI
+  if (strcmp(name, "MPI_Comm_rank") == 0)
+    return foilbase_MPI_Comm_rank;
+  if (strcmp(name, "mpi_comm_rank") == 0)
+    return foilbase_mpi_comm_rank;
+  if (strcmp(name, "mpi_comm_rank_") == 0)
+    return foilbase_mpi_comm_rank_;
+  if (strcmp(name, "mpi_comm_rank__") == 0)
+    return foilbase_mpi_comm_rank__;
+  if (strcmp(name, "MPI_Finalize") == 0)
+    return foilbase_MPI_Finalize;
+  if (strcmp(name, "mpi_finalize") == 0)
+    return foilbase_mpi_finalize;
+  if (strcmp(name, "mpi_finalize_") == 0)
+    return foilbase_mpi_finalize_;
+  if (strcmp(name, "mpi_finalize__") == 0)
+    return foilbase_mpi_finalize__;
+  if (strcmp(name, "MPI_Init") == 0)
+    return foilbase_MPI_Init;
+  if (strcmp(name, "mpi_init") == 0)
+    return foilbase_mpi_init;
+  if (strcmp(name, "mpi_init_") == 0)
+    return foilbase_mpi_init_;
+  if (strcmp(name, "mpi_init__") == 0)
+    return foilbase_mpi_init__;
+  if (strcmp(name, "MPI_Init_thread") == 0)
+    return foilbase_MPI_Init_thread;
+  if (strcmp(name, "mpi_init_thread") == 0)
+    return foilbase_mpi_init_thread;
+  if (strcmp(name, "mpi_init_thread_") == 0)
+    return foilbase_mpi_init_thread_;
+  if (strcmp(name, "mpi_init_thread__") == 0)
+    return foilbase_mpi_init_thread__;
+  if (strcmp(name, "PMPI_Init") == 0)
+    return foilbase_PMPI_Init;
+  if (strcmp(name, "pmpi_init") == 0)
+    return foilbase_pmpi_init;
+  if (strcmp(name, "pmpi_init_") == 0)
+    return foilbase_pmpi_init_;
+  if (strcmp(name, "pmpi_init__") == 0)
+    return foilbase_pmpi_init__;
+  if (strcmp(name, "PMPI_Init_thread") == 0)
+    return foilbase_PMPI_Init_thread;
+  if (strcmp(name, "pmpi_init_thread") == 0)
+    return foilbase_pmpi_init_thread;
+  if (strcmp(name, "pmpi_init_thread_") == 0)
+    return foilbase_pmpi_init_thread_;
+  if (strcmp(name, "pmpi_init_thread__") == 0)
+    return foilbase_pmpi_init_thread__;
+  if (strcmp(name, "PMPI_Finalize") == 0)
+    return foilbase_PMPI_Finalize;
+  if (strcmp(name, "pmpi_finalize") == 0)
+    return foilbase_pmpi_finalize;
+  if (strcmp(name, "pmpi_finalize_") == 0)
+    return foilbase_pmpi_finalize_;
+  if (strcmp(name, "pmpi_finalize__") == 0)
+    return foilbase_pmpi_finalize__;
+  if (strcmp(name, "PMPI_Comm_rank") == 0)
+    return foilbase_PMPI_Comm_rank;
+  if (strcmp(name, "pmpi_comm_rank") == 0)
+    return foilbase_pmpi_comm_rank;
+  if (strcmp(name, "pmpi_comm_rank_") == 0)
+    return foilbase_pmpi_comm_rank_;
+  if (strcmp(name, "pmpi_comm_rank__") == 0)
+    return foilbase_pmpi_comm_rank__;
 
   // IO
   if (strcmp(name, "read") == 0)

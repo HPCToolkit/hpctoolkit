@@ -115,13 +115,11 @@ void *monitor_dlsym(const char *symbol);
     }                                                   \
 } while (0)
 
-#define MONITOR_WRAP_NAME_HELP(name)  name
 #define MONITOR_GET_REAL_NAME_HELP(var, name)  \
     MONITOR_REQUIRE_DLSYM(var, #name )
 #define MONITOR_GET_REAL_NAME_WRAP_HELP(var, name)  \
     MONITOR_REQUIRE_DLSYM(var, #name )
 
-#define MONITOR_WRAP_NAME(name)  __attribute__((visibility("default"))) MONITOR_WRAP_NAME_HELP(name)
 #define MONITOR_GET_REAL_NAME(var, name)  \
     MONITOR_GET_REAL_NAME_HELP(var, name)
 #define MONITOR_GET_REAL_NAME_WRAP(var, name)  \

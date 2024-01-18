@@ -15,7 +15,7 @@ typedef void mpi_finalize_fcn_t(int *);
 static mpi_finalize_fcn_t  *real_mpi_finalize = NULL;
 
 void
-MONITOR_WRAP_NAME(mpi_finalize__)(int *ierror)
+foilbase_mpi_finalize__(int *ierror)
 {
     int count;
 

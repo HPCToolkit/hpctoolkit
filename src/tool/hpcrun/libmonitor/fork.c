@@ -182,48 +182,6 @@ monitor_copy_environ(char *const oldenv[])
 }
 
 /*
- *  Copy the execl() argument list of first_arg followed by arglist
- *  into an argv array, including the terminating NULL.  If envp is
- *  non-NULL, then there is an extra argument after NULL.  va_start
- *  and va_end are in the calling function.
- *
- *  Note: the caller passes an initial argv[] array, and we re-malloc
- *  if it is too small.  Technically, this could leak memory, but only
- *  on a series of failed exec()s, all with long argument lists.
- */
-static void
-monitor_copy_va_args(char ***argv, char ***envp,
-                     const char *first_arg, va_list arglist)
-{
-    int argc, size = MONITOR_INIT_ARGV_SIZE;
-    char *arg, **new_argv;
-
-    /*
-     * Include the terminating NULL in the argv array.
-     */
-    (*argv)[0] = (char *)first_arg;
-    argc = 1;
-    do {
-        arg = va_arg(arglist, char *);
-        if (argc >= size) {
-            size *= 2;
-            MONITOR_GET_REAL_NAME(real_malloc, malloc);
-            new_argv = (*real_malloc)(size * sizeof(char *));
-            if (new_argv == NULL) {
-                MONITOR_ERROR1("malloc failed\n");
-            }
-            memcpy(new_argv, *argv, argc * sizeof(char *));
-            *argv = new_argv;
-        }
-        (*argv)[argc++] = arg;
-    } while (arg != NULL);
-
-    if (envp != NULL) {
-        *envp = va_arg(arglist, char **);
-    }
-}
-
-/*
  *  Approximate whether the real exec will succeed by testing if
  *  "file" is executable, either the pathname itself or somewhere on
  *  PATH, depending on whether file contains '/'.  The problem is that
@@ -316,13 +274,13 @@ monitor_fork(void)
 }
 
 pid_t
-MONITOR_WRAP_NAME(fork)(void)
+foilbase_fork(void)
 {
     return monitor_fork();
 }
 
 pid_t
-MONITOR_WRAP_NAME(vfork)(void)
+foilbase_vfork(void)
 {
     return monitor_fork();
 }
@@ -413,75 +371,21 @@ monitor_execve(const char *path, char *const argv[], char *const envp[])
     return (ret);
 }
 
-/*
- *  There's a subtlety in the signatures between the variadic args in
- *  execl() and the argv array in execv().
- *
- *    execl(const char *path, const char *arg, ...)
- *    execv(const char *path, char *const argv[])
- *
- *  In execv(), the elements of argv[] are const, but not the strings
- *  they point to.  Since we can't change the system declarations,
- *  somewhere we have to drop the const.  (ugh)
- */
-int
-MONITOR_WRAP_NAME(execl)(const char *path, const char *arg, ...)
-{
-    char *buf[MONITOR_INIT_ARGV_SIZE];
-    char **argv = &buf[0];
-    va_list arglist;
-
-    va_start(arglist, arg);
-    monitor_copy_va_args(&argv, NULL, arg, arglist);
-    va_end(arglist);
-
-    return monitor_execv(path, argv);
-}
 
 int
-MONITOR_WRAP_NAME(execlp)(const char *file, const char *arg, ...)
-{
-    char *buf[MONITOR_INIT_ARGV_SIZE];
-    char **argv = &buf[0];
-    va_list arglist;
-
-    va_start(arglist, arg);
-    monitor_copy_va_args(&argv, NULL, arg, arglist);
-    va_end(arglist);
-
-    return monitor_execvp(file, argv);
-}
-
-int
-MONITOR_WRAP_NAME(execle)(const char *path, const char *arg, ...)
-{
-    char *buf[MONITOR_INIT_ARGV_SIZE];
-    char **argv = &buf[0];
-    char **envp;
-    va_list arglist;
-
-    va_start(arglist, arg);
-    monitor_copy_va_args(&argv, &envp, arg, arglist);
-    va_end(arglist);
-
-    return monitor_execve(path, argv, envp);
-}
-
-int
-MONITOR_WRAP_NAME(execv)(const char *path, char *const argv[])
+foilbase_execv(const char *path, char *const argv[])
 {
     return monitor_execv(path, argv);
 }
 
 int
-MONITOR_WRAP_NAME(execvp)(const char *path, char *const argv[])
+foilbase_execvp(const char *path, char *const argv[])
 {
     return monitor_execvp(path, argv);
 }
 
 int
-MONITOR_WRAP_NAME(execve)(const char *path, char *const argv[],
-                          char *const envp[])
+foilbase_execve(const char *path, char *const argv[], char *const envp[])
 {
     return monitor_execve(path, argv, envp);
 }
@@ -580,7 +484,7 @@ monitor_system(const char *command, int callback)
 }
 
 int
-MONITOR_WRAP_NAME(system)(const char *command)
+foilbase_system(const char *command)
 {
     int ret;
 

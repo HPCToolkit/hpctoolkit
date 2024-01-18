@@ -78,30 +78,12 @@ int monitor_debug = 0;
 #define AUXVEC_ARG   , auxvec
 #define AUXVEC_DECL  , void * auxvec
 
-#define START_MAIN_PARAM_LIST           \
-    int  argc,                          \
-    char **argv,                        \
-    char **envp,                        \
-    void *auxp,                         \
-    void (*rtld_fini)(void),            \
-    void **stinfo,                      \
-    void *stack_end
-
 static void *new_stinfo[4];
 
 #else  /* default __libc_start_main() args */
 
 #define AUXVEC_ARG
 #define AUXVEC_DECL
-
-#define START_MAIN_PARAM_LIST           \
-    int  (*main)(int, char **, char **),  \
-    int  argc,                          \
-    char **argv,                        \
-    void (*init)(void),                 \
-    void (*fini)(void),                 \
-    void (*rtld_fini)(void),            \
-    void *stack_end
 
 #endif
 
@@ -444,9 +426,8 @@ monitor_main(int argc, char **argv, char **envp  AUXVEC_DECL )
     return (ret);
 }
 
-__attribute__((visibility("default")))
 int
-__libc_start_main(START_MAIN_PARAM_LIST)
+foilbase_libc_start_main(START_MAIN_PARAM_LIST)
 {
     MONITOR_DEBUG1("\n");
     MONITOR_REQUIRE_DLSYM(real_start_main, "__libc_start_main");
@@ -481,7 +462,7 @@ __libc_start_main(START_MAIN_PARAM_LIST)
  *  exit() to handle multiple calls to exit().
  */
 void
-MONITOR_WRAP_NAME(exit)(int status)
+foilbase_exit(int status)
 {
     monitor_normal_init();
     MONITOR_DEBUG1("\n");
@@ -498,7 +479,7 @@ MONITOR_WRAP_NAME(exit)(int status)
  *  them here (in the dynamic case).
  */
 void
-MONITOR_WRAP_NAME(_exit)(int status)
+foilbase__exit(int status)
 {
     monitor_normal_init();
     MONITOR_DEBUG1("\n");
@@ -512,7 +493,7 @@ MONITOR_WRAP_NAME(_exit)(int status)
 }
 
 void
-MONITOR_WRAP_NAME(_Exit)(int status)
+foilbase__Exit(int status)
 {
     monitor_normal_init();
     MONITOR_DEBUG1("\n");

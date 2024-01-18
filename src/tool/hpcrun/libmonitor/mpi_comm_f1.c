@@ -19,7 +19,7 @@ static mpi_comm_fcn_t  *real_mpi_comm_rank = NULL;
  * In Fortran, MPI_Comm is always int.
  */
 void
-MONITOR_WRAP_NAME(mpi_comm_rank_)(int *comm, int *rank, int *ierror)
+foilbase_mpi_comm_rank_(int *comm, int *rank, int *ierror)
 {
     int size = -1;
 
