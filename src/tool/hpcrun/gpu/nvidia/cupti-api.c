@@ -66,6 +66,8 @@
 #include <string.h>        // strstr
 
 #include <monitor.h>
+#include "../../audit/binding.h"
+#include "../../audit/audit-api.h"
 
 
 //***************************************************************************
@@ -600,7 +602,7 @@ cupti_path
   // note: a version of this file with a more specific name may
   // already be loaded. thus, even if the dlopen fails, we search with
   // dl_iterate_phdr.
-  void *h = monitor_real_dlopen("libcudart.so", RTLD_LOCAL | RTLD_LAZY);
+  void *h = NULL /* hpcrun_raw_dlopen("libcudart.so", RTLD_LOCAL | RTLD_LAZY) */;
 
   if (dl_iterate_phdr(cuda_path, buffer)) {
     // invariant: buffer contains CUDA home
@@ -635,7 +637,7 @@ cupti_path
     }
   }
 
-  if (h) monitor_real_dlclose(h);
+  if (h) hpcrun_raw_dlclose(h);
 
   return path;
 }
@@ -685,7 +687,7 @@ cupti_error_callback_dummy // __attribute__((unused))
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
       "function %s failed with error %s", type, fn, error_string);
   EEMSG("See the 'FAQ and Troubleshooting' chapter in the HPCToolkit manual for guidance");
-  monitor_real_exit(exitcode);
+  auditor_exports->exit(exitcode);
 }
 
 

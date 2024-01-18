@@ -557,7 +557,7 @@ hpcrun_init_internal(bool is_child)
 
     if (monitor_sigaction(SIGSEGV, &dump_interval_handler, 0, NULL)) {
       fprintf(stderr, "Could not install dump interval segv handler\n");
-      monitor_real_exit(1);
+      auditor_exports->exit(1);
     }
 
     for (void** e = table.table; e < table.table + table.len - 1; e++) {
@@ -605,7 +605,7 @@ hpcrun_init_internal(bool is_child)
     fprintf(stderr, "Error: Tracing is specified at the command line without a suitable metric for tracing.\n");
     fprintf(stderr, "\tCPU tracing is only meaningful when a time based metric is given, such as REALTIME, CPUTIME, and CYCLES\n");
     fprintf(stderr, "\tGPU tracing is always meaningful.\n");
-    monitor_real_exit(1);
+    auditor_exports->exit(1);
   }
 
   // set up initial 'epoch'
@@ -634,7 +634,7 @@ hpcrun_init_internal(bool is_child)
         hpcrun_dump_intervals(addr2);
         fflush(NULL);
       }
-      if (addr1 || addr2) monitor_real_exit(0);
+      if (addr1 || addr2) auditor_exports->exit(0);
     }
 #endif
 

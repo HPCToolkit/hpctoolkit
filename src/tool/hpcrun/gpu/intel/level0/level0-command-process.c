@@ -68,6 +68,7 @@
 #include "../gtpin/gtpin-instrumentation.h"
 #endif
 
+#include "../../../audit/audit-api.h"
 #include "../../../safe-sampling.h"
 #include "../../../logical/common.h"
 #include "../../../utilities/hpcrun-nanotime.h"
@@ -229,7 +230,7 @@ get_load_module
     break;
   case gpu_binary_kind_unknown:
     EEMSG("FATAL: hpcrun failure: level 0 encountered unknown binary kind");
-    monitor_real_exit(-1);
+    auditor_exports->exit(-1);
   }
 
   // Step 4: insert the load module

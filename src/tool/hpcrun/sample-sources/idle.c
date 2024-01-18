@@ -54,14 +54,6 @@
 
 
 /******************************************************************************
- * libmonitor
- *****************************************************************************/
-
-#include <monitor.h>
-
-
-
-/******************************************************************************
  * local includes
  *****************************************************************************/
 
@@ -71,6 +63,7 @@
 
 #include "../hpcrun_options.h"
 
+#include "../audit/audit-api.h"
 #include "../metrics.h"
 #include "../sample_sources_registered.h"
 #include "blame-shift/blame-shift.h"
@@ -149,7 +142,7 @@ METHOD_FN(start)
       !blame_shift_source_available(bs_type_cycles)) {
     STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, "
                "CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
-    monitor_real_exit(1);
+    auditor_exports->exit(1);
   }
 }
 
@@ -174,7 +167,7 @@ METHOD_FN(shutdown)
         "idleness and work.\n"
         "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
         "For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
-    monitor_real_exit(1);
+    auditor_exports->exit(1);
   }
 
   self->state = UNINIT;

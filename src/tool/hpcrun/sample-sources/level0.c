@@ -79,6 +79,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
+#include "../audit/audit-api.h"
 #include "../control-knob.h"
 #include "../device-finalizers.h"
 #include "../logical/common.h"
@@ -214,7 +215,7 @@ METHOD_FN(finalize_event_list)
 {
   if (level0_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to Level0 library %s\n", dlerror());
-    monitor_real_exit(-1);
+    auditor_exports->exit(-1);
   }
 
   level0_init(&level0_instrumentation_options);

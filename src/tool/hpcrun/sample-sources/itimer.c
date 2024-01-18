@@ -92,6 +92,7 @@
 #include "../hpcrun_signals.h"
 #include "../hpcrun_stats.h"
 
+#include "../audit/audit-api.h"
 #include "../main.h"
 #include "../metrics.h"
 #include "../safe-sampling.h"
@@ -405,7 +406,7 @@ METHOD_FN(start)
 
   // Since we block a thread's timer signal when stopping, we
   // must unblock it when starting.
-  monitor_real_pthread_sigmask(SIG_UNBLOCK, &timer_mask, NULL);
+  auditor_exports->pthread_sigmask(SIG_UNBLOCK, &timer_mask, NULL);
 
   hpcrun_restart_timer(self, 1);
 }
@@ -433,7 +434,7 @@ METHOD_FN(stop)
   // finalization, this can cause a catastrophic error.
   // For that reason, we always block the thread's timer
   // signal when stopping.
-  monitor_real_pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
+  auditor_exports->pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
 
   thread_data_t *td = hpcrun_get_thread_data();
   int rc = hpcrun_stop_timer(td);

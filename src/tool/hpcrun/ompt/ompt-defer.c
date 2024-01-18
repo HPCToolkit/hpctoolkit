@@ -50,15 +50,6 @@
 
 
 
-
-//*****************************************************************************
-// libmonitor
-//*****************************************************************************
-
-#include <monitor.h>
-
-
-
 //*****************************************************************************
 // local includes
 //*****************************************************************************
@@ -67,6 +58,7 @@
 
 #include "../unresolved.h"
 #include "../utilities/timer.h"
+#include "../audit/audit-api.h"
 
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
@@ -126,7 +118,7 @@ merge_metrics
     case MetricFlags_ValFmt_Real: mdata_a->r += mdata_b->r; break;
     default:
       TMSG(DEFER_CTXT, "in merge_op: what's the metric type");
-      monitor_real_exit(1);
+      auditor_exports->exit(1);
     }
   }
 }

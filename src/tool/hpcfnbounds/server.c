@@ -55,7 +55,7 @@
 //
 // Notes:
 // 1. The server only computes fnbounds queries, not general calls to
-// system(), use monitor_real_system() for that.
+// system().
 //
 // 2. Catch SIGPIPE.  Writing to a pipe after the other side has
 // exited triggers a SIGPIPE and terminates the process.  If this

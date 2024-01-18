@@ -12,10 +12,6 @@
 #include <papi.h>
 // *********************************************************
 
-// ******************** MONITOR *******************************
-#include <monitor.h>
-// *********************************************************
-
 // ******************** GPU includes ***********************
 #include <cuda_runtime_api.h>
 #include <cupti.h>
@@ -31,6 +27,7 @@
 #include "../sample_sources_all.h"
 #include "common.h"
 #include "ss-obj-name.h"
+#include "../audit/binding.h"
 // *********************************************************
 
 // ******** local includes ***********
@@ -60,7 +57,7 @@
 }
 
 #define Chk_dlopen(v, lib, flags)                     \
-  void* v = monitor_real_dlopen(lib, flags);          \
+  void* v = NULL /* hpcrun_raw_dlopen(lib, flags) */; \
   if (! v) {                                          \
     fprintf(stderr, "gpu dlopen %s failed\n", lib);   \
     return;                                           \

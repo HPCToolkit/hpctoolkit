@@ -71,8 +71,8 @@
 // *********************************************
 
 #include "custom-init.h"
-#include <monitor.h>
 #include "messages/messages.h"
+#include "audit/binding.h"
 
 // *********************************************
 // interface functions
@@ -82,7 +82,7 @@ void
 hpcrun_do_custom_init(void)
 {
   if (ENABLED(CUSTOM_INIT)) {
-    void* custom_fns = monitor_real_dlopen("./hpcrun-custom.so", RTLD_LAZY);
+    void* custom_fns = NULL /* hpcrun_raw_dlopen("./hpcrun-custom.so", RTLD_LAZY) */;
     if (custom_fns) {
       void (*hpcrun_custom_init)(void) = (void (*)(void)) dlsym(custom_fns, "hpcrun_custom_init");
       if (hpcrun_custom_init) {
@@ -93,7 +93,7 @@ hpcrun_do_custom_init(void)
       else {
         TMSG(CUSTOM_INIT, "could not dynamically load hpcrun_custom_init procedure");
       }
-      monitor_real_dlclose(custom_fns);
+      hpcrun_raw_dlclose(custom_fns);
     }
     else {
       TMSG(CUSTOM_INIT, "could not open hpcrun-custom.so");

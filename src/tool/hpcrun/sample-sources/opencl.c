@@ -50,6 +50,7 @@
 #include <monitor.h>
 #include <pthread.h>
 
+#include "../audit/audit-api.h"
 #include "../device-finalizers.h"
 #include "../gpu/gpu-trace.h"
 #include "../gpu/gpu-metrics.h"
@@ -190,7 +191,7 @@ METHOD_FN(finalize_event_list)
 {
   if (opencl_bind()) {
     EEMSG("hpcrun: unable to bind to opencl library %s\n", dlerror());
-    monitor_real_exit(-1);
+    auditor_exports->exit(-1);
   }
   opencl_api_initialize(&opencl_instrumentation_options);
 
