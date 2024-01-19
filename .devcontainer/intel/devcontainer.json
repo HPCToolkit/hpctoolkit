@@ -7,6 +7,26 @@
   "capAdd": [
     "SYS_ADMIN"
   ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mesonbuild.mesonbuild"
+      ],
+      "settings": {
+        "mesonbuild.buildFolder": ".devcontainer/intel/builddir-${devcontainerId}",
+        "mesonbuild.configureOnOpen": true,
+        "mesonbuild.configureOptions": [
+          "--native-file=image.ini",
+          "-Dhpcprof_mpi=enabled",
+          "-Dpython=enabled",
+          "-Dpapi=enabled",
+          "-Dopencl=enabled",
+          "-Dlevel0=enabled",
+          "-Dgtpin=enabled"
+        ]
+      }
+    }
+  },
   "runArgs": [
     "--device=/dev/kfd",
     "--device=/dev/dri"

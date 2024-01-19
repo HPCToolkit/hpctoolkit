@@ -10,6 +10,25 @@
   "capAdd": [
     "SYS_ADMIN"
   ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mesonbuild.mesonbuild"
+      ],
+      "settings": {
+        "mesonbuild.buildFolder": ".devcontainer/rocm5.4/builddir-${devcontainerId}",
+        "mesonbuild.configureOnOpen": true,
+        "mesonbuild.configureOptions": [
+          "--native-file=image.ini",
+          "-Dhpcprof_mpi=enabled",
+          "-Dpython=enabled",
+          "-Dpapi=enabled",
+          "-Dopencl=enabled",
+          "-Drocm=enabled"
+        ]
+      }
+    }
+  },
   "runArgs": [
     "--device=/dev/kfd",
     "--device=/dev/dri"
