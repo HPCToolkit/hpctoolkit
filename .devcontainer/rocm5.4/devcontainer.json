@@ -1,0 +1,17 @@
+{
+  "name": "ci.predeps-rocm5.4",
+  "build": {
+    "args": {
+      "ROCM_VERSION": "5.4.3"
+    },
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.rocm"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ],
+  "runArgs": [
+    "--device=/dev/kfd",
+    "--device=/dev/dri"
+  ]
+}

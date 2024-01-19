@@ -1,0 +1,16 @@
+{
+  "name": "ci.predeps-cuda11.8",
+  "build": {
+    "args": {
+      "CUDA_VERSION": "11.8.0"
+    },
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.cuda11.8"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ],
+  "runArgs": [
+    "--gpus=all"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "ci.predeps-intel",
+  "build": {
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.intel"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ],
+  "runArgs": [
+    "--device=/dev/kfd",
+    "--device=/dev/dri"
+  ]
+}

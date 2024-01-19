@@ -1,0 +1,10 @@
+{
+  "name": "ci.predeps-ubuntu20.04",
+  "build": {
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.ubuntu20.04"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ]
+}

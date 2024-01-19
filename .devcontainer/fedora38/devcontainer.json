@@ -1,0 +1,10 @@
+{
+  "name": "ci.predeps-fedora38",
+  "build": {
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.fedora38"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ]
+}
