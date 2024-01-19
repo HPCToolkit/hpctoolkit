@@ -186,6 +186,11 @@ include:
     <<: *ci_predeps_shared
     name: rocm5.6-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: rocm5.7-amd64
+    containerfile: .ci.predeps/Containerfile.rocm
 
 - component: *ci_predeps
   inputs:
@@ -195,7 +200,7 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: min-rocm5.6-amd64
+    name: min-rocm5.7-amd64
     containerfile: .ci.predeps/Containerfile.rocm
 
 # Image(s) based on (containing) Intel's Level Zero, IGC, GTPin, etc.
@@ -282,11 +287,11 @@ include:
   before_script: *predeps_before_script
 'predeps: [rocm5.3-amd64]':
   variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.3.2'
+    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.3.3'
   before_script: *predeps_before_script
 'predeps: [rocm5.4-amd64]':
   variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.4.2'
+    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.4.3'
   before_script: *predeps_before_script
 'predeps: [rocm5.5-amd64]':
   variables:
@@ -294,7 +299,11 @@ include:
   before_script: *predeps_before_script
 'predeps: [rocm5.6-amd64]':
   variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.6'
+    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.6.1'
+  before_script: *predeps_before_script
+'predeps: [rocm5.7-amd64]':
+  variables:
+    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.7.1'
   before_script: *predeps_before_script
 
 'predeps: [min-rocm5.1-amd64]':
@@ -302,9 +311,9 @@ include:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.1.3'
     PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
-'predeps: [min-rocm5.6-amd64]':
+'predeps: [min-rocm5.7-amd64]':
   variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.6'
+    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.7.1'
     PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 
@@ -458,16 +467,16 @@ validate:
 'buildmany: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
   image: $PREDEPS_IMAGE_ROCM5_1_AMD64
-'buildmany: [amd64, rocm5.6]':
+'buildmany: [amd64, rocm5.7]':
   extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM5_6_AMD64
+  image: $PREDEPS_IMAGE_ROCM5_7_AMD64
 
 'buildmany min: [amd64, rocm5.1]':
   extends: [.buildmany amd64 rocm, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_ROCM5_1_AMD64
-'buildmany min: [amd64, rocm5.6]':
+'buildmany min: [amd64, rocm5.7]':
   extends: [.buildmany amd64 rocm, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_ROCM5_6_AMD64
+  image: $PREDEPS_IMAGE_MIN_ROCM5_7_AMD64
 
 # Level 0 + GTPin spins
 .buildmany amd64 lvlz:
@@ -671,11 +680,18 @@ validate:
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
-'check min amd64: [+rocm, 5.6]':
-  extends: 'check amd64: [+rocm, 5.6]'
-  image: $PREDEPS_IMAGE_MIN_ROCM5_6_AMD64
-'check semifresh amd64: [+rocm, 5.6]':
-  extends: ['check amd64: [+rocm, 5.6]', .check semifresh job]
+
+'check amd64: [+rocm, 5.7]':
+  extends: .check
+  image: $PREDEPS_IMAGE_ROCM5_7_AMD64
+  tags: [rice-linux-large-amd64-gpu-amd]
+  before_script: *bscript_check_rocm
+  variables: *vars_check_rocm
+'check min amd64: [+rocm, 5.7]':
+  extends: 'check amd64: [+rocm, 5.7]'
+  image: $PREDEPS_IMAGE_MIN_ROCM5_7_AMD64
+'check semifresh amd64: [+rocm, 5.7]':
+  extends: ['check amd64: [+rocm, 5.7]', .check semifresh job]
   variables:
     REGEN_SUITES: amd
 
@@ -687,7 +703,7 @@ fresh testdata:
   needs:
   - 'check semifresh amd64: [cpu]'
   - 'check semifresh amd64: [+cuda, 11.8]'
-  - 'check semifresh amd64: [+rocm, 5.6]'
+  - 'check semifresh amd64: [+rocm, 5.7]'
   when: always
   script:
   - apk add git
