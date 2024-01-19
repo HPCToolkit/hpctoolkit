@@ -70,7 +70,7 @@ include:
   inputs:
     <<: &ci_predeps_shared
       fallback_registry: registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
-    name: almalinux8-amd64
+    name: rhel8-amd64
     containerfile: .ci.predeps/Containerfile.rhel8
 - component: *ci_predeps
   inputs:
@@ -100,7 +100,7 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: min-almalinux8-amd64
+    name: min-rhel8-amd64
     containerfile: .ci.predeps/Containerfile.rhel8
 - component: *ci_predeps
   inputs:
@@ -210,7 +210,7 @@ include:
     name: min-intel-amd64
     containerfile: .ci.predeps/Containerfile.intel
 
-'predeps: [almalinux8-amd64]':
+'predeps: [rhel8-amd64]':
   before_script: &predeps_before_script
   - export PREDEPS_SECRET_spack_mirrors=/tmp/mirrors.yaml
   - >-
@@ -227,7 +227,7 @@ include:
 'predeps: [fedora38-amd64]':
   before_script: *predeps_before_script
 
-'predeps: [min-almalinux8-amd64]':
+'predeps: [min-rhel8-amd64]':
   variables:
     PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
@@ -395,9 +395,9 @@ validate:
   variables:
     COMMON_SETTINGS: '-Dcuda=disabled -Drocm=disabled -Dlevel0=disabled'
 
-'buildmany: [amd64, almalinux8]':
+'buildmany: [amd64, rhel8]':
   extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_ALMALINUX8_AMD64
+  image: $PREDEPS_IMAGE_RHEL8_AMD64
   parallel: {matrix: [{JOB_CC: gcc}]}
 'buildmany: [amd64, ubuntu20.04]':
   extends: .buildmany amd64 cpu
@@ -413,9 +413,9 @@ validate:
     # Submodules should not be necessary for correct configuration
     GIT_SUBMODULE_STRATEGY: none
 
-'buildmany min: [amd64, almalinux8]':
+'buildmany min: [amd64, rhel8]':
   extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_ALMALINUX8_AMD64
+  image: $PREDEPS_IMAGE_MIN_RHEL8_AMD64
   parallel: {matrix: [{JOB_CC: gcc}]}
 'buildmany min: [amd64, ubuntu20.04]':
   extends: [.buildmany amd64 cpu, .buildmany min]
