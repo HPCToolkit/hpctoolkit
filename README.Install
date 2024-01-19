@@ -700,55 +700,7 @@ starting the full install.
 12 Manual Install
 =================
 
-The manual method uses spack to build hpctoolkit's prerequisites and
-then uses the traditional autotools 'configure && make && make install'
-to install hpctoolkit.  This method is primarily for developers who want
-to compile hpctoolkit, edit the source code and recompile, etc.  This
-method is also useful if you need some configure option that is not
-available through spack.
-
-   First, use spack to build hpctoolkit's prerequisites as above.  You
-can either build some version of hpctoolkit as before (which will pull
-in the prerequisites), or else use '--only dependencies' to avoid
-building hpctoolkit itself.
-
-     spack install --only dependencies hpctoolkit
-
-Then, configure and build hpctoolkit as follows.  Hpctoolkit uses
-automake and so allows for parallel make.
-
-     configure  \
-        --prefix=/path/to/hpctoolkit/install/prefix  \
-        --with-spack=/path/to/spack/install_tree/linux-centos9-x86_64/gcc-11.3.1  \
-        ...
-     make -j <num>
-     make install
-
-The argument to '--with-spack' should be the directory containing all of
-the individual package directories, normally two directories down from
-the top-level 'install_tree' and named by the platform and compiler.
-This option replaces the old '--with-externals'.  The following are
-other options that may be useful.  For the full list of options, see
-'configure -h'.
-
-  1. '--enable-all-static' - build hpcprof-mpi statically linked for the
-     compute nodes.
-
-  2. '--enable-develop' - compile with optimization turned off for
-     debugging.
-
-  3. '--with-package=path' - specify the install prefix for some
-     prerequisite package, mostly for developers who want to use a
-     custom, non-spack version of some package.
-
-  4. 'MPICXX=compiler' - specify the MPI C++ compiler for hpcprof-mpi,
-     may be a compiler name or full path.
-
-Note: if your spack install tree has multiple versions or variants for
-the same package, then '--with-spack' will select the one with the most
-recent directory time stamp (and issue a warning).  If this is not what
-you want, then you will need to specify the correct version with a
-'--with-package' option.
+See README.md for up-to-date instructions for how to do this.
 
 13 Advanced Options
 ===================

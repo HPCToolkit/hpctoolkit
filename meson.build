@@ -36,18 +36,18 @@ tbb_dep = dependency('TBB', components: ['tbb'])
 tbb_malloc_dep = dependency('TBB', components: ['tbb', 'tbbmalloc'])
 libelf_dep = dependency('libelf', version: '>=0.186')
 libdw_dep = dependency('libdw', version: '>=0.186')
-libmonitor_dep = dependency('Libmonitor', method: 'cmake', cmake_module_path: meson.current_source_dir() / 'cmake')
+libmonitor_dep = dependency('Libmonitor', method: 'cmake', cmake_module_path: 'cmake')
 libunwind_dep = dependency('libunwind', version: '>=1.6.2')
 xerces_dep = dependency('xerces-c', version: '>=3.2.3')
 lzma_dep = dependency('liblzma', version: '>=5.2.0')
 zlib_dep = dependency('zlib')
-libiberty_dep = dependency('Libiberty', method: 'cmake', cmake_module_path: meson.current_source_dir() / 'cmake')
+libiberty_dep = dependency('Libiberty', method: 'cmake', cmake_module_path: 'cmake')
 xed_dep = dependency('', required: false)
 if host_machine.cpu_family() in ['x86', 'x86_64']
-  xed_dep = dependency('Xed', method: 'cmake', cmake_module_path: meson.current_source_dir() / 'cmake', version: '>=2022.08.11')
+  xed_dep = dependency('Xed', method: 'cmake', cmake_module_path: 'cmake', version: '>=2022.08.11')
 endif
 yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
-perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: meson.current_source_dir() / 'cmake', version: '>=4.0')
+perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake', version: '>=4.0')
 papi_dep = dependency('papi', required: get_option('papi'), version: '>=6.0.0')
 
 
@@ -64,7 +64,7 @@ int main() {
 dyninst_dep = dependency('Dyninst', components: ['parseAPI', 'instructionAPI', 'symtabAPI'], version: '>=12.3')
 if not cpp.links(_dyninst_code, name: 'Dyninst config file is usable', dependencies: dyninst_dep)
   dyninst_dep = dependency('Dyninst', method: 'cmake',
-    cmake_module_path: meson.current_source_dir() / 'cmake',
+    cmake_module_path: 'cmake',
     components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
     modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
     version: '>=12.3')
