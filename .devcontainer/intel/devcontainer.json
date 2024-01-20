@@ -23,12 +23,37 @@
           "-Dopencl=enabled",
           "-Dlevel0=enabled",
           "-Dgtpin=enabled"
-        ]
+        ],
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/bash"
+          },
+          "zsh": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/zsh"
+          }
+        }
       }
     }
   },
-  "runArgs": [
-    "--device=/dev/kfd",
-    "--device=/dev/dri"
-  ]
+  "features": {
+    "../bash-completion-feature": {},
+    "ghcr.io/devcontainers-contrib/features/poetry:2": {},
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
+    "ghcr.io/devcontainers-contrib/features/ripgrep:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/git:1": {
+      "ppa": true,
+      "version": "latest"
+    }
+  },
+  "privileged": true
 }

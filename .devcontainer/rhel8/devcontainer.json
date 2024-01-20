@@ -21,8 +21,35 @@
           "-Dpython=enabled",
           "-Dpapi=enabled",
           "-Dopencl=enabled"
-        ]
+        ],
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/bash"
+          },
+          "zsh": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/zsh"
+          }
+        }
       }
     }
-  }
+  },
+  "features": {
+    "../bash-completion-feature": {},
+    "../rhel8-ssl-fix-feature": {},
+    "ghcr.io/devcontainers-contrib/features/poetry:2": {},
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {}
+  },
+  "overrideFeatureInstallOrder": [
+    "../rhel8-ssl-fix-feature"
+  ]
 }
