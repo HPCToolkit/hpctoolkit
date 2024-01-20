@@ -51,7 +51,9 @@ spack:
     core:
     - intel-xed @2022.08.11
   # Optional dependencies.
-  - optional:
+  - optional: []
+  - when: env["VERMODE"] != "bare"
+    optional:
     - 'papi @6.0.0.1:'  # Required for -Dpapi=enabled
     - 'opencl-c-headers @2022.01.04:'  # Required for -Dopencl=enabled
   - when: env["VERMODE"] == "minimum"

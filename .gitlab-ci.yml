@@ -42,9 +42,13 @@ default:
     - runner_system_failure
 
 
-# Many jobs use ccache to speed up the build process. This job provides common settings for those.
-.ccache job:
+# All build jobs are based on this job, which sets up appropriate caching to speed things up.
+.build job:
   cache:
+  - key: meson-packagecache
+    when: always
+    paths:
+    - subprojects/packagecache
   - key: ccache-$CI_JOB_NAME
     when: always
     paths:
@@ -96,6 +100,11 @@ include:
     <<: *ci_predeps_shared
     name: fedora38-amd64
     containerfile: .ci.predeps/Containerfile.fedora38
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: bare-amd64
+    containerfile: .ci.predeps/Containerfile.bare
 
 - component: *ci_predeps
   inputs:
@@ -231,6 +240,8 @@ include:
   before_script: *predeps_before_script
 'predeps: [fedora38-amd64]':
   before_script: *predeps_before_script
+'predeps: [bare-amd64]':
+  before_script: *predeps_before_script
 
 'predeps: [min-rhel8-amd64]':
   variables:
@@ -357,11 +368,12 @@ validate:
 # As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
 # at a time. With the exception of +debug, which is flipped at will.
 .buildmany:
+  extends: .build job
   stage: test
   variables:
     JOB_CC: gcc
   script:
-  - meson setup --native-file image.ini --native-file "$JOB_CC".ini /tmp/builddir
+  - meson setup --native-file image.ini --native-file "$JOB_CC".ini --wrap-mode=nofallback /tmp/builddir
   - mkdir -p logs/"$CI_JOB_NAME"
   - |
     build() {
@@ -377,12 +389,12 @@ validate:
     }
   - |
     for buildtype in debugoptimized release; do
-      build $buildtype-all    -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopapi -Dbuildtype=$buildtype -Dpapi=disabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopy   -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=disabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noocl  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=disabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nompi  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noval  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=false $COMMON_SETTINGS || exit $?
+      build $buildtype-all    -Dbuildtype=$buildtype -Dauto_features=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-nopapi -Dbuildtype=$buildtype -Dauto_features=enabled -Dpapi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-nopy   -Dbuildtype=$buildtype -Dauto_features=enabled -Dpython=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-noocl  -Dbuildtype=$buildtype -Dauto_features=enabled -Dopencl=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-nompi  -Dbuildtype=$buildtype -Dauto_features=enabled -Dhpcprof_mpi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-noval  -Dbuildtype=$buildtype -Dauto_features=enabled -Dvalgrind_annotations=false $COMMON_SETTINGS || exit $?
     done
   after_script:
   - |
@@ -402,7 +414,11 @@ validate:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    COMMON_SETTINGS: '-Dcuda=disabled -Drocm=disabled -Dlevel0=disabled'
+    COMMON_SETTINGS: >-
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
 
 'buildmany: [amd64, rhel8]':
   extends: .buildmany amd64 cpu
@@ -441,7 +457,10 @@ validate:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    COMMON_SETTINGS: '-Dcuda=enabled -Drocm=disabled -Dlevel0=disabled'
+    COMMON_SETTINGS: >-
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
 
 'buildmany: [amd64, cuda12.0]':
   extends: .buildmany amd64 cuda
@@ -462,7 +481,10 @@ validate:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    COMMON_SETTINGS: '-Dcuda=disabled -Drocm=enabled -Dlevel0=disabled'
+    COMMON_SETTINGS: >-
+      -Dcuda=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
 
 'buildmany: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
@@ -483,12 +505,14 @@ validate:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    COMMON_SETTINGS: '-Dcuda=disabled -Drocm=disabled -Dlevel0=enabled -Dgtpin=enabled'
+    COMMON_SETTINGS: >-
+      -Dcuda=disabled
+      -Drocm=disabled
   script:
   - !reference [.buildmany, script]
   - |
     for buildtype in debugoptimized release; do
-      build $buildtype-nogtpin -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS -Dgtpin=disabled || exit $?
+      build $buildtype-nogtpin -Dbuildtype=$buildtype -Dauto_features=enabled -Dgtpin=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
     done
 
 'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
@@ -514,8 +538,10 @@ validate:
 #     {# of repeats} > log(1 - {confidence}) / log({min prob of success})
 # So a 99% confidence of 90% success rate requires a --repeat of at least 44.
 .check:
+  extends: .build job
   stage: test
   variables:
+    SETUP_ARGS: ''
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
@@ -524,7 +550,7 @@ validate:
     - mkdir logs/
     - logfile=logs/"$CI_JOB_NAME".log
     - rm -f "$logfile"
-    - meson setup --native-file image.ini /tmp/builddir
+    - meson setup --native-file image.ini --wrap-mode=nofallback -Dauto_features=enabled $SETUP_ARGS /tmp/builddir
   - &check_compile
     - meson compile -C /tmp/builddir >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
   - &check_test
@@ -546,6 +572,7 @@ validate:
     - logs/
     when: always
 .check semifresh job:
+  extends: .build job
   variables:
     JOB_TEST_SUITE: ''  # Always run all possible tests
   script:
@@ -581,11 +608,18 @@ validate:
   - if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt 1 ]; then echo 1 > /proc/sys/kernel/perf_event_paranoid; fi
   # We also want kernel symbols available (kallsyms), so enable that too.
   - if [ "$(cat /proc/sys/kernel/kptr_restrict)" -gt 0 ]; then echo 0 > /proc/sys/kernel/kptr_restrict; fi
+  variables: &vars_check_cpu
+    SETUP_ARGS: >-
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
 'check min amd64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
   tags: [saas-linux-large-amd64]
   before_script: *perf_enable
+  variables: *vars_check_cpu
 'check semifresh amd64: [cpu]':
   extends: ['check amd64: [cpu]', .check semifresh job]
   variables:
@@ -596,6 +630,7 @@ validate:
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
   tags: [rice-linux-small-arm64]
   variables:
+    <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
   before_script: *perf_enable
 'check min arm64: [cpu]':
@@ -603,6 +638,7 @@ validate:
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_ARM64
   tags: [rice-linux-small-arm64]
   variables:
+    <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
   before_script: *perf_enable
 
@@ -610,10 +646,28 @@ validate:
   extends: .check
   image: $PREDEPS_IMAGE_UBUNTU20_04_PPC64LE
   tags: [rice-linux-small-ppc64le]
+  variables: *vars_check_cpu
 'check min ppc64le: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_PPC64LE
   tags: [rice-linux-small-ppc64le]
+  variables: *vars_check_cpu
+
+'check amd64: [bare, cpu]':
+  extends: .check
+  image: $PREDEPS_IMAGE_BARE_AMD64
+  tags: [saas-linux-large-amd64]
+  before_script: *perf_enable
+  variables:
+    SETUP_ARGS: >-
+      --wrap-mode=default
+      -Dpapi=disabled
+      -Dopencl=disabled
+      -Dhpcprof_mpi=disabled
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
 
 'check amd64: [+cuda, 11.6]':
   extends: .check
@@ -621,6 +675,10 @@ validate:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables: &vars_check_cuda
     JOB_TEST_SUITE: cuda
+    SETUP_ARGS: >-
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
 
 'check amd64: [+cuda, 11.8]':
   extends: .check
@@ -645,6 +703,10 @@ validate:
   - export LD_LIBRARY_PATH=/opt/rocm/lib:"$LD_LIBRARY_PATH"
   variables: &vars_check_rocm
     JOB_TEST_SUITE: rocm
+    SETUP_ARGS: >-
+      -Dcuda=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
 
 'check amd64: [+rocm, 5.2]':
   extends: .check

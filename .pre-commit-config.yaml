@@ -200,4 +200,5 @@ repos:
     exclude: |
       (?x)^(
         .*\.hpcstruct |  # Structfiles have lots of high-entropy strings
+        subprojects/[^/]+\.wrap |  # Wraps almost always contain SHA256 hashes
       )$
