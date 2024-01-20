@@ -663,7 +663,6 @@ validate:
     SETUP_ARGS: >-
       --wrap-mode=default
       -Dpapi=disabled
-      -Dopencl=disabled
       -Dhpcprof_mpi=disabled
       -Dcuda=disabled
       -Drocm=disabled
