@@ -508,6 +508,7 @@ validate:
     COMMON_SETTINGS: >-
       -Dcuda=disabled
       -Drocm=disabled
+      --force-fallback-for=gtpin
   script:
   - !reference [.buildmany, script]
   - |

@@ -1,15 +1,3 @@
-# Tarball pre-installation phase: Download and unpack tarballs
-FROM docker.io/alpine:3 as tarball-install
-
-# Download a copy of GTPin, which is only available via binary tarball
-ADD https://downloadmirror.intel.com/777295/external-release-gtpin-3.4-linux.tar.xz /tmp/gtpin-3.4.tar.xz
-RUN \
-  echo 'c96d08a2729c255e3bc67372fc1271ba60ca8d7bd913f92c2bd951d7d348f553 /tmp/gtpin-3.4.tar.xz' \
-    | sha256sum -c - \
-  && mkdir -p /opt/gtpin-3.4 \
-  && tar -C /opt/gtpin-3.4 -xJf /tmp/gtpin-3.4.tar.xz
-
-
 # OS installation stage: Install build tools from the OS
 FROM docker.io/intel/oneapi-runtime:devel-ubuntu20.04 as os-install
 
@@ -49,9 +37,6 @@ RUN \
   python3 -m pip install \
     'meson>=1.1.0,<2' \
   && : # END
-
-# Copy files unpacked from the tarballs
-COPY --from=tarball-install /opt/gtpin-3.4/ /opt/gtpin-3.4/
 
 
 # OS native-file side-stage: Collect and compose a native file for the OS software
