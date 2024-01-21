@@ -23,13 +23,6 @@ gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
 host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
 
-opt_have_cuda='@OPT_HAVE_CUDA@'
-opt_have_gtpin='@OPT_HAVE_GTPIN@'
-opt_have_level0='@OPT_HAVE_LEVEL0@'
-opt_have_opencl='@OPT_HAVE_OPENCL@'
-opt_have_rocm='@OPT_HAVE_ROCM@'
-opt_enable_python='@OPT_ENABLE_PYTHON@'
-
 #------------------------------------------------------------
 # On Cray Slingshot 11 systems, there is not yet complete
 # support for demand paging on the Cassini NIC. As a result,
