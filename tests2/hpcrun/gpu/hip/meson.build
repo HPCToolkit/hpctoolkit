@@ -1,4 +1,4 @@
-if not has_rocm
+if not rocm_dep.found()
   subdir_done()
 endif
 
@@ -8,7 +8,7 @@ _tstexe_vecadd_hip = custom_target(
   command: hipcc_cmd,
 )
 
-_preargs = ['--rocprofiler-path', rocm_profiler_exdep.get_variable(internal: 'prefix')]
+_preargs = ['--rocprofiler-path', rocprofiler_path]
 
 _tst = find_program(files('tst-amd-vecadd-produces-profiles'))
 test(

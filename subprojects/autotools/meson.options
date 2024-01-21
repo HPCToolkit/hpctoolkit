@@ -1,7 +1,0 @@
-option(
-  'spack_mode',
-  type: 'combo',
-  choices: ['no', 'find', 'install'],
-  value: 'no',
-)
-option('spack_env', type: 'string')

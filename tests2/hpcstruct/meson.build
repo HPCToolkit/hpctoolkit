@@ -46,7 +46,7 @@ foreach name, struct : testdata_struct
     _threads = [1]
 
     # If the required support is not available, do not emit any tests.
-    if struct['gpucfg'] and not has_cuda
+    if struct['gpucfg'] and not nvdisasm.found()
       continue
     endif
   endif

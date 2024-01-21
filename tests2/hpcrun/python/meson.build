@@ -1,4 +1,4 @@
-if not pyconfig.found()
+if not python.found()
   subdir_done()
 endif
 

@@ -1,4 +1,4 @@
-if not has_cuda
+if not cupti_dep.found()
   subdir_done()
 endif
 

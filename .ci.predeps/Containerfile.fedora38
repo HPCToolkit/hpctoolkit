@@ -14,8 +14,6 @@ ENV \
 # Install the required OS packages
 RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
   dnf install -y \
-    autoconf \
-    automake \
     ccache \
     clang \
     cmake \
@@ -23,7 +21,6 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
     gcc \
     gcc-c++ \
     git git-lfs \
-    libtool \
     make \
     ninja-build \
     openmpi-devel \

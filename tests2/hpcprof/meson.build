@@ -21,7 +21,7 @@ foreach name, dbase : testdata_dbase
     )
   endforeach
 
-  if mpicxx.found()
+  if mpi_dep.found()
     foreach x : [[1, 1], [1, 64], [2, 1], [4, 2]]
       ranks = x[0]
       threads = x[1]

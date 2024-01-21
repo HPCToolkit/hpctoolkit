@@ -12,6 +12,7 @@ exit 127
 import configparser
 import os.path
 import re
+import string
 import sys
 
 if __name__ == "__main__":
@@ -46,7 +47,11 @@ if __name__ == "__main__":
                             raise ValueError(
                                 f"Unable to merge list into non-list: {aval!r} + {val!r}"
                             )
-                        a.set(section, opt, f"{aval}\n+ {val}")
+                        a.set(
+                            section,
+                            opt,
+                            f"{aval.rstrip(string.whitespace + '],')}, {val.lstrip(string.whitespace + '[')}",
+                        )
 
     with open(sys.argv[1], "w", encoding="utf-8") as f:
         a.write(f, space_around_delimiters=True)

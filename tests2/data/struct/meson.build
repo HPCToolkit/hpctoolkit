@@ -90,7 +90,7 @@ foreach name, variants : _structfiles
     _tag = 'none'
     if _bin.get('cuda', false) # CUDA binaries can only be parsed with a CUDA-enabled hpcstruct
       _tag = 'sw-cuda'
-      if not has_cuda
+      if not nvdisasm.found()
         _gen = disabler()
       endif
     endif

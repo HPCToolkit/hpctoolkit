@@ -11,24 +11,18 @@ _exe_loops = executable(
   override_options: ['debug=true', 'optimization=0'],
   dependencies: dependency('openmp'),
 )
-if has_cuda
+if cupti_dep.found()
   _exe_loops_cuda = executable('testmeas-loops-cuda', files('loops.cu'))
   _exe_recursion_cuda = executable('testmeas-recursion-cuda', files('recursion.cu'))
 else
   _exe_loops_cuda = disabler()
   _exe_recursion_cuda = disabler()
 endif
-if has_rocm
-  _exe_loops_hip = custom_target(
-    output: 'testmeas-loops-hip',
-    input: files('loops.hip.cpp'),
-    command: hipcc_cmd,
-  )
-  _rocprofiler_prefix = rocm_profiler_exdep.get_variable(internal: 'prefix')
-else
-  _exe_loops_hip = disabler()
-  _rocprofiler_prefix = disabler()
-endif
+_exe_loops_hip = custom_target(
+  output: 'testmeas-loops-hip',
+  input: files('loops.hip.cpp'),
+  command: hipcc_cmd,
+)
 
 _run = [find_program(files('run')), hpcrun, hpcstruct]
 
@@ -62,7 +56,7 @@ _measurements = {
   },
   'loops-hip-amd-t': {
     'tag': 'amd',
-    'tail': ['--rocprofiler-path', _rocprofiler_prefix, '-e', 'gpu=amd', '-t', _exe_loops_hip],
+    'tail': ['--rocprofiler-path', rocprofiler_path, '-e', 'gpu=amd', '-t', _exe_loops_hip],
   },
 
   # `recursion` is a small example that has recursive properties in the GPU kernel code.

@@ -162,12 +162,13 @@ repos:
   hooks:
   # Find common errors in shell scripts using shellcheck
   - id: shellcheck
-    # Exclude scripts used for Autotools, they don't pass shellcheck (which is a really bad sign!)
-    exclude: '^config/'
+    # Exclude the shell fragments in this pass. We need to add an option to them to make them pass.
+    exclude: &shell-fragments '^config/(copyright-hash|export-hpctoolkit|launch-options)$'
+    args: ['--exclude=SC2154']
   - id: shellcheck
     # These files get injected into the launch scripts manually with a lot of context, so we have
     # to give it a few extra arguments to get these through.
-    files: '^config/(copyright-hash|export-hpctoolkit|launch-options)$'
+    files: *shell-fragments
     types: [file]
     args: ['--shell=sh', '--exclude=SC2154']
 
@@ -199,4 +200,5 @@ repos:
     exclude: |
       (?x)^(
         .*\.hpcstruct |  # Structfiles have lots of high-entropy strings
+        subprojects/[^/]+\.wrap |  # Wraps almost always contain SHA256 hashes
       )$

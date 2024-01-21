@@ -16,11 +16,8 @@
 # Relative paths are relative to HPCTOOLKIT.
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
-libmonitor_dir='@LIBMONITOR_LIB@'
-papi_libdir='@OPT_PAPI_LIBPATH@'
-perfmon_libdir='@PERFMON_LIB@'
-gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
 host_arm='@HOST_CPU_AARCH64@'
+# shellcheck disable=SC2034
 prog_name=hpcrun
 
 #------------------------------------------------------------
@@ -62,11 +59,11 @@ export UCX_ERROR_SIGNALS=ILL,FPE,BUS
 #------------------------------------------------------------
 
 here="$(dirname "$(realpath "$0")")"
-if [ -e "$here"/.libs/libhpcrun.so ]; then
+if [ -e "$here"/libhpcrun.so ]; then
   # This is (almost certainly) the build directory, not the installed version.
   # In this case, we don't have HPCTOOLKIT, HPCRUN_FNBOUNDS_CMD needs to be set,
   # and hpcrun_dir is where the libs are built.
-  hpcrun_dir="$here"/.libs
+  hpcrun_dir="$here"
   hpcfnbounds_dir=/nonexistent
   if [ -z "$HPCRUN_FNBOUNDS_CMD" ]; then
     echo "hpcrun: Detected as in build directory, must have HPCRUN_FNBOUNDS_CMD set" >&2
@@ -74,6 +71,7 @@ if [ -e "$here"/.libs/libhpcrun.so ]; then
   fi
 else
   # Use the usual method based around the install prefix
+  # shellcheck disable=SC2034
   hpc_path_to_root=..
   @export_hpctoolkit@
 
@@ -331,13 +329,12 @@ non_empty()
     esac
 }
 
-# Process options and export environ variables.  LD_LIBRARY_PATH and
+# Process options and export environ variables.
 # LD_PRELOAD should be delayed until we launch the program, but the
 # others can be set now.
 
 audit_list=
 preload_list=
-gtpin_libdir=
 namespace_default=multiple
 namespace_multiple=
 namespace_single=
@@ -477,7 +474,6 @@ do
                     if test "$opt_have_gtpin" != yes ; then
                         die "HPCToolkit was not compiled with GTPin support enabled"
                     fi
-                    gtpin_libdir="${gtpin_lib_path}"
                     export ZET_ENABLE_PROGRAM_INSTRUMENTATION=1
                     export ZE_ENABLE_TRACING_LAYER=1
                     preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"
@@ -712,6 +708,7 @@ if test "$opt_have_rocm" = yes; then
     # Fill in ROCP_METRICS and HSA_TOOLS_LIB from the ROCProfiler installation
     if test "$rocm_envs_rocprofiler_path"; then
         for trial in \
+            "${rocm_envs_rocprofiler_path}/metrics.xml" \
             "${rocm_envs_rocprofiler_path}/lib/rocprofiler/metrics.xml" \
             "${rocm_envs_rocprofiler_path}/lib/metrics.xml" \
             "${rocm_envs_rocprofiler_path}/rocprofiler/lib/metrics.xml"
@@ -723,6 +720,8 @@ if test "$opt_have_rocm" = yes; then
         done
 
         for trial in \
+            "${rocm_envs_rocprofiler_path}/librocprofiler64.so.1" \
+            "${rocm_envs_rocprofiler_path}/librocprofiler64.so.2" \
             "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.1" \
             "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.2" \
             "${rocm_envs_rocprofiler_path}/rocprofiler/lib/librocprofiler64.so.1"
@@ -770,12 +769,12 @@ if test -x "$command" && test "$file_exists" = yes ; then
     # For dynamic binaries, verify that the application and libhpcrun
     # have the same wordsize, both 32-bit or both 64-bit.
     #
-    cmd_file_out=`file -L "$command" 2>/dev/null`
+    cmd_file_out=$(file -L "$command" 2>/dev/null)
     echo "$cmd_file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
     if test $? -eq 0 ; then
-        appl_bit=`expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
-        file_out=`file -L "${hpcrun_dir}/libhpcrun.so"`
-        hpcrun_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+        appl_bit=$(expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)')
+        file_out=$(file -L "${hpcrun_dir}/libhpcrun.so")
+        hpcrun_bit=$(expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)')
         if test "$appl_bit" != "$hpcrun_bit" ; then
             echo "hpcrun: cannot profile application: $command" 1>&2
             echo "application is $appl_bit but hpctoolkit is $hpcrun_bit" 1>&2
@@ -810,22 +809,21 @@ if test $? -eq 0 ; then
 fi
 
 # Enable core files.
+# shellcheck disable=SC3045
 ulimit -S -c unlimited >/dev/null 2>&1
-
-#------------------------------------------------------------
-# assemble hpc_ld_library_path without any empty entries
-#------------------------------------------------------------
-
-hpc_ld_library_path="${hpcrun_dir}"
-hpc_ld_library_path="${hpc_ld_library_path}${papi_libdir:+:${papi_libdir}}"
-hpc_ld_library_path="${hpc_ld_library_path}${perfmon_libdir:+:${perfmon_libdir}}"
-hpc_ld_library_path="${hpc_ld_library_path}${gtpin_libdir:+:${gtpin_libdir}}"
 
 #------------------------------------------------------------
 # assemble preload list
 #------------------------------------------------------------
 
-preload_list="${libmonitor_dir}/libmonitor.so${preload_list:+:${preload_list}}"
+# Determine the path for libmonitor using ldd, and inject it with LD_PRELOAD
+if ! libmonitor="$(ldd "${hpcrun_dir}/libhpcrun.so" | grep -o '/.*/libmonitor.so[^[:space:]]*')"; then
+  echo 'hpcrun: failed to find libmonitor.so for preloading'
+  exit 1
+fi
+preload_list="${libmonitor}${preload_list:+:${preload_list}}"
+
+# Inject the main libhpcrun.so with LD_PRELOAD
 preload_list="${hpcrun_dir}/libhpcrun.so${preload_list:+:${preload_list}}"
 
 # Set up the auditor or fake auditor, depending on what's configured.
@@ -850,12 +848,6 @@ export HPCRUN_FNBOUNDS_CMD
 
 export HPCRUN_AUDIT_MAIN_LIB="${hpcrun_dir}/libhpcrun.so"
 
-if test -n "${hpc_ld_library_path}"; then
-  LD_LIBRARY_PATH="${hpc_ld_library_path}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-fi
-
-if test -z "${LD_LIBRARY_PATH}"; then unset LD_LIBRARY_PATH; fi
-
 if test -n "${preload_list}"; then
   LD_PRELOAD="${preload_list}${LD_PRELOAD:+:${LD_PRELOAD}}"
 fi
@@ -866,5 +858,5 @@ if test -n "${audit_list}"; then
 fi
 if test -z "${LD_AUDIT}"; then unset LD_AUDIT; fi
 
-export LD_LIBRARY_PATH LD_PRELOAD LD_AUDIT
+export LD_PRELOAD LD_AUDIT
 exec "$@"

@@ -1,12 +1,9 @@
-# hpcprof is built by Autotools. This executable wraps it so we can use functions that
-# expect an executable instead of a string-path.
-hpcprof = executable(
-  'hpcprof',
-  exec_src,
-  c_args: ['-DCMD_PATH=@0@'.format(autotools_build / 'src/tool/hpcprof/hpcprof')],
-  link_depends: [autotools_tgt],
+_srcs = files(
+  'args.cpp',
+  'main.cpp',
 )
 
-_devenv = environment()
-_devenv.prepend('PATH', meson.current_build_dir())
-meson.add_devenv(_devenv)
+hpcprof = executable('hpcprof', config_h, _srcs,
+  link_with: [profile_lib, profile_standalone_lib, prof_lean_lib, support_lean_lib],
+  dependencies: [xerces_dep, boost_dep, lzma_dep, yaml_cpp_dep, libelf_dep, libdw_dep, libiberty_dep],
+  install: true)

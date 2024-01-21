@@ -207,7 +207,7 @@ libunw_cursor_get_bp(hpcrun_unw_cursor_t* cursor)
 {
   unw_word_t tmp;
 
-#if HOST_CPU_x86_64
+#ifdef HOST_CPU_x86_64
   unw_cursor_t *unw_cursor = &(cursor->uc);
   libunwind_get_reg(unw_cursor, UNW_TDEP_BP, &tmp);
 #else

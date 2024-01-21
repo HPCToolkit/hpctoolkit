@@ -1,0 +1,75 @@
+spack:
+  view: true
+  concretizer:
+    unify: true
+
+  definitions:
+  # Build tools. These can be freely commented out if you have your own build tools installed.
+  - deps:
+    - 'meson @1.1.0:'
+    - cmake
+    - pkgconf
+
+  # Core dependencies.
+  - when: arch.satisfies('target=x86_64:')
+    deps:
+    - 'intel-xed +pic @2022.08.11:'
+  - deps:
+    - >-
+      boost @1.70.0:
+      +atomic +date_time +filesystem +system +thread +timer +graph +regex
+      +shared +multithreaded visibility=global
+    - 'bzip2 @1.0.8:'
+    - 'dyninst @12.3.0:'
+    - 'elfutils ~nls @0.186:'
+    - 'intel-tbb +shared @2020.3'
+    - 'libmonitor +hpctoolkit ~dlopen @2023.03.15:'
+    - 'xz @5.2.5:5.2.6,5.2.10:'
+    - 'zlib +shared @1.2.13:1.2'
+    - 'libunwind +xz @1.6.2:'
+    - 'libpfm4 @4.11.0:'
+    - 'xerces-c transcoder=iconv @3.2.3:'
+    - 'libiberty +pic @2.37:'
+    - 'yaml-cpp +shared @0.7.0:'
+
+    # The following dependencies are optional, but when present enable additional
+    # functionality in HPCToolkit. Uncomment to enable the desired feature, but
+    # on most systems most of these will configured in Spack as external packages.
+    # See https://spack.readthedocs.io/en/latest/packages_yaml.html#external-packages
+    # for instructions on how to do this.
+
+    # Dependencies for hpcprof-mpi.
+    # Feature option: -Dhpcprof_mpi
+    # - mpi
+
+    # Uncomment to enable PAPI metrics (hpcrun -e papi::*)
+    # Feature option: -Dpapi
+    # - 'papi @6.0.0.1:'
+
+    # Uncomment to enable CUDA metrics (hpcrun -e gpu=nvidia).
+    # Feature option: -Dcuda
+    # - 'cuda@11.2:'
+
+    # Uncomment to enable Level Zero metrics (hpcrun -e gpu=level0).
+    # Feature option: -Dlevel0
+    # - 'oneapi-level-zero@1.0.0:'
+
+    # Uncomment to enable Level Zero instrumentation metrics (hpcrun -e gpu=level0,inst).
+    # Note that Level Zero metrics must also be enabled for this to have an effect.
+    # Feature option: -Dgtpin
+    # - oneapi-igc
+    # - intel-gtpin
+
+    # Uncomment to enable OpenCL metrics (hpcrun -e gpu=opencl).
+    # Feature option: -Dopencl
+    # - 'opencl-c-headers@2020.12.18:'
+
+    # Uncomment to enable ROCm metrics (hpcrun -e gpu=amd).
+    # Feature option: -Drocm
+    # - 'hip@5.3:'
+    # - 'hsa-rocr-dev@5.3:'
+    # - 'roctracer-dev@5.3:'
+    # - 'rocprofiler-dev@5.3:'
+
+  specs:
+  - $deps

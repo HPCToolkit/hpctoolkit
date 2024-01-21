@@ -2,9 +2,5 @@ __pycache__/
 !.editorconfig
 !.gitlab-ci.yml
 !/.pre-commit-config.yaml
-!.prospector.yaml
-Makefile.in
-/aclocal.m4
-/configure
-/configure~
-/autom4te.cache/
+!.pylintrc
+!.vermin

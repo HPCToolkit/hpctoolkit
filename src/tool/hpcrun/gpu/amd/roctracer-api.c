@@ -50,7 +50,7 @@
 
 #include "hip-api.h"
 
-#include <roctracer_hip.h>
+#include <roctracer/roctracer_hip.h>
 
 #include "../gpu-activity-channel.h"
 #include "../gpu-activity-process.h"
@@ -75,7 +75,7 @@
 
 #include "rocprofiler-api.h"
 
-#include <hsa.h>
+#include <hsa/hsa.h>
 
 //******************************************************************************
 // macros

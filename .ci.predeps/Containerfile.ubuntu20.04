@@ -16,8 +16,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   rm -f /etc/apt/apt.conf.d/docker-clean \
   && apt-get update -yqq \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    autoconf \
-    automake \
     ccache \
     clang clang-9 clang-10 clang-11 \
     cmake \
@@ -26,8 +24,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     gcc gcc-8 gcc-9 gcc-10 \
     git git-lfs \
     libomp-dev \
-    libtool \
-    make \
     libmpich-dev \
     ninja-build \
     pkg-config \
@@ -39,14 +35,6 @@ RUN \
   python3 -m pip install \
     'meson>=1.1.0,<2' \
   && : # END
-
-# Debian/Ubuntu stores libraries in "multilib" directories, e.g. /usr/lib/x86_64-linux-gnu.
-# Configure currently only understands RHEL-like installations (/usr/lib64), so symlink the
-# difference away. Same issue for (some) headers.
-# TODO: Remove whenever possible.
-RUN \
-  cp -rsTn /usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/ /usr/lib64/ \
-  && cp -rsTn /usr/include/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/ /usr/include/
 
 
 # OS native-file side-stage: Collect and compose a native file for the OS software

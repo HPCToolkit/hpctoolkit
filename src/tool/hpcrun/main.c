@@ -156,7 +156,7 @@
 #include "audit/audit-api.h"
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 
-#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
+#if defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64) || defined(HOST_CPU_PPC)
 extern void hpcrun_dump_intervals(void* addr);
 #endif
 
@@ -494,7 +494,7 @@ hpcrun_set_abort_timeout()
 // ** local routines & data to support interval dumping **
 //------------------------------------
 
-#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
+#if defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64) || defined(HOST_CPU_PPC)
 static sigjmp_buf ivd_jb;
 
 static int
@@ -550,7 +550,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_setup_segv();
 
 
-#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
+#if defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64) || defined(HOST_CPU_PPC)
   if (getenv("HPCRUN_ONLY_DUMP_INTERVALS")) {
     fnbounds_table_t table = fnbounds_fetch_executable_table();
     TMSG(INTERVALS_PRINT, "table data = %p", table.table);
@@ -572,7 +572,7 @@ hpcrun_init_internal(bool is_child)
     }
     exit(0);
   }
-#endif  // HPCRUN_HAVE_CUSTOM_UNWINDER
+#endif  // defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64) || defined(HOST_CPU_PPC)
 
   hpcrun_stats_reinit();
   hpcrun_start_stop_internal_init();

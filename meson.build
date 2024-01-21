@@ -2,6 +2,7 @@ project(
   'hpctoolkit',
   'c',
   'cpp',
+  version: '2023.08.99-next',
   meson_version: '>=1.1.0',
   license: 'BSD-3-Clause',
   default_options: [
@@ -15,6 +16,9 @@ project(
 
 fs = import('fs')
 pymod = import('python')
+cc = meson.get_compiler('c')
+cpp = meson.get_compiler('cpp')
+
 
 # Find Python. This is a hard requirement since we use Python for the regression test suite as well.
 python = pymod.find_installation('python3')
@@ -22,112 +26,68 @@ assert(
   python.language_version().version_compare('>=3.8'),
   'Need Python >=3.8, got @0@'.format(python.language_version()),
 )
-# The python*-config tool is only required for Python unwinding support
-pyconfig = find_program(
-  python.get_variable('BINDIR') / fs.name(python.full_path()) + '-config',
-  required: get_option('python'),
-)
+python_dep = python.dependency(required: get_option('python'))
 
-# Translate from prefixes to Meson dependency objects. They are missing most pieces like compiler
-# args and such, but they are closer to the Mesonic.
-foreach package : [
-  'boost',
-  'bzip',
-  'dyninst',
-  'elfutils',
-  'tbb',
-  'libmonitor',
-  'libunwind',
-  'xerces',
-  'lzma',
-  'zlib',
-  'libiberty',
-  'xed',
-  'yaml_cpp',
-  'papi',
-  'perfmon',
-  'opencl',
-  'gtpin',
-  'igc',
-  'level0',
-  'rocm_hip',
-  'rocm_hsa',
-  'rocm_tracer',
-  'rocm_profiler',
-  'cuda',
-]
-  _p = meson.get_external_property(f'prefix_@package@', '')
-  if _p != ''
-    _p = fs.expanduser(_p)
-    assert(fs.is_absolute(_p), f'property \'prefix_@package@\' must be an absolute path')
-    assert(fs.is_dir(_p), f'property \'prefix_@package@\' must be a directory')
-    meson.override_dependency(
-      f'@package@-hpctoolkit',
-      declare_dependency(variables: {'prefix': _p}),
-    )
-  endif
-endforeach
 
 # Collect all the dependencies we require for HPCToolkit
-boost_exdep = dependency('boost-hpctoolkit', fallback: ['spack-deps', 'boost_dep'])
-bzip_exdep = dependency('bzip-hpctoolkit', fallback: ['spack-deps', 'bzip_dep'])
-dyninst_exdep = dependency('dyninst-hpctoolkit', fallback: ['spack-deps', 'dyninst_dep'])
-elfutils_exdep = dependency('elfutils-hpctoolkit', fallback: ['spack-deps', 'elfutils_dep'])
-tbb_exdep = dependency('tbb-hpctoolkit', fallback: ['spack-deps', 'tbb_dep'])
-libmonitor_exdep = dependency('libmonitor-hpctoolkit', fallback: ['spack-deps', 'libmonitor_dep'])
-libunwind_exdep = dependency('libunwind-hpctoolkit', fallback: ['spack-deps', 'libunwind_dep'])
-xerces_exdep = dependency('xerces-hpctoolkit', fallback: ['spack-deps', 'xerces_dep'])
-lzma_exdep = dependency('lzma-hpctoolkit', fallback: ['spack-deps', 'lzma_dep'])
-zlib_exdep = dependency('zlib-hpctoolkit', fallback: ['spack-deps', 'zlib_dep'])
-libiberty_exdep = dependency('libiberty-hpctoolkit', fallback: ['spack-deps', 'libiberty_dep'])
+boost_dep = dependency('boost', 'Boost', modules: ['graph'], version: '>=1.70.0')
+bzip_dep = dependency('bzip2', version: '>=1.0.0')
+tbb_dep = dependency('TBB', components: ['tbb'])
+tbb_malloc_dep = dependency('TBB', components: ['tbb', 'tbbmalloc'])
+libelf_dep = dependency('libelf', version: '>=0.186')
+libdw_dep = dependency('libdw', version: '>=0.186')
+libmonitor_dep = dependency('Libmonitor', method: 'cmake', cmake_module_path: 'cmake')
+libunwind_dep = dependency('libunwind', version: '>=1.6.2')
+xerces_dep = dependency('xerces-c', version: '>=3.2.3')
+lzma_dep = dependency('liblzma', version: '>=5.2.0')
+zlib_dep = dependency('zlib')
+libiberty_dep = dependency('Libiberty', method: 'cmake', cmake_module_path: 'cmake')
+xed_dep = dependency('', required: false)
 if host_machine.cpu_family() in ['x86', 'x86_64']
-  xed_exdep = dependency('xed-hpctoolkit', fallback: ['spack-deps', 'xed_dep'])
+  xed_dep = dependency('Xed', method: 'cmake', cmake_module_path: 'cmake', version: '>=2022.08.11')
 endif
-yaml_cpp_exdep = dependency('yaml_cpp-hpctoolkit', fallback: ['spack-deps', 'yaml_cpp_dep'])
-papi_exdep = dependency('papi-hpctoolkit', required: get_option('papi'))
-if not papi_exdep.found()
-  perfmon_exdep = dependency('perfmon-hpctoolkit', fallback: ['spack-deps', 'perfmon_dep'])
-else
-  perfmon_exdep = dependency('', required: false)
-endif
+yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
+perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake', version: '>=4.0')
+papi_dep = dependency('papi', required: get_option('papi'), version: '>=6.0.0')
 
-opencl_exdep = dependency('opencl-hpctoolkit', required: get_option('opencl'))
-level0_exdep = dependency('level0-hpctoolkit', required: get_option('level0'))
-_gtpin_f = get_option(
-  'gtpin',
-).require(level0_exdep.found(), error_message: 'gtpin is only available with level0')
-gtpin_exdep = dependency('gtpin-hpctoolkit', required: _gtpin_f)
-igc_exdep = dependency('igc-hpctoolkit', required: _gtpin_f)
 
-# Find CUDA language support.
-cuda_exdep = dependency('cuda-hpctoolkit', required: get_option('cuda'))
-has_cuda = cuda_exdep.found()
-if has_cuda
-  add_languages('cuda', native: false, required: true)
-  nvdisasm = find_program('nvdisasm', dirs: [cuda_exdep.get_variable(internal: 'prefix') / 'bin'])
-endif
-
-# Find HIP language support.
-rocm_hip_exdep = dependency('rocm_hip-hpctoolkit', required: get_option('rocm'))
-rocm_hsa_exdep = dependency('rocm_hsa-hpctoolkit', required: get_option('rocm'))
-rocm_tracer_exdep = dependency('rocm_tracer-hpctoolkit', required: get_option('rocm'))
-rocm_profiler_exdep = dependency('rocm_profiler-hpctoolkit', required: get_option('rocm'))
-has_rocm = (
-  rocm_hip_exdep.found()
-  and rocm_hsa_exdep.found()
-  and rocm_tracer_exdep.found()
-  and rocm_profiler_exdep.found()
-)
-if has_rocm
-  hipcc = find_program('hipcc', required: true)
-  hipcc_cmd = [hipcc, '-o', '@OUTPUT@', '@INPUT@']
+# Dyninst ships a CMake config file, but until very recently it doesn't work for our purposes.
+# It breaks the link and doesn't inject any of the needed TBB or Boost includes.
+# So, compile-test if it works, and if not fall back to a custom Find module that does.
+_dyninst_code = '''
+#include <Symtab.h>
+int main() {
+  Dyninst::SymtabAPI::Symtab sym;
+  return 0;
+}
+'''
+dyninst_dep = dependency('Dyninst', components: ['parseAPI', 'instructionAPI', 'symtabAPI'], version: '>=12.3')
+if not cpp.links(_dyninst_code, name: 'Dyninst config file is usable', dependencies: dyninst_dep)
+  dyninst_dep = dependency('Dyninst', method: 'cmake',
+    cmake_module_path: 'cmake',
+    components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
+    modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
+    version: '>=12.3')
+  assert(cpp.links(_dyninst_code, name: 'Dyninst config file is usable', dependencies: dyninst_dep))
 endif
 
-# Find MPI. This is a stub since we really just pass it on to the Autogoo.
-mpicxx = find_program('mpicxx', required: get_option('hpcprof_mpi'))
 
-# See if we have runtime support for MPI, via the semi-standard mpiexec interface.
-# Usage: [mpiexec, '<# of ranks>', command...]
+# Find MPI. We try different methods to handle the quirks of different systems.
+mpi_dep = dependency('', required: false)
+if get_option('hpcprof_mpi').allowed()
+  mpi_dep = dependency('MPI', language: 'cpp', required: false)
+  if not mpi_dep.found()
+    # Meson currently only properly supports OpenMPI. Search for the others via pkg-config first.
+    mpi_dep = dependency('mpich-cxx', 'mvapich2', method: 'pkg-config', required: false)
+  endif
+
+  if not mpi_dep.found() and get_option('hpcprof_mpi').enabled()
+    error('hpcprof_mpi=enabled but unable to find MPI')
+  endif
+endif
+
+
+# For testing hpcprof-mpi, we also need mpiexec to actually launch the tool.
 mpiexec = find_program(
   'mpiexec',
   required: get_option('hpcprof_mpi').disabled() ? get_option('hpcprof_mpi') : false,
@@ -139,6 +99,136 @@ else
   mpiexec = [_sh.full_path(), '-c', 'exit 77']
 endif
 
+
+# Find support for CUDA performance monitoring
+#
+# NB: The CUDA dependency expects to be used with (implicit) `link_language: 'cuda'`, but we link
+# it with `link_language: 'c'`. This causes link errors (`cannot find: -lcupti`) at build time.
+# Fetching the dependency() before adding the 'cuda' language changes the search algorithm a bit and
+# removes some fallbacks/checks, but it works when we link.
+#
+# There are a couple different Meson bugs and antifeatures at play here to cause this, but it works.
+nvdisasm = find_program('nvdisasm', '/usr/local/cuda/bin/nvdisasm', required: get_option('cuda'))
+cupti_dep = dependency('CUDA', modules: ['cupti'], required: get_option('cuda'), version: '>=11.2').partial_dependency(compile_args: true, includes: true)
+if not add_languages('cuda', native: false, required: get_option('cuda'))
+  cupti_dep = dependency('', required: false)
+endif
+
+
+# Find support for ROCm performance monitoring
+hip_dep = dependency('hip', method: 'cmake', modules: ['hip::amdhip64'], required: get_option('rocm'), version: '>=5.1')
+hsa_dep = dependency('hsa-runtime64', method: 'cmake', required: get_option('rocm'))
+roctracer_dep = dependency('ROCtracer', method: 'cmake', cmake_module_path: 'cmake', required: get_option('rocm'))
+rocprofiler_dep = dependency('ROCprofiler', method: 'cmake', cmake_module_path: 'cmake', required: get_option('rocm'))
+_rocm_subdeps = [rocprofiler_dep, roctracer_dep, hip_dep, hsa_dep]
+rocm_dep = declare_dependency(
+  dependencies: _rocm_subdeps,
+  version: hip_dep.version(),
+).partial_dependency(compile_args: true, includes: true)
+foreach dep : _rocm_subdeps
+  if not dep.found()
+    rocm_dep = dependency('', required: false)
+    break
+  endif
+endforeach
+
+hipcc = disabler()
+hipcc_cmd = disabler()
+rocprofiler_path = disabler()
+if rocm_dep.found()
+  hipcc = find_program('hipcc', '/opt/rocm/bin/hipcc', required: true)
+  hipcc_cmd = [hipcc, '-o', '@OUTPUT@', '@INPUT@']
+  rocprofiler_path = fs.parent(rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML'))
+endif
+
+
+# Find OpenCL support. We only need the headers, but there are many ways to acquire them.
+opencl_dep = dependency('', required: false)
+if get_option('opencl').allowed()
+  # - As of OpenCL >=2023.02.06 (found in Debian >=12, Ubuntu >=23.04, and Fedora) the headers can
+  #   be accessed via pkg-config as OpenCL-Headers.pc.
+  # - Before that, since OpenCL >=2020.12.18 (found in Debian >=10, Ubuntu >=20.04, and RHEL >=9)
+  #   the headers can be accessed via CMake as OpenCLHeaders-config.cmake.
+  # - For older distros, CMake >=3.1 ships a FindOpenCL.cmake script, but it requires a full OpenCL
+  #   installation and not just the headers.
+  #
+  # Try all three approaches and take it if it works.
+  opencl_dep = dependency('OpenCL-Headers', 'OpenCLHeaders', 'OpenCL', required: false, version: '>=2.2').partial_dependency(includes: true, compile_args: true)
+
+  if not opencl_dep.found() and cc.has_header('CL/cl.h', required: false)
+    # For Spack builds and partial system installations, we also support the case where the header
+    # is already available on the standard include paths.
+    opencl_dep = declare_dependency()
+  endif
+
+  if not opencl_dep.found()
+    # Fall back to dependency() to get a good error message and enable wrap fallbacks.
+    opencl_dep = dependency('OpenCL-Headers', required: get_option('opencl'))
+  endif
+endif
+
+
+# Find support for Intel GPU performance monitoring
+level0_dep = dependency('level-zero', required: get_option('level0'), version: '>=1.0.0')
+# GTPin, IGC and IGA are only needed for instruction-level collection
+_gtpin_f = get_option('gtpin').require(level0_dep.found(), error_message: 'gtpin is only available with level0')
+igc_dep = dependency('igc-opencl', required: _gtpin_f)
+if igc_dep.found()
+  add_project_arguments('-DENABLE_IGC', language: ['c', 'cpp'])
+endif
+iga_dep = dependency('IGA', method: 'cmake', cmake_module_path: 'cmake', required: _gtpin_f)
+
+# GTPin is a snowflake of a case, it only comes in a binary tarball with non-standard names for
+# all the paths like `Include` and `Lib`. This means we can't use CMake to find it, the user
+# *has* to provide it through `cpp_args` and `cpp_link_args`.
+# But since that's way too much trouble in most cases, we also support pulling it from a wrap,
+# when the feature is explicitly requested.
+gtpin_dep = cpp.find_library('gtpin', has_headers: ['api/gtpin_api.h', 'ged.h'], required: false)
+if gtpin_dep.found()
+  # Wrap the result of find_library() as a dependency so we can query the nonexistent version later
+  gtpin_dep = declare_dependency(dependencies: gtpin_dep, version: 'unknown')
+else
+  gtpin_dep = dependency('gtpin', method: 'system', required: get_option('gtpin'))
+endif
+if gtpin_dep.found()
+  add_project_arguments('-DENABLE_GTPIN', language: ['c', 'cpp'])
+endif
+
+
+# Collect features from the compiler itself
+add_project_dependencies(dependency('openmp'), language: ['c', 'cpp'])
+dl_dep = dependency('dl')
+add_project_dependencies(cc.find_library('rt'), language: ['c'])
+_fs_code = '''
+#include <filesystem>
+int main() {
+  std::filesystem::path p("/foo/bar");
+  std::filesystem::remove(p);
+  return 0;
+}
+'''
+if not cpp.links(_fs_code)
+  _found = false
+  foreach trial : ['stdc++fs', 'c++fs']
+    _dep = cpp.find_library(trial, required: false)
+    if _dep.found()
+      add_project_dependencies(_dep, language: ['c', 'cpp'])
+      _found = true
+      break
+    endif
+  endforeach
+  if not _found
+    error('Unable to find suitable flags for std::filesystem')
+  endif
+endif
+
+
+# If Valgrind annotations aren't requested, inject an option to disable them.
+if not get_option('valgrind_annotations')
+  add_project_arguments('-DNVALGRIND', language: ['c', 'cpp'])
+endif
+
+
 # Enable a handful of useful non-default warnings
 foreach lang : ['c', 'cpp']
   _warnings = meson.get_compiler(lang).get_supported_arguments(
@@ -148,302 +238,89 @@ foreach lang : ['c', 'cpp']
   add_project_arguments(_warnings, language: lang)
 endforeach
 
-# --- START AUTOGOO STUB ---------------------
-# The build system is really Autotools, which is vastly different from Meson. We will eventually
-# switch over from Autotools to Meson, but until we do this "stub" acts as the bridge between the
-# two very different worlds. The goal is that currently written Meson code (i.e. regression tests)
-# can remain as-is when the switch occurs, reducing some of the complexity that goes with this sort
-# of thing.
 
-# Autotools only supports one LDFLAGS option, so warn if the user tries to give different flags for
-# different languages.
-if get_option('c_link_args') != get_option('cpp_link_args')
-  warning(
-    'Setting \'cpp_link_args\' and \'c_link_args\' to different values will not behave as expected!',
-  )
-  warning(
-    'Some pure-C libraries in this project are linked using \'cpp_link_args\' instead of \'c_link_args\'.',
-  )
-  warning('Set these two variables to the same value to silence this warning.')
-endif
+# Run a number of compile tests that are used for the various source files
+cfg = configuration_data()
+cfg.set_quoted('HPCTOOLKIT_INSTALL_PREFIX', get_option('prefix'),
+        description: 'HPCToolkit install prefix')
+cfg.set_quoted('HPCTOOLKIT_VERSION', meson.project_version(),
+        description: 'HPCToolkit version')
+cfg.set_quoted('HPCTOOLKIT_VERSION_STRING', 'A member of HPCToolkit, version @0@'.format(meson.project_version()),
+        description: 'HPCToolkit version string')
+cfg.set_quoted('HPCTOOLKIT_GIT_VERSION', '@VCS_TAG@',
+        description: 'Git branch and commit hash, if known.')
+cfg.set_quoted('HPCTOOLKIT_SPACK_SPEC', 'unknown (deprecated)',
+        description: 'Spack version and variants, if known. (legacy)')
+cfg.set('SIZEOF_VOIDP', cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8))
+cfg.set('HOST_CPU_x86', host_machine.cpu_family() == 'x86',
+        description: 'HOST CPU: x86 (32-bit)')
+cfg.set('HOST_CPU_x86_64', host_machine.cpu_family() == 'x86_64',
+        description: 'HOST CPU: x86_64 (64-bit)')
+cfg.set('HOST_CPU_IA64', host_machine.cpu_family() == 'ia64',
+        description: 'HOST CPU: ia64 (itanium)')
+cfg.set('HOST_CPU_PPC', host_machine.cpu_family() == 'ppc64',
+        description: 'HOST CPU: PowerPC (ppc)')
+cfg.set('HOST_CPU_ARM64', host_machine.cpu_family() == 'aarch64',
+        description: 'HOST CPU: ARM 64 (aarch64)')
+cfg.set('HOST_BIG_ENDIAN', host_machine.endian() == 'big',
+        description: 'Host is big endian.')
+cfg.set('HOST_LITTLE_ENDIAN', host_machine.endian() == 'little',
+        description: 'Host is little endian.')
+cfg.set('USE_SYSTEM_BYTESWAP', cc.has_header_symbol('byteswap.h', 'bswap_64'),
+        description: 'Use system byteswap.h')
+cfg.set('HAVE_FUTEX_H', cc.has_header_symbol('linux/futex.h', 'SYS_futex', prefix: ['#include <sys/syscall.h>', '#include <unistd.h>']),
+        description: 'Whether futexes are available for use')
+cfg.set('HOST_SYSTEM_IBM_BLUEGENE', false, description: 'IBM Blue Gene support (disabled, deprecated)')
+cfg.set('XED_DISPLACEMENT_INT64', cc.has_header_symbol('xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep),
+        description: 'xed uses xed_operand_values_get_branch_displacement_int64')
+cfg.set('USE_XED_FOR_GAPS', cpp.has_header_symbol('InstructionDecoder.h', 'InstructionDecoder::unknown_instruction::register_callback', dependencies: dyninst_dep),
+        description: 'use dyninst and xed for unknown instructions')
+cfg.set('USE_GET_CONTAINING_MODULE', cpp.has_header_symbol('Symtab.h', 'Symtab::getContainingModule', dependencies: dyninst_dep),
+        description: 'use getContainingModule API')
+cfg.set('DYNINST_SUPPORTS_INTEL_GPU', cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general', dependencies: dyninst_dep),
+        description: 'dyninst supports Intel GPUs')
+cfg.set('DYNINST_USE_CUDA', cpp.has_header_symbol('Symtab.h', 'Dyninst::Arch_cuda', dependencies: dyninst_dep),
+        description: 'dyninst supports cuda')
+cfg.set('ENABLE_OPENMP', true,
+        description: 'ParseAPI supports openmp (for hpcstruct)')
+cfg.set('ENABLE_OPENMP_SYMTAB', true,
+        description: 'Symtab supports openmp (for fnbounds)')
+cfg.set('ENABLE_LOGICAL_PYTHON', python_dep.found(),
+        description: 'Support for Python logical unwinding')
+cfg.set('ENABLE_XOP', false,
+        description: 'Support for AMD XOP instructions (disabled)')
+cfg.set('ENABLE_CLOCK_REALTIME', cc.has_header_symbol('time.h', 'CLOCK_REALTIME') and cc.has_header_symbol('signal.h', 'SIGEV_THREAD_ID'),
+        description: 'Support for CLOCK_REALTIME and SIGEV_THREAD_ID')
+cfg.set('ENABLE_CLOCK_CPUTIME', cfg.get('ENABLE_CLOCK_REALTIME') and cc.has_header_symbol('time.h', 'CLOCK_THREAD_CPUTIME_ID'),
+        description: 'Support for CLOCK_THREAD_CPUTIME_ID')
+cfg.set('OPT_HAVE_CUDA', cupti_dep.found(),
+        description: 'Have support for cuda')
+cfg.set_quoted('CUDA_NVDISASM_PATH', nvdisasm.found() ? nvdisasm.full_path() : '',
+        description: 'Path to CUDA nvdisasm utility')
+cfg.set_quoted('CUPTI_INSTALL_PREFIX', '/nonexistent',  # TODO
+        description: 'CUPTI install prefix')
+cfg.set('ENABLE_OPENCL', opencl_dep.found(),
+        description: 'Enable OpenCL monitoring')
+cfg.set('HAVE_ROCM_ACTIVITY_KERNEL_NAME', cc.has_member('roctracer_record_t', 'kernel_name', prefix: '#include <roctracer/roctracer_hip.h>', dependencies: rocm_dep),
+        description: 'activity_record has kernel_name field')
+cfg.set('USE_ROCM', rocm_dep.found(),
+        description: 'use ROCM')
+cfg.set('DATACENTRIC_TRACE', false, description: 'Data-centric tracing (disabled, deprecated)')
 
-# Fetch the Autotools. We're very picky about the versions, so if we can't find a version we fall
-# back to the subproject that will handle it for us.
-foreach binary : [
-  'make',
-  'm4',
-  'autoreconf',
-  'autoconf',
-  'aclocal',
-  'autoheader',
-  'autom4te',
-  'automake',
-  'libtoolize',
-]
-  _prog = find_program(binary, native: true, required: false)
-  if not _prog.found()
-    _prog = subproject('autotools').get_variable(binary, dependency('', required: false))
-    if not _prog.found()
-      # Re-run as required to throw a suitable error message
-      _prog = find_program(binary, native: true, required: true)
-    endif
-  endif
-  set_variable('_' + binary, _prog)
-endforeach
-
-# Regenerate the Autogoo during the Meson configuration phase. This technically edits the source
-# tree, which is really *really* bad, but we don't have another option at this stage.
-_autoenv = {
-  'AUTORECONF': _autoreconf.full_path(),
-  'AUTOCONF': _autoconf.full_path(),
-  'ACLOCAL': _aclocal.full_path(),
-  'AUTOHEADER': _autoheader.full_path(),
-  'AUTOM4TE': _autom4te.full_path(),
-  'AUTOMAKE': _automake.full_path(),
-  'LIBTOOLIZE': _libtoolize.full_path(),
-  'M4': _m4.full_path(),
-  'MAKE': _make.full_path(),
-}
-message('Generating Autotools files ...')
-run_command(
-  files('meson' / 'autogen'),
-  # The following files are read during the autogen process
-  files('configure.ac'),
-  files('doc' / 'Makefile.am'),
-  files('doc' / 'man' / 'Makefile.am'),
-  files('Makefile.am'),
-  files('src' / 'Makefile.am'),
-  files('src' / 'lib' / 'xml' / 'Makefile.am'),
-  files('src' / 'lib' / 'support-lean' / 'Makefile.am'),
-  files('src' / 'lib' / 'binutils' / 'Makefile.am'),
-  files('src' / 'lib' / 'Makefile.am'),
-  files('src' / 'lib' / 'prof-lean' / 'Makefile.am'),
-  files('src' / 'lib' / 'analysis' / 'Makefile.am'),
-  files('src' / 'lib' / 'prof' / 'Makefile.am'),
-  files('src' / 'lib' / 'profile' / 'Makefile.am'),
-  files('src' / 'lib' / 'banal' / 'Makefile.am'),
-  files('src' / 'lib' / 'support' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcserver' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcserver' / 'mpi' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcrun' / 'utilities' / 'bgq-cnk' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcrun' / 'Makefile.am'),
-  files('src' / 'tool' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcfnbounds' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcstruct' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcproflm' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcproftt' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcprof-mpi' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpctracedump' / 'Makefile.am'),
-  files('src' / 'tool' / 'hpcprof' / 'Makefile.am'),
-  files('lib' / 'Makefile.am'),
-  files('tests' / 'Makefile.am'),
-  # The following files are read by ./configure, but we put them here so that Meson regenerates
-  # automatically when any of them change.
-  # Passed to AC_CONFIG_FILES(...):
-  files('doc/man/HPCToolkitVersionInfo.tex.in'),
-  files('tests/Makefile.spack.in'),
-  files('src/tool/hpcrun/hpcrun.in'),
-  files('src/tool/hpcrun/scripts/hpcsummary.in'),
-  files('tests/run-sort.in'),
-  # Passed to AC_SUBST_FILE(...):
-  files('config/copyright-hash'),
-  files('config/export-hpctoolkit'),
-  files('config/launch-options'),
-  check: true,
-  env: _autoenv,
-)
-
-# Start collecting arguments to pass to ./configure
-_autogoo_args = [
-  '--enable-silent-rules',
-]
-
-# Generate the full set of --with-* arguments and LDFLAGS for ./configure.
-# This propagates the dependencies to the actual build.
-_autogoo_args += [
-  '--@0@-valgrind-annotations'.format(get_option('valgrind_annotations') ? 'enable' : 'disable'),
-  '--with-boost=@0@'.format(boost_exdep.get_variable(internal: 'prefix')),
-  '--with-bzip=@0@'.format(bzip_exdep.get_variable(internal: 'prefix')),
-  '--with-dyninst=@0@'.format(dyninst_exdep.get_variable(internal: 'prefix')),
-  '--with-elfutils=@0@'.format(elfutils_exdep.get_variable(internal: 'prefix')),
-  '--with-tbb=@0@'.format(tbb_exdep.get_variable(internal: 'prefix')),
-  '--with-libmonitor=@0@'.format(libmonitor_exdep.get_variable(internal: 'prefix')),
-  '--with-libunwind=@0@'.format(libunwind_exdep.get_variable(internal: 'prefix')),
-  '--with-xerces=@0@'.format(xerces_exdep.get_variable(internal: 'prefix')),
-  '--with-lzma=@0@'.format(lzma_exdep.get_variable(internal: 'prefix')),
-  '--with-zlib=@0@'.format(zlib_exdep.get_variable(internal: 'prefix')),
-  '--with-libiberty=@0@'.format(libiberty_exdep.get_variable(internal: 'prefix')),
-  '--with-yaml-cpp=@0@'.format(yaml_cpp_exdep.get_variable(internal: 'prefix')),
-]
-_ldflags = get_option('cpp_link_args')
-_ldflags += boost_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += bzip_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += dyninst_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += elfutils_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += tbb_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += libmonitor_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += libunwind_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += xerces_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += lzma_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += zlib_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += libiberty_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_ldflags += yaml_cpp_exdep.get_variable(internal: 'link_args', default_value: '').split()
-_autogoo_env = {}
-if host_machine.cpu_family() in ['x86', 'x86_64']
-  _autogoo_args += ['--with-xed=@0@'.format(xed_exdep.get_variable(internal: 'prefix'))]
-  _ldflags += xed_exdep.get_variable(internal: 'link_args', default_value: '').split()
-endif
-if mpicxx.found()
-  _autogoo_args += ['MPICXX=@0@'.format(mpicxx.full_path())]
-endif
-if papi_exdep.found()
-  _autogoo_args += ['--with-papi=@0@'.format(papi_exdep.get_variable(internal: 'prefix'))]
-  _ldflags += papi_exdep.get_variable(internal: 'link_args', default_value: '').split()
-endif
-if perfmon_exdep.found()
-  _autogoo_args += ['--with-perfmon=@0@'.format(perfmon_exdep.get_variable(internal: 'prefix'))]
-  _ldflags += perfmon_exdep.get_variable(internal: 'link_args', default_value: '').split()
-endif
-if pyconfig.found()
-  _autogoo_args += ['--with-python=@0@'.format(pyconfig.full_path())]
-endif
-if opencl_exdep.found()
-  _autogoo_args += ['--with-opencl=@0@'.format(opencl_exdep.get_variable(internal: 'prefix'))]
-  _ldflags += opencl_exdep.get_variable(internal: 'link_args', default_value: '').split()
-endif
-if level0_exdep.found()
-  _autogoo_args += ['--with-level0=@0@'.format(level0_exdep.get_variable(internal: 'prefix'))]
-  _ldflags += level0_exdep.get_variable(internal: 'link_args', default_value: '').split()
-  if gtpin_exdep.found() and igc_exdep.found()
-    _autogoo_args += [
-      '--with-gtpin=@0@'.format(gtpin_exdep.get_variable(internal: 'prefix')),
-      '--with-igc=@0@'.format(igc_exdep.get_variable(internal: 'prefix')),
-    ]
-    _ldflags += gtpin_exdep.get_variable(internal: 'link_args', default_value: '').split()
-    _ldflags += igc_exdep.get_variable(internal: 'link_args', default_value: '').split()
-  endif
-endif
-if has_rocm
-  _autogoo_args += [
-    '--with-rocm-hip=@0@'.format(rocm_hip_exdep.get_variable(internal: 'prefix')),
-    '--with-rocm-hsa=@0@'.format(rocm_hsa_exdep.get_variable(internal: 'prefix')),
-    '--with-rocm-tracer=@0@'.format(rocm_tracer_exdep.get_variable(internal: 'prefix')),
-    '--with-rocm-profiler=@0@'.format(rocm_profiler_exdep.get_variable(internal: 'prefix')),
-  ]
-  _ldflags += rocm_hip_exdep.get_variable(internal: 'link_args', default_value: '').split()
-  _ldflags += rocm_hsa_exdep.get_variable(internal: 'link_args', default_value: '').split()
-  _ldflags += rocm_tracer_exdep.get_variable(internal: 'link_args', default_value: '').split()
-  _ldflags += rocm_profiler_exdep.get_variable(internal: 'link_args', default_value: '').split()
-endif
-if has_cuda
-  _autogoo_args += ['--with-cuda=@0@'.format(cuda_exdep.get_variable(internal: 'prefix'))]
-  _ldflags += cuda_exdep.get_variable(internal: 'link_args', default_value: '').split()
-endif
-
-# Set the compilers that should be used for compilations
-_cc = meson.get_compiler('c')
-assert(_cc.get_argument_syntax() == 'gcc', 'Compiler must support GCC-syntax arguments!')
-_cpp = meson.get_compiler('cpp')
-assert(_cpp.get_argument_syntax() == 'gcc', 'Compiler must support GCC-syntax arguments!')
-_autogoo_args += [
-  'CC=@0@'.format(' '.join(_cc.cmd_array())),
-  'CXX=@0@'.format(' '.join(_cpp.cmd_array())),
-]
-if mpicxx.found()
-  _autogoo_env += {
-    'OMPI_CXX': ' '.join(_cpp.cmd_array()),
-    'MPICH_CXX': ' '.join(_cpp.cmd_array()),
-  }
-endif
-
-# Collect and translate the raw compiler flags
-_c2flags = []
-if get_option('debug')
-  _c2flags += ['-g']
-endif
-if get_option('optimization') != 'plain'
-  _c2flags += ['-O' + get_option('optimization')]
-endif
-if get_option('warning_level') != '0'
-  _warns = {
-    '1': ['-Wall'],
-    '2': ['-Wall', '-Wextra'],
-    '3': ['-Wall', '-Wextra', '-Wpedantic'],
-    'everything': ['-Weverything'],
-  }
-  _c2flags += _warns[get_option('warning_level')]
-endif
-if get_option('werror')
-  _c2flags = ['-Werror']
-endif
-if (
-  get_option('b_ndebug') == 'true'
-  or get_option('b_ndebug') == 'if-release'
-  and get_option('buildtype') == 'release'
-)
-  _c2flags += ['-DNDEBUG']
-endif
-
-_cflags = _c_warnings + [get_option('c_args')]
-if get_option('c_std') != 'none'
-  _cflags += ['-std=@0@'.format(get_option('c_std'))]
-endif
-
-_cppflags = _cpp_warnings + [get_option('cpp_args')]
-if get_option('cpp_std') != 'none'
-  _cppflags += ['-std=@0@'.format(get_option('cpp_std'))]
-endif
-
-_autogoo_args += [
-  '--enable-plain',
-  'CFLAGS=@0@'.format(' '.join(_c2flags + _cflags)),
-  'CXXFLAGS=@0@'.format(' '.join(_c2flags + _cppflags)),
-  'LDFLAGS=@0@'.format(' '.join(_ldflags)),
-]
-
-# Translate any last built-in Meson options that have clean translations
-_autogoo_args += [
-  '--@0@-strip-debug'.format(get_option('strip') ? 'enable' : 'disable'),
-  '--prefix=@0@'.format(get_option('prefix')),
-]
-
-# Run ./configure to configure the project as a whole
-message('Running ./configure ...')
-run_command(
-  files('meson' / 'configure'),
-  'autotools-build',
-  files('configure'),
-  _autogoo_args,
-  check: true,
-  env: _autogoo_env,
-)
-
-# Build and install by deferring to a parallel make
-_makepy = files('meson' / 'make')
-autotools_build = meson.project_build_root() / 'autotools-build'
-_makecmd = [_make, '-C', autotools_build, 'MAKE=@0@'.format(_make.full_path())]
-run_target('makeclean', command: _makecmd + ['clean'], env: _autogoo_env)
-autotools_tgt = custom_target(
-  'make -j',
-  command: [python, _makepy] + _makecmd,
-  console: true,
-  env: _autogoo_env,
-  build_always_stale: true,
-  build_by_default: true,
-  output: 'nothing.txt',
-)
-meson.add_install_script(
-  python,
-  _makepy,
-  _make,
-  '-C',
-  autotools_build,
-  'MAKE=@0@'.format(_make.full_path()),
-  'install',
-)
-
-# --- END AUTOGOO STUB -----------------------
 
 subdir('src')
 subdir('lib')
+subdir('doc')
 subdir('tests2') # FIXME: Eventually rename this to just tests/
+
+
+# Install a few files from this directory
+install_data(
+  'README.md',
+  'README.Acknowledgments',
+  'README.Install',
+  'README.ReleaseNotes',
+  'LICENSE',
+  install_dir: docdir,
+  install_tag: 'docs',
+)

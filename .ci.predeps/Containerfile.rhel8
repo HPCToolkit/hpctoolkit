@@ -16,8 +16,6 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
   dnf install -y epel-release \
   && dnf config-manager --set-enabled powertools \
   && dnf install -y \
-    autoconf \
-    automake \
     ccache \
     clang \
     cmake \
@@ -25,7 +23,6 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
     gcc \
     gcc-c++ \
     git git-lfs \
-    libtool \
     make \
     ninja-build \
     mvapich2-devel redhat-rpm-config \

@@ -1,6 +1,7 @@
 _args = []
-if has_rocm
-  _args += ['--rocprofiler-path', rocm_profiler_exdep.get_variable(internal: 'prefix')]
+if rocm_dep.found()
+  assert(not is_disabler(rocprofiler_path))
+  _args += ['--rocprofiler-path', rocprofiler_path]
 endif
 test(
   'Listing metrics does not error',
