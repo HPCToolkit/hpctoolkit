@@ -31,7 +31,7 @@ python_dep = python.dependency(required: get_option('python'))
 
 # Collect all the dependencies we require for HPCToolkit
 boost_dep = dependency('boost', 'Boost', modules: ['graph'], version: '>=1.70.0')
-bzip_dep = dependency('bzip2', version: '>=1.0.0')
+bzip_dep = dependency('bzip2', 'BZip2', version: '>=1.0.0')
 tbb_dep = dependency('TBB', components: ['tbb'])
 tbb_malloc_dep = dependency('TBB', components: ['tbb', 'tbbmalloc'])
 libelf_dep = dependency('libelf', version: '>=0.186')
