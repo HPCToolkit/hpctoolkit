@@ -51,24 +51,19 @@ perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake'
 papi_dep = dependency('papi', required: get_option('papi'), version: '>=6.0.0')
 
 
-# Dyninst ships a CMake config file, but until very recently it doesn't work for our purposes.
-# It breaks the link and doesn't inject any of the needed TBB or Boost includes.
-# So, compile-test if it works, and if not fall back to a custom Find module that does.
-_dyninst_code = '''
-#include <Symtab.h>
-int main() {
-  Dyninst::SymtabAPI::Symtab sym;
-  return 0;
-}
-'''
-dyninst_dep = dependency('Dyninst', components: ['parseAPI', 'instructionAPI', 'symtabAPI'], version: '>=12.3')
-if not cpp.links(_dyninst_code, name: 'Dyninst config file is usable', dependencies: dyninst_dep)
+# Dyninst ships config files, but up through 12.3 they aren't actually usable. We have a Find*
+# script that fiddles with the exposed targets until it works, so if we can't get what we want
+# directly use the find script to do so.
+dyninst_dep = dependency('Dyninst',
+  components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
+  modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
+  version: '>=12.3', required: false)
+if not dyninst_dep.found()
   dyninst_dep = dependency('Dyninst', method: 'cmake',
     cmake_module_path: 'cmake',
     components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
     modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
     version: '>=12.3')
-  assert(cpp.links(_dyninst_code, name: 'Dyninst config file is usable', dependencies: dyninst_dep))
 endif
 
 
@@ -273,13 +268,35 @@ cfg.set('HAVE_FUTEX_H', cc.has_header_symbol('linux/futex.h', 'SYS_futex', prefi
 cfg.set('HOST_SYSTEM_IBM_BLUEGENE', false, description: 'IBM Blue Gene support (disabled, deprecated)')
 cfg.set('XED_DISPLACEMENT_INT64', cc.has_header_symbol('xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep),
         description: 'xed uses xed_operand_values_get_branch_displacement_int64')
-cfg.set('USE_XED_FOR_GAPS', cpp.has_header_symbol('InstructionDecoder.h', 'InstructionDecoder::unknown_instruction::register_callback', dependencies: dyninst_dep),
+cfg.set('USE_XED_FOR_GAPS', cpp.compiles('''
+#include <InstructionDecoder.h>
+void test() {
+  (void)Dyninst::InstructionAPI::InstructionDecoder::unknown_instruction::register_callback;
+}
+''',
+          name: 'Dyninst::InstructionAPI::InstructionDecoder has unknown_instruction::register_callback',
+          dependencies: dyninst_dep),
         description: 'use dyninst and xed for unknown instructions')
-cfg.set('USE_GET_CONTAINING_MODULE', cpp.has_header_symbol('Symtab.h', 'Symtab::getContainingModule', dependencies: dyninst_dep),
+cfg.set('USE_GET_CONTAINING_MODULE', cpp.compiles('''
+#include <Symtab.h>
+void test() {
+  Dyninst::SymtabAPI::Symtab sym;
+  sym.getContainingModule(42);
+}
+''',
+          name: 'Dyninst::SymtabAPI::Symtab uses getContainingModule()',
+          dependencies: dyninst_dep),
         description: 'use getContainingModule API')
 cfg.set('DYNINST_SUPPORTS_INTEL_GPU', cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general', dependencies: dyninst_dep),
         description: 'dyninst supports Intel GPUs')
-cfg.set('DYNINST_USE_CUDA', cpp.has_header_symbol('Symtab.h', 'Dyninst::Arch_cuda', dependencies: dyninst_dep),
+cfg.set('DYNINST_USE_CUDA', cpp.compiles('''
+#include <Symtab.h>
+void test() {
+  (void)Dyninst::Arch_cuda;
+}
+''',
+          name: 'Dyninst has Arch_cuda',
+          dependencies: dyninst_dep),
         description: 'dyninst supports cuda')
 cfg.set('ENABLE_OPENMP', true,
         description: 'ParseAPI supports openmp (for hpcstruct)')

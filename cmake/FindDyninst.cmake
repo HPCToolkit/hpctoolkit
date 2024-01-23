@@ -1,101 +1,100 @@
-find_path(Dyninst_INCLUDE_DIR
-  NAMES Symtab.h CFG.h dyninstversion.h
-  PATH_SUFFIXES dyninst)
-find_library(Dyninst_common_LIBRARY common)
-find_library(Dyninst_parseAPI_LIBRARY parseAPI)
-find_library(Dyninst_instructionAPI_LIBRARY instructionAPI)
-find_library(Dyninst_symtabAPI_LIBRARY symtabAPI)
-
-mark_as_advanced(
-  Dyninst_INCLUDE_DIR
-  Dyninst_common_LIBRARY
-  Dyninst_parseAPI_LIBRARY
-  Dyninst_instructionAPI_LIBRARY
-  Dyninst_symtabAPI_LIBRARY
-)
-
+find_package(Dyninst CONFIG QUIET
+  OPTIONAL_COMPONENTS ${Dyninst_FIND_COMPONENTS}
+  VERSION ${Dyninst_FIND_VERSION})
 find_package(Boost COMPONENTS atomic date_time filesystem system thread timer)
 find_package(TBB COMPONENTS tbb tbbmalloc)
 
-if(Dyninst_INCLUDE_DIR)
-  file(READ "${Dyninst_INCLUDE_DIR}/dyninstversion.h" header)
-  string(REGEX MATCH "#define DYNINST_MAJOR_VERSION [0-9]+" macroMajor "${header}")
-  string(REGEX MATCH "[0-9]+" versionMajor "${macroMajor}")
-  string(REGEX MATCH "#define DYNINST_MINOR_VERSION [0-9]+" macroMinor "${header}")
-  string(REGEX MATCH "[0-9]+" versionMinor "${macroMinor}")
-  string(REGEX MATCH "#define DYNINST_PATCH_VERSION [0-9]+" macroPatch "${header}")
-  string(REGEX MATCH "[0-9]+" versionPatch "${macroPatch}")
-  set(Dyninst_VERSION "${versionMajor}.${versionMinor}.${versionPatch}")
+if(parseAPI IN_LIST Dyninst_FIND_COMPONENTS)
+  list(APPEND Dyninst_FIND_COMPONENTS common instructionAPI symtabAPI)
 endif()
+if(symtabAPI IN_LIST Dyninst_FIND_COMPONENTS)
+  list(APPEND Dyninst_FIND_COMPONENTS common dynElf dynDwarf)
+endif()
+if(instructionAPI IN_LIST Dyninst_FIND_COMPONENTS)
+  list(APPEND Dyninst_FIND_COMPONENTS common)
+endif()
+if(dynDwarf IN_LIST Dyninst_FIND_COMPONENTS)
+  list(APPEND Dyninst_FIND_COMPONENTS common dynElf)
+endif()
+if(dynElf IN_LIST Dyninst_FIND_COMPONENTS)
+  list(APPEND Dyninst_FIND_COMPONENTS common)
+endif()
+list(REMOVE_DUPLICATES Dyninst_FIND_COMPONENTS)
 
-list(APPEND Dyninst_FIND_COMPONENTS common)
+foreach(comp IN LISTS Dyninst_FIND_COMPONENTS)
+  if(TARGET "${comp}")
+    message(STATUS "Found Dyninst component: ${comp}")
+    set("Dyninst_${comp}_FOUND" TRUE)
 
-foreach(_comp IN LISTS Dyninst_FIND_COMPONENTS)
-  if(_comp STREQUAL "common"
-     OR _comp STREQUAL "parseAPI"
-     OR _comp STREQUAL "instructionAPI"
-     OR _comp STREQUAL "symtabAPI")
-    if(EXISTS "${Dyninst_INCLUDE_DIR}" AND EXISTS "${Dyninst_${_comp}_LIBRARY}"
-       AND EXISTS "${Dyninst_common_LIBRARY}" AND Boost_FOUND AND TBB_FOUND)
-      set(Dyninst_${_comp}_FOUND TRUE)
-    else()
-      set(Dyninst_${_comp}_FOUND FALSE)
+    get_target_property("Dyninst_${comp}_LIBRARY_RELEASE" "${comp}" IMPORTED_LOCATION_RELEASE)
+    message(STATUS "IMPORTED_LOCATION_RELEASE for Dyninst::${comp}: ${Dyninst_${comp}_LIBRARY_RELEASE}")
+    get_target_property("Dyninst_${comp}_LIBRARY_DEBUG" "${comp}" IMPORTED_LOCATION_DEBUG)
+    message(STATUS "IMPORTED_LOCATION_DEBUG for Dyninst::${comp}: ${Dyninst_${comp}_LIBRARY_DEBUG}")
+
+    if((NOT EXISTS "${Dyninst_${comp}_LIBRARY_RELEASE}") AND (NOT EXISTS "${Dyninst_${comp}_LIBRARY_DEBUG}"))
+      get_target_property("Dyninst_${comp}_LIBRARY" "${comp}" IMPORTED_LOCATION)
+      message(STATUS "IMPORTED_LOCATION for Dyninst::${comp}: ${Dyninst_${comp}_LIBRARY}")
+
+      if(NOT EXISTS "${Dyninst_{$comp}_LIBRARY}")
+        set("Dyninst_${comp}_FOUND" FALSE)
+      endif()
     endif()
   else()
-    message(WARNING "${_comp} is not a valid Dyninst component")
-    set(Dyninst_${_comp}_FOUND FALSE)
+    message(STATUS "Did NOT find Dyninst component: ${comp}")
+    set("Dyninst_${comp}_FOUND" FALSE)
   endif()
 endforeach()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Dyninst
   REQUIRED_VARS
-    Dyninst_INCLUDE_DIR
-    Dyninst_common_LIBRARY
-    Dyninst_parseAPI_LIBRARY
-    Dyninst_instructionAPI_LIBRARY
-    Dyninst_symtabAPI_LIBRARY
+    Dyninst_FOUND
+    DYNINST_INCLUDE_DIR
+    Boost_FOUND
+    TBB_FOUND
   VERSION_VAR Dyninst_VERSION
   HANDLE_COMPONENTS
 )
 
-add_library(Dyninst::common UNKNOWN IMPORTED)
-set_target_properties(Dyninst::common PROPERTIES
-  IMPORTED_LOCATION "${Dyninst_common_LIBRARY}")
-target_include_directories(Dyninst::common INTERFACE "${Dyninst_INCLUDE_DIR}")
-target_link_libraries(Dyninst::common INTERFACE
-    Boost::atomic Boost::date_time Boost::filesystem Boost::system Boost::thread
-    TBB::tbb TBB::tbbmalloc)
+foreach(comp IN LISTS Dyninst_FIND_COMPONENTS)
+  add_library("Dyninst::${comp}" UNKNOWN IMPORTED)
 
-if(Dyninst_parseAPI_FOUND)
-  add_library(Dyninst::parseAPI UNKNOWN IMPORTED)
-  set_target_properties(Dyninst::parseAPI PROPERTIES
-    IMPORTED_LOCATION "${Dyninst_parseAPI_LIBRARY}")
-  target_include_directories(Dyninst::parseAPI INTERFACE "${Dyninst_INCLUDE_DIR}")
-  target_link_libraries(Dyninst::parseAPI INTERFACE
-      Dyninst::common
-      Boost::atomic Boost::date_time Boost::filesystem Boost::system Boost::thread
-      TBB::tbb TBB::tbbmalloc)
+  if(EXISTS "${Dyninst_${comp}_LIBRARY}")
+    set_target_properties("Dyninst::${comp}" PROPERTIES
+      IMPORTED_LOCATION "${Dyninst_${comp}_LIBRARY}")
+  endif()
+  if(EXISTS "${Dyninst_${comp}_LIBRARY_RELEASE}")
+    set_target_properties("Dyninst::${comp}" PROPERTIES
+      IMPORTED_LOCATION_RELEASE "${Dyninst_${comp}_LIBRARY_RELEASE}")
+    set_property(TARGET "Dyninst::${comp}" APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+  endif()
+  if(EXISTS "${Dyninst_${comp}_LIBRARY_DEBUG}")
+    set_target_properties("Dyninst::${comp}" PROPERTIES
+      IMPORTED_LOCATION_DEBUG "${Dyninst_${comp}_LIBRARY_DEBUG}")
+    set_property(TARGET "Dyninst::${comp}" APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+  endif()
+
+  target_include_directories("Dyninst::${comp}" INTERFACE "${DYNINST_INCLUDE_DIR}")
+endforeach()
+
+if(TARGET Dyninst::common)
+  target_link_libraries(Dyninst::common INTERFACE Boost::headers TBB::tbb)
 endif()
-
-if(Dyninst_instructionAPI_FOUND)
-  add_library(Dyninst::instructionAPI UNKNOWN IMPORTED)
-  set_target_properties(Dyninst::instructionAPI PROPERTIES
-    IMPORTED_LOCATION "${Dyninst_instructionAPI_LIBRARY}")
-  target_include_directories(Dyninst::instructionAPI INTERFACE "${Dyninst_INCLUDE_DIR}")
+if(TARGET Dynint::dynElf)
+  target_link_libraries(Dyninst::dynElf INTERFACE Dyninst::common)
+endif()
+if(TARGET Dyninst::dynDwarf)
+  target_link_libraries(Dyninst::dynDwarf INTERFACE Dyninst::common)
+endif()
+if(TARGET Dyninst::instructionAPI)
   target_link_libraries(Dyninst::instructionAPI INTERFACE
-      Dyninst::common
-      Boost::atomic;Boost::date_time Boost::filesystem Boost::system Boost::thread
-      TBB::tbb TBB::tbbmalloc)
+    Dyninst::common Dyninst::dynElf Dyninst::dynDwarf)
 endif()
-
-if(Dyninst_symtabAPI_FOUND)
-  add_library(Dyninst::symtabAPI UNKNOWN IMPORTED)
-  set_target_properties(Dyninst::symtabAPI PROPERTIES
-    IMPORTED_LOCATION "${Dyninst_symtabAPI_LIBRARY}")
-  target_include_directories(Dyninst::symtabAPI INTERFACE "${Dyninst_INCLUDE_DIR}")
+if(TARGET Dyninst::symtabAPI)
   target_link_libraries(Dyninst::symtabAPI INTERFACE
-      Dyninst::common
-      Boost::atomic Boost::date_time Boost::filesystem Boost::system Boost::thread
-      TBB::tbb TBB::tbbmalloc)
+    Dyninst::common Dyninst::dynElf Dyninst::dynDwarf)
+endif()
+if(TARGET Dyninst::parseAPI)
+  target_link_libraries(Dyninst::parseAPI INTERFACE
+    Dyninst::common Dyninst::instructionAPI Dyninst::symtabAPI)
 endif()
