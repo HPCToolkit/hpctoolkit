@@ -44,12 +44,6 @@ spack:
     - xerces-c @3.2.3
     - libiberty @2.37
     - yaml-cpp @0.7.0
-  - when: arch.satisfies('target=x86_64:')
-    core:
-    - 'intel-xed +pic @2022.08.11:'
-  - when: arch.satisfies('target=x86_64:') and env["VERMODE"] == "minimum"
-    core:
-    - intel-xed @2022.08.11
   # Optional dependencies.
   - optional: []
   - when: env["VERMODE"] != "bare"

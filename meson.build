@@ -293,8 +293,6 @@ cfg.set('USE_SYSTEM_BYTESWAP', cc.has_header_symbol('byteswap.h', 'bswap_64'),
 cfg.set('HAVE_FUTEX_H', cc.has_header_symbol('linux/futex.h', 'SYS_futex', prefix: ['#include <sys/syscall.h>', '#include <unistd.h>']),
         description: 'Whether futexes are available for use')
 cfg.set('HOST_SYSTEM_IBM_BLUEGENE', false, description: 'IBM Blue Gene support (disabled, deprecated)')
-cfg.set('XED_DISPLACEMENT_INT64', cc.has_header_symbol('xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep),
-        description: 'xed uses xed_operand_values_get_branch_displacement_int64')
 cfg.set('USE_XED_FOR_GAPS', cpp.compiles('''
 #include <InstructionDecoder.h>
 void test() {
@@ -351,6 +349,16 @@ cfg.set('USE_ROCM', rocm_dep.found(),
         description: 'use ROCM')
 cfg.set('DATACENTRIC_TRACE', false, description: 'Data-centric tracing (disabled, deprecated)')
 
+# Xed compiler checks
+if xed_dep.type_name() == 'internal'
+  assert(xed_dep.version() != 'undefined')
+  cfg.set('XED_DISPLACEMENT_INT64', xed_dep.version().version_compare('>=2023.08.21'))
+else
+  cfg.set('XED_DISPLACEMENT_INT64',
+    (cc.has_header_symbol('xed/xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep) or
+     cc.has_header_symbol('xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep)),
+          description: 'xed uses xed_operand_values_get_branch_displacement_int64')
+endif
 
 subdir('src')
 subdir('lib')
