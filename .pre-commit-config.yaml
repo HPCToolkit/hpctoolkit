@@ -69,6 +69,7 @@ repos:
   - id: trailing-whitespace
     exclude: &vendored |
       (?x)^(
+        .*/[^/]+\.patch |    # Patches
         src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
         tests2/data/dbase/[^/]+\.d/.* |    # Generated test data
         tests2/data/meas/[^/]+\.m/.* |    # Generated test data

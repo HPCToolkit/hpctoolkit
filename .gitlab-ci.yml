@@ -240,420 +240,11 @@ include:
 
 'predeps: [intel-amd64]':
   before_script: *predeps_before_script
-<<<<<<< HEAD
-||||||| parent of c60f415ff (Add a wrap for Xed)
-'predeps: [min-intel-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-
-#-----------------------------------
-# Phase 2: validate
-#-----------------------------------
-
-# Ensure the autogoo is still up-to-date
-validate:
-  stage: validate
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  tags: [saas-linux-small-amd64]
-  script:
-  - meson setup --native-file image.ini /tmp/builddir
-  # Detect any changes to the main source directory
-  - git status --porcelain=v1 --untracked-files=no > changes || exit $?
-  - |
-    if test -s changes; then
-      echo "== CHANGES DETECTED, running git diff..."
-      git diff | tee fixup.patch
-      echo "== AUTOGOO OUT-OF-SYNC, see patch above and in fixup.patch for details"
-      exit 1
-    fi
-  artifacts:
-    when: always
-    paths:
-    - fixup.patch
-
-#-----------------------------------
-# Phase 3: test
-#-----------------------------------
-
-# Build many versions of the codebase, to ensure all the various compilations work
-# As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
-# at a time. With the exception of +debug, which is flipped at will.
-.buildmany:
-  extends: .build job
-  stage: test
-  variables:
-    JOB_CC: gcc
-  script:
-  - |
-    printcmd() {
-      echo -e "\e[32m$ $*\e[0m"
-      "$@"
-    }
-  - printcmd meson setup --native-file image.ini --native-file "$JOB_CC".ini --wrap-mode=nofallback $COMMON_SETTINGS /tmp/builddir
-  - mkdir -p logs/"$CI_JOB_NAME"
-  - |
-    build() {
-      id="$1"
-      logfile=logs/"$CI_JOB_NAME"/"$id".log
-      shift
-
-      echo -e "\e[32m$ meson configure $* /tmp/builddir\e[0m"
-      meson configure "$@" /tmp/builddir || return $?
-      echo -e "\e[32m$ meson compile -C /tmp/builddir\e[0m"
-      { meson compile -C /tmp/builddir; } > "$logfile" 2>&1 \
-        || { code=$?; cat "$logfile"; return $code; }
-    }
-  - |
-    for buildtype in debugoptimized release; do
-      build $buildtype-all    -Dbuildtype=$buildtype -Dauto_features=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopapi -Dbuildtype=$buildtype -Dauto_features=enabled -Dpapi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopy   -Dbuildtype=$buildtype -Dauto_features=enabled -Dpython=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noocl  -Dbuildtype=$buildtype -Dauto_features=enabled -Dopencl=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nompi  -Dbuildtype=$buildtype -Dauto_features=enabled -Dhpcprof_mpi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noval  -Dbuildtype=$buildtype -Dauto_features=enabled -Dvalgrind_annotations=false $COMMON_SETTINGS || exit $?
-    done
-  after_script:
-  - |
-    echo "To reproduce:"
-    echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
-  - ./ci/cc-diagnostics.py cq.json logs/"$CI_JOB_NAME"/*.log
-  artifacts:
-    reports:
-      codequality: cq.json
-    paths:
-    - logs/
-    when: always
-
-# CPU-only spins
-.buildmany amd64 cpu:
-  extends: .buildmany
-  tags: [saas-linux-small-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-
-'buildmany: [amd64, rhel8]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_RHEL8_AMD64
-  parallel: {matrix: [{JOB_CC: gcc}]}
-'buildmany: [amd64, ubuntu20.04]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  parallel: {matrix: [{JOB_CC: [clang10]}]}
-'buildmany: [amd64, fedora38]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
-'buildmany: [amd64, leap15]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_LEAP15_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc12, clang]}]}
-
-.buildmany min:
-  variables:
-    # Submodules should not be necessary for correct configuration
-    GIT_SUBMODULE_STRATEGY: none
-
-'buildmany min: [amd64, rhel8]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_RHEL8_AMD64
-  parallel: {matrix: [{JOB_CC: gcc}]}
-'buildmany min: [amd64, ubuntu20.04]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
-  parallel: {matrix: [{JOB_CC: [clang10]}]}
-'buildmany min: [amd64, fedora38]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
-'buildmany min: [amd64, leap15]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_LEAP15_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc12, clang]}]}
-=======
-'predeps: [min-intel-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-
-#-----------------------------------
-# Phase 2: validate
-#-----------------------------------
-
-# Ensure the autogoo is still up-to-date
-validate:
-  stage: validate
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  tags: [saas-linux-small-amd64]
-  script:
-  - meson setup --native-file image.ini /tmp/builddir
-  # Detect any changes to the main source directory
-  - git status --porcelain=v1 --untracked-files=no > changes || exit $?
-  - |
-    if test -s changes; then
-      echo "== CHANGES DETECTED, running git diff..."
-      git diff | tee fixup.patch
-      echo "== AUTOGOO OUT-OF-SYNC, see patch above and in fixup.patch for details"
-      exit 1
-    fi
-  artifacts:
-    when: always
-    paths:
-    - fixup.patch
-
-#-----------------------------------
-# Phase 3: test
-#-----------------------------------
-
-# Build many versions of the codebase, to ensure all the various compilations work
-# As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
-# at a time. With the exception of +debug, which is flipped at will.
-.buildmany:
-  extends: .build job
-  stage: test
-  variables:
-    JOB_CC: gcc
-  script:
-  - |
-    printcmd() {
-      echo -e "\e[32m$ $*\e[0m"
-      "$@"
-    }
-  - printcmd meson setup --native-file image.ini --native-file "$JOB_CC".ini --wrap-mode=nofallback $COMMON_SETTINGS /tmp/builddir
-  - mkdir -p logs/"$CI_JOB_NAME"
-  - |
-    build() {
-      id="$1"
-      logfile=logs/"$CI_JOB_NAME"/"$id".log
-      shift
-
-      echo -e "\e[32m$ meson configure $* /tmp/builddir\e[0m"
-      meson configure "$@" /tmp/builddir || return $?
-      echo -e "\e[32m$ meson compile -C /tmp/builddir\e[0m"
-      { meson compile -C /tmp/builddir; } > "$logfile" 2>&1 \
-        || { code=$?; cat "$logfile"; return $code; }
-    }
-  - |
-    for buildtype in debugoptimized release; do
-      build $buildtype-all    -Dbuildtype=$buildtype -Dauto_features=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopapi -Dbuildtype=$buildtype -Dauto_features=enabled -Dpapi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopy   -Dbuildtype=$buildtype -Dauto_features=enabled -Dpython=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noocl  -Dbuildtype=$buildtype -Dauto_features=enabled -Dopencl=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nompi  -Dbuildtype=$buildtype -Dauto_features=enabled -Dhpcprof_mpi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noval  -Dbuildtype=$buildtype -Dauto_features=enabled -Dvalgrind_annotations=false $COMMON_SETTINGS || exit $?
-    done
-  after_script:
-  - |
-    echo "To reproduce:"
-    echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
-  - ./ci/cc-diagnostics.py cq.json logs/"$CI_JOB_NAME"/*.log
-  artifacts:
-    reports:
-      codequality: cq.json
-    paths:
-    - logs/
-    when: always
-
-# CPU-only spins
-.buildmany amd64 cpu:
-  extends: .buildmany
-  tags: [saas-linux-small-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-      --force-fallback-for=xed
-      -Dxed:warning_level=0
-
-'buildmany: [amd64, rhel8]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_RHEL8_AMD64
-  parallel: {matrix: [{JOB_CC: gcc}]}
-'buildmany: [amd64, ubuntu20.04]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  parallel: {matrix: [{JOB_CC: [clang10]}]}
-'buildmany: [amd64, fedora38]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
-'buildmany: [amd64, leap15]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_LEAP15_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc12, clang]}]}
-
-.buildmany min:
-  variables:
-    # Submodules should not be necessary for correct configuration
-    GIT_SUBMODULE_STRATEGY: none
-
-'buildmany min: [amd64, rhel8]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_RHEL8_AMD64
-  parallel: {matrix: [{JOB_CC: gcc}]}
-'buildmany min: [amd64, ubuntu20.04]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
-  parallel: {matrix: [{JOB_CC: [clang10]}]}
-'buildmany min: [amd64, fedora38]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
-'buildmany min: [amd64, leap15]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_LEAP15_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc12, clang]}]}
->>>>>>> c60f415ff (Add a wrap for Xed)
 
 
-<<<<<<< HEAD
 # The vast majority of jobs in this sequence do a build and then run some tests. This is the base
 # job spec for such jobs, configurable via a small number of variables.
 # NB: We use --repeat in these jobs to detect bugs that cause sporadic test failures.
-||||||| parent of c60f415ff (Add a wrap for Xed)
-# CUDA spins
-.buildmany amd64 cuda:
-  extends: .buildmany
-  tags: [saas-linux-medium-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-
-'buildmany: [amd64, cuda12.0]':
-  extends: .buildmany amd64 cuda
-  image: $PREDEPS_IMAGE_CUDA12_0_AMD64
-'buildmany: [amd64, cuda11.8]':
-  extends: .buildmany amd64 cuda
-  image: $PREDEPS_IMAGE_CUDA11_8_AMD64
-
-# ROCm spins
-.buildmany amd64 rocm:
-  extends: .buildmany
-  tags: [saas-linux-medium-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-
-'buildmany: [amd64, rocm5.1]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM5_1_AMD64
-'buildmany: [amd64, rocm5.7]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM5_7_AMD64
-'buildmany: [amd64, rocm6.0]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
-
-# Level 0 + GTPin spins
-.buildmany amd64 lvlz:
-  extends: .buildmany
-  tags: [saas-linux-medium-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Drocm=disabled
-      --force-fallback-for=gtpin
-  script:
-  - !reference [.buildmany, script]
-  - |
-    for buildtype in debugoptimized release; do
-      build $buildtype-nogtpin -Dbuildtype=$buildtype -Dauto_features=enabled -Dgtpin=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-    done
-
-'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
-  extends: .buildmany amd64 lvlz
-  image: $PREDEPS_IMAGE_INTEL_AMD64
-
-'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
-  extends: [.buildmany amd64 lvlz, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_INTEL_AMD64
-
-
-# Build single versions of the codebase and run unit tests through `make check`
-# NB: We use --repeat in the check jobs to detect bugs that cause sporadic test failures.
-=======
-# CUDA spins
-.buildmany amd64 cuda:
-  extends: .buildmany
-  tags: [saas-linux-medium-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-      --force-fallback-for=xed
-      -Dxed:warning_level=0
-
-'buildmany: [amd64, cuda12.0]':
-  extends: .buildmany amd64 cuda
-  image: $PREDEPS_IMAGE_CUDA12_0_AMD64
-'buildmany: [amd64, cuda11.8]':
-  extends: .buildmany amd64 cuda
-  image: $PREDEPS_IMAGE_CUDA11_8_AMD64
-
-# ROCm spins
-.buildmany amd64 rocm:
-  extends: .buildmany
-  tags: [saas-linux-medium-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-      --force-fallback-for=xed
-      -Dxed:warning_level=0
-
-'buildmany: [amd64, rocm5.1]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM5_1_AMD64
-'buildmany: [amd64, rocm5.7]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM5_7_AMD64
-'buildmany: [amd64, rocm6.0]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
-
-# Level 0 + GTPin spins
-.buildmany amd64 lvlz:
-  extends: .buildmany
-  tags: [saas-linux-medium-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Drocm=disabled
-      --force-fallback-for=xed,gtpin
-      -Dxed:warning_level=0
-  script:
-  - !reference [.buildmany, script]
-  - |
-    for buildtype in debugoptimized release; do
-      build $buildtype-nogtpin -Dbuildtype=$buildtype -Dauto_features=enabled -Dgtpin=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-    done
-
-'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
-  extends: .buildmany amd64 lvlz
-  image: $PREDEPS_IMAGE_INTEL_AMD64
-
-'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
-  extends: [.buildmany amd64 lvlz, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_INTEL_AMD64
-
-
-# Build single versions of the codebase and run unit tests through `make check`
-# NB: We use --repeat in the check jobs to detect bugs that cause sporadic test failures.
->>>>>>> c60f415ff (Add a wrap for Xed)
 # We chose --repeat 7, since this statistically provides:
 # - 99.2% confidence that this MR does not introduce a "blocking" bug that would prevent others'
 #   work. We are very confident that a run will succeed >1/2 the time, and so require minimal
@@ -725,7 +316,7 @@ validate:
   tags: [saas-linux-small-amd64]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -799,7 +390,7 @@ bare ppc64le:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed
+      --force-fallback-for=dyninst,xed
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -824,7 +415,7 @@ cuda12.0 amd64:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -878,7 +469,7 @@ intel amd64:
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed,gtpin
+      --force-fallback-for=dyninst,xed,gtpin
       -Dcuda=disabled
       -Drocm=disabled
 
@@ -920,7 +511,7 @@ semifresh none cpu:
   tags: [saas-linux-medium-amd64]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -933,7 +524,7 @@ semifresh nvidia sw-cuda:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed
+      --force-fallback-for=dyninst,xed
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -945,7 +536,7 @@ semifresh amd:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -1037,7 +628,7 @@ compiler clang16:
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -1084,7 +675,7 @@ compiler clang16:
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=xed
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Drocm=disabled
       $OPTION
