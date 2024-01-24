@@ -59,5 +59,9 @@
       "version": "latest"
     }
   },
-  "privileged": true
+  "privileged": true,
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/intel/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/intel/builddir-${devcontainerId}"
+  }
 }

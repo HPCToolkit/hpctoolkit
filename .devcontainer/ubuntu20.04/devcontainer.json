@@ -57,5 +57,9 @@
       "ppa": true,
       "version": "latest"
     }
+  },
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/ubuntu20.04/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/ubuntu20.04/builddir-${devcontainerId}"
   }
 }

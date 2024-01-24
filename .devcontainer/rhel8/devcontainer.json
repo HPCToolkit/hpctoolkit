@@ -55,5 +55,9 @@
   },
   "overrideFeatureInstallOrder": [
     "../rhel8-ssl-fix-feature"
-  ]
+  ],
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/rhel8/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/rhel8/builddir-${devcontainerId}"
+  }
 }

@@ -61,5 +61,9 @@
       "version": "latest"
     }
   },
-  "privileged": true
+  "privileged": true,
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/rocm5.3/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/rocm5.3/builddir-${devcontainerId}"
+  }
 }

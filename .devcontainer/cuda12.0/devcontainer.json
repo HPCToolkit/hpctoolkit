@@ -61,6 +61,10 @@
       "version": "latest"
     }
   },
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/cuda12.0/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/cuda12.0/builddir-${devcontainerId}"
+  },
   "runArgs": [
     "--gpus=all"
   ]
