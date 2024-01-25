@@ -603,6 +603,7 @@ void SparseDB::write() {
 
   // Make sure all the profile data is on disk and all offsets are updated
   profDataOut.flush();
+  mpi::barrier();
 
   // Now that the profile infos are up-to-date, write them all in parallel
   {
