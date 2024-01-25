@@ -223,7 +223,7 @@ void detail::gather(void* send, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
   assert(World::rank() != rootRank && "mpi::detail::gather is not valid at the root!");
   auto l = mpiLock();
-  if(MPI_Gather(send, cnt, ty.value, nullptr, 0, 0, rootRank,
+  if(MPI_Gather(send, cnt, ty.value, nullptr, cnt, ty.value, rootRank,
                 MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI gather!";
 }
@@ -248,7 +248,7 @@ void detail::gatherv(void* send, std::size_t cnt, const Datatype& ty,
                      std::size_t rootRank) {
   assert(World::rank() != rootRank && "mpi::detail::gatherv is not valid at the root!");
   auto l = mpiLock();
-  if(MPI_Gatherv(send, cnt, ty.value, nullptr, nullptr, nullptr, 0,
+  if(MPI_Gatherv(send, cnt, ty.value, nullptr, nullptr, nullptr, ty.value,
                  rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized gather (non-root)!";
 }
@@ -265,7 +265,7 @@ void detail::scatter(void* data, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
   assert(World::rank() != rootRank && "mpi::detail::scatter is not valid at the root!");
   auto l = mpiLock();
-  if(MPI_Scatter(nullptr, 0, 0, data, cnt, ty.value, rootRank,
+  if(MPI_Scatter(nullptr, cnt, ty.value, data, cnt, ty.value, rootRank,
                  MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI scatter!";
 }
@@ -289,7 +289,7 @@ void detail::scatterv(void* data, std::size_t cnt, const Datatype& ty,
                       std::size_t rootRank) {
   assert(World::rank() != rootRank && "mpi::detail::scatterv is not valid at the root!");
   auto l = mpiLock();
-  if(MPI_Scatterv(nullptr, nullptr, nullptr, 0,
+  if(MPI_Scatterv(nullptr, nullptr, nullptr, ty.value,
                   data, cnt, ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized scatter (non-root)!";
 }
