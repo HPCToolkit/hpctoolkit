@@ -12,7 +12,8 @@ spack:
   specs:
   - matrix:
     - - hpctoolkit@=develop-ci build_system=meson
-    - - ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero
+    - - ~viewer ~mpi +opencl ~cuda ~rocm ~level_zero
+    - - buildtype=release
     - [+papi, ~papi]
 
   mirrors:
