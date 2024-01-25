@@ -22,22 +22,30 @@ endif()
 list(REMOVE_DUPLICATES Dyninst_FIND_COMPONENTS)
 
 foreach(comp IN LISTS Dyninst_FIND_COMPONENTS)
-  if(TARGET "${comp}")
+  if(TARGET ${comp})
     message(STATUS "Found Dyninst component: ${comp}")
-    set("Dyninst_${comp}_FOUND" TRUE)
+    set(Dyninst_${comp}_FOUND TRUE)
 
-    get_target_property("Dyninst_${comp}_LIBRARY_RELEASE" "${comp}" IMPORTED_LOCATION_RELEASE)
-    message(STATUS "IMPORTED_LOCATION_RELEASE for Dyninst::${comp}: ${Dyninst_${comp}_LIBRARY_RELEASE}")
-    get_target_property("Dyninst_${comp}_LIBRARY_DEBUG" "${comp}" IMPORTED_LOCATION_DEBUG)
-    message(STATUS "IMPORTED_LOCATION_DEBUG for Dyninst::${comp}: ${Dyninst_${comp}_LIBRARY_DEBUG}")
-
-    if((NOT EXISTS "${Dyninst_${comp}_LIBRARY_RELEASE}") AND (NOT EXISTS "${Dyninst_${comp}_LIBRARY_DEBUG}"))
-      get_target_property("Dyninst_${comp}_LIBRARY" "${comp}" IMPORTED_LOCATION)
-      message(STATUS "IMPORTED_LOCATION for Dyninst::${comp}: ${Dyninst_${comp}_LIBRARY}")
-
-      if(NOT EXISTS "${Dyninst_{$comp}_LIBRARY}")
-        set("Dyninst_${comp}_FOUND" FALSE)
+    get_target_property(Dyninst_${comp}_IMPORTED_CONFIGS ${comp} IMPORTED_CONFIGURATIONS)
+    message(STATUS "Dyninst::${comp} IMPORTED_CONFIGURATIONS: ${Dyninst_${comp}_IMPORTED_CONFIGS}")
+    if(NOT Dyninst_${comp}_IMPORTED_CONFIGS)
+      # Must be an unsuffixed library with no build information. This is highly irregular but we
+      # do support this case for completeness.
+      get_target_property(Dyninst_${comp}_LIBRARY ${comp} IMPORTED_LOCATION)
+      message(STATUS "Dyninst::${comp} IMPORTED_LOCATION: ${Dyninst_${comp}_LIBRARY}")
+      if(NOT Dyninst_${comp}_LIBRARY)
+        set(Dyninst_${comp}_FOUND FALSE)
       endif()
+    else()
+      # Fetch the location for every possible suffix
+      foreach(config IN LISTS Dyninst_${comp}_IMPORTED_CONFIGS)
+        get_target_property(Dyninst_${comp}_LIBRARY_${config} ${comp} IMPORTED_LOCATION_${config})
+        message(STATUS "Dyninst::${comp} IMPORTED_LOCATION_${config}: ${Dyninst_${comp}_LIBRARY_${config}}")
+        if(NOT Dyninst_${comp}_LIBRARY_${config})
+          set(Dyninst_${comp}_FOUND FALSE)
+          break()
+        endif()
+      endforeach()
     endif()
   else()
     message(STATUS "Did NOT find Dyninst component: ${comp}")
@@ -58,23 +66,18 @@ find_package_handle_standard_args(Dyninst
 
 foreach(comp IN LISTS Dyninst_FIND_COMPONENTS)
   add_library("Dyninst::${comp}" UNKNOWN IMPORTED)
+  target_include_directories("Dyninst::${comp}" INTERFACE "${DYNINST_INCLUDE_DIR}")
 
-  if(EXISTS "${Dyninst_${comp}_LIBRARY}")
+  if(NOT Dyninst_${comp}_IMPORTED_CONFIGS)
     set_target_properties("Dyninst::${comp}" PROPERTIES
       IMPORTED_LOCATION "${Dyninst_${comp}_LIBRARY}")
+  else()
+    foreach(config IN LISTS Dyninst_${comp}_IMPORTED_CONFIGS)
+      set_property(TARGET "Dyninst::${comp}" APPEND PROPERTY IMPORTED_CONFIGURATIONS ${config})
+      set_target_properties("Dyninst::${comp}" PROPERTIES
+        IMPORTED_LOCATION_${config} "${Dyninst_${comp}_LIBRARY_${config}}")
+    endforeach()
   endif()
-  if(EXISTS "${Dyninst_${comp}_LIBRARY_RELEASE}")
-    set_target_properties("Dyninst::${comp}" PROPERTIES
-      IMPORTED_LOCATION_RELEASE "${Dyninst_${comp}_LIBRARY_RELEASE}")
-    set_property(TARGET "Dyninst::${comp}" APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
-  endif()
-  if(EXISTS "${Dyninst_${comp}_LIBRARY_DEBUG}")
-    set_target_properties("Dyninst::${comp}" PROPERTIES
-      IMPORTED_LOCATION_DEBUG "${Dyninst_${comp}_LIBRARY_DEBUG}")
-    set_property(TARGET "Dyninst::${comp}" APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
-  endif()
-
-  target_include_directories("Dyninst::${comp}" INTERFACE "${DYNINST_INCLUDE_DIR}")
 endforeach()
 
 if(TARGET Dyninst::common)
