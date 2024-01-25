@@ -1,0 +1,60 @@
+{
+  "name": "ci.predeps-fedora38",
+  "build": {
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.fedora38"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ],
+  "containerEnv": {
+    "OMPI_ALLOW_RUN_AS_ROOT": "1",
+    "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mesonbuild.mesonbuild"
+      ],
+      "settings": {
+        "mesonbuild.buildFolder": ".devcontainer/fedora38/builddir-${devcontainerId}",
+        "mesonbuild.configureOnOpen": true,
+        "mesonbuild.configureOptions": [
+          "--native-file=image.ini",
+          "-Dhpcprof_mpi=enabled",
+          "-Dpython=enabled",
+          "-Dpapi=enabled",
+          "-Dopencl=enabled"
+        ],
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/bash"
+          },
+          "zsh": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/zsh"
+          }
+        }
+      }
+    }
+  },
+  "features": {
+    "../bash-completion-feature": {},
+    "ghcr.io/devcontainers-contrib/features/poetry:2": {},
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
+    "ghcr.io/devcontainers-contrib/features/ripgrep:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {}
+  },
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/fedora38/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/fedora38/builddir-${devcontainerId}"
+  }
+}

@@ -62,6 +62,9 @@ repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.5.0
   hooks:
+  # Format JSON files to have a consistent style.
+  - id: pretty-format-json
+    args: ['--autofix', '--no-ensure-ascii', '--top-keys=name,id']
   # Remove trailing whitespace
   - id: trailing-whitespace
     exclude: &vendored |
@@ -177,6 +180,11 @@ repos:
   hooks:
   # Validate the GitLab CI scripts against the schema. Doesn't catch everything but helps
   - id: check-gitlab-ci
+  # Validate the devcontainers configurations against the schema.
+  - id: check-jsonschema
+    alias: check-devcontainer
+    files: '(^|/)devcontainer\.json'
+    args: ['--schemafile', 'https://raw.githubusercontent.com/devcontainers/spec/d424cc157e9a110f3bf67d311b46c7306d5a465d/schemas/devContainer.base.schema.json']
 
 - repo: https://github.com/codespell-project/codespell
   rev: v2.2.6

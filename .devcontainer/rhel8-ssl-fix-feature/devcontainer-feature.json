@@ -1,0 +1,5 @@
+{
+  "name": "Fix for RHEL 8 SSL paths",
+  "id": "rhel8-ssl-fix-feature",
+  "version": "0.0.0"
+}
