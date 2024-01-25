@@ -442,7 +442,7 @@ do
                         die "HPCToolkit was not compiled with AMD ROCm support enabled"
                     fi
                     export HSA_ENABLE_INTERRUPTS=0
-                    export ROCP_TOOL_LIB=libhpcrun.so
+                    export ROCP_TOOL_LIB="${hpcrun_dir}/libhpcrun.so"
                     export ROCP_HSA_INTERCEPT=1
                     export AMD_DIRECT_DISPATCH=0
                     ;;
@@ -496,7 +496,7 @@ do
 
         -L | -l | --list-events )
             if test "$opt_have_rocm" = yes; then
-                export ROCP_TOOL_LIB=libhpcrun.so
+                export ROCP_TOOL_LIB="${hpcrun_dir}/libhpcrun.so"
             fi
             export HPCRUN_EVENT_LIST=LIST
             ;;
