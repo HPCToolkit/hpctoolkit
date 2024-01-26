@@ -1,5 +1,13 @@
 spack:
+  # This Spack environment needs to project a default view with all the dependencies, otherwise
+  # `spack env activate` will not set the environment variables necessary to use Meson.
+  # You can change this `true` to some other path, but keep in mind you will need to similarly
+  # adjust any `-Wl,-rpath=` flags in the `(c|cpp)_link_args` configuration to point to the
+  # new path.
   view: true
+
+  # The spack environment must be fully unified, to ensure a consistent software stack and to
+  # allow Spack to project views without error.
   concretizer:
     unify: true
 
@@ -11,6 +19,16 @@ spack:
     - pkgconf
 
   # Core dependencies.
+  #
+  # Some dependencies listed in below are marked as "available as wrap." These
+  # dependencies can be commented out, a default version will be downloaded and
+  # built from source by Meson's wrap subsystem as a fallback.
+  #
+  # For optional dependencies, this fallback will only trigger if the corresponding
+  # feature option is enabled. For example, setting `-Dopencl=enabled` will
+  # download a copy of the OpenCL headers, but `-Dopencl=auto` will not.
+  #
+  # See "Wrapped Dependencies" in the README.md for more details on wraps.
   - when: arch.satisfies('target=x86_64:')
     deps:
     - 'intel-xed +pic @2022.08.11:'
@@ -55,14 +73,26 @@ spack:
     # - 'oneapi-level-zero@1.0.0:'
 
     # Uncomment to enable Level Zero instrumentation metrics (hpcrun -e gpu=level0,inst).
-    # Note that Level Zero metrics must also be enabled for this to have an effect.
     # Feature option: -Dgtpin
     # - oneapi-igc
-    # - intel-gtpin
+    # - intel-gtpin  # Optional, available as wrap
+    #
+    # If intel-gtpin is uncommented above
+    # If you want to use a custom GTPin, uncomment the following package:
+    # And then extend your Meson build configuration with the following parameters:
+    # meson setup \
+    #   -D{c,cpp}_args="... -I$(spack find -p intel-gtpin)/Include -I$(spack find -p intel-gtpin)/Include/ged/intel64" \
+    #   -D{c,cpp}_link_args="... -L$(spack find -p intel-gtpin)/Lib/intel64 -Wl,-rpath=$(spack find -p intel-gtpin)/Lib/intel64" \
+    #   ...
 
     # Uncomment to enable OpenCL metrics (hpcrun -e gpu=opencl).
     # Feature option: -Dopencl
-    # - 'opencl-c-headers@2020.12.18:'
+    # - 'opencl-c-headers@2020.12.18:'  # Optional, available as wrap
+    #
+    # If opencl-c-headers is uncommented above, extend your Meson build configuration with the following:
+    # meson setup \
+    #   -D{c,cpp}_args="... -I$(spack find -p opencl-c-headers)/include" \
+    #   ...
 
     # Uncomment to enable ROCm metrics (hpcrun -e gpu=amd).
     # Feature option: -Drocm

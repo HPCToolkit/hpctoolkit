@@ -89,7 +89,8 @@ $ spack install  # This will take a while
 $ spack env activate my-hpctoolkit-deps  # Repeated to update environment vars
 ```
 
-This environment needs to be activated for all `meson` commands while working with HPCToolkit.
+This environment (`my-hpctoolkit-deps`) needs to be activated for all `meson` commands while working with HPCToolkit.
+See the comments in [`doc/developers/example-deps.yaml`] for additional details about how this environment must be configured.
 While active, building HPCToolkit follows the standard Meson build sequence:
 
 ```console
@@ -127,7 +128,7 @@ Additional configuration arguments can be passed to the initial `meson setup` or
 - `-Dcuda=(disabled|auto|enabled)`: Enable CUDA metrics (`-e gpu=nvidia`). Requires CUDA.
 - `-Dlevel0=(disabled|auto|enabled)`: Enable Level Zero metrics (`-e gpu=level0`). Requires Level Zero.
 - `-Dgtpin=(disabled|auto|enabled)`: Also enable Level Zero instrumentation metrics (`-e gpu=level0,inst`). Requires Level Zero, IGC and GTPin.
-- `-Dopencl=(disabled|auto|enabled)`: Enable OpenCL metrics (`-e gpu=opencl`). Requires OpenCL.
+- `-Dopencl=(disabled|auto|enabled)`: Enable OpenCL metrics (`-e gpu=opencl`).
 - `-Drocm=(disabled|auto|enabled)`: Enable ROCm metrics (`-e gpu=amd`). Requires ROCm.
 - `-Dvalgrind_annotations=(false|true)`: Inject annotations for debugging with Valgrind.
 
@@ -177,6 +178,44 @@ $ meson setup --native-file …/my-elf-dyn.ini builddir/
 
 See [`doc/developers/meson.ini`] for a more complete template listing the settings available in a native file.
 
+### Advanced Meson: Wrapped Dependencies
+
+If dependencies are required but not found in the build environment, Meson will download and build a default version of the missing dependency from source, by default.
+This section is an abridged version of Meson's official documentation on [subprojects][meson subprojects] and [wraps][meson wraps].
+
+Dependencies that are required but not found will fall back to suitable subproject, the subproject will be configured during `meson setup` and built from source during `meson compile`.
+Dependencies may be always required, or may be required due to an enabled feature, e.g. `-Dopencl=enabled` but not `-Dopencl=auto`.
+Any subprojects that are used as part of the build will be listed at the end of the `meson setup` output, for example:
+
+```
+  Subprojects
+    opencl-headers    : YES
+```
+
+If this fallback behavior is not desired, it can be disabled with `meson (setup|configure) --wrap-mode=nofallback`.
+With this, all dependencies must be provided by the build environment, except for forced-fallback dependencies configured with `meson (setup|configure) --force-fallback-for=dep1,dep2,...`.
+
+Subprojects are stored as directories under `subprojects/`, and may be downloaded automatically by Meson from corresponding `subprojects/*.wrap` files.
+These files describe the URLs and hashes to download the upstream sources from, as well as the dependencies provided by the subproject.
+Automatic downloads can be disabled with `meson (setup|configure) --wrap-mode=nodownload`, in which case previously downloaded subprojects will be used as fallback dependencies but new ones will not be downloaded.
+This configuration may result in not-found dependencies, with a message such as the following:
+
+```
+Automatic wrap-based subproject downloading is disabled
+Subproject  opencl-headers is buildable: NO (disabling)
+Dependency OpenCL-Headers from subproject opencl-headers found: NO (subproject failed to configure)
+```
+
+In this case, you can use `meson subprojects download opencl-headers` to explicitly download the listed subproject, e.g. from a machine with open internet access.
+If no subproject is specified (`meson subprojects download`), all available subprojects will be downloaded.
+Note that wraps may update when updating a local checkout, when this happens you may see a message such as:
+
+```
+WARNING: Subproject opencl-headers's revision may be out of date; its wrap file has changed since it was first configured
+```
+
+To fix this, run `meson subprojects update opencl-headers` to redownload and update the subproject, e.g. from a machine with open internet access.
+
 ## Documentation
 
 Documentation is available at the HPCToolkit home page:
@@ -211,6 +250,8 @@ follow your steps.
 [getting spack]: https://spack.readthedocs.io/en/latest/getting_started.html
 [meson]: https://mesonbuild.com/
 [meson native file]: https://mesonbuild.com/Native-environments.html
+[meson subprojects]: https://mesonbuild.com/Subprojects.html
+[meson wraps]: https://mesonbuild.com/Wrap-dependency-system-manual.html
 [meson's `dependency()` docs]: https://mesonbuild.com/Reference-manual_functions.html#dependency
 [spack]: https://spack.io/
 [spack user's manual]: https://spack.readthedocs.io/
