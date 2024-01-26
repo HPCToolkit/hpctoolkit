@@ -7,11 +7,11 @@ spack:
   develop:
     hpctoolkit:
       path: '..'
-      spec: hpctoolkit@develop-ci
+      spec: hpctoolkit@2024.01.stable-ci
 
   specs:
   - matrix:
-    - - hpctoolkit@=develop-ci
+    - - hpctoolkit@=2024.01.stable-ci
     - [build_system=autotools ~debug, build_system=meson buildtype=release]
     - - ~viewer ~mpi +opencl ~cuda ~rocm ~level_zero
     - [+papi, ~papi]
