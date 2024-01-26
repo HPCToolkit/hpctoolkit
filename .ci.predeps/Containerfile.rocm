@@ -1,5 +1,5 @@
 # OS installation stage: Install build tools from the OS
-ARG ROCM_VERSION=5.6
+ARG ROCM_VERSION=5.7.1
 FROM docker.io/rocm/dev-ubuntu-20.04:${ROCM_VERSION} as os-install
 
 # Some images set problematic environment variables. Wipe those out first for safety.
