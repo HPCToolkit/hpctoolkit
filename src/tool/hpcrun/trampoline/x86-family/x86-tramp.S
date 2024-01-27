@@ -63,7 +63,7 @@ hpcrun_trampoline:
         mov     %x86_Reg_SP, %x86_Reg_DI
 
         /* away we go into C-land */
-        call hpcrun_trampoline_handler
+        call hpcrun_trampoline_handler@PLT
 
         /* the trampoline returns us our proper return address in %?ax.
            shove it onto the stack so that 'ret' will go to the proper
