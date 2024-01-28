@@ -103,6 +103,11 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
+    name: leap15-amd64
+    containerfile: .ci.predeps/Containerfile.leap15
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
     name: bare-amd64
     containerfile: .ci.predeps/Containerfile.bare
 
@@ -135,6 +140,11 @@ include:
     <<: *ci_predeps_shared
     name: min-fedora38-amd64
     containerfile: .ci.predeps/Containerfile.fedora38
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: min-leap15-amd64
+    containerfile: .ci.predeps/Containerfile.leap15
 
 # Images based on (containing) Nvidia's CUDA Toolkit
 - component: *ci_predeps
@@ -245,6 +255,8 @@ include:
   before_script: *predeps_before_script
 'predeps: [fedora38-amd64]':
   before_script: *predeps_before_script
+'predeps: [leap15-amd64]':
+  before_script: *predeps_before_script
 'predeps: [bare-amd64]':
   before_script: *predeps_before_script
 
@@ -265,6 +277,10 @@ include:
     PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 'predeps: [min-fedora38-amd64]':
+  variables:
+    PREDEPS_BUILD_ARG_VERMODE: minimum
+  before_script: *predeps_before_script
+'predeps: [min-leap15-amd64]':
   variables:
     PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
@@ -441,6 +457,10 @@ validate:
   extends: .buildmany amd64 cpu
   image: $PREDEPS_IMAGE_FEDORA38_AMD64
   parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
+'buildmany: [amd64, leap15]':
+  extends: .buildmany amd64 cpu
+  image: $PREDEPS_IMAGE_LEAP15_AMD64
+  parallel: {matrix: [{JOB_CC: [gcc12, clang]}]}
 
 .buildmany min:
   variables:
@@ -459,6 +479,10 @@ validate:
   extends: [.buildmany amd64 cpu, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_FEDORA38_AMD64
   parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
+'buildmany min: [amd64, leap15]':
+  extends: [.buildmany amd64 cpu, .buildmany min]
+  image: $PREDEPS_IMAGE_MIN_LEAP15_AMD64
+  parallel: {matrix: [{JOB_CC: [gcc12, clang]}]}
 
 
 # CUDA spins
