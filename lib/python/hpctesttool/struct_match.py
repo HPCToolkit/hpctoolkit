@@ -38,10 +38,10 @@ class Value(ValueLike):
     @classmethod
     def parser(cls, *, file: str, binary: str, debug: bool) -> pp.ParserElement:
         return (
-            AnyValue.parser()
+            LiteralValue.parser(file=file, binary=binary, debug=debug)
+            | AnyValue.parser()
             | InboundsPlaceholder.parser(debug=debug)
             | IntRangeValue.parser(debug=debug)
-            | LiteralValue.parser(file=file, binary=binary, debug=debug)
         ).set_name("value")
 
 
@@ -95,35 +95,42 @@ class AnyValue(Value):
 
 
 class LiteralValue(Value):
-    def __init__(self, literal: str, *, bracket_suffix: typing.Optional[bool] = False):
+    def __init__(
+        self,
+        literal: str,
+        *,
+        wildcard_prefix: bool = False,
+        bracket_suffix: typing.Optional[bool] = False,
+    ):
         self.literal = literal
+        self.wildcard_prefix = wildcard_prefix
         self.bracket_suffix = bracket_suffix
 
     def __str__(self) -> str:
+        prefix = "**" if self.wildcard_prefix else ""
+        suffix = "[*]" if self.bracket_suffix or self.bracket_suffix is None else ""
         if self.bracket_suffix is None:
-            return f"{self.literal!r}[*]?"
-        if self.bracket_suffix:
-            return f"{self.literal!r}[*]"
-        return repr(self.literal)
+            suffix += "?"
+        return f"{prefix}{self.literal!r}{suffix}"
 
     def matches(self, value: str) -> bool:
-        if self.bracket_suffix is False:
-            return value == self.literal
-        if not value.startswith(self.literal):
-            return False
+        # Match and remove any bracket suffix, first
+        if self.bracket_suffix or self.bracket_suffix is None:
+            value, subs = re.subn(r"\s*\[[^]]+\]\s*$", "", value, count=0)
+            if subs == 0 and self.bracket_suffix:
+                return False  # Expected bracket suffix but not found
 
-        suffix = value[len(self.literal) :]
-        if not suffix:
-            return not self.bracket_suffix
-
-        if self.literal and not suffix[0].isspace():
-            return False
-
-        suffix = suffix.lstrip()
-        return suffix[0] == "[" and suffix[-1] == "]"
+        # Match the literal on the rest
+        return value.endswith(self.literal) if self.wildcard_prefix else value == self.literal
 
     @classmethod
     def parser(cls, *, file: str, binary: str, debug: bool) -> pp.ParserElement:
+        wprefix = pp.Opt(pp.Literal("**")("any"))
+
+        @wprefix.set_parse_action
+        def parse_wildcard(toks: pp.ParseResults) -> typing.List[bool]:
+            return [bool(toks.any)]
+
         bsuffix = pp.Opt(
             pp.Combine(
                 pp.Literal("[")
@@ -149,11 +156,11 @@ class LiteralValue(Value):
                 return [not debug]
             return [False]
 
-        std = pp.Combine(pp.QuotedString('"')("literal") + bsuffix("bs"))
+        std = pp.Combine(wprefix("wpfx") + pp.QuotedString('"')("literal") + bsuffix("bs"))
 
         @std.set_parse_action
         def lift_std(toks: pp.ParseResults) -> LiteralValue:
-            return cls(toks.literal, bracket_suffix=toks.bs)
+            return cls(toks.literal, wildcard_prefix=toks.wpfx, bracket_suffix=toks.bs)
 
         c_file = pp.Combine(pp.Literal("file") + bsuffix("bs"))
 
