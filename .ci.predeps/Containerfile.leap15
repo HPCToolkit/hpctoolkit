@@ -1,0 +1,79 @@
+# OS installation stage: Install build tools from the OS
+FROM docker.io/opensuse/leap:15 as os-install
+
+# Some images set problematic environment variables. Wipe those out first for safety.
+ENV \
+  PYTHONPATH= \
+  PKG_CONFIG_PATH= \
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  CPATH= \
+  LIBRARY_PATH= \
+  LD_LIBRARY_PATH= \
+  CMAKE_PREFIX_PATH=
+
+# Install the required OS packages
+RUN \
+  zypper install -y \
+    ccache \
+    clang \
+    cmake \
+    eatmydata \
+    gcc \
+    gcc-c++ \
+    gcc12 \
+    gcc12-c++ \
+    git git-lfs \
+    libomp-devel \
+    mpich-devel \
+    ninja \
+    pkg-config \
+    python311 python311-pip python311-devel \
+  && : # END
+
+# Install a up-to-date versions of Meson, using a suitable Python
+RUN \
+  python3.11 -m pip install \
+    'meson>=1.1.0,<2' \
+  && : # END
+
+# Ensure the appropriate MPI is loaded into the shell environment, always.
+RUN mpi-selector --system --set mpich
+ENTRYPOINT ["/bin/sh", "-c", ". /etc/profile.d/mpi-selector.sh && exec \"$@\"", "sh"]
+CMD ["/bin/bash"]
+
+
+# OS native-file side-stage: Collect and compose a native file for the OS software
+FROM os-install as os-native
+
+# Copy in the native files this OS image can support
+COPY ci/native/src/image.leap15.ini /usr/share/meson/native/image.ini
+COPY \
+  ci/native/src/clang.ini \
+  ci/native/src/gcc12.ini \
+  /usr/share/meson/native/
+
+
+# Spack installation side-stage: Install (some) software from Spack to /opt/software
+FROM ghcr.io/spack/leap15:0.21.0 as spack-install
+
+# Install all the packages we want, using the environment. This also generates a Meson native file
+# referring to all the packages.
+COPY ci/spack-deps/ /opt/environment/
+ARG VERMODE=latest
+RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
+    --mount=type=cache,target=/mnt/cache/spack-src,sharing=locked \
+  export PATH=/opt/spack/bin:"$PATH" \
+  && /opt/environment/install.sh
+
+
+# Final native-file side-stage: Merge the OS and Spack native files
+FROM os-native as final-native
+COPY --from=spack-install /opt/environment/spack_env.ini /tmp/
+COPY ci/native/patch-native.py /tmp/
+RUN /tmp/patch-native.py /usr/share/meson/native/image.ini /tmp/spack_env.ini
+
+
+# Composition stage: Produce what will become the final image
+FROM os-install
+COPY --from=spack-install /opt/software/ /opt/software/
+COPY --from=final-native /usr/share/meson/native/ /usr/share/meson/native/
