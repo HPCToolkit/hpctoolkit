@@ -342,6 +342,7 @@ if opencl_dep.found()
 
   _hpcrun_libs += shared_module('hpcrun_opencl', config_h,
     'foil/opencl-preload.c',
+    gnu_symbol_visibility: 'hidden',
     link_language: 'c',
     dependencies: opencl_dep,
     install: true, install_dir: 'lib' / meson.project_name())
@@ -364,6 +365,7 @@ if gtpin_dep.found()
     'gpu/intel/binaries/patchTokenSymbols.c',
     'gpu/intel/binaries/symbolVector.c',
     'gpu/intel/binaries/zebinSymbols.c',
+    gnu_symbol_visibility: 'hidden',
     link_with: [prof_lean_lib],
     dependencies: [libelf_dep, libunwind_dep, tbb_malloc_dep, gtpin_dep, dl_dep, libmonitor_dep],
     install: true, install_dir: 'lib' / meson.project_name())
@@ -400,6 +402,7 @@ if level0_dep.found()
 
   _hpcrun_libs += shared_module('hpcrun_level0', config_h,
     'foil/level0-preload.c',
+    gnu_symbol_visibility: 'hidden',
     link_language: 'c',
     dependencies: level0_dep,
     install: true, install_dir: 'lib' / meson.project_name()
@@ -456,6 +459,7 @@ _hpcrun_libs += shared_module('hpcrun', config_h,
   opencl_dep.found() ? _my_opencl_files : [],
   _unw_source_files,
   'utilities/last_func.c',
+  gnu_symbol_visibility: 'hidden',
   link_language: 'c',
   c_args: (
     _my_cpp_defines
@@ -470,12 +474,14 @@ _hpcrun_libs += shared_module('hpcrun', config_h,
 
 _hpcrun_libs += shared_library('hpcrun_unwind', config_h,
   'unwind/common/libunwind-pvt.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   dependencies: [libunwind_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_fake_audit', config_h,
   'audit/fake-auditor.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   dependencies: [dl_dep, libmonitor_dep],
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
@@ -483,6 +489,7 @@ _hpcrun_libs += shared_module('hpcrun_fake_audit', config_h,
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_library('hpcrun_private_ns', config_h,
   'audit/private-ns.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   dependencies: [dl_dep],
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
@@ -491,6 +498,7 @@ _hpcrun_libs += shared_library('hpcrun_private_ns', config_h,
 _hpcrun_libs += shared_library('hpcrun_audit', config_h,
   'audit/auditor.c',
   'audit/private-ns.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   dependencies: [dl_dep],
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
@@ -498,32 +506,38 @@ _hpcrun_libs += shared_library('hpcrun_audit', config_h,
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_library('hpcrun_dlmopen', config_h,
   'dlmopen/dlmopen.c',
+  gnu_symbol_visibility: 'hidden',
   dependencies: [dl_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 
 _hpcrun_libs += shared_module('hpcrun_ga', config_h,
   'foil/ga-preload.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_gprof', config_h,
   'foil/gprof-preload.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_io', config_h,
   'foil/io-preload.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_memleak', config_h,
   'foil/memleak-preload.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_pthread', config_h,
   'foil/pthread-blame-preload.c',
+  gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
