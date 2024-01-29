@@ -61,6 +61,10 @@
 #include "../gpu/amd/rocprofiler-api.h"
 #endif
 
+#ifdef USE_LEVEL0
+#include "../gpu/intel/level0/level0-api.h"
+#endif
+
 #ifdef ENABLE_OPENCL
 #include "../gpu/opencl/opencl-api-wrappers.h"
 #endif
@@ -69,6 +73,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define FOILBASE(name, fn) \
+  if (strcmp(name, #fn) == 0) return foilbase_ ## fn
 
 HPCRUN_EXPOSED void* hpcrun_foil_base_lookup(const char* name) {
   // TODO: Replace the slow lookup process below with a Gprof hash table.
@@ -199,6 +206,28 @@ HPCRUN_EXPOSED void* hpcrun_foil_base_lookup(const char* name) {
     return foilbase_OnLoadToolProp;
   if (strcmp(name, "OnUnloadTool") == 0)
     return foilbase_OnUnloadTool;
+#endif
+
+#ifdef USE_LEVEL0
+  // Level Zero
+  FOILBASE(name, zeInit);
+  FOILBASE(name, zeCommandListAppendLaunchKernel);
+  FOILBASE(name, zeCommandListAppendMemoryCopy);
+  FOILBASE(name, zeCommandListCreate);
+  FOILBASE(name, zeCommandListCreateImmediate);
+  FOILBASE(name, zeCommandListDestroy);
+  FOILBASE(name, zeCommandListReset);
+  FOILBASE(name, zeCommandQueueExecuteCommandLists);
+  FOILBASE(name, zeEventPoolCreate);
+  FOILBASE(name, zeEventDestroy);
+  FOILBASE(name, zeEventHostReset);
+  FOILBASE(name, zeModuleCreate);
+  FOILBASE(name, zeModuleDestroy);
+  FOILBASE(name, zeKernelCreate);
+  FOILBASE(name, zeKernelDestroy);
+  FOILBASE(name, zeFenceDestroy);
+  FOILBASE(name, zeFenceReset);
+  FOILBASE(name, zeCommandQueueSynchronize);
 #endif
 
 #ifdef ENABLE_OPENCL
