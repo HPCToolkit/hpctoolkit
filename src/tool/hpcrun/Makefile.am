@@ -590,7 +590,7 @@ MY_LEVEL0_FILES=\
 	gpu/intel/level0/level0-command-queue-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_level0.la
-libhpcrun_level0_la_SOURCES   = gpu/intel/level0/level0-api-wrappers.c
+libhpcrun_level0_la_SOURCES   = foil/level0-preload.c
 libhpcrun_level0_la_CFLAGS    = $(OPT_LEVEL0_IFLAGS)
 libhpcrun_level0_la_LDFLAGS   = -Wl,-Bsymbolic
 
@@ -970,6 +970,7 @@ endif
 if OPT_ENABLE_LEVEL0
 libhpcrun_la_SOURCES  += $(MY_LEVEL0_FILES)
 libhpcrun_la_CPPFLAGS += -DENABLE_LEVEL0
+libhpcrun_la_CPPFLAGS += -DUSE_LEVEL0
 libhpcrun_la_CFLAGS   += $(OPT_LEVEL0_IFLAGS)
 
 MY_CPP_DEFINES  += -DHPCRUN_SS_LEVEL0

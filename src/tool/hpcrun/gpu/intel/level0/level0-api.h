@@ -48,8 +48,8 @@
 // global includes
 //******************************************************************************
 
+#include <stdint.h>
 #include <stdbool.h>
-
 
 
 //******************************************************************************
@@ -74,13 +74,13 @@
 //******************************************************************************
 
 ze_result_t
-hpcrun_zeInit
+foilbase_zeInit
 (
   ze_init_flag_t flag
 );
 
 ze_result_t
-hpcrun_zeCommandListAppendLaunchKernel
+foilbase_zeCommandListAppendLaunchKernel
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of the command list
   ze_kernel_handle_t hKernel,                     ///< [in] handle of the kernel object
@@ -93,7 +93,7 @@ hpcrun_zeCommandListAppendLaunchKernel
 );
 
 ze_result_t
-hpcrun_zeCommandListAppendMemoryCopy
+foilbase_zeCommandListAppendMemoryCopy
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of command list
   void* dstptr,                                   ///< [in] pointer to destination memory to copy to
@@ -107,7 +107,7 @@ hpcrun_zeCommandListAppendMemoryCopy
 );
 
 ze_result_t
-hpcrun_zeCommandListCreate
+foilbase_zeCommandListCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
@@ -116,7 +116,7 @@ hpcrun_zeCommandListCreate
 );
 
 ze_result_t
-hpcrun_zeCommandListCreateImmediate
+foilbase_zeCommandListCreateImmediate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
@@ -125,19 +125,19 @@ hpcrun_zeCommandListCreateImmediate
 );
 
 ze_result_t
-hpcrun_zeCommandListDestroy
+foilbase_zeCommandListDestroy
 (
   ze_command_list_handle_t hCommandList           ///< [in][release] handle of command list object to destroy
 );
 
 ze_result_t
-hpcrun_zeCommandListReset
+foilbase_zeCommandListReset
 (
   ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
 );
 
 ze_result_t
-hpcrun_zeCommandQueueExecuteCommandLists
+foilbase_zeCommandQueueExecuteCommandLists
 (
   ze_command_queue_handle_t hCommandQueue,        ///< [in] handle of the command queue
   uint32_t numCommandLists,                       ///< [in] number of command lists to execute
@@ -147,7 +147,7 @@ hpcrun_zeCommandQueueExecuteCommandLists
 );
 
 ze_result_t
-hpcrun_zeEventPoolCreate
+foilbase_zeEventPoolCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   const ze_event_pool_desc_t* desc,               ///< [in] pointer to event pool descriptor
@@ -161,19 +161,19 @@ hpcrun_zeEventPoolCreate
 );
 
 ze_result_t
-hpcrun_zeEventDestroy
+foilbase_zeEventDestroy
 (
   ze_event_handle_t hEvent                        ///< [in][release] handle of event object to destroy
 );
 
 ze_result_t
-hpcrun_zeEventHostReset
+foilbase_zeEventHostReset
 (
   ze_event_handle_t hEvent                        ///< [in] handle of the event
 );
 
 ze_result_t
-hpcrun_zeModuleCreate
+foilbase_zeModuleCreate
 (
   ze_context_handle_t hContext,                // [in] handle of the context object
   ze_device_handle_t hDevice,                  // [in] handle of the device
@@ -183,13 +183,13 @@ hpcrun_zeModuleCreate
 );
 
 ze_result_t
-hpcrun_zeModuleDestroy
+foilbase_zeModuleDestroy
 (
   ze_module_handle_t hModule       // [in][release] handle of the module
 );
 
 ze_result_t
-hpcrun_zeKernelCreate
+foilbase_zeKernelCreate
 (
   ze_module_handle_t hModule,          // [in] handle of the module
   const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
@@ -197,25 +197,25 @@ hpcrun_zeKernelCreate
 );
 
 ze_result_t
-hpcrun_zeKernelDestroy
+foilbase_zeKernelDestroy
 (
   ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
 );
 
 ze_result_t
-hpcrun_zeFenceDestroy
+foilbase_zeFenceDestroy
 (
   ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
 );
 
 ze_result_t
-hpcrun_zeFenceReset
+foilbase_zeFenceReset
 (
   ze_fence_handle_t hFence       //  [in] handle of the fence
 );
 
 ze_result_t
-hpcrun_zeCommandQueueSynchronize
+foilbase_zeCommandQueueSynchronize
 (
   ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
   uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
