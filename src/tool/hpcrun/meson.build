@@ -398,8 +398,12 @@ if level0_dep.found()
     'gpu/intel/level0/level0-command-queue-map.c',
   )
 
-  _hpcrun_libs += shared_module('hpcrun_level0',
-    'gpu/intel/level0/level0-api-wrappers.c')
+  _hpcrun_libs += shared_module('hpcrun_level0', config_h,
+    'foil/level0-preload.c',
+    link_language: 'c',
+    dependencies: level0_dep,
+    install: true, install_dir: 'lib' / meson.project_name()
+  )
 endif
 
 if papi_dep.found()
@@ -457,6 +461,7 @@ _hpcrun_libs += shared_module('hpcrun', config_h,
     _my_cpp_defines
     + (cupti_dep.found() ? ['-DENABLE_CUDA'] : [])
     + (opencl_dep.found() ? ['-DENABLE_OPENCL'] : [])
+    + (level0_dep.found() ? ['-DUSE_LEVEL0'] : [])
   ),
   link_with: [prof_lean_lib, support_lean_lib],
   dependencies: [_my_include_dirs_deps, perfmon_dep, dl_dep, lzma_dep, libmonitor_dep, libelf_dep, rocm_dep, xed_dep, papi_dep, cupti_dep, python_dep.partial_dependency(compile_args: true, includes: true), opencl_dep],

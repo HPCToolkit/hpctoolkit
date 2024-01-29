@@ -41,23 +41,31 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
 
-#include "level0-api.h"
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include "foil.h"
+#include "../gpu/intel/level0/level0-api.h"
+
 
 //******************************************************************************
 // L0 public API override
 //******************************************************************************
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeInit
 (
   ze_init_flag_t flag
 )
 {
-  return hpcrun_zeInit(flag);
+  LOOKUP_FOIL_BASE(base, zeInit);
+  return base(flag);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeCommandListAppendLaunchKernel
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of the command list
@@ -70,12 +78,13 @@ zeCommandListAppendLaunchKernel
                                                   ///< on before launching
 )
 {
-  return hpcrun_zeCommandListAppendLaunchKernel(
+  LOOKUP_FOIL_BASE(base, zeCommandListAppendLaunchKernel);
+  return base(
     hCommandList, hKernel, pLaunchFuncArgs,
     hSignalEvent, numWaitEvents, phWaitEvents);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeCommandListAppendMemoryCopy
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of command list
@@ -89,13 +98,13 @@ zeCommandListAppendMemoryCopy
                                                   ///< on before launching
 )
 {
-  return hpcrun_zeCommandListAppendMemoryCopy(
+  LOOKUP_FOIL_BASE(base, zeCommandListAppendMemoryCopy);
+  return base(
     hCommandList, dstptr, srcptr, size,
     hSignalEvent, numWaitEvents, phWaitEvents);
 }
 
-
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeCommandListCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
@@ -104,11 +113,12 @@ zeCommandListCreate
   ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
 )
 {
-  return hpcrun_zeCommandListCreate(
+  LOOKUP_FOIL_BASE(base, zeCommandListCreate);
+  return base(
     hContext, hDevice, desc, phCommandList);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeCommandListCreateImmediate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
@@ -117,30 +127,32 @@ zeCommandListCreateImmediate
   ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
 )
 {
-  return hpcrun_zeCommandListCreateImmediate(
+  LOOKUP_FOIL_BASE(base, zeCommandListCreateImmediate);
+  return base(
     hContext, hDevice, altdesc, phCommandList);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeCommandListDestroy
 (
   ze_command_list_handle_t hCommandList           ///< [in][release] handle of command list object to destroy
 )
 {
-  return hpcrun_zeCommandListDestroy(hCommandList);
+  LOOKUP_FOIL_BASE(base, zeCommandListDestroy);
+  return base(hCommandList);
 }
 
-
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeCommandListReset
 (
   ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
 )
 {
-  return hpcrun_zeCommandListReset(hCommandList);
+  LOOKUP_FOIL_BASE(base, zeCommandListReset);
+  return base(hCommandList);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeCommandQueueExecuteCommandLists
 (
   ze_command_queue_handle_t hCommandQueue,        ///< [in] handle of the command queue
@@ -150,11 +162,12 @@ zeCommandQueueExecuteCommandLists
   ze_fence_handle_t hFence                        ///< [in][optional] handle of the fence to signal on completion
 )
 {
-  return hpcrun_zeCommandQueueExecuteCommandLists(
+  LOOKUP_FOIL_BASE(base, zeCommandQueueExecuteCommandLists);
+  return base(
     hCommandQueue, numCommandLists, phCommandLists, hFence);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeEventPoolCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
@@ -168,29 +181,32 @@ zeEventPoolCreate
   ze_event_pool_handle_t* phEventPool             ///< [out] pointer handle of event pool object created
 )
 {
-  return hpcrun_zeEventPoolCreate(
+  LOOKUP_FOIL_BASE(base, zeEventPoolCreate);
+  return base(
     hContext, desc, numDevices, phDevices, phEventPool);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeEventDestroy
 (
   ze_event_handle_t hEvent                        ///< [in][release] handle of event object to destroy
 )
 {
-  return hpcrun_zeEventDestroy(hEvent);
+  LOOKUP_FOIL_BASE(base, zeEventDestroy)
+  return base(hEvent);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeEventHostReset
 (
   ze_event_handle_t hEvent                        ///< [in] handle of the event
 )
 {
-  return hpcrun_zeEventHostReset(hEvent);
+  LOOKUP_FOIL_BASE(base, zeEventHostReset);
+  return base(hEvent);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeModuleCreate
 (
   ze_context_handle_t hContext,                // [in] handle of the context object
@@ -200,21 +216,23 @@ zeModuleCreate
   ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
 )
 {
-  return hpcrun_zeModuleCreate(
+  LOOKUP_FOIL_BASE(base, zeModuleCreate);
+  return base(
     hContext, hDevice, desc, phModule, phBuildLog
   );
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeModuleDestroy
 (
   ze_module_handle_t hModule       // [in][release] handle of the module
 )
 {
-  return hpcrun_zeModuleDestroy(hModule);
+  LOOKUP_FOIL_BASE(base, zeModuleDestroy);
+  return base(hModule);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeKernelCreate
 (
   ze_module_handle_t hModule,          // [in] handle of the module
@@ -222,44 +240,49 @@ zeKernelCreate
   ze_kernel_handle_t *phKernel         // [out] handle of the Function object
 )
 {
-  return hpcrun_zeKernelCreate(
+  LOOKUP_FOIL_BASE(base, zeKernelCreate);
+  return base(
     hModule, desc, phKernel
   );
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeKernelDestroy
 (
   ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
 )
 {
-  return hpcrun_zeKernelDestroy(hKernel);
+  LOOKUP_FOIL_BASE(base, zeKernelDestroy);
+  return base(hKernel);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeFenceDestroy
 (
   ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
 )
 {
-  return hpcrun_zeFenceDestroy(hFence);
+  LOOKUP_FOIL_BASE(base, zeFenceDestroy);
+  return base(hFence);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeFenceReset
 (
   ze_fence_handle_t hFence       //  [in] handle of the fence
 )
 {
-  return hpcrun_zeFenceReset(hFence);
+  LOOKUP_FOIL_BASE(base, zeFenceReset);
+  return base(hFence);
 }
 
-ze_result_t
+HPCRUN_EXPOSED ze_result_t
 zeCommandQueueSynchronize
 (
   ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
   uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
 )
 {
-  return hpcrun_zeCommandQueueSynchronize(hCommandQueue, timeout);
+  LOOKUP_FOIL_BASE(base, zeCommandQueueSynchronize);
+  return base(hCommandQueue, timeout);
 }
