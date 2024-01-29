@@ -30,6 +30,7 @@ void f_inlined_loop() {  // CHECK: dbg:<A i=* f=file l=nextline n="f_inlined_loo
 
 // CHECK: <LM i=* n=binary has-calls="0" v="{}"
 // CHECK: dbg:<F i=* n=""[*] <P* i=* n=* l=* ln=* v=* <*>* </P </F
+// CHECK: <F? i=* n=**"/crti.S" <*>* </F
 // CHECK: <F i=* n=file[nodbg:*] nodbg:<P* i=* n=* l=* ln=* v=* <*>* </P
 
 // 1. Standard function

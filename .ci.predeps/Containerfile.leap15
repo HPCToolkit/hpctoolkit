@@ -1,5 +1,5 @@
 # OS installation stage: Install build tools from the OS
-FROM quay.io/almalinuxorg/almalinux:8 as os-install
+FROM docker.io/opensuse/leap:15 as os-install
 
 # Some images set problematic environment variables. Wipe those out first for safety.
 ENV \
@@ -12,32 +12,33 @@ ENV \
   CMAKE_PREFIX_PATH=
 
 # Install the required OS packages
-RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
-  dnf install -y epel-release \
-  && dnf config-manager --set-enabled powertools \
-  && dnf install -y \
+RUN \
+  zypper install -y \
     ccache \
     clang \
     cmake \
     eatmydata \
     gcc \
     gcc-c++ \
+    gcc12 \
+    gcc12-c++ \
     git git-lfs \
-    make \
-    ninja-build \
-    mvapich2-devel redhat-rpm-config \
+    libomp-devel \
+    mpich-devel \
+    ninja \
     pkg-config \
-    python39 python39-pip python39-devel \
+    python311 python311-pip python311-devel \
   && : # END
 
 # Install a up-to-date versions of Meson, using a suitable Python
 RUN \
-  python3.9 -m pip install \
+  python3.11 -m pip install \
     'meson>=1.1.0,<2' \
   && : # END
 
 # Ensure the appropriate MPI is loaded into the shell environment, always.
-ENTRYPOINT ["/bin/sh", "-c", ". /etc/profile.d/modules.sh && module load mpi && exec \"$@\"", "sh"]
+RUN mpi-selector --system --set mpich
+ENTRYPOINT ["/bin/sh", "-c", ". /etc/profile.d/mpi-selector.sh && exec \"$@\"", "sh"]
 CMD ["/bin/bash"]
 
 
@@ -45,15 +46,15 @@ CMD ["/bin/bash"]
 FROM os-install as os-native
 
 # Copy in the native files this OS image can support
-COPY ci/native/src/image.rhel8.ini /usr/share/meson/native/image.ini
+COPY ci/native/src/image.leap15.ini /usr/share/meson/native/image.ini
 COPY \
   ci/native/src/clang.ini \
-  ci/native/src/gcc.ini \
+  ci/native/src/gcc12.ini \
   /usr/share/meson/native/
 
 
 # Spack installation side-stage: Install (some) software from Spack to /opt/software
-FROM ghcr.io/spack/almalinux8:0.21.0 as spack-install
+FROM ghcr.io/spack/leap15:0.21.0 as spack-install
 
 # Install all the packages we want, using the environment. This also generates a Meson native file
 # referring to all the packages.

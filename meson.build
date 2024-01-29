@@ -71,9 +71,38 @@ endif
 mpi_dep = dependency('', required: false)
 if get_option('hpcprof_mpi').allowed()
   mpi_dep = dependency('MPI', language: 'cpp', required: false)
+
+  # Meson currently only properly supports OpenMPI. Search for other implementations via pkg-config.
   if not mpi_dep.found()
-    # Meson currently only properly supports OpenMPI. Search for the others via pkg-config first.
     mpi_dep = dependency('mpich-cxx', 'mvapich2', method: 'pkg-config', required: false)
+  endif
+
+  # Use a custom Python script to decode the MPI compiler's various flags
+  if not mpi_dep.found()
+    _mpicxx = find_program('mpicxx', 'mpic++', required: false)
+    if _mpicxx.found()
+      _decode_mpi = find_program('meson/decode-mpi', native: true)
+      _decoded_mpi = run_command(_decode_mpi, '--machine-readable', _mpicxx, check: false, capture: true)
+      if _decoded_mpi.returncode() == 0 and _decoded_mpi.stdout() != ''
+        _mpi_parts = _decoded_mpi.stdout().split('\0\0')
+        mpi_dep = declare_dependency(
+          compile_args: _mpi_parts[0].split('\0'),
+          link_args: _mpi_parts[1].split('\0'),
+        )
+
+        # Sanity check that the flags we get from the script do in fact work like they should.
+        assert(cpp.links('''
+        #include <mpi.h>
+        int main() {
+          MPI_Init(NULL, NULL);
+          int x = 42;
+          MPI_Bcast(&x, 1, MPI_INT, 0, MPI_COMM_WORLD);
+          MPI_Finalize();
+          return 0;
+        }
+        ''', name: 'MPI sanity check', dependencies: mpi_dep))
+      endif
+    endif
   endif
 
   if not mpi_dep.found() and get_option('hpcprof_mpi').enabled()

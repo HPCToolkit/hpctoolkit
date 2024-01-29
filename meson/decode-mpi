@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+
+import argparse
+from pathlib import Path
+import sys
+import typing
+import subprocess
+import shutil
+
+class MPICompiler(typing.NamedTuple):
+    cflags: typing.List[str]
+    ldflags: typing.List[str]
+
+def detect_mpich(mpicxx: Path) -> typing.Optional[MPICompiler]:
+    try:
+        result = MPICompiler([], [])
+
+        compile_info = subprocess.run([mpicxx, "-compile_info"], check=True, capture_output=True)
+        for word in compile_info.stdout.decode().split():
+            if word.startswith("-I"):
+                result.cflags.append(word)
+            elif word.startswith("-D"):
+                var = word[len("-D"):].split("=")[0]
+                if var not in ("_FORTIFY_SOURCE",):
+                    result.cflags.append(word)
+
+        link_info = subprocess.run([mpicxx, "-link_info"], check=True, capture_output=True)
+        rpathing = False
+        for word in link_info.stdout.decode().split():
+            if word.startswith("-L") or word.startswith("-l"):
+                result.ldflags.append(word)
+            if word == "-Wl,-rpath":
+                rpathing = True
+            elif word.startswith("-Wl,"):
+                if rpathing:
+                    result.ldflags.append("-Wl,-rpath=" + word[len("-Wl,"):])
+                    rpathing = False
+                elif word.startswith("-Wl,-rpath="):
+                    result.ldflags.append(word)
+
+        return result
+
+    except subprocess.CalledProcessError:
+        return None
+
+def detect_mpi(mpicxx: Path) -> typing.Optional[MPICompiler]:
+    return detect_mpich(mpicxx)
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Decode the argument flags for an mpicxx")
+    parser.add_argument("mpicxx")
+    parser.add_argument("-0", "--machine-readable", action="store_true", help="Output in machine readable format")
+    args = parser.parse_args()
+
+    mpicxx = shutil.which(args.mpicxx)
+    if not mpicxx:
+        print(f"Unable to find: {args.mpicxx}", file=sys.stderr)
+        return 1
+    mpicxx = Path(mpicxx)
+
+    result = detect_mpi(mpicxx)
+    if not result:
+        print(f"Unable to identify appropriate compiler args for: {args.mpicxx}", file=sys.stderr)
+        return 1
+
+    if not args.machine_readable:
+        print(f"""
+Compiler flags (cpp_args):    {" ".join(result.cflags)}
+Linker flags (cpp_link_args): {" ".join(result.ldflags)}
+""".strip())
+    else:
+        sys.stdout.buffer.write(b"\0".join([f.encode("utf-8") for f in result.cflags]))
+        sys.stdout.buffer.write(b"\0\0")
+        sys.stdout.buffer.write(b"\0".join([f.encode("utf-8") for f in result.ldflags]))
+
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

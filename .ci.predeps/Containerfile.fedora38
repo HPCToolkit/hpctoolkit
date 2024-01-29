@@ -34,13 +34,9 @@ RUN \
     'meson>=1.1.0,<2' \
   && : # END
 
-# Fedora prefers to use modules for MPI, but that makes headaches in containers.
-# Symlink all our problems away.
-RUN \
-  . /etc/profile.d/modules.sh \
-  && module load mpi \
-  && cp -svrTn $MPI_BIN /usr/bin \
-  && cp -svrTn $MPI_LIB /usr/lib64
+# Ensure the appropriate MPI is loaded into the shell environment, always.
+ENTRYPOINT ["/bin/sh", "-c", ". /etc/profile.d/modules.sh && module load mpi && exec \"$@\"", "sh"]
+CMD ["/bin/bash"]
 
 
 # OS native-file side-stage: Collect and compose a native file for the OS software
