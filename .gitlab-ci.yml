@@ -56,10 +56,6 @@ default:
 
   variables:
     CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
-    CCACHE_BASEDIR: '$CI_PROJECT_DIR'
-    CCACHE_NOCOMPRESS: 'true'
-    CCACHE_MAXSIZE: '5G'
-    CCACHE_MAXFILES: '0'
 
 #----------------------------------------------
 # Phase 0: Construct the predeps images
