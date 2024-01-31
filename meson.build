@@ -271,8 +271,6 @@ cfg.set_quoted('HPCTOOLKIT_VERSION', meson.project_version(),
         description: 'HPCToolkit version')
 cfg.set_quoted('HPCTOOLKIT_VERSION_STRING', 'A member of HPCToolkit, version @0@'.format(meson.project_version()),
         description: 'HPCToolkit version string')
-cfg.set_quoted('HPCTOOLKIT_GIT_VERSION', '@VCS_TAG@',
-        description: 'Git branch and commit hash, if known.')
 cfg.set_quoted('HPCTOOLKIT_SPACK_SPEC', 'unknown (deprecated)',
         description: 'Spack version and variants, if known. (legacy)')
 cfg.set('SIZEOF_VOIDP', cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8))
