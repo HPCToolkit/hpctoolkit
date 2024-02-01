@@ -81,8 +81,8 @@ spack:
     # If you want to use a custom GTPin, uncomment the following package:
     # And then extend your Meson build configuration with the following parameters:
     # meson setup \
-    #   -D{c,cpp}_args="... -I$(spack find -p intel-gtpin)/Include -I$(spack find -p intel-gtpin)/Include/ged/intel64" \
-    #   -D{c,cpp}_link_args="... -L$(spack find -p intel-gtpin)/Lib/intel64 -Wl,-rpath=$(spack find -p intel-gtpin)/Lib/intel64" \
+    #   -D{c,cpp}_args="... -I$(spack location -i intel-gtpin)/Include -I$(spack location -i intel-gtpin)/Include/ged/intel64" \
+    #   -D{c,cpp}_link_args="... -L$(spack location -i intel-gtpin)/Lib/intel64 -Wl,-rpath=$(spack location -i intel-gtpin)/Lib/intel64" \
     #   ...
 
     # Uncomment to enable OpenCL metrics (hpcrun -e gpu=opencl).
@@ -91,7 +91,7 @@ spack:
     #
     # If opencl-c-headers is uncommented above, extend your Meson build configuration with the following:
     # meson setup \
-    #   -D{c,cpp}_args="... -I$(spack find -p opencl-c-headers)/include" \
+    #   -D{c,cpp}_args="... -I$(spack location -i opencl-c-headers)/include" \
     #   ...
 
     # Uncomment to enable ROCm metrics (hpcrun -e gpu=amd).
