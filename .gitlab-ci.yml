@@ -7,10 +7,9 @@ workflow:
 
 
 stages:
-- setup
-- validate
-- test
-
+- individual tests
+- semi-fresh tests
+- configuration tests
 
 variables:
   # Most jobs require the submodules, those that don't will override this
@@ -42,30 +41,11 @@ default:
     - runner_system_failure
 
 
-# All build jobs are based on this job, which sets up appropriate caching to speed things up.
-.build job:
-  cache:
-  - key: meson-packagecache
-    when: always
-    paths:
-    - subprojects/packagecache
-  - key: ccache-$CI_JOB_NAME
-    when: always
-    paths:
-    - .ccache/
-
-  variables:
-    CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
-
-#----------------------------------------------
-# Phase 0: Construct the predeps images
-#----------------------------------------------
-
 include:
 # All code should pass pre-commit without error.
 - component: gitlab.com/blue42u/ci.pre-commit@0.1.0
 
-# These images are based on classic distrobutions and contain no vendor software
+# These images are based on classic distributions and contain no vendor software
 - component: &ci_predeps gitlab.com/blue42u/ci.predeps@0.2.0
   inputs:
     <<: &ci_predeps_shared
@@ -106,41 +86,20 @@ include:
     <<: *ci_predeps_shared
     name: bare-amd64
     containerfile: .ci.predeps/Containerfile.bare
-
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: min-rhel8-amd64
-    containerfile: .ci.predeps/Containerfile.rhel8
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-ubuntu20.04-amd64
-    containerfile: .ci.predeps/Containerfile.ubuntu20.04
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-ubuntu20.04-arm64
-    containerfile: .ci.predeps/Containerfile.ubuntu20.04
+    name: bare-arm64
+    containerfile: .ci.predeps/Containerfile.bare
     platform: linux/arm64
     job_tag: rice-linux-medium-arm64
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: min-ubuntu20.04-ppc64le
-    containerfile: .ci.predeps/Containerfile.ubuntu20.04
+    name: bare-ppc64le
+    containerfile: .ci.predeps/Containerfile.bare
     platform: linux/ppc64le
     job_tag: rice-linux-medium-ppc64le
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-fedora38-amd64
-    containerfile: .ci.predeps/Containerfile.fedora38
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-leap15-amd64
-    containerfile: .ci.predeps/Containerfile.leap15
 
 # Images based on (containing) Nvidia's CUDA Toolkit
 - component: *ci_predeps
@@ -157,17 +116,6 @@ include:
   inputs:
     <<: *ci_predeps_shared
     name: cuda12.0-amd64
-    containerfile: .ci.predeps/Containerfile.cuda
-
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-cuda11.8-amd64
-    containerfile: .ci.predeps/Containerfile.cuda
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-cuda12.0-amd64
     containerfile: .ci.predeps/Containerfile.cuda
 
 # Images based on (containing) AMD's ROCm
@@ -212,27 +160,11 @@ include:
     name: rocm6.0-amd64
     containerfile: .ci.predeps/Containerfile.rocm
 
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-rocm5.1-amd64
-    containerfile: .ci.predeps/Containerfile.rocm
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-rocm5.7-amd64
-    containerfile: .ci.predeps/Containerfile.rocm
-
 # Image(s) based on (containing) Intel's Level Zero, IGC, GTPin, etc.
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: intel-amd64
-    containerfile: .ci.predeps/Containerfile.intel
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-intel-amd64
     containerfile: .ci.predeps/Containerfile.intel
 
 'predeps: [rhel8-amd64]':
@@ -255,30 +187,9 @@ include:
   before_script: *predeps_before_script
 'predeps: [bare-amd64]':
   before_script: *predeps_before_script
-
-'predeps: [min-rhel8-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
+'predeps: [bare-arm64]':
   before_script: *predeps_before_script
-'predeps: [min-ubuntu20.04-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-'predeps: [min-ubuntu20.04-arm64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-'predeps: [min-ubuntu20.04-ppc64le]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-'predeps: [min-fedora38-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-'predeps: [min-leap15-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
+'predeps: [bare-ppc64le]':
   before_script: *predeps_before_script
 
 'predeps: [cuda11.6-amd64]':
@@ -292,17 +203,6 @@ include:
 'predeps: [cuda12.0-amd64]':
   variables:
     PREDEPS_BUILD_ARG_CUDA_VERSION: '12.0.1'
-  before_script: *predeps_before_script
-
-'predeps: [min-cuda11.8-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '11.8.0'
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-'predeps: [min-cuda12.0-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '12.0.1'
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 
 'predeps: [rocm5.1-amd64]':
@@ -338,473 +238,312 @@ include:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '6.0'
   before_script: *predeps_before_script
 
-'predeps: [min-rocm5.1-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.1.3'
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-'predeps: [min-rocm5.7-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.7.1'
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-
 'predeps: [intel-amd64]':
   before_script: *predeps_before_script
-'predeps: [min-intel-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
-  before_script: *predeps_before_script
-
-#-----------------------------------
-# Phase 2: validate
-#-----------------------------------
-
-# Ensure the autogoo is still up-to-date
-validate:
-  stage: validate
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  tags: [saas-linux-small-amd64]
-  script:
-  - meson setup --native-file image.ini /tmp/builddir
-  # Detect any changes to the main source directory
-  - git status --porcelain=v1 --untracked-files=no > changes || exit $?
-  - |
-    if test -s changes; then
-      echo "== CHANGES DETECTED, running git diff..."
-      git diff | tee fixup.patch
-      echo "== AUTOGOO OUT-OF-SYNC, see patch above and in fixup.patch for details"
-      exit 1
-    fi
-  artifacts:
-    when: always
-    paths:
-    - fixup.patch
-
-#-----------------------------------
-# Phase 3: test
-#-----------------------------------
-
-# Build many versions of the codebase, to ensure all the various compilations work
-# As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
-# at a time. With the exception of +debug, which is flipped at will.
-.buildmany:
-  extends: .build job
-  stage: test
-  variables:
-    JOB_CC: gcc
-  script:
-  - meson setup --native-file image.ini --native-file "$JOB_CC".ini --wrap-mode=nofallback /tmp/builddir
-  - mkdir -p logs/"$CI_JOB_NAME"
-  - |
-    build() {
-      id="$1"
-      logfile=logs/"$CI_JOB_NAME"/"$id".log
-      shift
-
-      echo -e "\e[32m$ meson configure $* /tmp/builddir\e[0m"
-      meson configure "$@" /tmp/builddir || return $?
-      echo -e "\e[32m$ meson compile -C /tmp/builddir\e[0m"
-      { meson compile -C /tmp/builddir; } > "$logfile" 2>&1 \
-        || { code=$?; cat "$logfile"; return $code; }
-    }
-  - |
-    for buildtype in debugoptimized release; do
-      build $buildtype-all    -Dbuildtype=$buildtype -Dauto_features=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopapi -Dbuildtype=$buildtype -Dauto_features=enabled -Dpapi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nopy   -Dbuildtype=$buildtype -Dauto_features=enabled -Dpython=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noocl  -Dbuildtype=$buildtype -Dauto_features=enabled -Dopencl=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-nompi  -Dbuildtype=$buildtype -Dauto_features=enabled -Dhpcprof_mpi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-      build $buildtype-noval  -Dbuildtype=$buildtype -Dauto_features=enabled -Dvalgrind_annotations=false $COMMON_SETTINGS || exit $?
-    done
-  after_script:
-  - |
-    echo "To reproduce:"
-    echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
-  - ./ci/cc-diagnostics.py cq.json logs/"$CI_JOB_NAME"/*.log
-  artifacts:
-    reports:
-      codequality: cq.json
-    paths:
-    - logs/
-    when: always
-
-# CPU-only spins
-.buildmany amd64 cpu:
-  extends: .buildmany
-  tags: [saas-linux-small-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-
-'buildmany: [amd64, rhel8]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_RHEL8_AMD64
-  parallel: {matrix: [{JOB_CC: gcc}]}
-'buildmany: [amd64, ubuntu20.04]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  parallel: {matrix: [{JOB_CC: [clang10]}]}
-'buildmany: [amd64, fedora38]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
-'buildmany: [amd64, leap15]':
-  extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_LEAP15_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc12, clang]}]}
-
-.buildmany min:
-  variables:
-    # Submodules should not be necessary for correct configuration
-    GIT_SUBMODULE_STRATEGY: none
-
-'buildmany min: [amd64, rhel8]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_RHEL8_AMD64
-  parallel: {matrix: [{JOB_CC: gcc}]}
-'buildmany min: [amd64, ubuntu20.04]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
-  parallel: {matrix: [{JOB_CC: [clang10]}]}
-'buildmany min: [amd64, fedora38]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
-'buildmany min: [amd64, leap15]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_LEAP15_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc12, clang]}]}
 
 
-# CUDA spins
-.buildmany amd64 cuda:
-  extends: .buildmany
-  tags: [saas-linux-small-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-
-'buildmany: [amd64, cuda12.0]':
-  extends: .buildmany amd64 cuda
-  image: $PREDEPS_IMAGE_CUDA12_0_AMD64
-'buildmany: [amd64, cuda11.8]':
-  extends: .buildmany amd64 cuda
-  image: $PREDEPS_IMAGE_CUDA11_8_AMD64
-
-'buildmany min: [amd64, cuda12.0]':
-  extends: [.buildmany amd64 cuda, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_CUDA12_0_AMD64
-'buildmany min: [amd64, cuda11.8]':
-  extends: [.buildmany amd64 cuda, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_CUDA11_8_AMD64
-
-# ROCm spins
-.buildmany amd64 rocm:
-  extends: .buildmany
-  tags: [saas-linux-small-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-
-'buildmany: [amd64, rocm5.1]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM5_1_AMD64
-'buildmany: [amd64, rocm5.7]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM5_7_AMD64
-'buildmany: [amd64, rocm6.0]':
-  extends: .buildmany amd64 rocm
-  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
-
-'buildmany min: [amd64, rocm5.1]':
-  extends: [.buildmany amd64 rocm, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_ROCM5_1_AMD64
-'buildmany min: [amd64, rocm5.7]':
-  extends: [.buildmany amd64 rocm, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_ROCM5_7_AMD64
-
-# Level 0 + GTPin spins
-.buildmany amd64 lvlz:
-  extends: .buildmany
-  tags: [saas-linux-small-amd64]
-  variables:
-    COMMON_SETTINGS: >-
-      -Dcuda=disabled
-      -Drocm=disabled
-      --force-fallback-for=gtpin
-  script:
-  - !reference [.buildmany, script]
-  - |
-    for buildtype in debugoptimized release; do
-      build $buildtype-nogtpin -Dbuildtype=$buildtype -Dauto_features=enabled -Dgtpin=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
-    done
-
-'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
-  extends: .buildmany amd64 lvlz
-  image: $PREDEPS_IMAGE_INTEL_AMD64
-
-'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
-  extends: [.buildmany amd64 lvlz, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_INTEL_AMD64
-
-
-# Build single versions of the codebase and run unit tests through `make check`
-# NB: We use --repeat in the check jobs to detect bugs that cause sporadic test failures.
+# The vast majority of jobs in this sequence do a build and then run some tests. This is the base
+# job spec for such jobs, configurable via a small number of variables.
+# NB: We use --repeat in these jobs to detect bugs that cause sporadic test failures.
 # We chose --repeat 7, since this statistically provides:
-#   - 99.2% confidence that this MR does not introduce a "blocking" bug that would prevent others'
-#     work. We are very confident that a run will succeed >1/2 the time, and so require minimal
-#     repeated commands to "push past" the issue. (`1 - pbinom(0, 7, 1 - 1/2) -> 0.992`)
-#   - 79.0% confidence that this MR does not introduce a bug that would "annoy" others during their
-#     work. We are modestly confident that a run will succeed >4/5 of the time, in which case the
-#     bug may not be especially noticable. (`1 - pbinom(0, 7, 1 - 4/5) -> 0.790`)
+# - 99.2% confidence that this MR does not introduce a "blocking" bug that would prevent others'
+#   work. We are very confident that a run will succeed >1/2 the time, and so require minimal
+#   repeated commands to "push past" the issue. (`1 - pbinom(0, 7, 1 - 1/2) -> 0.992`)
+# - 79.0% confidence that this MR does not introduce a bug that would "annoy" others during their
+#   work. We are modestly confident that a run will succeed >4/5 of the time, in which case the
+#   bug may not be especially noticable. (`1 - pbinom(0, 7, 1 - 4/5) -> 0.790`)
+# Also, --repeat 7 is low enough that it doesn't slow down the CI too much.
 #
 # For the curious, the key formula to solve for the --repeat value is:
 #     {# of repeats} > log(1 - {confidence}) / log({min prob of success})
 # So a 99% confidence of 90% success rate requires a --repeat of at least 44.
-.check:
-  extends: .build job
-  stage: test
+.test job:
+  cache:
+  - key: meson-packagecache
+    when: always
+    paths:
+    - subprojects/packagecache
+  - key: ccache-$CI_JOB_NAME
+    when: always
+    paths:
+    - .ccache/
   variables:
+    CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
     SETUP_ARGS: ''
+    TEST_ARGS: ''
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   script:
-  - &check_setup
-    - mkdir logs/
-    - logfile=logs/"$CI_JOB_NAME".log
-    - rm -f "$logfile"
-    - meson setup --native-file image.ini --wrap-mode=nofallback -Dauto_features=enabled $SETUP_ARGS /tmp/builddir
-  - &check_compile
-    - meson compile -C /tmp/builddir >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
-  - &check_test
-    - meson test -C /tmp/builddir --maxfail=10 --repeat=${JOB_TEST_REPEAT:-7} ${JOB_TEST_SUITE:+--suite=$JOB_TEST_SUITE}
+  - &test_job_setup
+    - mkdir -p logs
+    # If we don't have sufficient perf events support, try to enable it.
+    - if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt 1 ]; then echo 1 > /proc/sys/kernel/perf_event_paranoid; fi
+    # We also want kernel symbols available (kallsyms), so enable that too.
+    - if [ "$(cat /proc/sys/kernel/kptr_restrict)" -gt 0 ]; then echo 0 > /proc/sys/kernel/kptr_restrict; fi
+    # Usual sequence from here: setup, build and test
+    - >-
+      meson setup
+      --native-file image.ini
+      -Dauto_features=enabled
+      --wrap-mode=nofallback
+      $SETUP_ARGS builddir
+  - meson compile -C builddir 2>&1 | tee compile.log
+  - if [ "$TEST_ARGS" != NOTESTS ]; then meson test -C builddir --maxfail 3 --repeat 7 $TEST_ARGS; fi
   after_script:
   - |
-    echo "To reproduce:"
-    echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit $CI_JOB_IMAGE"
-  - &check_after
-    - ./ci/cc-diagnostics.py cq.json logs/"$CI_JOB_NAME".log
-    - cp -t "$CI_PROJECT_DIR"/ /tmp/builddir/meson-logs/testlog.junit.xml
-
-  artifacts: &check_artifacts
+    echo "To reproduce this build, run:"
+    echo "    podman run --rm -it -v ./:/hpctoolkit:ro --workdir /hpctoolkit \\"
+    echo "      -e OMPI_ALLOW_RUN_AS_ROOT=1 -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \\"
+    echo "      -e SETUP_ARGS='$SETUP_ARGS' -e TEST_ARGS='$TEST_ARGS'$EXTRA_ENVS \\"
+    echo "      $CI_JOB_IMAGE"
+    echo "and repeat the commands listed in the job log above, with builddir replaced with /tmp/builddir."
+    echo "If using VSCode, you may also try using the appropriate devcontainer."
+  - if [ -f compile.log ]; then ./ci/cc-diagnostics.py cq.json compile.log; fi
+  artifacts:
     reports:
       codequality: cq.json
-      junit: '*.junit.xml'
-    paths:
-    - logs/
+      junit: builddir/meson-logs/testlog.junit.xml
     when: always
-.check semifresh job:
-  extends: .build job
-  variables:
-    JOB_TEST_SUITE: ''  # Always run all possible tests
-  script:
-  - *check_setup
-  - *check_compile
-  - meson compile -C /tmp/builddir $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
-  - git add --intent-to-add tests2/data/
-  - meson compile -C /tmp/builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
-  - mkdir testdata-patches/
-  - cp -t testdata-patches/ /tmp/builddir/tests2/data/*.patch
-  - meson setup --wipe /tmp/builddir
-  - *check_compile
-  - *check_test
-  after_script:
-  - |
-    echo "To reproduce:"
-    echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit -e REGEN_SUITES='$REGEN_SUITES' $CI_JOB_IMAGE"
-  - *check_after
-  artifacts:
-    <<: *check_artifacts
-    expire_in: 1 day
-    paths:
-    - logs/
-    - testdata-patches/
 
-'check amd64: [cpu]':
-  extends: .check
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  tags: [saas-linux-large-amd64]
-  before_script: &perf_enable
-  # If we don't have sufficient perf events support, try to enable it.
-  - if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt 1 ]; then echo 1 > /proc/sys/kernel/perf_event_paranoid; fi
-  # We also want kernel symbols available (kallsyms), so enable that too.
-  - if [ "$(cat /proc/sys/kernel/kptr_restrict)" -gt 0 ]; then echo 0 > /proc/sys/kernel/kptr_restrict; fi
-  variables: &vars_check_cpu
+
+# Individual test runs, each on a single known software stack
+.individual test job:
+  extends: .test job
+  stage: individual tests
+.individual test job std:
+  extends: .individual test job
+  tags: [saas-linux-small-amd64]
+  variables:
     SETUP_ARGS: >-
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
-'check min amd64: [cpu]':
-  extends: .check
-  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
-  tags: [saas-linux-large-amd64]
-  before_script: *perf_enable
-  variables: *vars_check_cpu
-'check semifresh amd64: [cpu]':
-  extends: ['check amd64: [cpu]', .check semifresh job]
-  variables:
-    REGEN_SUITES: none cpu
-
-'check arm64: [cpu]':
-  extends: .check
+ubuntu20.04 amd64:
+  extends: .individual test job std
+  needs: ['predeps: [ubuntu20.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
+ubuntu20.04 arm64:
+  extends: .individual test job std
+  needs: ['predeps: [ubuntu20.04-arm64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
   tags: [rice-linux-small-arm64]
-  variables:
-    <<: *vars_check_cpu
-    JOB_TEST_REPEAT: 1
-  before_script: *perf_enable
-'check min arm64: [cpu]':
-  extends: .check
-  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-arm64]
-  variables:
-    <<: *vars_check_cpu
-    JOB_TEST_REPEAT: 1
-  before_script: *perf_enable
-
-'check ppc64le: [cpu]':
-  extends: .check
+ubuntu20.04 ppc64le:
+  extends: .individual test job std
+  needs: ['predeps: [ubuntu20.04-ppc64le]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_PPC64LE
   tags: [rice-linux-small-ppc64le]
-  variables: *vars_check_cpu
-'check min ppc64le: [cpu]':
-  extends: .check
-  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_PPC64LE
-  tags: [rice-linux-small-ppc64le]
-  variables: *vars_check_cpu
+leap15 amd64:
+  extends: .individual test job std
+  needs: ['predeps: [leap15-amd64]']
+  image: $PREDEPS_IMAGE_LEAP15_AMD64
+rhel8 amd64:
+  extends: .individual test job std
+  needs: ['predeps: [rhel8-amd64]']
+  image: $PREDEPS_IMAGE_RHEL8_AMD64
+  variables:
+    # FIXME: MVAPICH2 reacts badly in VMs, it claims to have no threading support. The same effect
+    # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
+    # MPI for now until a proper fix can be figured out.
+    TEST_ARGS: --no-suite mpi
+fedora38 amd64:
+  extends: .individual test job std
+  needs: ['predeps: [fedora38-amd64]']
+  image: $PREDEPS_IMAGE_FEDORA38_AMD64
+  variables:
+    # FIXME: This particular version of OpenMPI reacts badly in VMs, hpcprof-mpi hangs. The same
+    # effect can't be reproduced in a local container, for whatever reason. Disable the MPI tests
+    # on this MPI for now until a proper fix can be figured out.
+    TEST_ARGS: --no-suite mpi
 
-'check amd64: [bare, cpu]':
-  extends: .check
-  image: $PREDEPS_IMAGE_BARE_AMD64
-  tags: [saas-linux-large-amd64]
-  before_script: *perf_enable
+.individual test job bare:
+  extends: .individual test job
+  tags: [saas-linux-medium-amd64]
   variables:
     SETUP_ARGS: >-
       --wrap-mode=default
-      -Dpapi=disabled
       -Dhpcprof_mpi=disabled
+      -Dpapi=disabled
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
+bare amd64:
+  extends: .individual test job bare
+  needs: ['predeps: [bare-amd64]']
+  image: $PREDEPS_IMAGE_BARE_AMD64
+bare arm64:
+  extends: .individual test job bare
+  needs: ['predeps: [bare-arm64]']
+  image: $PREDEPS_IMAGE_BARE_ARM64
+  tags: [rice-linux-small-arm64]
+bare ppc64le:
+  extends: .individual test job bare
+  needs: ['predeps: [bare-ppc64le]']
+  image: $PREDEPS_IMAGE_BARE_PPC64LE
+  tags: [rice-linux-small-ppc64le]
 
-'check amd64: [+cuda, 11.6]':
-  extends: .check
-  image: $PREDEPS_IMAGE_CUDA11_6_AMD64
+.individual test job cuda:
+  extends: .individual test job
   tags: [rice-linux-large-amd64-gpu-p100]
-  variables: &vars_check_cuda
-    JOB_TEST_SUITE: cuda
+  variables:
     SETUP_ARGS: >-
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
+    TEST_ARGS: >-
+      --suite cuda
+      --suite hpcstruct
+cuda11.6 amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [cuda11.6-amd64]']
+  image: $PREDEPS_IMAGE_CUDA11_6_AMD64
+cuda11.8 amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [cuda11.8-amd64]']
+  image: $PREDEPS_IMAGE_CUDA11_8_AMD64
+cuda12.0 amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [cuda12.0-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_0_AMD64
 
-'check amd64: [+cuda, 11.8]':
-  extends: .check
+.individual test job rocm:
+  extends: .individual test job
+  tags: [rice-linux-large-amd64-gpu-amd]
+  variables:
+    SETUP_ARGS: >-
+      -Dcuda=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
+    TEST_ARGS: >-
+      --suite rocm
+rocm5.1 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm5.1-amd64]']
+  image: $PREDEPS_IMAGE_ROCM5_1_AMD64
+  variables:
+    # FIXME: For some reason the RUNPATHs don't work for ROCm 5.1 specifically. Not sure if anyone
+    # uses this version anymore, so for now hack it to work.
+    LD_LIBRARY_PATH: /opt/rocm/lib
+rocm5.2 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm5.2-amd64]']
+  image: $PREDEPS_IMAGE_ROCM5_2_AMD64
+rocm5.3 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm5.3-amd64]']
+  image: $PREDEPS_IMAGE_ROCM5_3_AMD64
+rocm5.4 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm5.4-amd64]']
+  image: $PREDEPS_IMAGE_ROCM5_4_AMD64
+rocm5.5 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm5.5-amd64]']
+  image: $PREDEPS_IMAGE_ROCM5_5_AMD64
+rocm5.6 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm5.6-amd64]']
+  image: $PREDEPS_IMAGE_ROCM5_6_AMD64
+rocm5.7 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm5.7-amd64]']
+  image: $PREDEPS_IMAGE_ROCM5_7_AMD64
+rocm6.0 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm6.0-amd64]']
+  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
+
+intel amd64:
+  # FIXME: Currently we have no tests that require Intel hardware nor any Intel
+  # hardware connected to CI! Until the situation improves, run all the tests
+  # but enable level0 and gtpin (so we at least build with something different).
+  # We need a *-medium-* runner here because the Intel images are huge.
+  extends: .individual test job std
+  tags: [saas-linux-medium-amd64]
+  needs: ['predeps: [intel-amd64]']
+  image: $PREDEPS_IMAGE_INTEL_AMD64
+  variables:
+    SETUP_ARGS: >-
+      --force-fallback-for=gtpin
+      -Dcuda=disabled
+      -Drocm=disabled
+
+
+# Selected semi-fresh test runs. These regenerate suitable parts of the test data
+# before running the tests, thus testing that "freshening" the test data doesn't
+# break any tests. For example, an uncaught change to the output format.
+.semifresh test job:
+  extends: .test job
+  stage: semi-fresh tests
+  variables:
+    REGEN_SUITES: ''
+  script:
+  - *test_job_setup
+  - meson compile -C builddir $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
+  - git add --intent-to-add tests2/data/
+  - meson compile -C builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
+  - mkdir testdata-patches/
+  - cp -t testdata-patches/ builddir/tests2/data/*.patch
+  # Make sure we run the tests once in the same build directory that generated them
+  - meson test -C builddir --maxfail 3 $TEST_ARGS
+  # Then wipe the build directory and re-test against a "sterilized" build
+  - meson setup --wipe builddir
+  - meson test -C builddir --maxfail 3 --repeat 6 $TEST_ARGS
+  after_script:
+  - EXTRA_ENVS=" -e REGEN_SUITES='$REGEN_SUITES'"
+  - !reference [.test job, after_script]
+  artifacts:
+    expire_in: 1 day
+    reports:
+      junit: builddir/meson-logs/testlog.junit.xml
+    paths:
+    - testdata-patches/
+    when: always
+semifresh none cpu:
+  extends: .semifresh test job
+  needs: ['predeps: [ubuntu20.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
+  tags: [saas-linux-medium-amd64]
+  variables:
+    SETUP_ARGS: >-
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
+    REGEN_SUITES: none cpu
+semifresh nvidia sw-cuda:
+  extends: .semifresh test job
+  needs: ['predeps: [cuda11.8-amd64]']
   image: $PREDEPS_IMAGE_CUDA11_8_AMD64
   tags: [rice-linux-large-amd64-gpu-p100]
-  variables: *vars_check_cuda
-'check min amd64: [+cuda, 11.8]':
-  extends: .check
-  image: $PREDEPS_IMAGE_MIN_CUDA11_8_AMD64
-  tags: [rice-linux-large-amd64-gpu-p100]
-  variables: *vars_check_cuda
-'check semifresh amd64: [+cuda, 11.8]':
-  extends: ['check amd64: [+cuda, 11.8]', .check semifresh job]
   variables:
+    SETUP_ARGS: >-
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
     REGEN_SUITES: nvidia sw-cuda
-
-'check amd64: [+rocm, 5.1]':
-  extends: .check
-  image: $PREDEPS_IMAGE_ROCM5_1_AMD64
+semifresh amd:
+  extends: .semifresh test job
+  needs: ['predeps: [rocm5.7-amd64]']
+  image: $PREDEPS_IMAGE_ROCM5_7_AMD64
   tags: [rice-linux-large-amd64-gpu-amd]
-  before_script: &bscript_check_rocm
-  - export LD_LIBRARY_PATH=/opt/rocm/lib:"$LD_LIBRARY_PATH"
-  variables: &vars_check_rocm
-    JOB_TEST_SUITE: rocm
+  variables:
     SETUP_ARGS: >-
       -Dcuda=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
-
-'check amd64: [+rocm, 5.2]':
-  extends: .check
-  image: $PREDEPS_IMAGE_ROCM5_2_AMD64
-  tags: [rice-linux-large-amd64-gpu-amd]
-  before_script: *bscript_check_rocm
-  variables: *vars_check_rocm
-
-'check amd64: [+rocm, 5.3]':
-  extends: .check
-  image: $PREDEPS_IMAGE_ROCM5_3_AMD64
-  tags: [rice-linux-large-amd64-gpu-amd]
-  before_script: *bscript_check_rocm
-  variables: *vars_check_rocm
-
-'check amd64: [+rocm, 5.4]':
-  extends: .check
-  image: $PREDEPS_IMAGE_ROCM5_4_AMD64
-  tags: [rice-linux-large-amd64-gpu-amd]
-  before_script: *bscript_check_rocm
-  variables: *vars_check_rocm
-
-'check amd64: [+rocm, 5.5]':
-  extends: .check
-  image: $PREDEPS_IMAGE_ROCM5_5_AMD64
-  tags: [rice-linux-large-amd64-gpu-amd]
-  before_script: *bscript_check_rocm
-  variables: *vars_check_rocm
-
-'check amd64: [+rocm, 5.6]':
-  extends: .check
-  image: $PREDEPS_IMAGE_ROCM5_6_AMD64
-  tags: [rice-linux-large-amd64-gpu-amd]
-  before_script: *bscript_check_rocm
-  variables: *vars_check_rocm
-
-'check amd64: [+rocm, 5.7]':
-  extends: .check
-  image: $PREDEPS_IMAGE_ROCM5_7_AMD64
-  tags: [rice-linux-large-amd64-gpu-amd]
-  before_script: *bscript_check_rocm
-  variables: *vars_check_rocm
-'check min amd64: [+rocm, 5.7]':
-  extends: 'check amd64: [+rocm, 5.7]'
-  image: $PREDEPS_IMAGE_MIN_ROCM5_7_AMD64
-'check semifresh amd64: [+rocm, 5.7]':
-  extends: ['check amd64: [+rocm, 5.7]', .check semifresh job]
-  variables:
     REGEN_SUITES: amd
 
-'check amd64: [+rocm, 6.0]':
-  extends: .check
-  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
-  tags: [rice-linux-large-amd64-gpu-amd]
-  before_script: *bscript_check_rocm
-  variables: *vars_check_rocm
-
-
-# Re-expose the testdata patches as a single bundle, for easy access
+# For easy access, the regenerated test data is made available as a single job artifact archive
 fresh testdata:
-  stage: .post
+  stage: semi-fresh tests
   image: docker.io/alpine
   needs:
-  - 'check semifresh amd64: [cpu]'
-  - 'check semifresh amd64: [+cuda, 11.8]'
-  - 'check semifresh amd64: [+rocm, 5.7]'
+  - semifresh none cpu
+  - semifresh nvidia sw-cuda
+  - semifresh amd
   when: always
   script:
   - apk add git
@@ -817,13 +556,136 @@ fresh testdata:
     - testdata-patches/
 
 
+# Compiler compatibility checks. There are a lot of different breeds of compilers out there,
+# and we want to be widely compatible with a wide range of them. Test the ones that aren't
+# the defaults in the individual tests, and ensure the wraps are tested here as well.
+.compiler compat test job:
+  extends: .test job
+  stage: configuration tests
+  tags: [saas-linux-small-amd64]
+compiler gcc8:
+  extends: .compiler compat test job
+  needs: ['predeps: [rhel8-amd64]']
+  image: $PREDEPS_IMAGE_RHEL8_AMD64
+  variables:
+    SETUP_ARGS: >-
+      --wrap-mode=forcefallback
+      --native-file gcc.ini
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
+    # FIXME: MVAPICH2 reacts badly in VMs, it claims to have no threading support. The same effect
+    # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
+    # MPI for now until a proper fix can be figured out.
+    TEST_ARGS: --no-suite mpi
+compiler clang10:
+  extends: .compiler compat test job
+  needs: ['predeps: [ubuntu20.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
+  variables:
+    SETUP_ARGS: >-
+      --wrap-mode=forcefallback
+      --native-file clang10.ini
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
+compiler clang16:
+  extends: .compiler compat test job
+  needs: ['predeps: [fedora38-amd64]']
+  image: $PREDEPS_IMAGE_FEDORA38_AMD64
+  variables:
+    SETUP_ARGS: >-
+      --wrap-mode=forcefallback
+      --native-file clang.ini
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
+    # FIXME: This particular version of OpenMPI reacts badly in VMs, hpcprof-mpi hangs. The same
+    # effect can't be reproduced in a local container, for whatever reason. Disable the MPI tests
+    # on this MPI for now until a proper fix can be figured out.
+    TEST_ARGS: --no-suite mpi
+
+
+# Non-default option checks. There are a small number of options that users/packagers can
+# configure to their whims. These tests check that changing them from the defaults doesn't
+# break anything along the way.
+.option test job:
+  extends: .test job
+  stage: configuration tests
+  tags: [saas-linux-small-amd64]
+'option: [ubuntu20.04 amd64]':
+  extends: .option test job
+  needs: ['predeps: [ubuntu20.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
+  variables:
+    SETUP_ARGS: >-
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
+      $OPTION
+  parallel:
+    matrix:
+    - OPTION:
+      - --buildtype=release
+      - -Dvalgrind_annotations=true
+    - OPTION:
+      - -Dpapi=disabled
+      - -Dpython=disabled
+      - -Dopencl=disabled
+      TEST_ARGS: --suite hpcrun
+    - OPTION: -Dhpcprof_mpi=disabled
+      TEST_ARGS: NOTESTS
+'option: [bare amd64]':
+  extends: .option test job
+  needs: ['predeps: [bare-amd64]']
+  image: $PREDEPS_IMAGE_BARE_AMD64
+  variables:
+    SETUP_ARGS: >-
+      --wrap-mode=default
+      -Dhpcprof_mpi=disabled
+      -Dcuda=disabled
+      -Drocm=disabled
+      -Dlevel0=disabled
+      -Dgtpin=disabled
+      -Dpapi=disabled
+      $OPTION
+  parallel:
+    matrix:
+    - OPTION:
+      - --buildtype=release
+      - -Dvalgrind_annotations=true
+    - OPTION:
+      - -Dpython=disabled
+      - -Dopencl=disabled
+      TEST_ARGS: --suite hpcrun
+'option: [intel amd64]':
+  extends: .option test job
+  needs: ['predeps: [intel-amd64]']
+  image: $PREDEPS_IMAGE_INTEL_AMD64
+  variables:
+    SETUP_ARGS: >-
+      -Dcuda=disabled
+      -Drocm=disabled
+      $OPTION
+  parallel:
+    matrix:
+    - OPTION: -Dgtpin=disabled
+      TEST_ARGS: --suite hpcrun
+
+
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
 'spack install':
-  stage: test
+  stage: configuration tests
   image:
     name: ghcr.io/spack/fedora37:develop
     entrypoint: ['spack-env']
-  dependencies: []
+  needs:
+  - job: 'predeps: [fedora38-amd64]'  # Reuses buildcache from this image
+    artifacts: false
   tags: [saas-linux-medium-amd64]
   rules:
   - if: $CI_COMMIT_REF_PROTECTED == "true"
