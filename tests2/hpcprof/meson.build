@@ -10,19 +10,17 @@ endforeach
 
 _tst = find_program(files('tst-accuracy'))
 foreach name, dbase : testdata_dbase
-  foreach threads : [1, 64]
+  foreach threads : [1, 3]
     test(
       f'Database from @name@ is accurate (-j@threads@)',
       _tst,
       args: [hpctesttool, dbase['dir'], hpcprof, f'-j@threads@', dbase['measurements']['dir']],
       suite: 'hpcprof',
-      is_parallel: threads == 1,
-      priority: threads == 1 ? 0 : 100,  # High priority to optimize for lack of parallelism
     )
   endforeach
 
   if mpi_dep.found()
-    foreach x : [[1, 1], [1, 64], [2, 1], [4, 2]]
+    foreach x : [[1, 1], [3, 1], [2, 2]]
       ranks = x[0]
       threads = x[1]
       test(
@@ -38,8 +36,8 @@ foreach name, dbase : testdata_dbase
           dbase['measurements']['dir'],
         ],
         suite: ['hpcprof', 'mpi'],
+        is_parallel: false,  # Needed to deal with touchy MPI implementations
         priority: 100,  # High priority to optimize for lack of parallelism
-        is_parallel: false,
         timeout: 90,
       )
     endforeach

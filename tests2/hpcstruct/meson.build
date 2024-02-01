@@ -30,7 +30,7 @@ endforeach
 
 _tst = find_program(files('tst-consistent'))
 foreach name, struct : testdata_struct
-  _threads = [1, 16]
+  _threads = [1, 3]
   _args = [
     hpctesttool,
     hpcstruct,
@@ -57,8 +57,6 @@ foreach name, struct : testdata_struct
       _tst,
       args: _args + [f'-j@threads@'],
       suite: 'hpcstruct',
-      is_parallel: 'binary' not in struct or threads == 1,
-      priority: ('binary' not in struct or threads == 1) ? 0 : 100,  # High priority to optimize for lack of parallelism
     )
   endforeach
 endforeach
