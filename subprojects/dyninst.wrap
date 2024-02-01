@@ -1,0 +1,16 @@
+[wrap-file]
+directory = dyninst-12.3.0
+source_url = https://github.com/dyninst/dyninst/archive/refs/tags/v12.3.0.tar.gz
+source_filename = dyninst-12.3.0.tar.gz
+source_hash = 956b0378d2badb765a7e677c0b66c0b8b8cacca7631222bfe7a27b369abf7dd4
+patch_filename = dyninst-12.3.0-1-beta.4_patch.zip
+patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/12.3.0-1-beta.4/dyninst-12.3.0-1-beta.4_patch.zip
+patch_hash = 8ac0041ea14ecc29508cb963315508feea3da10665518c58fc5294313c814656
+source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/12.3.0-1-beta.4/dyninst-12.3.0.tar.gz
+wrapdb_version = 12.3.0-1-beta.4
+
+diff_files = dyninst/f89cc72-fix-clang-error.patch
+
+[provide]
+dependency_names = dyninst
+dyninst = dyninst_dep

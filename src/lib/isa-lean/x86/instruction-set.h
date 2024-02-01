@@ -57,7 +57,11 @@
 extern "C" {
 #endif
 
+#if __has_include(<xed/xed-interface.h>)
+# include <xed/xed-interface.h>
+#else
 # include <xed-interface.h>
+#endif
 
 #ifdef __cplusplus
 };

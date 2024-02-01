@@ -1,9 +1,9 @@
-# TODO: This should really be xed/xed-interface.h, but we're using the old include style, and
-# that's also the only way Spack installs intel-xed at the moment. Sigh.
-# Once https://github.com/spack/spack/issues/41268 is fixed, then this hack can be removed.
+# FIXME: We shouldn't actually support the xed-interface.h case, but Spack only installs
+# without the xed/ prefix at the moment, and from-source only supports with the xed/ prefix.
+# So in the end we need to support both possible paths. Sigh.
+# This can be cleaned up once https://github.com/spack/spack/issues/41268 is fixed.
 find_path(Xed_INCLUDE_DIR
-  NAMES xed-interface.h
-  PATH_SUFFIXES xed)
+  NAMES xed/xed-interface.h xed-interface.h)
 find_library(Xed_LIBRARY
   NAMES xed)
 

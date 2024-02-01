@@ -51,7 +51,11 @@
  * XED include files
  *****************************************************************************/
 
+#if __has_include(<xed/xed-interface.h>)
+#include <xed/xed-interface.h>
+#else
 #include <xed-interface.h>
+#endif
 
 
 /******************************************************************************

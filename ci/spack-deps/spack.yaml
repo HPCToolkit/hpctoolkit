@@ -14,11 +14,10 @@ spack:
   # Core dependencies. These specs should stay in-sync with subprojects/spack-deps/spack.yaml
   - core:
     - >-
-      boost @1.70.0:
-      +atomic +date_time +filesystem +system +thread +timer +graph +regex
+      boost @1.71.0:
+      +atomic +date_time +filesystem +system +thread +timer +graph +regex +chrono
       +shared +multithreaded visibility=global
     - 'bzip2 @1.0.8:'
-    - 'dyninst @12.3.0:'
     - 'elfutils ~nls @0.186:'
     - 'intel-tbb +shared @2020.3'
     - 'libmonitor +hpctoolkit ~dlopen @2023.03.15:'
@@ -31,9 +30,8 @@ spack:
     - 'yaml-cpp +shared @0.7.0:'
   - when: env["VERMODE"] == "minimum"
     core:
-    - boost @1.70.0
+    - boost @1.71.0
     - bzip2 @1.0.8
-    - dyninst @12.3.0
     - elfutils @0.186
     - intel-tbb @2020.3
     - libmonitor @2023.03.15
@@ -44,12 +42,6 @@ spack:
     - xerces-c @3.2.3
     - libiberty @2.37
     - yaml-cpp @0.7.0
-  - when: arch.satisfies('target=x86_64:')
-    core:
-    - 'intel-xed +pic @2022.08.11:'
-  - when: arch.satisfies('target=x86_64:') and env["VERMODE"] == "minimum"
-    core:
-    - intel-xed @2022.08.11
   # Optional dependencies.
   - optional: []
   - when: env["VERMODE"] != "bare"

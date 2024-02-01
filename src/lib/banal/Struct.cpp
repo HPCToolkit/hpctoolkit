@@ -116,7 +116,11 @@
 
 #ifdef USE_XED_FOR_GAPS
 extern "C" {
+#if __has_include(<xed/xed-interface.h>)
+#include <xed/xed-interface.h>
+#else
 #include <xed-interface.h>
+#endif
 }
 #endif
 

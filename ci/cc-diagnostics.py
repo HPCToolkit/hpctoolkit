@@ -11,6 +11,7 @@ exit 127
 
 import argparse
 import collections.abc
+import configparser
 import contextlib
 import copy
 import hashlib
@@ -21,7 +22,17 @@ import typing
 from pathlib import Path
 
 
-def _gcc_to_cq(project_root: Path, line: str) -> dict:
+def _collect_wrap_subprojects(project_root: Path) -> typing.Iterator[Path]:
+    subprojects_root = project_root / "subprojects"
+    for trial in subprojects_root.iterdir():
+        if trial.suffix == ".wrap":
+            cfg = configparser.ConfigParser(interpolation=None)
+            cfg.read(trial, encoding="utf-8")
+            directory = cfg.get(cfg.sections()[0], "directory", fallback=str(trial.stem))
+            yield subprojects_root / directory
+
+
+def _gcc_to_cq(project_root: Path, exclude_dirs: typing.List[Path], line: str) -> dict:
     # Compiler warning regex:
     #     {path}.{extension}:{line}:{column}: {severity}: {message} [{flag(s)}]
     mat = re.fullmatch(
@@ -49,6 +60,12 @@ def _gcc_to_cq(project_root: Path, line: str) -> dict:
                 break
         else:
             return {}
+    for exdir in exclude_dirs:
+        try:
+            path.relative_to(exdir)
+            return {}
+        except ValueError:
+            pass
     try:
         report["location"]["path"] = path.resolve().relative_to(project_root).as_posix()
     except ValueError:
@@ -85,11 +102,13 @@ def _gcc_to_cq(project_root: Path, line: str) -> dict:
 def cc_diagnostics(
     project_root: Path, output: typing.TextIO, logfiles: collections.abc.Sequence
 ) -> None:
+    exclude_dirs = list(_collect_wrap_subprojects(project_root))
+
     reports = []
     warnings, errors = 0, 0
     for logfile in logfiles:
         for line in logfile:
-            cq = _gcc_to_cq(project_root, line)
+            cq = _gcc_to_cq(project_root, exclude_dirs, line)
             if cq:
                 reports.append(cq)
                 if cq["severity"] == "major":

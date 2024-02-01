@@ -316,6 +316,7 @@ include:
   tags: [saas-linux-small-amd64]
   variables:
     SETUP_ARGS: >-
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -389,6 +390,7 @@ bare ppc64le:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     SETUP_ARGS: >-
+      --force-fallback-for=dyninst,xed
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -413,6 +415,7 @@ cuda12.0 amd64:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     SETUP_ARGS: >-
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -466,7 +469,7 @@ intel amd64:
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=gtpin
+      --force-fallback-for=dyninst,xed,gtpin
       -Dcuda=disabled
       -Drocm=disabled
 
@@ -508,6 +511,7 @@ semifresh none cpu:
   tags: [saas-linux-medium-amd64]
   variables:
     SETUP_ARGS: >-
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -520,6 +524,7 @@ semifresh nvidia sw-cuda:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     SETUP_ARGS: >-
+      --force-fallback-for=dyninst,xed
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -531,6 +536,7 @@ semifresh amd:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     SETUP_ARGS: >-
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -622,6 +628,7 @@ compiler clang16:
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   variables:
     SETUP_ARGS: >-
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -668,6 +675,7 @@ compiler clang16:
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     SETUP_ARGS: >-
+      --force-fallback-for=dyninst,xed
       -Dcuda=disabled
       -Drocm=disabled
       $OPTION
