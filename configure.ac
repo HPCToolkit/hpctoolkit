@@ -4254,7 +4254,7 @@ if test "$OPT_HAVE_CUDA" = yes ; then
 fi
 
 AC_DEFINE_UNQUOTED([CUDA_INSTALL_PREFIX],
-  ["$CUDA"], ["Cuda install prefix"])
+  ["$CUDA"], ["CUDA install prefix"])
 
 AC_SUBST([OPT_HAVE_CUDA])
 AC_SUBST([OPT_CUDA_IFLAGS])
@@ -5115,6 +5115,26 @@ hash_value='$hash_value'
 VERSION='$PACKAGE_VERSION'
 git_version='$git_version'
 spack_spec='$spack_spec'
+
+opt_have_cuda='$OPT_HAVE_CUDA'
+opt_have_gtpin='$OPT_HAVE_GTPIN'
+opt_have_level0='$OPT_HAVE_LEVEL0'
+opt_have_opencl='$OPT_HAVE_OPENCL'
+opt_have_rocm='$OPT_HAVE_ROCM'
+opt_enable_python='$OPT_ENABLE_PYTHON'
+
+cuda_dir='$CUDA'
+cupti_dir='$CUPTI'
+
+rocm_dir='$ROCM'
+hip_dir='$ROCM_HIP'
+hsa_dir='$ROCM_HSA'
+roctracer_dir='$ROCM_TRACER'
+rocprofiler_dir='$ROCM_PROFILER'
+
+level0_dir='$OPT_LEVEL0'
+igc_dir='$IGC'
+gtpin_dir='$GTPIN'
 EOF
 
 AC_SUBST_FILE([launch_script_vars])
