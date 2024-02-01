@@ -102,6 +102,15 @@ $ meson compile  # -OR- ninja
 $ meson test     # -OR- ninja test
 ```
 
+**Do not `meson install`/`ninja install` here.** It will not produce a usable installation with this configuration.
+Instead, working versions of the tools themselves are available under the `meson devenv`, either as individual commands or as a whole subshell environment:
+
+```console
+$ meson devenv hpcrun --version  # -OR-
+$ meson devenv
+[builddir] $ hpcrun --version
+```
+
 As always, remember to clear the cache after altering the environment to capture any changed dependencies:
 
 ```console
@@ -109,13 +118,6 @@ $ spack config edit
 $ spack concretize -f
 $ spack install
 $ meson configure --clearcache
-```
-
-For convenience, the HPCToolkit tools are easily available under the `meson devenv` shell:
-
-```console
-$ meson devenv
-[builddir] $ hpcrun --version
 ```
 
 ### Configuration
