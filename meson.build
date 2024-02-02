@@ -375,6 +375,7 @@ subdir('src')
 subdir('lib')
 subdir('doc')
 subdir('tests2') # FIXME: Eventually rename this to just tests/
+subdir('meson')
 
 
 # Install a few files from this directory

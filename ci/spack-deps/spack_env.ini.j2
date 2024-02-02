@@ -58,3 +58,25 @@ pkg_config_path = [
 
 [properties]
 boost_root = '{{ pfxpath("boost") }}'
+
+lint_depends_ignore = [
+  {% if spack_prefix("opencl-c-headers") -%}
+    '{{ pfxpath("opencl-c-headers") }}',  # Injected via -I flags in *_args
+  {%- endif %}
+  ]
+lint_depends_dep_provides = [
+  ['boost', '{{ pfxpath("boost") }}'],
+  ['libdw', '{{ pfxpath("elfutils")}}'],
+  ['libelf', '{{ pfxpath("elfutils")}}'],
+  ['Libiberty', '{{ pfxpath("libiberty") }}'],
+  ['liblzma', '{{ pfxpath("xz") }}'],
+  ['Libmonitor', '{{ pfxpath("libmonitor")}}'],
+  ['libunwind', '{{ pfxpath("libunwind")}}'],
+  {% if spack_prefix("papi") -%}
+    ['papi', '{{ pfxpath("papi")}}'],
+  {%- endif %}
+  ['Perfmon2', '{{ pfxpath("libpfm4")}}'],
+  ['TBB', '{{ pfxpath("intel-tbb") }}'],
+  ['xerces-c', '{{ pfxpath("xerces-c") }}'],
+  ['yaml-cpp', '{{ pfxpath("yaml-cpp") }}'],
+  ]

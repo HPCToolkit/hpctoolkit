@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+
+import argparse
+import copy
+import fnmatch
+import functools
+import glob
+import itertools
+import json
+import os.path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import typing
+from pathlib import Path
+
+
+def is_relative_to(a: Path, b: Path) -> bool:
+    try:
+        a.relative_to(b)
+        return True
+    except ValueError:
+        return False
+
+
+@functools.lru_cache(maxsize=None)
+def introspect_(meson: str, builddir: Path) -> typing.Dict:
+    return json.loads(
+        subprocess.run(
+            [meson, "introspect", "--force-object-output", "--targets", builddir],
+            check=True,
+            stdout=subprocess.PIPE,
+        ).stdout
+    )
+
+
+def introspect(meson: str, builddir: Path, key: str) -> typing.Dict:
+    return introspect_(meson, builddir)[key]
+
+
+def scan_headers(cc: typing.List[str], src: Path, args: typing.Iterable[str]) -> typing.Set[Path]:
+    with tempfile.NamedTemporaryFile() as f:
+        try:
+            subprocess.run(
+                [*cc, *args, src, "-M", "-MF", f.name], check=True, stderr=subprocess.DEVNULL
+            )
+        except subprocess.CalledProcessError:
+            print(f"W: Ignoring failure to compile {src}")
+            return set()
+        data = f.read().decode("utf-8")
+    if not data:
+        print(f"W: Ignoring empty -M output while compiling {src}")
+        return set()
+    data = re.sub(r"(?m)\\$\s+", "", data).splitlines()[0]
+    data = re.sub(r"^[^:]+:", "", data)
+    data = re.sub(r"[|;].*", "", data)
+    headers = [Path(h) for h in data.split()]
+    if not all(h.is_absolute() and h.exists() for h in headers):
+        raise ValueError()
+    return set(headers)
+
+
+class PackageQuery:
+    def __init__(self) -> None:
+        self.cache: typing.Dict[Path, str] = {}
+
+    def _raw_query(self, path: Path) -> typing.Tuple[str, str]:
+        if shutil.which("dpkg"):
+            out = subprocess.run(
+                ["dpkg", "-S", path], check=True, stdout=subprocess.PIPE, encoding="utf-8"
+            ).stdout
+            fullname = out.split(": ")[0]
+            return fullname, fullname.split(":")[0]
+        if shutil.which("rpm"):
+            fullname = subprocess.run(
+                ["rpm", "-qf", path], check=True, stdout=subprocess.PIPE, encoding="utf-8"
+            ).stdout.strip()
+            return fullname, re.sub(r"-\d.*", "", fullname)
+        raise RuntimeError("Unknown package manager")
+
+    def _raw_list(self, pkg: str) -> typing.List[str]:
+        if shutil.which("dpkg"):
+            return subprocess.run(
+                ["dpkg", "-L", pkg], check=True, stdout=subprocess.PIPE, encoding="utf-8"
+            ).stdout.splitlines()
+        if shutil.which("rpm"):
+            return subprocess.run(
+                ["rpm", "-ql", pkg], check=True, stdout=subprocess.PIPE, encoding="utf-8"
+            ).stdout.splitlines()
+        raise RuntimeError("Unknown package manager")
+
+    def list_files(self, pkg: str) -> typing.Set[Path]:
+        return {Path(p) for p in self._raw_list(pkg) if Path(p).is_file()}
+
+    def __call__(self, path: Path) -> str:
+        path = path.resolve(strict=True)
+        if path not in self.cache:
+            fullpkg, self.cache[path] = self._raw_query(path)
+            for otherpath in self.list_files(fullpkg):
+                self.cache[otherpath] = self.cache[path]
+        return self.cache[path]
+
+
+identify_header = PackageQuery()
+
+
+PROVIDES_REGEXES = {
+    re.compile(r"(.*)\.pc"),
+    re.compile(r"(.*)Config\.cmake"),
+    re.compile(r"(.*)-config\.cmake"),
+    re.compile(r"Find(.*)\.cmake"),
+}
+
+
+@functools.lru_cache(maxsize=None)
+def guess_provides(pkg: str) -> typing.Set[str]:
+    result = set()
+    for file in identify_header.list_files(pkg):
+        for regex in PROVIDES_REGEXES:
+            m = regex.fullmatch(file.name)
+            if m:
+                result.add(m.group(1))
+                result.add(m.group(1).lower())
+                break
+    return result
+
+
+STANDARD_IGNORE = {
+    # Standard C/C++ compiler installations
+    "/usr/include/sanitizer/**",
+    "/usr/lib??/clang/**",
+    "/usr/lib??/gcc/**",
+    "/usr/lib/*/clang/**",
+    "/usr/lib/*/gcc/**",
+    "/usr/lib/clang/**",
+    "/usr/lib/gcc/**",
+    # Header provided by standard Python installations
+    "/usr/include/python3.*/pyconfig*.h",
+}
+STANDARD_ESSENTIAL = {
+    # Standard header packages for various distros
+    "glibc-devel",
+    "glibc-headers-*",
+    "glibc-headers",
+    "kernel-headers",
+    "libc6-dev",
+    "libstdc++*-dev",
+    "libstdc++*-devel-*",
+    "libstdc++*-devel",
+    "linux-glibc-devel",
+    "linux-libc-dev",
+    # MPI often requires decode-mpi which by nature can't produce a useful dependency name.
+    # Just ignore anything MPI, since it's too much trouble to decipher on the fly.
+    "libmpich-dev",
+    "libopenmpi-dev",
+    "mpich-devel",
+    "mvapich2-devel",
+    "openmpi-devel",
+}
+STANDARD_PKG_PROVIDES = {
+    # On Ubuntu, Python is built with libcrypt
+    "libcrypt-dev": {f"python-3.{n:d}" for n in range(8, 15)},
+}
+STANDARD_DEP_PROVIDES = {
+    # CUDA is a builtin dependency from Meson, so we need to explicitly have it claim any CUDA install
+    "cuda": {"/usr/local/cuda-*/**"},
+}
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Inspect a build for appropriate use of dependencies"
+    )
+    parser.add_argument("builddir", type=Path)
+    parser.add_argument("--meson", help="Meson to use", default="meson")
+    parser.add_argument("--cc", nargs="+", help="Compiler to use", default=["cpp"])
+    parser.add_argument(
+        "--ignore",
+        action="extend",
+        nargs="+",
+        help="Ignore the given header globs",
+    )
+    parser.add_argument(
+        "--essential-pkgs",
+        action="extend",
+        nargs="+",
+        help="Consider the given package essential to the operation of the thing",
+    )
+    parser.add_argument(
+        "--pkg-provides",
+        action="append",
+        nargs="+",
+        help="Consider the given package to provide the given dependencies",
+    )
+    parser.add_argument(
+        "--dep-provides",
+        action="append",
+        nargs="+",
+        help="Consider a particular dependency as providing the listed files",
+    )
+    args = parser.parse_args()
+    del parser
+
+    ignored = copy.deepcopy(STANDARD_IGNORE)
+    if args.ignore:
+        for spec in args.ignore:
+            if Path(spec).is_dir():
+                ignored.add(os.path.join(Path(spec).resolve(strict=True), "**"))
+            else:
+                ignored.add(spec)
+
+    essential = copy.deepcopy(STANDARD_ESSENTIAL)
+    if args.essential_pkgs:
+        essential.update(args.essential_pkgs)
+
+    provides: typing.Dict[str, typing.Set[str]] = copy.deepcopy(STANDARD_PKG_PROVIDES)
+    if args.pkg_provides:
+        for provide in args.pkg_provides:
+            provides.setdefault(provide[0], set()).update(set(provide[1:]))
+
+    provided_by: typing.Dict[Path, typing.Set[str]] = {}
+    for dep, files in itertools.chain(
+        STANDARD_DEP_PROVIDES.items(), ((spec[0], spec[1:]) for spec in (args.dep_provides or []))
+    ):
+        for file in files:
+            filepath = Path(file)
+            if not filepath.is_absolute():
+                raise ValueError("--dep-provides files must be absolute paths")
+            if filepath.is_dir():
+                for f in filepath.rglob("*"):
+                    provided_by.setdefault(f, set()).add(dep)
+            else:
+                for f in glob.iglob(file, recursive=True):
+                    provided_by.setdefault(Path(f), set()).add(dep)
+
+    ok = True
+    for target in introspect(args.meson, args.builddir, "targets"):
+        if target["subproject"]:
+            continue
+
+        msg_header: typing.Optional[
+            str
+        ] = f"""
+Analyzing target {target['name']}
+  Dependencies: {sorted(target['dependencies'])}
+""".strip()
+
+        # List all the headers this target #includes (directly or indirectly)
+        headers = set()
+        for srcspec in target["target_sources"]:
+            if srcspec.get("language") not in ["c", "cpp"]:
+                continue
+            for source in srcspec["sources"]:
+                headers |= scan_headers(args.cc, Path(source), srcspec["parameters"])
+
+        # Determine which OS packages provide the headers used, and thus are used by this mechanism
+        packages: typing.Dict[str, typing.Set[Path]] = {}
+        for header in headers:
+            headerpath = header.resolve(strict=True)
+            if any(fnmatch.fnmatch(str(headerpath), pat) for pat in ignored):
+                continue
+            if headerpath in provided_by:
+                if not any(dep in provided_by[headerpath] for dep in target["dependencies"]):
+                    if msg_header is not None:
+                        print(msg_header)
+                        msg_header = None
+                    print(
+                        f"ERROR: Used header {headerpath!r}, but does not link any dependency that provides it: {provided_by[header]}"
+                    )
+                    ok = False
+                continue
+            try:
+                pkg = identify_header(headerpath)
+            except Exception:
+                if msg_header is not None:
+                    print(msg_header)
+                    msg_header = None
+                raise
+            provides.setdefault(pkg, set()).update(guess_provides(pkg))
+            packages.setdefault(pkg, set()).add(headerpath)
+
+        # Go through the packages, and ensure each one is either essential or exposes one of the
+        # dependencies of this target
+        for pkg, headers in packages.items():
+            if any(fnmatch.fnmatch(pkg, pat) for pat in essential):
+                continue
+            if any(
+                any(dep in deps for dep in target["dependencies"])
+                for pat, deps in provides.items()
+                if fnmatch.fnmatch(pkg, pat)
+            ):
+                continue
+            if msg_header is not None:
+                print(msg_header)
+                msg_header = None
+            print(
+                f"ERROR: Uses headers from package {pkg!r}, but does not link a dependency that is provided by it"
+            )
+            print(f"  Example headers: {[h.as_posix() for h in headers][:3]}...")
+            ok = False
+
+    if not ok:
+        sys.exit(1)
