@@ -350,11 +350,10 @@ endif
 _my_include_dirs_deps = [
   libunwind_dep,
   gtpin_dep.partial_dependency(compile_args: true, includes: true),
-  rocm_dep,
+  rocm_dep.partial_dependency(compile_args: true, includes: true),
   libelf_dep,
   libmonitor_dep,
-  tbb_dep,
-  cupti_dep,
+  cupti_dep.partial_dependency(compile_args: true, includes: true),
 ]
 
 if gtpin_dep.found()
@@ -468,7 +467,21 @@ _hpcrun_libs += shared_module('hpcrun', config_h,
     + (level0_dep.found() ? ['-DUSE_LEVEL0'] : [])
   ),
   link_with: [prof_lean_lib, support_lean_lib],
-  dependencies: [_my_include_dirs_deps, perfmon_dep, dl_dep, lzma_dep, libmonitor_dep, libelf_dep, rocm_dep, xed_dep, papi_dep, cupti_dep, python_dep.partial_dependency(compile_args: true, includes: true), opencl_dep],
+  dependencies: [
+    _my_include_dirs_deps,
+    dl_dep,
+    lzma_dep,
+    libmonitor_dep,
+    libelf_dep,
+    perfmon_dep,
+    xed_dep,
+    papi_dep,
+    rocm_dep.partial_dependency(compile_args: true, includes: true),
+    cupti_dep.partial_dependency(compile_args: true, includes: true),
+    python_dep.partial_dependency(compile_args: true, includes: true),
+    opencl_dep,
+    level0_dep.partial_dependency(compile_args: true, includes: true),
+  ],
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
   install: true, install_dir: 'lib' / meson.project_name())
 

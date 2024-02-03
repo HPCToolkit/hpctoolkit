@@ -1,0 +1,3 @@
+# Python code is formatted with Black, so 4-space indents
+[decode-mpi,lint-depends]
+indent_size = 4

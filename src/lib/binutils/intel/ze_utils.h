@@ -29,8 +29,8 @@
 #include <string>
 #include <vector>
 
-#include <level_zero/ze_api.h>
-#include <level_zero/zet_api.h>
+#include <ze_api.h>
+#include <zet_api.h>
 
 namespace utils {
 namespace ze {

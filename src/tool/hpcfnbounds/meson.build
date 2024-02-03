@@ -6,6 +6,6 @@ _srcs = files(
 )
 
 hpcfnbounds = executable('hpcfnbounds', config_h, _srcs,
-  dependencies: [libelf_dep],
+  dependencies: [libelf_dep, libdw_dep],
   install: true,
   install_dir: get_option('libexecdir') / meson.project_name())
