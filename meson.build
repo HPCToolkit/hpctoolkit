@@ -201,7 +201,7 @@ level0_dep = dependency('LevelZero', method: 'cmake', cmake_module_path: 'cmake'
 
 # Find support for instruction level collection, which requires IGC, IGA and GTPin
 _gtpin_f = get_option('gtpin').require(level0_dep.found(), error_message: 'gtpin is only available with level0')
-igc_dep = dependency('igc-opencl', required: _gtpin_f)
+igc_dep = dependency('igc-opencl', 'IGCOpenCL', cmake_module_path: 'cmake', required: _gtpin_f)
 if igc_dep.found()
   add_project_arguments('-DENABLE_IGC', language: ['c', 'cpp'])
 endif
