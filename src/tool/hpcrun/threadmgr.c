@@ -96,12 +96,12 @@ typedef struct thread_list_s {
 //******************************************************************************
 // private data
 //******************************************************************************
-static atomic_int_least32_t threadmgr_active_threads = ATOMIC_VAR_INIT(1); // one for the process main thread
+static atomic_int_least32_t threadmgr_active_threads = 1; // one for the process main thread
 
-static atomic_int_least32_t threadmgr_num_threads = ATOMIC_VAR_INIT(1); // number of logical threads
+static atomic_int_least32_t threadmgr_num_threads = 1; // number of logical threads
 
 #if HPCRUN_THREADS_DEBUG
-static atomic_int_least32_t threadmgr_tot_threads = ATOMIC_VAR_INIT(1); // number of total threads
+static atomic_int_least32_t threadmgr_tot_threads = 1; // number of total threads
 #endif
 
 static SLIST_HEAD(thread_list_head, thread_list_s) list_thread_head =

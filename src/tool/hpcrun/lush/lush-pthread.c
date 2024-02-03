@@ -130,11 +130,11 @@ typedef struct {
 
 
 lushPthr_globals_t globals = {
-  .ps_num_procs = ATOMIC_VAR_INIT(0),
-  .ps_num_threads = ATOMIC_VAR_INIT(0),
-  .ps_num_working = ATOMIC_VAR_INIT(0),
-  .ps_num_working_lock = ATOMIC_VAR_INIT(0),
-  .ps_num_idle_cond = ATOMIC_VAR_INIT(0)
+  .ps_num_procs = 0,
+  .ps_num_threads = 0,
+  .ps_num_working = 0,
+  .ps_num_working_lock = 0,
+  .ps_num_idle_cond = 0
   // ps_syncObjToData
 };
 

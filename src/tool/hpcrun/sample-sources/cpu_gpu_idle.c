@@ -119,7 +119,7 @@ int g_cpu_gpu_proxy_count = 0;
 bool g_cpu_gpu_enabled = false;
 
 
-atomic_uint_fast64_t g_active_threads = { 1 };
+atomic_uint_fast64_t g_active_threads = 1;
 
 
 

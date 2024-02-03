@@ -161,7 +161,7 @@ new_persistent_id()
   // Furthermore, global ids start at 12: 0,1 are special ids, 2-11 are for
   // users (and conceivably hpcrun).
   //
-  static atomic_uint_least32_t global_persistent_id = ATOMIC_VAR_INIT(12);
+  static atomic_uint_least32_t global_persistent_id = 12;
   return atomic_fetch_add_explicit(&global_persistent_id, 2, memory_order_relaxed);
 }
 

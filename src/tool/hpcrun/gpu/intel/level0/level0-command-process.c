@@ -91,7 +91,7 @@
 //*****************************************************************************
 
 // The thread itself how many pending operations
-static __thread atomic_int level0_self_pending_operations = { 0 };
+static __thread atomic_int level0_self_pending_operations = 0;
 
 //*****************************************************************************
 // private operations
