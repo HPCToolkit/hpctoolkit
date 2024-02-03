@@ -133,7 +133,7 @@ typedef enum
   KIND_INITIALIZING,
   KIND_INITIALIZED
 } kind_state_t;
-static _Atomic(kind_state_t) kind_state = ATOMIC_VAR_INIT(KIND_UNINITIALIZED);
+static _Atomic(kind_state_t) kind_state = KIND_UNINITIALIZED;
 static int num_kind_metrics; // YUMENG：change to num_total_metrics?
 static struct dmap
 {

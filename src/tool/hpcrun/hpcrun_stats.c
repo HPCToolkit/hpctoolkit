@@ -63,27 +63,27 @@
 // local variables
 //***************************************************************************
 
-static atomic_long num_samples_total = ATOMIC_VAR_INIT(0);
-static atomic_long num_samples_attempted = ATOMIC_VAR_INIT(0);
-static atomic_long num_samples_blocked_async = ATOMIC_VAR_INIT(0);
-static atomic_long num_samples_blocked_dlopen = ATOMIC_VAR_INIT(0);
-static atomic_long num_samples_dropped = ATOMIC_VAR_INIT(0);
-static atomic_long num_samples_segv = ATOMIC_VAR_INIT(0);
-static atomic_long num_samples_partial = ATOMIC_VAR_INIT(0);
-static atomic_long num_samples_yielded = ATOMIC_VAR_INIT(0);
+static atomic_long num_samples_total = 0;
+static atomic_long num_samples_attempted = 0;
+static atomic_long num_samples_blocked_async = 0;
+static atomic_long num_samples_blocked_dlopen = 0;
+static atomic_long num_samples_dropped = 0;
+static atomic_long num_samples_segv = 0;
+static atomic_long num_samples_partial = 0;
+static atomic_long num_samples_yielded = 0;
 
-static atomic_long num_unwind_intervals_total = ATOMIC_VAR_INIT(0);
-static atomic_long num_unwind_intervals_suspicious = ATOMIC_VAR_INIT(0);
+static atomic_long num_unwind_intervals_total = 0;
+static atomic_long num_unwind_intervals_suspicious = 0;
 
-static atomic_long trolled = ATOMIC_VAR_INIT(0);
-static atomic_long frames_total = ATOMIC_VAR_INIT(0);
-static atomic_long trolled_frames = ATOMIC_VAR_INIT(0);
-static atomic_long frames_libfail_total = ATOMIC_VAR_INIT(0);
+static atomic_long trolled = 0;
+static atomic_long frames_total = 0;
+static atomic_long trolled_frames = 0;
+static atomic_long frames_libfail_total = 0;
 
-static atomic_long acc_trace_records = ATOMIC_VAR_INIT(0);
-static atomic_long acc_trace_records_dropped = ATOMIC_VAR_INIT(0);
-static atomic_long acc_samples = ATOMIC_VAR_INIT(0);
-static atomic_long acc_samples_dropped = ATOMIC_VAR_INIT(0);
+static atomic_long acc_trace_records = 0;
+static atomic_long acc_trace_records_dropped = 0;
+static atomic_long acc_samples = 0;
+static atomic_long acc_samples_dropped = 0;
 
 //***************************************************************************
 // interface operations

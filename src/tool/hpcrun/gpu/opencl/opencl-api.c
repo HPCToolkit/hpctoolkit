@@ -177,12 +177,12 @@
 //******************************************************************************
 
 static atomic_ullong opencl_h2d_pending_operations;
-static atomic_uint correlation_id_counter = ATOMIC_VAR_INIT(0);
+static atomic_uint correlation_id_counter = 0;
 // Global pending operation count for all threads
-static atomic_uint opencl_pending_operations = ATOMIC_VAR_INIT(0);
+static atomic_uint opencl_pending_operations = 0;
 
 // The thread itself how many pending operations
-static __thread atomic_int opencl_self_pending_operations = ATOMIC_VAR_INIT(0);
+static __thread atomic_int opencl_self_pending_operations = 0;
 // Mark if a thread has invoked any opencl call
 // If yes, we can flush all opencl activities when the thread terminates
 static __thread bool opencl_api_flag = false;

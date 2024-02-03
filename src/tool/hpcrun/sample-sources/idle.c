@@ -106,8 +106,8 @@ static void idle_metric_process_blame_for_sample(void* arg, int metric_id,
  *****************************************************************************/
 
 // start with 1 total thread, 1 worker
-static atomic_uintptr_t total_threads       = ATOMIC_VAR_INIT(1);
-static atomic_uintptr_t active_worker_count = ATOMIC_VAR_INIT(1);
+static atomic_uintptr_t total_threads       = 1;
+static atomic_uintptr_t active_worker_count = 1;
 
 static int idle_metric_id = -1;
 static int work_metric_id = -1;
