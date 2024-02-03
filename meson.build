@@ -193,9 +193,13 @@ if get_option('opencl').allowed()
 endif
 
 
-# Find support for Intel GPU performance monitoring
-level0_dep = dependency('level-zero', required: get_option('level0'), version: '>=1.0.0')
-# GTPin, IGC and IGA are only needed for instruction-level collection
+# Find support for Intel performance monitoring via Level Zero.
+# Level Zero is a unique case because although it ships a pkg-config file, we can't actually use it
+# due to a bug present since 1.0 (https://github.com/oneapi-src/level-zero/issues/131).
+# So, we use a custom CMake find-script which is more reliable in this specific case.
+level0_dep = dependency('LevelZero', method: 'cmake', cmake_module_path: 'cmake', required: get_option('level0'), version: '>=1.0')
+
+# Find support for instruction level collection, which requires IGC, IGA and GTPin
 _gtpin_f = get_option('gtpin').require(level0_dep.found(), error_message: 'gtpin is only available with level0')
 igc_dep = dependency('igc-opencl', required: _gtpin_f)
 if igc_dep.found()
