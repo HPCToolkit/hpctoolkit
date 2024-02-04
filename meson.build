@@ -95,7 +95,7 @@ if get_option('hpcprof_mpi').allowed()
         assert(cpp.links('''
         #include <mpi.h>
         int main() {
-          MPI_Init(NULL, NULL);
+          MPI_Init(nullptr, nullptr);
           int x = 42;
           MPI_Bcast(&x, 1, MPI_INT, 0, MPI_COMM_WORLD);
           MPI_Finalize();
