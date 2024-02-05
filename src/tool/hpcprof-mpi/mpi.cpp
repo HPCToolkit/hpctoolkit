@@ -48,6 +48,7 @@
 
 #include "../../lib/profile/util/log.hpp"
 
+#include <limits>
 #include <mpi.h>
 
 #include <cassert>
@@ -160,58 +161,108 @@ struct SmallMem final {
 };
 }
 
+
+// Many MPI functions use `int` as the size of the data to send, however we use bytes and `size_t`
+// instead. This template helps break these calls down into smaller pieces that MPI can handle.
+template<class F>
+static void segment(void* data, std::size_t cnt, const Datatype& ty, F&& f) {
+  for(std::size_t off = 0; off < cnt; off += std::numeric_limits<int>::max()) {
+    int sz = std::min<std::size_t>(cnt - off, std::numeric_limits<int>::max());
+    f((void*)((char*)data + off * ty.sz), sz);
+  }
+}
+template<class F>
+static void segment(const void* data, std::size_t cnt, const Datatype& ty, F&& f) {
+  for(std::size_t off = 0; off < cnt; off += std::numeric_limits<int>::max()) {
+    int sz = std::min<std::size_t>(cnt - off, std::numeric_limits<int>::max());
+    f((const void*)((const char*)data + off * ty.sz), sz);
+  }
+}
+template<class F>
+static void segment(void* data1, void* data2, std::size_t cnt, const Datatype& ty, F&& f) {
+  for(std::size_t off = 0; off < cnt; off += std::numeric_limits<int>::max()) {
+    int sz = std::min<std::size_t>(cnt - off, std::numeric_limits<int>::max());
+    f((void*)((char*)data1 + off * ty.sz), (void*)((char*)data2 + off * ty.sz), sz);
+  }
+}
+template<class F>
+static void segment(const void* data1, const void* data2, std::size_t cnt, const Datatype& ty, F&& f) {
+  for(std::size_t off = 0; off < cnt; off += std::numeric_limits<int>::max()) {
+    int sz = std::min<std::size_t>(cnt - off, std::numeric_limits<int>::max());
+    f((const void*)((const char*)data1 + off * ty.sz), (const void*)((const char*)data2 + off * ty.sz), sz);
+  }
+}
+
+
 void hpctoolkit::mpi::barrier() {
   auto l = mpiLock();
   if(MPI_Barrier(MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI barrier!";
 }
+
 void detail::bcast(void* data, std::size_t cnt, const Datatype& ty,
                    std::size_t root) {
   auto l = mpiLock();
-  if(MPI_Bcast(data, cnt, ty.value, root, MPI_COMM_WORLD) != MPI_SUCCESS)
-    util::log::fatal{} << "Error while performing an MPI broadcast!";
+  segment(data, cnt, ty, [&](void* data, int cnt) {
+    if(MPI_Bcast(data, cnt, ty.value, root, MPI_COMM_WORLD) != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI broadcast!";
+  });
 }
+
 void detail::reduce(void* data, std::size_t cnt, const Datatype& ty,
                     std::size_t root, const Op& op) {
   SmallMem send(cnt * ty.sz);
   std::memcpy(send, data, cnt * ty.sz);
   auto l = mpiLock();
-  if(MPI_Reduce(send, data, cnt, ty.value,
-                static_cast<const BaseOp&>(op).op, root, MPI_COMM_WORLD)
-     != MPI_SUCCESS)
-    util::log::fatal{} << "Error while performing an MPI reduction!";
+  segment(send, data, cnt, ty, [&](void* send, void* data, int cnt) {
+    if(MPI_Reduce(send, data, cnt, ty.value,
+                  static_cast<const BaseOp&>(op).op, root, MPI_COMM_WORLD)
+       != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI reduction!";
+  });
 }
+
 void detail::allreduce(void* data, std::size_t cnt, const Datatype& ty,
                        const Op& op) {
   SmallMem send(cnt * ty.sz);
   std::memcpy(send, data, cnt * ty.sz);
   auto l = mpiLock();
-  if(MPI_Allreduce(send, data, cnt, ty.value,
-                   static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD)
-     != MPI_SUCCESS)
-    util::log::fatal{} << "Error while performing an MPI all-reduction!";
+  segment(send, data, cnt, ty, [&](void* send, void* data, int cnt) {
+    if(MPI_Allreduce(send, data, cnt, ty.value,
+                     static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD)
+       != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI all-reduction!";
+  });
 }
+
 void detail::scan(void* data, std::size_t cnt, const Datatype& ty,
                   const Op& op) {
   SmallMem send(cnt * ty.sz);
   std::memcpy(send, data, cnt * ty.sz);
   auto l = mpiLock();
-  if(MPI_Scan(send, data, cnt, ty.value,
-              static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
-    util::log::fatal{} << "Error while performing an MPI inclusive scan!";
+  segment(send, data, cnt, ty, [&](void* send, void* data, int cnt) {
+    if(MPI_Scan(send, data, cnt, ty.value,
+                static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI inclusive scan!";
+  });
 }
+
 void detail::exscan(void* data, std::size_t cnt, const Datatype& ty,
                     const Op& op) {
   SmallMem send(cnt * ty.sz);
   std::memcpy(send, data, cnt * ty.sz);
   auto l = mpiLock();
-  if(MPI_Exscan(send, data, cnt, ty.value,
-     static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
-    util::log::fatal{} << "Error while performing an MPI exclusive scan!";
+  segment(send, data, cnt, ty, [&](void* send, void* data, int cnt) {
+    if(MPI_Exscan(send, data, cnt, ty.value,
+       static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI exclusive scan!";
+  });
 }
+
 void detail::gather_root(void* recv, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
   assert(World::rank() == rootRank && "mpi::detail::gather_root is only valid at the root!");
+  assert(cnt <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::gather_root with a large cnt");
   SmallMem send(cnt * ty.sz);
   std::memcpy(send, (char*)recv + cnt * ty.sz * rootRank, cnt * ty.sz);
   auto l = mpiLock();
@@ -219,20 +270,24 @@ void detail::gather_root(void* recv, std::size_t cnt, const Datatype& ty,
                 MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI gather!";
 }
+
 void detail::gather(void* send, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
   assert(World::rank() != rootRank && "mpi::detail::gather is not valid at the root!");
+  assert(cnt <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::gather with a large cnt");
   auto l = mpiLock();
   if(MPI_Gather(send, cnt, ty.value, nullptr, cnt, ty.value, rootRank,
                 MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI gather!";
 }
+
 void detail::gatherv_root(void* recv, const std::size_t* cnts,
                           const Datatype& ty, std::size_t rootRank) {
   assert(World::rank() == rootRank && "mpi::detail::gatherv_root is only valid at the root!");
   std::vector<int> icnts(World::size());
   std::vector<int> ioffsets(World::size());
   for(std::size_t i = 0, idx = 0; i < World::size(); i++) {
+    assert(idx <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::gatherv_root with a large cnt");
     icnts[i] = cnts[i];
     ioffsets[i] = idx;
     idx += cnts[i];
@@ -244,37 +299,45 @@ void detail::gatherv_root(void* recv, const std::size_t* cnts,
                  ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized gather (root)!";
 }
+
 void detail::gatherv(void* send, std::size_t cnt, const Datatype& ty,
                      std::size_t rootRank) {
   assert(World::rank() != rootRank && "mpi::detail::gatherv is not valid at the root!");
+  assert(cnt <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::gatherv with a large cnt");
   auto l = mpiLock();
   if(MPI_Gatherv(send, cnt, ty.value, nullptr, nullptr, nullptr, ty.value,
                  rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized gather (non-root)!";
 }
+
 void detail::scatter_root(void* send, std::size_t cnt, const Datatype& ty,
                           std::size_t rootRank) {
   assert(World::rank() == rootRank && "mpi::detail::scatter_root is only valid at the root!");
+  assert(cnt <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::scatter_root with a large cnt");
   SmallMem recv(cnt * ty.sz);
   auto l = mpiLock();
   if(MPI_Scatter(send, cnt, ty.value, recv, cnt, ty.value, rootRank,
-                 MPI_COMM_WORLD) != MPI_SUCCESS)
+                MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI scatter!";
 }
+
 void detail::scatter(void* data, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
   assert(World::rank() != rootRank && "mpi::detail::scatter is not valid at the root!");
+  assert(cnt <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::scatter with a large cnt");
   auto l = mpiLock();
   if(MPI_Scatter(nullptr, cnt, ty.value, data, cnt, ty.value, rootRank,
                  MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI scatter!";
 }
+
 void detail::scatterv_root(void* send, const std::size_t* cnts, const Datatype& ty,
                       std::size_t rootRank) {
   assert(World::rank() == rootRank && "mpi::detail::scatterv_root is only valid at the root!");
   std::vector<int> icnts(World::size());
   std::vector<int> ioffsets(World::size());
   for(std::size_t i = 0, idx = 0; i < World::size(); i++) {
+    assert(idx <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::scatterv_root with a large cnt");
     icnts[i] = cnts[i];
     ioffsets[i] = idx;
     idx += cnts[i];
@@ -285,31 +348,41 @@ void detail::scatterv_root(void* send, const std::size_t* cnts, const Datatype& 
                   recv, icnts[rootRank], ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized scatter (root)!";
 }
+
 void detail::scatterv(void* data, std::size_t cnt, const Datatype& ty,
                       std::size_t rootRank) {
   assert(World::rank() != rootRank && "mpi::detail::scatterv is not valid at the root!");
+  assert(cnt <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::scatterv with a large cnt");
   auto l = mpiLock();
   if(MPI_Scatterv(nullptr, nullptr, nullptr, ty.value,
                   data, cnt, ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized scatter (non-root)!";
 }
+
 void detail::send(const void* data, std::size_t cnt, const Datatype& ty,
                   Tag tag, std::size_t dst) {
   auto l = mpiLock();
-  if(MPI_Send(data, cnt, ty.value, dst, static_cast<int>(tag), MPI_COMM_WORLD) != MPI_SUCCESS)
-    util::log::fatal{} << "Error while performing an MPI send!";
+  segment(data, cnt, ty, [&](const void* data, int cnt) {
+    if(MPI_Send(data, cnt, ty.value, dst, static_cast<int>(tag), MPI_COMM_WORLD) != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI send!";
+  });
 }
+
 void detail::recv(void* data, std::size_t cnt, const Datatype& ty,
                   Tag tag, std::size_t src) {
   auto l = mpiLock();
-  if(MPI_Recv(data, cnt, ty.value, src, static_cast<int>(tag), MPI_COMM_WORLD, MPI_STATUS_IGNORE)
-     != MPI_SUCCESS)
-    util::log::fatal{} << "Error while performing an MPI receive!";
+  segment(data, cnt, ty, [&](void* data, int cnt) {
+    if(MPI_Recv(data, cnt, ty.value, src, static_cast<int>(tag), MPI_COMM_WORLD, MPI_STATUS_IGNORE)
+       != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI receive!";
+  });
 }
 
 
 std::optional<std::size_t> detail::recv_server(void* data, std::size_t cnt,
     const Datatype& ty, Tag tag) {
+  assert(cnt <= std::numeric_limits<int>::max() && "attempt to call mpi::detail::recv_server with a large cnt");
+
   auto l = mpiLock();
   MPI_Status stat;
   if(l) {
