@@ -728,6 +728,9 @@ fresh testdata:
   - if: $CI_COMMIT_REF_PROTECTED == "true"
     allow_failure: false
   - allow_failure: true
+  parallel:
+    matrix:
+    - BUILDSYS: [autotools, meson]
   cache:
   - key: spack-src
     paths:
