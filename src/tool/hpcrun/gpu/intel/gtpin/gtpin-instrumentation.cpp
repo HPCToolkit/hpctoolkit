@@ -144,6 +144,9 @@ using namespace hpctoolkit::util;
 #define PRINT_ZEBIN_IPS(x)
 #endif
 
+#define HPCRUN_EXPOSED __attribute__((visibility("default"))) extern
+
+
 
 //*****************************************************************************
 // type declarations
@@ -1087,6 +1090,7 @@ extern "C" {
 // interface operations
 //*****************************************************************************
 
+HPCRUN_EXPOSED
 void
 gtpin_hpcrun_api_set
 (gtpin_hpcrun_api_t *functions) {
@@ -1094,6 +1098,7 @@ gtpin_hpcrun_api_set
 }
 
 
+HPCRUN_EXPOSED
 void
 gtpin_instrumentation_options
 (gpu_instrumentation_t *instrumentation) {
@@ -1128,6 +1133,7 @@ gtpin_instrumentation_options
 }
 
 
+HPCRUN_EXPOSED
 void
 gtpin_produce_runtime_callstack
 (gpu_op_ccts_t *op_ccts) {
@@ -1150,6 +1156,7 @@ gtpin_produce_runtime_callstack
 }
 
 
+HPCRUN_EXPOSED
 void
 gtpin_process_block_instructions
 (cct_node_t *root) {
@@ -1193,6 +1200,7 @@ gtpin_process_block_instructions
 }
 
 
+HPCRUN_EXPOSED
 ip_normalized_t
 gtpin_lookup_kernel_ip
 (
