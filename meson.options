@@ -23,3 +23,10 @@ option(
   value: false,
   description: 'Inject annotations for Valgrind debugging',
 )
+
+option(
+  'rocprofiler_metrics_xml',
+  type: 'string',
+  value: '',
+  description: 'Full path to the metrics.xml file shipped by ROCprofiler',
+)

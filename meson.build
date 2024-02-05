@@ -36,19 +36,12 @@ tbb_dep = dependency('TBB', components: ['tbb'])
 tbb_malloc_dep = dependency('TBB', components: ['tbb', 'tbbmalloc'])
 libelf_dep = dependency('libelf', version: '>=0.186')
 libdw_dep = dependency('libdw', version: '>=0.186')
-libmonitor_dep = dependency('Libmonitor', method: 'cmake', cmake_module_path: 'cmake')
 libunwind_dep = dependency('libunwind', version: '>=1.6.2')
 xerces_dep = dependency('xerces-c', version: '>=3.2.3')
 lzma_dep = dependency('liblzma', version: '>=5.2.0')
 zlib_dep = dependency('zlib')
-libiberty_dep = dependency('Libiberty', method: 'cmake', cmake_module_path: 'cmake')
-xed_dep = dependency('', required: false)
-if host_machine.cpu_family() in ['x86', 'x86_64']
-  xed_dep = dependency('Xed', method: 'cmake', cmake_module_path: 'cmake', version: '>=2022.08.11')
-endif
 xxhash_dep = dependency('libxxhash', version: '>=0.8.1')
 yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
-perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake', version: '>=4.0')
 papi_dep = dependency('papi', required: get_option('papi'), version: '>=6.0.0')
 
 
@@ -66,6 +59,73 @@ if not dyninst_dep.found()
     components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
     modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
     version: '>=12.3', default_options: _dyninst_opts)
+endif
+
+
+# These dependencies don't ship any dependency files, so we use CMake by default and fall back to
+# compiler checks as a robustness case. The final fallback to dependency() in each stanza is to
+# provide a better error message and enable wrap fallbacks.
+libmonitor_dep = dependency('Libmonitor', method: 'cmake', cmake_module_path: 'cmake', required: false)
+if not libmonitor_dep.found()
+  _libmonitor_lib = cc.find_library('monitor', has_headers: ['monitor.h'], required: false)
+  if _libmonitor_lib.found()
+    libmonitor_dep = declare_dependency(dependencies: _libmonitor_lib, version: 'unknown')
+  endif
+endif
+if not libmonitor_dep.found()
+  libmonitor_dep = dependency('libmonitor', method: 'system')
+endif
+
+libiberty_dep = dependency('Libiberty', method: 'cmake', cmake_module_path: 'cmake', required: false)
+if not libiberty_dep.found() and (cc.has_header('libiberty/demangle.h') or cc.has_header('demangle.h'))
+  _libiberty_lib = cc.find_library('iberty', required: false)
+  if _libiberty_lib.found()
+    libiberty_dep = declare_dependency(dependencies: _libiberty_lib, version: 'unknown')
+  endif
+endif
+if not libiberty_dep.found()
+  libiberty_dep = dependency('libiberty', method: 'system')
+endif
+
+xed_dep = dependency('', required: false)
+if host_machine.cpu_family() in ['x86', 'x86_64']
+  xed_dep = dependency('Xed', method: 'cmake', cmake_module_path: 'cmake', version: '>=2022.08.11', required: false)
+  if not xed_dep.found() and (cc.has_header('xed/xed-interface.h') or cc.has_header('xed-interface.h'))
+    _xed_lib = cc.find_library('xed', required: false)
+    if _xed_lib.found()
+      _xed_ver = cc.get_define('XED_VERSION', prefix: '''
+        #if __has_include(<xed/xed-interface.h>)
+        #include <xed/xed-interface.h>
+        #else
+        #include <xed-interface.h>
+        #endif
+      ''', dependencies: _xed_lib).strip('"')
+      if _xed_ver.startswith('v')
+        _xed_ver = _xed_ver.substring(1)
+      endif
+      xed_dep = declare_dependency(
+        dependencies: _xed_lib,
+        version: _xed_ver,
+      )
+    endif
+  endif
+  if not xed_dep.found()
+    xed_dep = dependency('xed', method: 'system')
+  endif
+endif
+
+perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake', version: '>=4.0', required: false)
+if not perfmon_dep.found()
+  _perfmon_lib = cc.find_library('pfm', has_headers: ['perfmon/pfmlib.h'])
+  if _perfmon_lib.found()
+    perfmon_dep = declare_dependency(
+      dependencies: _perfmon_lib,
+      version: cc.get_define('LIBPFM_VERSION', prefix: '#include <perfmon/pfmlib.h>', dependencies: _perfmon_lib),
+    )
+  endif
+endif
+if not perfmon_dep.found()
+  perfmon_dep = dependency('libpfm', method: 'system')
 endif
 
 
@@ -144,8 +204,62 @@ endif
 # Find support for ROCm performance monitoring
 hip_dep = dependency('hip', method: 'cmake', modules: ['hip::amdhip64'], required: get_option('rocm'), version: '>=5.1')
 hsa_dep = dependency('hsa-runtime64', method: 'cmake', required: get_option('rocm'))
-roctracer_dep = dependency('ROCtracer', method: 'cmake', cmake_module_path: 'cmake', required: get_option('rocm'))
-rocprofiler_dep = dependency('ROCprofiler', method: 'cmake', cmake_module_path: 'cmake', required: get_option('rocm'))
+
+# Technically, ROCtracer and ROCprofiler don't ship any dependency files. It is extremely rare to
+# see them outside of a complete "ROCm installation" that also includes hip and hsa (above), but for
+# hardness we also support getting them via compiler checks.
+roctracer_dep = dependency('', required: false)
+if get_option('rocm').allowed()
+  roctracer_dep = dependency('ROCtracer', method: 'cmake', cmake_module_path: 'cmake', required: false)
+  if not roctracer_dep.found()
+    _roctracer_lib = cc.find_library('roctracer64', has_headers: ['roctracer/roctracer_hip.h'], required: false)
+    if _roctracer_lib.found()
+      roctracer_dep = declare_dependency(
+        dependencies: _roctracer_lib,
+        version: '@0@.@1@'.format(
+          cc.get_define('ROCTRACER_VERSION_MAJOR', prefix: '#include <roctracer/roctracer.h>', dependencies: _roctracer_lib),
+          cc.get_define('ROCTRACER_VERSION_MINOR', prefix: '#include <roctracer/roctracer.h>', dependencies: _roctracer_lib)
+        ),
+      )
+    endif
+  endif
+  if not roctracer_dep.found()
+    roctracer_dep = dependency('ROCtracer', method: 'system', required: get_option('rocm'))
+  endif
+endif
+
+rocprofiler_dep = dependency('', required: false)
+if get_option('rocm').allowed()
+  rocprofiler_dep = dependency('ROCprofiler', method: 'cmake', cmake_module_path: 'cmake', required: false)
+  if not rocprofiler_dep.found()
+    _rocprofiler_lib = cc.find_library('rocprofiler64', has_headers: ['rocprofiler/rocprofiler.h'], required: false)
+    if _rocprofiler_lib.found()
+      # As a very special case, we also need the path to a metrics.xml file in the ROCprofiler
+      # installation. We don't have any paths at hand to find it otherwise, so we require the user
+      # to specify the path via a project option. (We use an option to match the `c*_args` used for
+      # the compiler checks, usually one would add these options to a machine file.)
+      if get_option('rocprofiler_metrics_xml') == ''
+        error('-Drocprofiler_metrics_xml option must be set to use compiler fallback for ROCprofiler')
+      endif
+      _metrics_xml = fs.expanduser(get_option('rocprofiler_metrics_xml'))
+      if not fs.exists(_metrics_xml)
+        error(f'-Drocprofiler_metrics_xml set to an invalid path: no such file: @_metrics_xml@')
+      endif
+      rocprofiler_dep = declare_dependency(
+        dependencies: _rocprofiler_lib,
+        variables: {'metrics_xml': _metrics_xml},
+        version: '@0@.@1@'.format(
+          cc.get_define('ROCPROFILER_VERSION_MAJOR', prefix: '#include <rocprofiler/rocprofiler.h>', dependencies: _rocprofiler_lib),
+          cc.get_define('ROCPROFILER_VERSION_MINOR', prefix: '#include <rocprofiler/rocprofiler.h>', dependencies: _rocprofiler_lib)
+        ),
+      )
+    endif
+  endif
+  if not rocprofiler_dep.found()
+    rocprofiler_dep = dependency('ROCprofiler', method: 'system', required: get_option('rocm'))
+  endif
+endif
+
 _rocm_subdeps = [rocprofiler_dep, roctracer_dep, hip_dep, hsa_dep]
 rocm_dep = declare_dependency(
   dependencies: _rocm_subdeps,
@@ -164,7 +278,7 @@ rocprofiler_path = disabler()
 if rocm_dep.found()
   hipcc = find_program('hipcc', '/opt/rocm/bin/hipcc', required: true)
   hipcc_cmd = [hipcc, '-o', '@OUTPUT@', '@INPUT@']
-  rocprofiler_path = fs.parent(rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML'))
+  rocprofiler_path = fs.parent(rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML', internal: 'metrics_xml'))
 endif
 
 
