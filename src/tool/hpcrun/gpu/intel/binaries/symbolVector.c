@@ -80,7 +80,7 @@ symbolVectorNew
   SymbolVector *v = (SymbolVector *) malloc(sizeof(SymbolVector));
   v->nsymbols = 0;
   v->symbolValue = (unsigned long *) calloc(nsymbols, sizeof(unsigned long));
-  v->symbolName = (const char **) calloc(nsymbols, sizeof(const char *));
+  v->symbolName = (char **) calloc(nsymbols, sizeof(const char *));
   return v;
 }
 
