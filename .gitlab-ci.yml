@@ -43,10 +43,10 @@ default:
 
 include:
 # All code should pass pre-commit without error.
-- component: gitlab.com/blue42u/ci.pre-commit@0.1.0
+- component: gitlab.com/blue42u/ci.pre-commit/lite@0.2.0
 
 # These images are based on classic distributions and contain no vendor software
-- component: &ci_predeps gitlab.com/blue42u/ci.predeps@0.2.0
+- component: &ci_predeps gitlab.com/blue42u/ci.predeps/build@0.3.0
   inputs:
     <<: &ci_predeps_shared
       fallback_registry: registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
