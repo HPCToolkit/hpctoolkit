@@ -26,7 +26,11 @@
 #include <vector>
 
 #ifdef ENABLE_IGC
+#ifndef IGC_INCLUDE_FULL_PATH
 #include <program_debug_data.h>
+#else
+#include <igc/ocl_igc_shared/executable_format/program_debug_data.h>
+#endif
 #endif // ENABLE_IGC
 
 

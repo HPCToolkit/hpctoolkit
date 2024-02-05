@@ -262,9 +262,33 @@ if get_option('level0').allowed()
   endif
 endif
 
-# Find support for instruction level collection, which requires IGC, IGA and GTPin
+# Find support for instruction level collection, which requires IGC and IGA
 _gtpin_f = get_option('gtpin').require(level0_dep.found(), error_message: 'gtpin is only available with level0')
-igc_dep = dependency('igc-opencl', 'IGCOpenCL', cmake_module_path: 'cmake', required: _gtpin_f)
+
+igc_dep = dependency('', required: false)
+if _gtpin_f.allowed()
+  igc_dep = dependency('igc-opencl', required: false)
+
+  if not igc_dep.found()
+    # To work around certain incomplete deployments/modulefiles, we also support
+    # the case where the headers are already available by full path in the
+    # compiler flags. In this case IGC_INCLUDE_FULL_PATH is #defined and
+    # downstream sources #include a longer header path when this is set.
+    if (cc.has_header('igc/igc.opencl.h')
+        and cc.has_header('igc/ocl_igc_shared/executable_format/patch_list.h')
+        and cc.has_header('igc/ocl_igc_shared/device_enqueue/DeviceEnqueueInternalTypes.h'))
+      igc_dep = declare_dependency(
+        compile_args: ['-DIGC_INCLUDE_FULL_PATH'],
+        version: 'unknown',
+      )
+    endif
+  endif
+
+  if not igc_dep.found()
+    # Fall back to dependency() to get a good error message and enable wrap fallbacks
+    igc_dep = dependency('igc-opencl', required: _gtpin_f)
+  endif
+endif
 if igc_dep.found()
   add_project_arguments('-DENABLE_IGC', language: ['c', 'cpp'])
 endif

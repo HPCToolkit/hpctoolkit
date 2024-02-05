@@ -26,7 +26,11 @@
 #include <memory.h>
 
 #ifdef ENABLE_IGC
+#ifndef IGC_INCLUDE_FULL_PATH
 #include <patch_list.h>
+#else
+#include <igc/ocl_igc_shared/executable_format/patch_list.h>
+#endif
 
 #include "gen_binary_decoder.h"
 
