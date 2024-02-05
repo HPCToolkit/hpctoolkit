@@ -78,5 +78,8 @@ lint_depends_dep_provides = [
   ['Perfmon2', '{{ pfxpath("libpfm4")}}'],
   ['TBB', '{{ pfxpath("intel-tbb") }}'],
   ['xerces-c', '{{ pfxpath("xerces-c") }}'],
+  {% if spack_prefix("xxhash") -%}
+    ['libxxhash', '{{ pfxpath("xxhash") }}'],
+  {%- endif %}
   ['yaml-cpp', '{{ pfxpath("yaml-cpp") }}'],
   ]

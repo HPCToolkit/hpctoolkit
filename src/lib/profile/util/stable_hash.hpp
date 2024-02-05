@@ -47,11 +47,14 @@
 #ifndef HPCTOOLKIT_PROFILE_UTIL_STABLE_HASH_H
 #define HPCTOOLKIT_PROFILE_UTIL_STABLE_HASH_H
 
+#include <xxhash.h>
+
 #include <type_traits>
 #include <cstdint>
 #include <array>
 #include <string>
 #include <string_view>
+#include <memory>
 
 /// \file
 /// Alternative to std::hash that is guaranteed to be stable and consistent
@@ -69,8 +72,8 @@ public:
   stable_hash_state();
   ~stable_hash_state() = default;
 
-  stable_hash_state(const stable_hash_state&) = default;
-  stable_hash_state& operator=(const stable_hash_state&) = default;
+  stable_hash_state(const stable_hash_state&);
+  stable_hash_state& operator=(const stable_hash_state&);
   stable_hash_state(stable_hash_state&&) = default;
   stable_hash_state& operator=(stable_hash_state&&) = default;
 
@@ -79,36 +82,48 @@ public:
   std::uint64_t squeeze() noexcept;
 
   /// Inject hashable data into the hash-state.
-  stable_hash_state& operator<<(std::uint64_t) noexcept;
+  stable_hash_state& operator<<(std::uint64_t v) noexcept {
+    std::array<std::uint8_t, 8> buf;
+    for(std::size_t i = 0, o = 0; i < buf.size(); ++i, o += 8)
+      buf[i] = (v >> o) & 0xFF;
+    return inject(buf.data(), buf.size());
+  }
 
   stable_hash_state& operator<<(std::uint32_t v) noexcept {
-    return operator<<((std::uint64_t)v | (std::uint64_t)0x4950'c404'00000000ULL);
+    std::array<std::uint8_t, 4> buf;
+    for(std::size_t i = 0, o = 0; i < buf.size(); ++i, o += 8)
+      buf[i] = (v >> o) & 0xFF;
+    return inject(buf.data(), buf.size());
   }
 
   stable_hash_state& operator<<(std::uint16_t v) noexcept {
-    return operator<<((std::uint64_t)v | (std::uint64_t)0x9ccb'8061'35c1'0000ULL);
+    std::array<std::uint8_t, 2> buf;
+    for(std::size_t i = 0, o = 0; i < buf.size(); ++i, o += 8)
+      buf[i] = (v >> o) & 0xFF;
+    return inject(buf.data(), buf.size());
   }
 
   stable_hash_state& operator<<(std::uint8_t v) noexcept {
-    return operator<<((std::uint64_t)v | (std::uint64_t)0x19c3'fbb6'ff4d'1800ULL);
+    return inject(&v, 1);
   }
 
-  stable_hash_state& operator<<(std::string_view v) noexcept;
+  stable_hash_state& operator<<(std::string_view v) noexcept {
+    return inject(v.data(), v.size());
+  }
 
   stable_hash_state& operator<<(const std::string& v) noexcept {
     return operator<<(std::string_view(v));
   }
 
 private:
-  std::array<std::uint64_t, 4> state;
-  static constexpr unsigned int word_rate = 3;
-  unsigned int words_collected = 0;
+  stable_hash_state& inject(const char* data, std::size_t size) noexcept;
+  stable_hash_state& inject(const std::uint8_t* data, std::size_t size) noexcept;
 
-  // Finish an absorption round. Called whenever words_collected == word_rate.
-  void permute() noexcept;
+  struct deleter {
+    void operator()(XXH3_state_t*);
+  };
 
-  // Pad the input, injecting enough data to complete an absorption round.
-  void pad() noexcept;
+  std::unique_ptr<XXH3_state_t, deleter> state;
 };
 
 /// Drop-in replacement for std::hash using the stable hash functions.

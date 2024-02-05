@@ -46,6 +46,7 @@ xed_dep = dependency('', required: false)
 if host_machine.cpu_family() in ['x86', 'x86_64']
   xed_dep = dependency('Xed', method: 'cmake', cmake_module_path: 'cmake', version: '>=2022.08.11')
 endif
+xxhash_dep = dependency('libxxhash', version: '>=0.8.1')
 yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
 perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake', version: '>=4.0')
 papi_dep = dependency('papi', required: get_option('papi'), version: '>=6.0.0')
