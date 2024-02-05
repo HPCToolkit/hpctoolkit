@@ -292,7 +292,26 @@ endif
 if igc_dep.found()
   add_project_arguments('-DENABLE_IGC', language: ['c', 'cpp'])
 endif
-iga_dep = dependency('IGA', method: 'cmake', cmake_module_path: 'cmake', required: _gtpin_f)
+
+iga_dep = dependency('', required: false)
+if _gtpin_f.allowed()
+  # IGA doesn't ship any dependency files, so we use a custom CMake script for the usual case.
+  iga_dep = dependency('IGA', method: 'cmake', cmake_module_path: 'cmake', required: false)
+
+  if not iga_dep.found()
+    # To work around certain incomplete modulefiles, we also support the case where the
+    # headers and library are already available in the compiler flags.
+    _iga_lib = cc.find_library('iga64', has_headers: ['iga/iga.h'], required: false)
+    if _iga_lib.found()
+      iga_dep = declare_dependency(dependencies: _iga_lib, version: 'unknown')
+    endif
+  endif
+
+  if not iga_dep.found()
+    # Fall back to dependency() to get a good error message and enable wrap fallbacks
+    iga_dep = dependency('IGA', method: 'cmake', cmake_module_path: 'cmake', required: _gtpin_f)
+  endif
+endif
 
 # GTPin is a snowflake of a case, it only comes in a binary tarball with non-standard names for
 # all the paths like `Include` and `Lib`. This means we can't use CMake to find it, the user
