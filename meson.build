@@ -195,10 +195,72 @@ endif
 
 
 # Find support for Intel performance monitoring via Level Zero.
-# Level Zero is a unique case because although it ships a pkg-config file, we can't actually use it
-# due to a bug present since 1.0 (https://github.com/oneapi-src/level-zero/issues/131).
-# So, we use a custom CMake find-script which is more reliable in this specific case.
-level0_dep = dependency('LevelZero', method: 'cmake', cmake_module_path: 'cmake', required: get_option('level0'), version: '>=1.0')
+level0_dep = dependency('', required: false)
+if get_option('level0').allowed()
+  level0_dep = dependency('level-zero', required: false, version: '>=1.0')
+  if level0_dep.found() and level0_dep.type_name() != 'internal'
+    # Level Zero ships a pkg-config file, but it's untrustworthy due to a bug
+    # present since 1.0: https://github.com/oneapi-src/level-zero/issues/131.
+    # We try to reconstruct what the library path "should have been" here, using
+    # our own configuration as a reference.
+    #
+    # Note that we *always* manipulate the library path here. Compiler checks
+    # would succeed if Level Zero is also installed at the system level, so we
+    # can't trust them to determine if the Level Zero pkg-config file is borked.
+    _l0_libdir = level0_dep.get_variable('libdir', default_value: '')
+    _l0_prefix = level0_dep.get_variable('prefix', default_value: '')
+    if _l0_libdir != '' and _l0_prefix != ''
+      _l0_new_libdir = _l0_prefix / get_option('libdir')
+      if _l0_libdir != _l0_new_libdir and fs.exists(_l0_new_libdir)
+        # We use find_library here to produce an rpath for the build tree.
+        _l0_lib = cc.find_library('ze_loader', dirs: [_l0_libdir, _l0_new_libdir], required: false)
+        if _l0_lib.found()
+          message('Replacing Level Zero libdir: \'@0@\' -> \'@1@\''.format(_l0_libdir, _l0_new_libdir))
+          level0_dep = declare_dependency(
+            dependencies: [level0_dep, _l0_lib],
+            link_args: ['-L@0@'.format(_l0_new_libdir)],
+            version: level0_dep.version(),
+          )
+        endif
+      endif
+    endif
+
+    # Sanity-check the modified dependency before calling it done.
+    if not cc.links('''
+      #include <ze_api.h>
+      int main() {
+        zeInit(0);
+        return 0;
+      }
+      ''', name: 'Level Zero sanity check', dependencies: level0_dep)
+      error('''Failed to reconstruct usable Level Zero dependency! This could be for many reasons, consider:
+- Checking meson-logs/meson-log.txt for the compiler error, and
+- Manually fixing the libdir variable in the pkg-config file shipped by Level Zero (pkg-config --path level-zero), or
+- Appending the flags to use Level Zero to (c|cpp)(_link)?_args, or
+- Removing Level Zero from your PKG_CONFIG_PATH.''')
+    endif
+  endif
+
+  if not level0_dep.found()
+    # To work around certain incomplete modulefiles, we also support the case
+    # where the library and headers are already available in compiler flags.
+    _l0_lib = cc.find_library('ze_loader', has_headers: ['ze_api.h'], required: false)
+    if _l0_lib.found()
+      _l0_ver = cc.compute_int('ZE_API_VERSION_CURRENT',
+        prefix: '#include <ze_api.h>', dependencies: _l0_lib,
+        low: 0x10000, guess: 0x10008, high: 0x30000)
+      level0_dep = declare_dependency(
+        dependencies: _l0_lib,
+        version: '@0@.@1@'.format(_l0_ver / 0x10000, _l0_ver % 0x10000),
+      )
+    endif
+  endif
+
+  if not level0_dep.found()
+    # Fall back to dependency() to get a good error message and enable wrap fallbacks
+    level0_dep = dependency('level-zero', required: get_option('level0'), version: '>=1.0')
+  endif
+endif
 
 # Find support for instruction level collection, which requires IGC, IGA and GTPin
 _gtpin_f = get_option('gtpin').require(level0_dep.found(), error_message: 'gtpin is only available with level0')
