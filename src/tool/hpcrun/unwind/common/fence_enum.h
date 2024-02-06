@@ -14,13 +14,13 @@ FENCE_ENUMS
 #undef _MM
 } fence_enum_t;
 
-static char* fence_enum_names[] = {
+static const char* fence_enum_names[] = {
 #define _MM(a) [FENCE_ ## a] = "FENCE_" #a,
 FENCE_ENUMS
 #undef _MM
 };
 
-static inline char*
+static inline const char*
 fence_enum_name(fence_enum_t f)
 {
   if (f < FENCE_NONE || f > FENCE_BAD)
