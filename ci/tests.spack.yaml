@@ -9,10 +9,18 @@ spack:
       path: '..'
       spec: hpctoolkit@2024.01.stable-ci
 
+  definitions:
+  - when: env["BUILDSYS"] == "autotools"
+    buildsys:
+    - build_system=autotools ~debug
+  - when: env["BUILDSYS"] == "meson"
+    buildsys:
+    - build_system=meson buildtype=release
+
   specs:
   - matrix:
     - - hpctoolkit@=2024.01.stable-ci
-    - [build_system=autotools ~debug, build_system=meson buildtype=release]
+    - [$buildsys]
     - - ~viewer ~mpi +opencl ~cuda ~rocm ~level_zero
     - [+papi, ~papi]
 
