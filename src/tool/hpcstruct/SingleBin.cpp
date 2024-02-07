@@ -200,7 +200,7 @@ doSingleBinary
 
   // Make sure the file is readable
   if ( access(binary_abspath.c_str(), R_OK) != 0 ) {
-    cerr << "ERROR -- input file " << args.in_filenm.c_str() << " is not readable" << endl;
+    cerr << "ERROR: input file " << args.in_filenm.c_str() << " is not readable" << endl;
     if ( args.is_from_makefile == true ) {
       cerr << "CACHESTAT (Input file is not readable) " << endl;
     }
