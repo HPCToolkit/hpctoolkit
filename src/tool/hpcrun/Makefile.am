@@ -252,6 +252,7 @@ MY_CPP_DEFINES =			\
 	-DINLINE_FN=1 \
 	-DLOCAL_BUILD=1 \
 	-D__HIP_PLATFORM_HCC__=1 \
+	-D__HIP_PLATFORM_AMD__=1 \
 	-fvisibility=hidden
 
 MY_BASE_FILES =				\

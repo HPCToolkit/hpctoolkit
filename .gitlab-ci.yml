@@ -191,6 +191,11 @@ include:
     <<: *ci_predeps_shared
     name: rocm5.7-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: rocm6.0-amd64
+    containerfile: .ci.predeps/Containerfile.rocm
 
 - component: *ci_predeps
   inputs:
@@ -304,6 +309,10 @@ include:
 'predeps: [rocm5.7-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.7.1'
+  before_script: *predeps_before_script
+'predeps: [rocm6.0-amd64]':
+  variables:
+    PREDEPS_BUILD_ARG_ROCM_VERSION: '6.0'
   before_script: *predeps_before_script
 
 'predeps: [min-rocm5.1-amd64]':
@@ -470,6 +479,9 @@ validate:
 'buildmany: [amd64, rocm5.7]':
   extends: .buildmany amd64 rocm
   image: $PREDEPS_IMAGE_ROCM5_7_AMD64
+'buildmany: [amd64, rocm6.0]':
+  extends: .buildmany amd64 rocm
+  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
 
 'buildmany min: [amd64, rocm5.1]':
   extends: [.buildmany amd64 rocm, .buildmany min]
@@ -694,6 +706,13 @@ validate:
   extends: ['check amd64: [+rocm, 5.7]', .check semifresh job]
   variables:
     REGEN_SUITES: amd
+
+'check amd64: [+rocm, 6.0]':
+  extends: .check
+  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
+  tags: [rice-linux-large-amd64-gpu-amd]
+  before_script: *bscript_check_rocm
+  variables: *vars_check_rocm
 
 
 # Re-expose the testdata patches as a single bundle, for easy access
