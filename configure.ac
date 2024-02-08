@@ -4638,10 +4638,16 @@ case "$ROCM" in
     found=no
 
     # ROCM
-    if test -f "$ROCM/include/rocm_version.h"  \
-       || test -f "$ROCM/include/hip/hip_version.h"
-    then
-      AC_MSG_NOTICE([found $ROCM/rocm_version.h])
+    if test -f "$ROCM/include/rocm_version.h"; then
+      AC_MSG_NOTICE([found $ROCM/include/rocm_version.h])
+      ROCM_IFLAGS="-I$ROCM/include"
+      ROCM_MESG="$ROCM"
+    elif test -f "$ROCM/include/rocm-core/rocm_version.h"; then
+      AC_MSG_NOTICE([found $ROCM/include/rocm-core/rocm_version.h])
+      ROCM_IFLAGS="-I$ROCM/include"
+      ROCM_MESG="$ROCM"
+    elif test -f "$ROCM/include/hip/hip_version.h"; then
+      AC_MSG_NOTICE([found $ROCM/include/hip/hip_version.h])
       ROCM_IFLAGS="-I$ROCM/include"
       ROCM_MESG="$ROCM"
     fi
@@ -4649,7 +4655,7 @@ case "$ROCM" in
     # HIP
     if test -f "$ROCM/include/hip/hip_runtime.h" ; then
       AC_MSG_NOTICE([found $ROCM/include/hip/hip_runtime.h])
-      ROCM_HIP_INC_MESG="$ROCM/hip"
+      ROCM_HIP_INC_MESG="$ROCM/include/hip"
       found=yes
     fi
     if test -f "$ROCM/hip/lib/libamdhip64.so" ; then
@@ -4657,13 +4663,18 @@ case "$ROCM" in
       ROCM_HIP_LD_DIR="$ROCM/hip/lib"
       ROCM_HIP_MESG="$ROCM/hip"
       found=yes
+    elif test -f "$ROCM/lib/libamdhip64.so"; then
+      AC_MSG_NOTICE([found $ROCM/lib/libamdhip64.so])
+      ROCM_HIP_LD_DIR="$ROCM/lib"
+      ROCM_HIP_MESG="$ROCM"
+      found=yes
     fi
 
     # ROCTRACER
     if test -f "$ROCM/include/roctracer/roctracer_hip.h" ; then
       AC_MSG_NOTICE([found $ROCM/include/roctracer/roctracer_hip.h])
       ROCM_TRACER_IFLAGS="-I$ROCM/include/roctracer"
-      ROCM_TRACER_INC_MESG="$ROCM/roctracer"
+      ROCM_TRACER_INC_MESG="$ROCM"
       found=yes
     fi
     if test -f "$ROCM/roctracer/lib/libroctracer64.so" ; then
@@ -4671,12 +4682,17 @@ case "$ROCM" in
       ROCM_TRACER_LD_DIR="$ROCM/roctracer/lib"
       ROCM_TRACER_MESG="$ROCM/roctracer"
       found=yes
+    elif test -f "$ROCM/lib/libroctracer64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/lib/libroctracer64.so])
+      ROCM_TRACER_LD_DIR="$ROCM/lib"
+      ROCM_TRACER_MESG="$ROCM"
+      found=yes
     fi
 
     # ROCPROFILER
     if test -f "$ROCM/include/rocprofiler/rocprofiler.h" ; then
       AC_MSG_NOTICE([found $ROCM/include/rocprofiler/rocprofiler.h])
-      ROCM_PROFILER_INC_MESG="$ROCM/rocprofiler"
+      ROCM_PROFILER_INC_MESG="$ROCM"
       found=yes
     fi
     if test -f "$ROCM/rocprofiler/lib/librocprofiler64.so" ; then
@@ -4684,28 +4700,39 @@ case "$ROCM" in
       ROCM_PROFILER_LD_DIR="$ROCM/rocprofiler/lib"
       ROCM_PROFILER_MESG="$ROCM/rocprofiler"
       found=yes
+    elif test -f "$ROCM/lib/librocprofiler64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/lib/librocprofiler64.so])
+      ROCM_PROFILER_LD_DIR="$ROCM/lib"
+      ROCM_PROFILER_MESG="$ROCM"
+      found=yes
     fi
     if test -f "$ROCM/rocprofiler/lib/metrics.xml" ; then
       ROCM_PROFILER_METRICS="$ROCM/rocprofiler/lib/metrics.xml"
-    fi
-    if test -f "$ROCM/lib/rocprofiler/metrics.xml" ; then
+    elif test -f "$ROCM/lib/rocprofiler/metrics.xml" ; then
       ROCM_PROFILER_METRICS="$ROCM/lib/rocprofiler/metrics.xml"
     fi
 
     # HSA
-    # FIXME: as of rocm 5.2/5.3, this was not fully switched over,
-    # so temporarily use both paths.
-    if test -f "$ROCM/include/hsa/hsa.h" || test -f "$ROCM/include/hsa.h"
-    then
-      AC_MSG_NOTICE([found $ROCM: hsa.h])
-      ROCM_HSA_IFLAGS="-I$ROCM/include -I$ROCM/include/hsa"
+    if test -f "$ROCM/hsa/include/hsa/hsa.h" ; then
+      AC_MSG_NOTICE([found $ROCM/hsa/include/hsa/hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM/hsa/include/hsa"
       ROCM_HSA_INC_MESG="$ROCM/hsa"
+      found=yes
+    elif test -f "$ROCM/include/hsa/hsa.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/hsa/hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM/include/hsa"
+      ROCM_HSA_INC_MESG="$ROCM"
       found=yes
     fi
     if test -f "$ROCM/hsa/lib/libhsa-runtime64.so" ; then
       AC_MSG_NOTICE([found $ROCM/hsa/lib/libhsa-runtime64.so])
       ROCM_HSA_LD_DIR="$ROCM/hsa/lib"
       ROCM_HSA_MESG="$ROCM/hsa"
+      found=yes
+    elif test -f "$ROCM/lib/libhsa-runtime64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/lib/libhsa-runtime64.so])
+      ROCM_HSA_LD_DIR="$ROCM/lib"
+      ROCM_HSA_MESG="$ROCM"
       found=yes
     fi
 
@@ -4758,11 +4785,21 @@ case "$ROCM_TRACER" in
       ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
       ROCM_TRACER_INC_MESG="$ROCM_TRACER/roctracer"
       found=yes
+    elif test -f "$ROCM_TRACER/include/roctracer/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM_TRACER/include/roctracer/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/include/roctracer"
+      ROCM_TRACER_INC_MESG="$ROCM_TRACER"
+      found=yes
     fi
     if test -f "$ROCM_TRACER/roctracer/lib/libroctracer64.so" ; then
       AC_MSG_NOTICE([found $ROCM_TRACER/roctracer/lib/libroctracer64.so])
       ROCM_TRACER_LD_DIR="$ROCM_TRACER/roctracer/lib"
       ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    elif test -f "$ROCM_TRACER/lib/libroctracer64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_TRACER/lib/libroctracer64.so])
+      ROCM_TRACER_LD_DIR="$ROCM_TRACER/lib"
+      ROCM_TRACER_MESG="$ROCM_TRACER"
       found=yes
     fi
     if test "$found" = no ; then
@@ -4788,14 +4825,18 @@ case "$ROCM_PROFILER" in
     if test -f "$ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" ; then
       AC_MSG_NOTICE([found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so])
       ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/rocprofiler/lib"
+      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+      found=yes
+    elif test -f "$ROCM_PROFILER/lib/librocprofiler64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_PROFILER/lib/librocprofiler64.so])
+      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/lib"
       ROCM_PROFILER_MESG="$ROCM_PROFILER"
       found=yes
     fi
 
     if test -f "$ROCM_PROFILER/rocprofiler/lib/metrics.xml" ; then
       ROCM_PROFILER_METRICS="$ROCM_PROFILER/rocprofiler/lib/metrics.xml"
-    fi
-    if test -f "$ROCM_PROFILER/lib/rocprofiler/metrics.xml" ; then
+    elif test -f "$ROCM_PROFILER/lib/rocprofiler/metrics.xml" ; then
       ROCM_PROFILER_METRICS="$ROCM_PROFILER/lib/rocprofiler/metrics.xml"
     fi
 
@@ -4813,15 +4854,23 @@ case "$ROCM_HSA" in
     require_rocm=yes
     found=no
 
-    # FIXME: again, temporarily use both paths
-    if test -f "$ROCM_HSA/include/hsa/hsa.h" || test -f "$ROCM_HSA/include/hsa.h"
-    then
-      AC_MSG_NOTICE([found $ROCM_HSA: hsa.h])
-      ROCM_HSA_IFLAGS="-I$ROCM_HSA/include -I$ROCM_HSA/include/hsa"
+    if test -f "$ROCM_HSA/hsa/include/hsa/hsa.h" ; then
+      AC_MSG_NOTICE([found $ROCM_HSA/hsa/include/hsa/hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM_HSA/hsa/include/hsa"
+      ROCM_HSA_INC_MESG="$ROCM_HSA/hsa"
+      found=yes
+    elif test -f "$ROCM_HSA/include/hsa/hsa.h" ; then
+      AC_MSG_NOTICE([found $ROCM_HSA/include/hsa/hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM_HSA/include/hsa"
       ROCM_HSA_INC_MESG="$ROCM_HSA"
       found=yes
     fi
-    if test -f "$ROCM_HSA/lib/libhsa-runtime64.so" ; then
+    if test -f "$ROCM_HSA/hsa/lib/libhsa-runtime64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_HSA/hsa/lib/libhsa-runtime64.so])
+      ROCM_HSA_LD_DIR="$ROCM_HSA/hsa/lib"
+      ROCM_HSA_MESG="$ROCM_HSA/hsa"
+      found=yes
+    elif test -f "$ROCM_HSA/lib/libhsa-runtime64.so" ; then
       AC_MSG_NOTICE([found $ROCM_HSA/lib/libhsa-runtime64.so])
       ROCM_HSA_LD_DIR="$ROCM_HSA/lib"
       ROCM_HSA_MESG="$ROCM_HSA"
