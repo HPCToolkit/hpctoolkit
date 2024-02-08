@@ -236,7 +236,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		fi
 
 		#  invoke hpcstruct on the CPU binary in the measurements directory
-		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1 || { err=$$?; cat $$warn_name >&2; exit $$err; }
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1 || { err=$$?; egrep 'ERROR|WARNING' $$warn_name >&2; }
 		# echo DEBUG: hpcstruct for analysis of CPU binary $$cpubin_name returned
 
 		# See if there is anything to worry about in the warnings file
@@ -285,7 +285,7 @@ $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 		fi
 
 		# invoke hpcstruct to process the gpu binary
-		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1 || { err=$$?; cat $$warn_name >&2; exit $$err; }
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1 || { err=$$?; egrep 'ERROR|WARNING' $$warn_name >&2; }
 		# echo debug: hpcstruct for analysis of GPU binary $$gpubin_name returned
 
 		# See if there is anything to worry about in the warnings file
