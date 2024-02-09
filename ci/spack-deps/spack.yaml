@@ -31,31 +31,12 @@ spack:
   - when: env["VERMODE"] != "bare"
     core:
     - 'xxhash @0.8.1:'
-  - when: env["VERMODE"] == "minimum"
-    core:
-    - boost @1.71.0
-    - bzip2 @1.0.8
-    - elfutils @0.186
-    - intel-tbb @2020.3
-    - libmonitor @2023.03.15
-    - xz @5.2.5
-    - zlib @1.2.13
-    - libunwind @1.6.2
-    - libpfm4 @4.11.0
-    - xerces-c @3.2.3
-    - libiberty @2.37
-    - yaml-cpp @0.7.0
-    - xxhash @0.8.1
   # Optional dependencies.
   - optional: []
   - when: env["VERMODE"] != "bare"
     optional:
     - 'papi @6.0.0.1:'  # Required for -Dpapi=enabled
     - 'opencl-c-headers @2022.01.04:'  # Required for -Dopencl=enabled
-  - when: env["VERMODE"] == "minimum"
-    optional:
-    - papi @6.0.0.1
-    - opencl-c-headers @2022.01.04
 
   specs:
   - $core
