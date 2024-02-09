@@ -132,7 +132,7 @@ endif
 
 perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake', version: '>=4.0', required: false)
 if not perfmon_dep.found()
-  _perfmon_lib = cc.find_library('pfm', has_headers: ['perfmon/pfmlib.h'])
+  _perfmon_lib = cc.find_library('pfm', has_headers: ['perfmon/pfmlib.h'], required: false)
   if _perfmon_lib.found()
     perfmon_dep = declare_dependency(
       dependencies: _perfmon_lib,
@@ -141,7 +141,7 @@ if not perfmon_dep.found()
   endif
 endif
 if not perfmon_dep.found()
-  perfmon_dep = dependency('libpfm', method: 'system')
+  perfmon_dep = dependency('libpfm', method: 'system', version: '>=4.0')
 endif
 
 
