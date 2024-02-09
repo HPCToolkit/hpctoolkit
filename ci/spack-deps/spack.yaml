@@ -27,9 +27,9 @@ spack:
     - 'libpfm4 @4.11.0:'
     - 'xerces-c transcoder=iconv @3.2.3:'
     - 'libiberty +pic @2.37:'
-    - 'yaml-cpp +shared @0.7.0:'
   - when: env["VERMODE"] != "bare"
     core:
+    - 'yaml-cpp +shared @0.7.0:'
     - 'xxhash @0.8.1:'
   # Optional dependencies.
   - optional: []

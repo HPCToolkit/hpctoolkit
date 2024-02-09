@@ -41,7 +41,15 @@ xerces_dep = dependency('xerces-c', version: '>=3.2.3')
 lzma_dep = dependency('liblzma', version: '>=5.2.0')
 zlib_dep = dependency('zlib')
 xxhash_dep = dependency('libxxhash', version: '>=0.8.1')
-yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
+if meson.version().version_compare('>=1.4.0')
+  yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
+else
+  # Prior Meson versions don't provide versions for `method = cmake` wraps
+  yaml_cpp_dep = dependency('yaml-cpp')
+  if yaml_cpp_dep.type_name() != 'internal' and not yaml_cpp_dep.version().version_compare('>=0.7.0')
+    yaml_cpp_dep = dependency('yaml-cpp', method: 'system')  # Force fallback to wrap
+  endif
+endif
 papi_dep = dependency('papi', required: get_option('papi'), version: '>=6.0.0')
 
 

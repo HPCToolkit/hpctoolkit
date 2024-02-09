@@ -81,5 +81,7 @@ lint_depends_dep_provides = [
   {% if spack_prefix("xxhash") -%}
     ['libxxhash', '{{ pfxpath("xxhash") }}'],
   {%- endif %}
-  ['yaml-cpp', '{{ pfxpath("yaml-cpp") }}'],
+  {% if spack_prefix("yaml-cpp") -%}
+    ['yaml-cpp', '{{ pfxpath("yaml-cpp") }}'],
+  {%- endif %}
   ]
