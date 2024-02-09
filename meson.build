@@ -110,7 +110,7 @@ if host_machine.cpu_family() in ['x86', 'x86_64']
     endif
   endif
   if not xed_dep.found()
-    xed_dep = dependency('xed', method: 'system')
+    xed_dep = dependency('xed', method: 'system', version: '>=2022.08.11')
   endif
 endif
 
