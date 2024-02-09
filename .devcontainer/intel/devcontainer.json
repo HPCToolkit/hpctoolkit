@@ -21,12 +21,9 @@
         "mesonbuild.configureOnOpen": true,
         "mesonbuild.configureOptions": [
           "--native-file=image.ini",
-          "-Dhpcprof_mpi=enabled",
-          "-Dpython=enabled",
-          "-Dpapi=enabled",
-          "-Dopencl=enabled",
-          "-Dlevel0=enabled",
-          "-Dgtpin=enabled"
+          "-Dauto_features=enabled",
+          "-Dcuda=disabled",
+          "-Drocm=disabled"
         ],
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.profiles.linux": {
