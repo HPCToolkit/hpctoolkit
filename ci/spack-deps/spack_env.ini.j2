@@ -37,6 +37,7 @@ _link_args = [
     {{ rpath("yaml-cpp") }}
     {{ rpath("papi") }}
     {{ rpath("libpfm4") }}
+    {{ rpath("zstd") }}
   ]
 
 [built-in options]
@@ -66,8 +67,10 @@ lint_depends_ignore = [
   ]
 lint_depends_dep_provides = [
   ['boost', '{{ pfxpath("boost") }}'],
-  ['libdw', '{{ pfxpath("elfutils")}}'],
-  ['libelf', '{{ pfxpath("elfutils")}}'],
+  {% if spack_prefix("elfutils") -%}
+    ['libdw', '{{ pfxpath("elfutils")}}'],
+    ['libelf', '{{ pfxpath("elfutils")}}'],
+  {%- endif %}
   {% if spack_prefix("libiberty") -%}
     ['Libiberty', '{{ pfxpath("libiberty") }}'],
   {%- endif %}
