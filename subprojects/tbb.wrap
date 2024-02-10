@@ -1,0 +1,16 @@
+[wrap-file]
+directory = oneTBB-2021.11.0
+source_url = https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.11.0.tar.gz
+source_filename = oneTBB-2021.11.0.tar.gz
+source_hash = 782ce0cab62df9ea125cdea253a50534862b563f1d85d4cda7ad4e77550ac363
+patch_filename = tbb-2021.11.0-1-beta.0_patch.zip
+patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/tbb/2021.11.0-1-beta.0/tbb-2021.11.0-1-beta.0_patch.zip
+patch_hash = 0e882ecaf86261fdcdab537ed0309e1e6470578615165b3bc64d32d2b56e42d6
+source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/tbb/2021.11.0-1-beta.0/oneTBB-2021.11.0.tar.gz
+wrapdb_version = 2021.11.0-1-beta.0
+
+[provide]
+dependency_names = tbb, tbbmalloc, tbbmalloc_proxy
+tbb = tbb_dep
+tbbmalloc = tbbmalloc_dep
+tbbmalloc_proxy = tbbmalloc_proxy_dep

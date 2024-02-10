@@ -80,7 +80,9 @@ lint_depends_dep_provides = [
   {% if spack_prefix("libpfm4") -%}
     ['Perfmon2', '{{ pfxpath("libpfm4")}}'],
   {%- endif %}
-  ['TBB', '{{ pfxpath("intel-tbb") }}'],
+  {% if spack_prefix("intel-tbb") -%}
+    ['TBB', '{{ pfxpath("intel-tbb") }}'],
+  {%- endif %}
   {% if spack_prefix("xerces-c") -%}
     ['xerces-c', '{{ pfxpath("xerces-c") }}'],
   {%- endif %}
