@@ -68,7 +68,9 @@ lint_depends_dep_provides = [
   ['boost', '{{ pfxpath("boost") }}'],
   ['libdw', '{{ pfxpath("elfutils")}}'],
   ['libelf', '{{ pfxpath("elfutils")}}'],
-  ['Libiberty', '{{ pfxpath("libiberty") }}'],
+  {% if spack_prefix("libiberty") -%}
+    ['Libiberty', '{{ pfxpath("libiberty") }}'],
+  {%- endif %}
   ['liblzma', '{{ pfxpath("xz") }}'],
   ['Libmonitor', '{{ pfxpath("libmonitor")}}'],
   ['libunwind', '{{ pfxpath("libunwind")}}'],
