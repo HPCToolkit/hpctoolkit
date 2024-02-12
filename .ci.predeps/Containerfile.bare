@@ -24,6 +24,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     gcc gcc-8 gcc-9 gcc-10 \
     git git-lfs \
     libomp-dev \
+    make mawk sed  `# See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
     ninja-build \
     pkg-config \
     python3 python3-pip python3-venv \

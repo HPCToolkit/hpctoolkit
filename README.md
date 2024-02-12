@@ -83,6 +83,7 @@ Install:
 - [Meson] >=1.1.0 and a working C/C++ compiler (GCC, Clang, etc.)
 - [Boost](https://www.boost.org/) >=1.71.0, if using CUDA support this must also be built with `visibility=global` (see [#815](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/815))
 - [libmonitor](https://github.com/hpctoolkit/libmonitor) configured with `--disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38'` (also see [#793](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/793))
+- `make`, `awk`, and `sed` for `hpcstruct` measurement directory support (see [#704](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704)).
 - (Optional but highly recommended:) [ccache](https://ccache.dev/)
 - (Optional:) [Wrapped or additional prerequisites](#prerequisites)
 
