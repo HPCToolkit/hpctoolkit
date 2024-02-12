@@ -74,7 +74,9 @@ lint_depends_dep_provides = [
   {% if spack_prefix("libiberty") -%}
     ['Libiberty', '{{ pfxpath("libiberty") }}'],
   {%- endif %}
-  ['liblzma', '{{ pfxpath("xz") }}'],
+  {% if spack_prefix("xz") -%}
+    ['liblzma', '{{ pfxpath("xz") }}'],
+  {%- endif %}
   ['Libmonitor', '{{ pfxpath("libmonitor")}}'],
   {% if spack_prefix("libunwind") -%}
     ['libunwind', '{{ pfxpath("libunwind")}}'],
