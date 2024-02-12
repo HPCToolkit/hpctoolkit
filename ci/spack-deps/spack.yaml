@@ -17,13 +17,13 @@ spack:
       boost @1.71.0:
       +atomic +date_time +filesystem +system +thread +timer +graph +regex +chrono
       +shared +multithreaded visibility=global
-    - 'bzip2 @1.0.8:'
     - 'libmonitor +hpctoolkit ~dlopen @2023.03.15:'
     - 'xz @5.2.5:5.2.6,5.2.10:'
     - 'zlib +shared @1.2.13:1.2'
     - 'zstd'
   - when: env["VERMODE"] != "bare"
     core:
+    - 'bzip2 @1.0.8:'
     - 'libunwind +xz @1.6.2:'
     - 'elfutils ~nls @0.186:'
     - 'intel-tbb +shared @2020.3'
