@@ -36,7 +36,8 @@ tbb_dep = dependency('tbb', 'TBB', components: ['tbb'])
 tbb_malloc_dep = dependency('tbbmalloc', 'TBB', components: ['tbb', 'tbbmalloc'])
 libelf_dep = dependency('libelf', version: '>=0.186', default_options: ['thread_safety=true'])
 libdw_dep = dependency('libdw', version: '>=0.186', default_options: ['thread_safety=true'])
-libunwind_dep = dependency('libunwind', version: '>=1.6.2')
+libunwind_dep = dependency('libunwind', version: '>=1.6.2',
+  default_options: ['minidebuginfo=enabled', 'zlibdebuginfo=enabled'])
 if meson.version().version_compare('>=1.4.0')
   xerces_dep = dependency('xerces-c', version: '>=3.2.3')
 else

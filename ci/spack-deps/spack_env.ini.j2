@@ -76,7 +76,9 @@ lint_depends_dep_provides = [
   {%- endif %}
   ['liblzma', '{{ pfxpath("xz") }}'],
   ['Libmonitor', '{{ pfxpath("libmonitor")}}'],
-  ['libunwind', '{{ pfxpath("libunwind")}}'],
+  {% if spack_prefix("libunwind") -%}
+    ['libunwind', '{{ pfxpath("libunwind")}}'],
+  {%- endif %}
   {% if spack_prefix("papi") -%}
     ['papi', '{{ pfxpath("papi")}}'],
   {%- endif %}

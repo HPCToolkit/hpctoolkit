@@ -1,0 +1,17 @@
+[wrap-file]
+directory = libunwind-1.8.0
+source_url = https://github.com/libunwind/libunwind/releases/download/v1.8.0/libunwind-1.8.0.tar.gz
+source_filename = libunwind-1.8.0.tar.gz
+source_hash = b6b3df40a0970c8f2865fb39aa2af7b5d6f12ad6c5774e266ccca4d6b8b72268
+patch_filename = libunwind-1.8.0-1-beta.1_patch.zip
+patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libunwind/1.8.0-1-beta.1/libunwind-1.8.0-1-beta.1_patch.zip
+patch_hash = 47dc933c1b8652434c60f6405bcf9ebf4140627783c4bbd67dc97e22a8087ece
+source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libunwind/1.8.0-1-beta.1/libunwind-1.8.0.tar.gz
+wrapdb_version = 1.8.0-1-beta.1
+
+[provide]
+dependency_names = libunwind, libunwind-generic, libunwind-coredump, libunwind-ptrace
+libunwind = libunwind_dep
+libunwind-generic = libunwind_generic_dep
+libunwind-coredump = libunwind_coredump_dep
+libunwind-ptrace = libunwind_ptrace_dep
