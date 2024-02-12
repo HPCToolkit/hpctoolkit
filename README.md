@@ -78,31 +78,24 @@ HPCToolkit supports building from source using [Meson].
 
 ### Quickstart
 
-First install [Spack][getting spack] 0.20.1 (or higher) and configure for the current system.
-Then create and install a Spack environment containing all the dependencies:
+Install:
+
+- [Meson] >=1.1.0 and a working C/C++ compiler (GCC, Clang, etc.)
+- [Boost](https://www.boost.org/) >=1.71.0, if using CUDA support this must also be built with `visibility=global` (see [#815](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/815))
+- [libmonitor](https://github.com/hpctoolkit/libmonitor) configured with `--disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38'` (also see [#793](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/793))
+- (Optional but highly recommended:) [ccache](https://ccache.dev/)
+- (Optional:) [Wrapped or additional prerequisites](#prerequisites)
+
+Then run:
 
 ```console
-$ spack env create my-hpctoolkit-deps doc/developers/example-deps.yaml
-$ spack env activate my-hpctoolkit-deps
-$ spack config edit  # Optional, customize for personal needs
-$ spack install  # This will take a while
-$ spack env activate my-hpctoolkit-deps  # Repeated to update environment vars
-```
-
-This environment (`my-hpctoolkit-deps`) needs to be activated for all `meson` commands while working with HPCToolkit.
-See the comments in [`doc/developers/example-deps.yaml`] for additional details about how this environment must be configured.
-While active, building HPCToolkit follows the standard Meson build sequence:
-
-```console
-$ meson setup \
-  -D{c,cpp}_link_args="-Wl,-rpath=$(spack location -e)/.spack-env/view/lib -Wl,-rpath=$(spack location -e)/.spack-env/view/lib64" \
-  builddir/
+$ meson setup builddir/
 $ cd builddir/
 $ meson compile  # -OR- ninja
 $ meson test     # -OR- ninja test
 ```
 
-**Do not `meson install`/`ninja install` here.** It will not produce a usable installation with this configuration.
+**Do not `meson install`/`ninja install` here.**
 Instead, working versions of the tools themselves are available under the `meson devenv`, either as individual commands or as a whole subshell environment:
 
 ```console
@@ -111,35 +104,97 @@ $ meson devenv
 [builddir] $ hpcrun --version
 ```
 
-As always, remember to clear the cache after altering the environment to capture any changed dependencies:
-
-```console
-$ spack config edit
-$ spack concretize -f
-$ spack install
-$ meson configure --clearcache
-```
-
 ### Configuration
 
 Additional configuration arguments can be passed to the initial `meson setup` or later `meson configure` invocations:
 
 - `-Dhpcprof_mpi=(disabled|auto|enabled)`: Build `hpcprof-mpi` in addition to `hpcprof`. Requires MPI.
-- `-Dpython=(disabled|auto|enabled)`: Enable the (experimental) Python unwinder.
+- `-Dpython=(disabled|auto|enabled)`: Enable the (experimental) Python unwinder. Requires Python headers.
 - `-Dpapi=(disabled|auto|enabled)`: Enable PAPI metrics. Requires PAPI.
 - `-Dcuda=(disabled|auto|enabled)`: Enable CUDA metrics (`-e gpu=nvidia`). Requires CUDA.
 - `-Dlevel0=(disabled|auto|enabled)`: Enable Level Zero metrics (`-e gpu=level0`). Requires Level Zero.
-- `-Dgtpin=(disabled|auto|enabled)`: Also enable Level Zero instrumentation metrics (`-e gpu=level0,inst`). Requires Level Zero, IGC and GTPin.
-- `-Dopencl=(disabled|auto|enabled)`: Enable OpenCL metrics (`-e gpu=opencl`).
+- `-Dgtpin=(disabled|auto|enabled)`: Also enable Level Zero instrumentation metrics (`-e gpu=level0,inst`). Requires Level Zero, IGC/IGA and GTPin.
+- `-Dopencl=(disabled|auto|enabled)`: Enable OpenCL metrics (`-e gpu=opencl`). Requires OpenCL headers.
 - `-Drocm=(disabled|auto|enabled)`: Enable ROCm metrics (`-e gpu=amd`). Requires ROCm.
 - `-Dvalgrind_annotations=(false|true)`: Inject annotations for debugging with Valgrind.
 
 Note that many of the features above require additional optional dependencies when enabled.
-See the example Spack environment ([`doc/developers/example-deps.yaml`]) for details on what dependencies need to be added.
 
-### Advanced Meson: Dependencies
+### Prerequisites
 
-The Spack-based dependency management described in the Quickstart, along with the requirement to always keep the environment activated, can be limiting and confusing in practice.
+#### Debian/Ubuntu
+
+For Debian Sid/Ubuntu 23.10:
+
+```bash
+sudo apt-get install git build-essential ccache ninja-build meson cmake pkg-config python3-venv libboost-all-dev libbz2-dev libtbb-dev libelf-dev libdw-dev libunwind-dev libxerces-c-dev libiberty-dev libyaml-cpp-dev libpfm4-dev libxxhash-dev zlib1g-dev
+```
+
+Recommended install Meson with `pipx` (required for older Debian/Ubuntu versions):
+
+```bash
+sudo apt-get install pipx
+pipx install 'meson>=1.1.0'
+```
+
+Note that some dependencies may be [built from wraps](#wraps-no-root-required) by default, either because they aren't packaged in Debian/Ubuntu (e.g. Dyninst) or because the version is too old.
+Additional packages can be installed for optional features:
+
+| Package | Feature option | Notes |
+| --- | --- | --- |
+| `mpi-default-dev` | `-Dhpcprof_mpi=enabled` |
+| `libpapi-dev` | `-Dpapi=enabled` |
+| `nvidia-cuda-toolkit` | `-Dcuda=enabled` |
+| [`level-zero-dev`](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps) | `-Dlevel0=enabled` |
+| `libigdfcl-dev` | `-Dlevel0=enabled` |
+| `libigc-dev` | `-Dgtpin=enabled` |
+| `opencl-headers` | `-Dopencl=enabled` | [Optional, available as wrap](#wraps-no-root-required) |
+| [`rocm-hip-libraries`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html) | `-Drocm=enabled` |
+
+#### Wraps (no root required)
+
+HPCToolkit provides [Meson wraps] for most core dependencies, by default these wraps act as a fallback if they cannot be found otherwise.
+The convenient part about this is that building HPCToolkit requires little more than Meson and a C/C++ compiler, any missing dependencies will be downloaded and built as subprojects:
+
+```
+  Subprojects
+    bzip2         : YES
+    dyninst       : YES 347 warnings
+    elfutils      : YES 2 warnings
+    libiberty     : YES (from dyninst)
+    liblzma       : YES (from elfutils)
+    libpfm        : YES
+    libunwind     : YES
+    opencl-headers: YES
+    tbb           : YES
+    xed           : YES
+    xerces-c      : YES
+    xxhash        : YES
+    yaml-cpp      : YES
+    zstd          : YES (from elfutils)
+```
+
+Note that dependencies that are not required will not use a wrap by default, you may need to enable a feature before a wrap will be used (e.g. `-Dopencl=enabled`).
+If the internet is not available on the system running `meson setup`, you may also need to run `meson subprojects download` first on a system with internet to download the required sources.
+
+If wraps are not desired, this fallback behavior can be disabled with `meson (setup|configure) --wrap-mode=nofallback`.
+With this, all dependencies must be installed or otherwise loaded into the build environment, except for force-fallback dependencies `meson (setup|configure) --force-fallback-for=dep1,dep2,...`.
+
+See the official Meson documentation for [Meson subprojects] and [wraps][meson wraps] for more configuration options and implementation details.
+
+#### Dev Containers (BETA, no root required)
+
+Multiple [Dev Container](https://containers.dev/) configurations are provided for common distros and vendor software:
+
+- `ubuntu20.04`, `rhel8`, `leap15`, `fedora38`: CPU-only configurations for common distros
+- `cuda*`: Ubuntu 20.04 with NVIDIA CUDA toolkit installed
+- `rocm*`: Ubuntu 20.04 with AMD ROCm installed
+- `intel`: Ubuntu 20.04 with Intel OneAPI Base Toolkit
+- `bare`: Bare minimum dependencies to build HPCToolkit
+
+#### Custom Dependencies
+
+It is also possible to use custom versions of dependencies, exposing them to Meson however requires some initial understanding of how Meson finds dependencies.
 This section is intended as a "peek behind the curtain" of how Meson understands dependencies, and an abridged version of [Meson's `dependency()` docs] for developers.
 
 Meson fetches all dependencies from the "build environment" aka the "machine" (technically two, the `build_machine` and the `host_machine`, which are only different when [cross-compiling](https://mesonbuild.com/Cross-compilation.html)).
@@ -149,12 +204,15 @@ Whenever Meson configures (i.e. during `meson setup` or automatically during `me
 - The C/C++ compilers (`CC`/`CXX`), which are also affected by `CFLAGS`, `CXXFLAGS`, `LDFLAGS`, `INCLUDE_PATH`, `LIBRARY_PATH`, `CRAY_*`, ...
 - Dependencies are found via `pkg-config`, which is affected by `PKG_CONFIG_PATH` (and other `PKG_CONFIG_*` variables),
 - Dependencies are found via CMake, which is affected by `CMAKE_PREFIX_PATH` (and other `CMAKE_*`, `*_ROOT` and `*_ROOT_DIR` variables),
-- Boost is found under `BOOST_ROOT`, and the CUDA Toolkit under `CUDA_PATH`
+- Dependencies with Meson built-in functionality have their own quirks:
+  - Boost is found under `BOOST_ROOT`,
+  - The CUDA Toolkit is found under `CUDA_PATH`.
 
-Many of these variables are altered by `module un/load`, `spack un/load` and other similar commands, including the `spack env activate` used in the quickstart.
+These variables are frequently altered by commands designed to load software into a shell environment, for example `module un/load`.
 Meson assumes the "machine" does not change between `meson` invocations, however if it does by running the above commands it is possible Meson's cache will not match reality.
 In these cases reconfiguration or later compilation may fail due to the inconsistent state between dependencies.
-This can be fixed by clearing Meson's cache (`meson configure --clearcache`), Meson will efficiently avoid rebuilding files if the compile command did not actually change.
+In some cases this can be fixed by clearing Meson's cache (`meson configure --clearcache`), Meson will efficiently avoid rebuilding files if the compile command did not actually change.
+If build errors persist it may be necessary to wipe the build directory completely (`meson setup --wipe`), it is recommended to use `ccache` to accelerate the subsequent rebuild.
 
 If you want to use a custom version of a dependency library, install it first and then adjust one or more of the variables mentioned above or corresponding Meson options:
 
@@ -188,44 +246,6 @@ $ meson setup --native-file …/my-elf-dyn.ini builddir/
 
 See [`doc/developers/meson.ini`] for a more complete template listing the settings available in a native file.
 
-### Advanced Meson: Wrapped Dependencies
-
-If dependencies are required but not found in the build environment, Meson will download and build a default version of the missing dependency from source, by default.
-This section is an abridged version of Meson's official documentation on [subprojects][meson subprojects] and [wraps][meson wraps].
-
-Dependencies that are required but not found will fall back to suitable subproject, the subproject will be configured during `meson setup` and built from source during `meson compile`.
-Dependencies may be always required, or may be required due to an enabled feature, e.g. `-Dopencl=enabled` but not `-Dopencl=auto`.
-Any subprojects that are used as part of the build will be listed at the end of the `meson setup` output, for example:
-
-```
-  Subprojects
-    opencl-headers    : YES
-```
-
-If this fallback behavior is not desired, it can be disabled with `meson (setup|configure) --wrap-mode=nofallback`.
-With this, all dependencies must be provided by the build environment, except for forced-fallback dependencies configured with `meson (setup|configure) --force-fallback-for=dep1,dep2,...`.
-
-Subprojects are stored as directories under `subprojects/`, and may be downloaded automatically by Meson from corresponding `subprojects/*.wrap` files.
-These files describe the URLs and hashes to download the upstream sources from, as well as the dependencies provided by the subproject.
-Automatic downloads can be disabled with `meson (setup|configure) --wrap-mode=nodownload`, in which case previously downloaded subprojects will be used as fallback dependencies but new ones will not be downloaded.
-This configuration may result in not-found dependencies, with a message such as the following:
-
-```
-Automatic wrap-based subproject downloading is disabled
-Subproject  opencl-headers is buildable: NO (disabling)
-Dependency OpenCL-Headers from subproject opencl-headers found: NO (subproject failed to configure)
-```
-
-In this case, you can use `meson subprojects download opencl-headers` to explicitly download the listed subproject, e.g. from a machine with open internet access.
-If no subproject is specified (`meson subprojects download`), all available subprojects will be downloaded.
-Note that wraps may update when updating a local checkout, when this happens you may see a message such as:
-
-```
-WARNING: Subproject opencl-headers's revision may be out of date; its wrap file has changed since it was first configured
-```
-
-To fix this, run `meson subprojects update opencl-headers` to redownload and update the subproject, e.g. from a machine with open internet access.
-
 ## Documentation
 
 Documentation is available at the HPCToolkit home page:
@@ -257,7 +277,6 @@ follow your steps.
 
 - if a run failure, then what command you ran and how it failed.
 
-[getting spack]: https://spack.readthedocs.io/en/latest/getting_started.html
 [meson]: https://mesonbuild.com/
 [meson native file]: https://mesonbuild.com/Native-environments.html
 [meson subprojects]: https://mesonbuild.com/Subprojects.html
@@ -265,5 +284,4 @@ follow your steps.
 [meson's `dependency()` docs]: https://mesonbuild.com/Reference-manual_functions.html#dependency
 [spack]: https://spack.io/
 [spack user's manual]: https://spack.readthedocs.io/
-[`doc/developers/example-deps.yaml`]: /doc/developers/example-deps.yaml
 [`doc/developers/meson.ini`]: /doc/developers/meson.ini
