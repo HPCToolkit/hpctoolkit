@@ -18,6 +18,7 @@
         "mesonbuild.configureOptions": [
           "--native-file=image.ini",
           "-Dauto_features=enabled",
+          "-Dzstd:lz4=disabled",
           "-Dhpcprof_mpi=disabled",
           "-Dpapi=disabled",
           "-Dcuda=disabled",

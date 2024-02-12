@@ -365,6 +365,7 @@ fedora38 amd64:
   variables:
     SETUP_ARGS: >-
       --wrap-mode=default
+      -Dzstd:lz4=disabled
       -Dhpcprof_mpi=disabled
       -Dpapi=disabled
       -Dcuda=disabled
@@ -577,6 +578,7 @@ compiler gcc8:
   variables:
     SETUP_ARGS: >-
       --wrap-mode=forcefallback
+      -Dzstd:lz4=disabled
       --native-file gcc.ini
       -Dcuda=disabled
       -Drocm=disabled
@@ -593,6 +595,7 @@ compiler clang10:
   variables:
     SETUP_ARGS: >-
       --wrap-mode=forcefallback
+      -Dzstd:lz4=disabled
       --native-file clang10.ini
       -Dcuda=disabled
       -Drocm=disabled
@@ -605,6 +608,7 @@ compiler clang16:
   variables:
     SETUP_ARGS: >-
       --wrap-mode=forcefallback
+      -Dzstd:lz4=disabled
       --native-file clang.ini
       -Dcuda=disabled
       -Drocm=disabled
@@ -654,6 +658,7 @@ compiler clang16:
   variables:
     SETUP_ARGS: >-
       --wrap-mode=default
+      -Dzstd:lz4=disabled
       -Dhpcprof_mpi=disabled
       -Dcuda=disabled
       -Drocm=disabled

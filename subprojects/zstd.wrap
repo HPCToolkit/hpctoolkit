@@ -1,0 +1,12 @@
+[wrap-file]
+directory = zstd-1.5.4
+source_url = https://github.com/facebook/zstd/releases/download/v1.5.4/zstd-1.5.4.tar.gz
+source_filename = zstd-1.5.4.tar.gz
+source_hash = 0f470992aedad543126d06efab344dc5f3e171893810455787d38347343a4424
+patch_filename = zstd_1.5.4-1_patch.zip
+patch_url = https://wrapdb.mesonbuild.com/v2/zstd_1.5.4-1/get_patch
+patch_hash = 34cf5d5255918631b9a90dfc472e51295715ebd92249c5c19dd374c3ca279571
+wrapdb_version = 1.5.4-1
+
+[provide]
+libzstd = libzstd_dep
