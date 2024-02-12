@@ -366,6 +366,7 @@ fedora38 amd64:
     SETUP_ARGS: >-
       --wrap-mode=default
       -Dzstd:lz4=disabled
+      -Dpython=disabled
       -Dhpcprof_mpi=disabled
       -Dpapi=disabled
       -Dcuda=disabled
@@ -659,6 +660,7 @@ compiler clang16:
     SETUP_ARGS: >-
       --wrap-mode=default
       -Dzstd:lz4=disabled
+      -Dpython=disabled
       -Dhpcprof_mpi=disabled
       -Dcuda=disabled
       -Drocm=disabled
@@ -672,7 +674,6 @@ compiler clang16:
       - --buildtype=release
       - -Dvalgrind_annotations=true
     - OPTION:
-      - -Dpython=disabled
       - -Dopencl=disabled
       TEST_ARGS: --suite hpcrun
 'option: [intel amd64]':
