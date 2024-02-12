@@ -1,0 +1,14 @@
+[wrap-file]
+directory = libpfm-4.13.0
+source_url = https://sourceforge.net/projects/perfmon2/files/libpfm4/libpfm-4.13.0.tar.gz/download
+source_filename = libpfm-4.13.0.tar.gz
+source_hash = d18b97764c755528c1051d376e33545d0eb60c6ebf85680436813fa5b04cc3d1
+patch_filename = libpfm-4.13.0-1-beta.2_patch.zip
+patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libpfm/4.13.0-1-beta.2/libpfm-4.13.0-1-beta.2_patch.zip
+patch_hash = 48ceb94c3a72acd9f997307005acd430011aa3341ee478b33777d0e2cdc8453c
+source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libpfm/4.13.0-1-beta.2/libpfm-4.13.0.tar.gz
+wrapdb_version = 4.13.0-1-beta.2
+
+[provide]
+dependency_names = libpfm
+libpfm = libpfm_dep

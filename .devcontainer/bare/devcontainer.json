@@ -1,31 +1,29 @@
 {
-  "name": "ci.predeps-rocm5.5",
+  "name": "ci.predeps-bare",
   "build": {
-    "args": {
-      "ROCM_VERSION": "5.5.1"
-    },
     "context": "${localWorkspaceFolder}",
-    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.rocm"
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.bare"
   },
   "capAdd": [
     "SYS_ADMIN"
   ],
-  "containerEnv": {
-    "OMPI_ALLOW_RUN_AS_ROOT": "1",
-    "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM": "1"
-  },
   "customizations": {
     "vscode": {
       "extensions": [
         "mesonbuild.mesonbuild"
       ],
       "settings": {
-        "mesonbuild.buildFolder": ".devcontainer/rocm5.5/builddir-${devcontainerId}",
+        "mesonbuild.buildFolder": ".devcontainer/bare/builddir-${devcontainerId}",
         "mesonbuild.configureOnOpen": true,
         "mesonbuild.configureOptions": [
           "--native-file=image.ini",
           "-Dauto_features=enabled",
+          "-Dzstd:lz4=disabled",
+          "-Dpython=disabled",
+          "-Dhpcprof_mpi=disabled",
+          "-Dpapi=disabled",
           "-Dcuda=disabled",
+          "-Drocm=disabled",
           "-Dlevel0=disabled",
           "-Dgtpin=disabled"
         ],
@@ -60,9 +58,8 @@
       "version": "latest"
     }
   },
-  "privileged": true,
   "remoteEnv": {
-    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/rocm5.5/builddir-${devcontainerId}",
-    "builddir": "${containerWorkspaceFolder}/.devcontainer/rocm5.5/builddir-${devcontainerId}"
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/bare/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/bare/builddir-${devcontainerId}"
   }
 }

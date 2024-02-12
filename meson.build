@@ -32,16 +32,33 @@ python_dep = python.dependency(required: get_option('python'))
 # Collect all the dependencies we require for HPCToolkit
 boost_dep = dependency('boost', 'Boost', modules: ['graph'], version: '>=1.70.0')
 bzip_dep = dependency('bzip2', 'BZip2', version: '>=1.0.0')
-tbb_dep = dependency('TBB', components: ['tbb'])
-tbb_malloc_dep = dependency('TBB', components: ['tbb', 'tbbmalloc'])
-libelf_dep = dependency('libelf', version: '>=0.186')
-libdw_dep = dependency('libdw', version: '>=0.186')
-libunwind_dep = dependency('libunwind', version: '>=1.6.2')
-xerces_dep = dependency('xerces-c', version: '>=3.2.3')
+tbb_dep = dependency('tbb', 'TBB', components: ['tbb'])
+tbb_malloc_dep = dependency('tbbmalloc', 'TBB', components: ['tbb', 'tbbmalloc'])
+libelf_dep = dependency('libelf', version: '>=0.186', default_options: ['thread_safety=true'])
+libdw_dep = dependency('libdw', version: '>=0.186', default_options: ['thread_safety=true'])
+libunwind_dep = dependency('libunwind', version: '>=1.6.2',
+  default_options: ['minidebuginfo=enabled', 'zlibdebuginfo=enabled'])
+if meson.version().version_compare('>=1.4.0')
+  xerces_dep = dependency('xerces-c', version: '>=3.2.3')
+else
+  # Prior Meson versions don't provide versions for `method = cmake` wraps
+  xerces_dep = dependency('xerces-c')
+  if xerces_dep.type_name() != 'internal' and not xerces_dep.version().version_compare('>=3.2.3')
+    xerces_dep = dependency('xerces-c', method: 'system')  # Force fallback to wrap
+  endif
+endif
 lzma_dep = dependency('liblzma', version: '>=5.2.0')
 zlib_dep = dependency('zlib')
 xxhash_dep = dependency('libxxhash', version: '>=0.8.1')
-yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
+if meson.version().version_compare('>=1.4.0')
+  yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
+else
+  # Prior Meson versions don't provide versions for `method = cmake` wraps
+  yaml_cpp_dep = dependency('yaml-cpp')
+  if yaml_cpp_dep.type_name() != 'internal' and not yaml_cpp_dep.version().version_compare('>=0.7.0')
+    yaml_cpp_dep = dependency('yaml-cpp', method: 'system')  # Force fallback to wrap
+  endif
+endif
 papi_dep = dependency('papi', required: get_option('papi'), version: '>=6.0.0')
 
 
@@ -110,13 +127,13 @@ if host_machine.cpu_family() in ['x86', 'x86_64']
     endif
   endif
   if not xed_dep.found()
-    xed_dep = dependency('xed', method: 'system')
+    xed_dep = dependency('xed', method: 'system', version: '>=2022.08.11')
   endif
 endif
 
 perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake', version: '>=4.0', required: false)
 if not perfmon_dep.found()
-  _perfmon_lib = cc.find_library('pfm', has_headers: ['perfmon/pfmlib.h'])
+  _perfmon_lib = cc.find_library('pfm', has_headers: ['perfmon/pfmlib.h'], required: false)
   if _perfmon_lib.found()
     perfmon_dep = declare_dependency(
       dependencies: _perfmon_lib,
@@ -125,7 +142,7 @@ if not perfmon_dep.found()
   endif
 endif
 if not perfmon_dep.found()
-  perfmon_dep = dependency('libpfm', method: 'system')
+  perfmon_dep = dependency('libpfm', method: 'system', version: '>=4.0')
 endif
 
 
