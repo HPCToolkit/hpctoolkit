@@ -30,36 +30,42 @@ python_dep = python.dependency(required: get_option('python'))
 
 
 # Collect all the dependencies we require for HPCToolkit
-boost_dep = dependency('boost', 'Boost', modules: ['graph'], version: '>=1.70.0')
+boost_dep = dependency('boost', 'Boost', modules: ['graph'], version: '>=1.66.0')
 bzip_dep = dependency('bzip2', 'BZip2', version: '>=1.0.0')
 tbb_dep = dependency('tbb', 'TBB', components: ['tbb'])
 tbb_malloc_dep = dependency('tbbmalloc', 'TBB', components: ['tbb', 'tbbmalloc'])
 libelf_dep = dependency('libelf', version: '>=0.186', default_options: ['thread_safety=true'])
 libdw_dep = dependency('libdw', version: '>=0.186', default_options: ['thread_safety=true'])
-libunwind_dep = dependency('libunwind', version: '>=1.6.2',
+libunwind_dep = dependency('libunwind', version: ['>=1.6.2', '!=1.21'],
   default_options: ['minidebuginfo=enabled', 'zlibdebuginfo=enabled'])
+_xerces_c_ver = '>=3.2.2'
 if meson.version().version_compare('>=1.4.0')
-  xerces_dep = dependency('xerces-c', version: '>=3.2.3')
+  xerces_dep = dependency('xerces-c', version: _xerces_c_ver)
 else
   # Prior Meson versions don't provide versions for `method = cmake` wraps
   xerces_dep = dependency('xerces-c')
-  if xerces_dep.type_name() != 'internal' and not xerces_dep.version().version_compare('>=3.2.3')
+  if xerces_dep.type_name() != 'internal' and not xerces_dep.version().version_compare(_xerces_c_ver)
+    message('Dependency @0@ found @1@ but need: \'@2@\''.format(
+        xerces_dep.name(), xerces_dep.version(), _xerces_c_ver))
     xerces_dep = dependency('xerces-c', method: 'system')  # Force fallback to wrap
   endif
 endif
 lzma_dep = dependency('liblzma', version: '>=5.2.0')
 zlib_dep = dependency('zlib')
 xxhash_dep = dependency('libxxhash', version: '>=0.8.1')
+_yaml_cpp_ver = '>=0.6.2'
 if meson.version().version_compare('>=1.4.0')
-  yaml_cpp_dep = dependency('yaml-cpp', version: '>=0.7.0')
+  yaml_cpp_dep = dependency('yaml-cpp', version: _yaml_cpp_ver)
 else
   # Prior Meson versions don't provide versions for `method = cmake` wraps
   yaml_cpp_dep = dependency('yaml-cpp')
-  if yaml_cpp_dep.type_name() != 'internal' and not yaml_cpp_dep.version().version_compare('>=0.7.0')
+  if yaml_cpp_dep.type_name() != 'internal' and not yaml_cpp_dep.version().version_compare(_yaml_cpp_ver)
+    message('Dependency @0@ found @1@ but need: \'@2@\''.format(
+        yaml_cpp_dep.name(), yaml_cpp_dep.version(), _yaml_cpp_ver))
     yaml_cpp_dep = dependency('yaml-cpp', method: 'system')  # Force fallback to wrap
   endif
 endif
-papi_dep = dependency('papi', required: get_option('papi'), version: '>=6.0.0')
+papi_dep = dependency('papi', required: get_option('papi'), version: '>=5.6.0')
 
 
 # Dyninst ships config files, but up through 12.3 they aren't actually usable. We have a Find*

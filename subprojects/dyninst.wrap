@@ -3,11 +3,11 @@ directory = dyninst-12.3.0
 source_url = https://github.com/dyninst/dyninst/archive/refs/tags/v12.3.0.tar.gz
 source_filename = dyninst-12.3.0.tar.gz
 source_hash = 956b0378d2badb765a7e677c0b66c0b8b8cacca7631222bfe7a27b369abf7dd4
-patch_filename = dyninst-12.3.0-1-beta.6_patch.zip
-patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/12.3.0-1-beta.6/dyninst-12.3.0-1-beta.6_patch.zip
-patch_hash = be8a4e256302baa91353a22a11bf9d28a93a6538fe6b1dd7f49f287d6c190a65
-source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/12.3.0-1-beta.6/dyninst-12.3.0.tar.gz
-wrapdb_version = 12.3.0-1-beta.6
+patch_filename = dyninst-12.3.0-1-beta.7_patch.zip
+patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/12.3.0-1-beta.7/dyninst-12.3.0-1-beta.7_patch.zip
+patch_hash = c74f0d568c3af0128018b6e43714900f5dd353f5b0f6292a3e549ac661aee804
+source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/12.3.0-1-beta.7/dyninst-12.3.0.tar.gz
+wrapdb_version = 12.3.0-1-beta.7
 
 diff_files = dyninst/f89cc72-fix-clang-error.patch
 
