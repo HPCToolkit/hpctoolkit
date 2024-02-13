@@ -317,7 +317,7 @@ include:
   tags: [saas-linux-small-amd64]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed
+      --force-fallback-for=$FALLBACKS
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -326,25 +326,34 @@ ubuntu20.04 amd64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
+  variables:
+    FALLBACKS: dyninst,elfutils,libunwind,xed,xxhash
 ubuntu20.04 arm64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-arm64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
   tags: [rice-linux-small-arm64]
+  variables:
+    FALLBACKS: dyninst,elfutils,libunwind,xed,xxhash
 ubuntu20.04 ppc64le:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-ppc64le]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_PPC64LE
   tags: [rice-linux-small-ppc64le]
+  variables:
+    FALLBACKS: dyninst,elfutils,libunwind,xed,xxhash
 leap15 amd64:
   extends: .individual test job std
   needs: ['predeps: [leap15-amd64]']
   image: $PREDEPS_IMAGE_LEAP15_AMD64
+  variables:
+    FALLBACKS: dyninst,elfutils,libunwind,xed
 rhel8 amd64:
   extends: .individual test job std
   needs: ['predeps: [rhel8-amd64]']
   image: $PREDEPS_IMAGE_RHEL8_AMD64
   variables:
+    FALLBACKS: dyninst,libunwind,xed
     # FIXME: MVAPICH2 reacts badly in VMs, it claims to have no threading support. The same effect
     # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
     # MPI for now until a proper fix can be figured out.
@@ -354,6 +363,7 @@ fedora38 amd64:
   needs: ['predeps: [fedora38-amd64]']
   image: $PREDEPS_IMAGE_FEDORA38_AMD64
   variables:
+    FALLBACKS: dyninst,xed
     # FIXME: This particular version of OpenMPI reacts badly in VMs, hpcprof-mpi hangs. The same
     # effect can't be reproduced in a local container, for whatever reason. Disable the MPI tests
     # on this MPI for now until a proper fix can be figured out.
@@ -393,7 +403,7 @@ bare ppc64le:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed
+      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -418,7 +428,7 @@ cuda12.0 amd64:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed
+      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
       -Dcuda=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -472,7 +482,7 @@ intel amd64:
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed,gtpin
+      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash,gtpin
       -Dcuda=disabled
       -Drocm=disabled
 
@@ -514,7 +524,7 @@ semifresh none cpu:
   tags: [saas-linux-medium-amd64]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed
+      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -527,7 +537,7 @@ semifresh nvidia sw-cuda:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed
+      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
       -Drocm=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -539,7 +549,7 @@ semifresh amd:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed
+      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
       -Dcuda=disabled
       -Dlevel0=disabled
       -Dgtpin=disabled
@@ -634,7 +644,7 @@ compiler clang16:
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed
+      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
       -Dcuda=disabled
       -Drocm=disabled
       -Dlevel0=disabled
@@ -682,7 +692,7 @@ compiler clang16:
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     SETUP_ARGS: >-
-      --force-fallback-for=dyninst,xed
+      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
       -Dcuda=disabled
       -Drocm=disabled
       $OPTION

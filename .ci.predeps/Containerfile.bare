@@ -1,33 +1,43 @@
 # OS installation stage: Install build tools from the OS
 FROM docker.io/ubuntu:20.04 as os-install
 
-# Some images set problematic environment variables. Wipe those out first for safety.
-ENV \
-  PYTHONPATH= \
-  PKG_CONFIG_PATH= \
-  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-  CPATH= \
-  LIBRARY_PATH= \
-  LD_LIBRARY_PATH= \
-  CMAKE_PREFIX_PATH=
-
 # Install the required OS packages
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   rm -f /etc/apt/apt.conf.d/docker-clean \
   && apt-get update -yqq \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ccache \
-    clang clang-9 clang-10 clang-11 \
+    clang \
+    clang-10 \
+    clang-11 \
+    clang-9 \
     cmake \
-    eatmydata \
-    g++ g++-8 g++-9 g++-10 \
-    gcc gcc-8 gcc-9 gcc-10 \
-    git git-lfs \
+    g++ \
+    g++-10 \
+    g++-8 \
+    g++-9 \
+    gcc \
+    gcc-10 \
+    gcc-8 \
+    gcc-9 \
+    libboost-atomic-dev \
+    libboost-chrono-dev \
+    libboost-date-time-dev \
+    libboost-filesystem-dev \
+    libboost-graph-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
+    libboost-timer-dev \
     libomp-dev \
-    make mawk sed  `# See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    make  `# FIXME: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    mawk  `# FIXME: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
     ninja-build \
+    patch \
     pkg-config \
-    python3 python3-pip python3-venv \
+    python3 \
+    python3-pip \
+    python3-venv \
+    sed  `# FIXME: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
   && : # END
 
 # Install a up-to-date versions of Meson, using a suitable Python
@@ -37,11 +47,27 @@ RUN \
   && : # END
 
 
-# OS native-file side-stage: Collect and compose a native file for the OS software
-FROM os-install as os-native
+# From-source installation side-stage: Install (some) software from source
+FROM os-install as src-install
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  rm -f /etc/apt/apt.conf.d/docker-clean \
+  && apt-get update -yqq \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    git \
+  && : # END
 
-# Copy in the native files this OS image can support
-COPY ci/native/src/image.ubuntu20.04.ini /usr/share/meson/native/image.ini
+RUN \
+  git clone --depth=1 https://github.com/HPCToolkit/libmonitor.git /tmp/libmonitor \
+  && mkdir /tmp/builddir && cd /tmp/builddir \
+  && /tmp/libmonitor/configure --prefix=/usr --disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38' \
+  && make \
+  && DESTDIR=/dest make install
+
+
+# Composition stage: Produce what will become the final image
+FROM os-install
+COPY --from=src-install /dest /
+COPY ci/native/src/image.bare.ini /usr/share/meson/native/image.ini
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/clang10.ini \
@@ -52,34 +78,3 @@ COPY \
   ci/native/src/gcc8.ini \
   ci/native/src/gcc9.ini \
   /usr/share/meson/native/
-
-
-# Spack installation side-stage: Install (some) software from Spack to /opt/software
-FROM ghcr.io/spack/ubuntu-focal:0.21.0 as spack-install
-
-# Install the venv support for Python, which is a separate package on Ubuntu
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  apt-get update -yqq \
-  && apt-get install -y python3-venv
-
-# Install all the packages we want, using the environment. This also generates a Meson native file
-# referring to all the packages.
-COPY ci/spack-deps/ /opt/environment/
-ENV VERMODE=bare
-RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
-    --mount=type=cache,target=/mnt/cache/spack-src,sharing=locked \
-  export PATH=/opt/spack/bin:"$PATH" \
-  && /opt/environment/install.sh
-
-
-# Final native-file side-stage: Merge the OS and Spack native files
-FROM os-native as final-native
-COPY --from=spack-install /opt/environment/spack_env.ini /tmp/
-COPY ci/native/patch-native.py /tmp/
-RUN /tmp/patch-native.py /usr/share/meson/native/image.ini /tmp/spack_env.ini
-
-
-# Composition stage: Produce what will become the final image
-FROM os-install
-COPY --from=spack-install /opt/software/ /opt/software/
-COPY --from=final-native /usr/share/meson/native/ /usr/share/meson/native/

@@ -44,7 +44,9 @@ def scan_headers(cc: typing.List[str], src: Path, args: typing.Iterable[str]) ->
     with tempfile.NamedTemporaryFile() as f:
         try:
             subprocess.run(
-                [*cc, *args, src, "-M", "-MF", f.name], check=True, stderr=subprocess.DEVNULL
+                [*cc, *args, src, "-D_GLIBCXX_USE_TBB_PAR_BACKEND=0", "-M", "-MF", f.name],
+                check=True,
+                stderr=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError:
             print(f"W: Ignoring failure to compile {src}")
@@ -162,6 +164,14 @@ STANDARD_ESSENTIAL = {
 STANDARD_PKG_PROVIDES = {
     # On Ubuntu, Python is built with libcrypt
     "libcrypt-dev": {f"python-3.{n:d}" for n in range(8, 15)},
+    # libiberty comes as part of binutils, when it comes from the OS
+    "binutils-devel": {"Libiberty"},
+    "libiberty-dev": {"Libiberty"},
+    # Perfmon comes from libpfm, when it comes from the OS
+    "libpfm-devel": {"Perfmon2"},
+    "libpfm4-dev": {"Perfmon2"},
+    # Boost is provided by Boost
+    "boost-devel": {"boost"},
 }
 STANDARD_DEP_PROVIDES = {
     # CUDA is a builtin dependency from Meson, so we need to explicitly have it claim any CUDA install

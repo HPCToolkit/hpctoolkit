@@ -4,11 +4,11 @@ lead_directory_missing = true
 source_url = https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz
 source_filename = gcc-13.2.0.tar.xz
 source_hash = e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da
-patch_filename = libiberty-13.2.0-1-beta.0_patch.zip
-patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libiberty/13.2.0-1-beta.0/libiberty-13.2.0-1-beta.0_patch.zip
-patch_hash = 9c331e855903dc2422737e26ae4938c82a994950f1e6d436fee0ab53c6bd57cf
-source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libiberty/13.2.0-1-beta.0/gcc-13.2.0.tar.xz
-wrapdb_version = 13.2.0-1-beta.0
+patch_filename = libiberty-13.2.0-1-beta.1_patch.zip
+patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libiberty/13.2.0-1-beta.1/libiberty-13.2.0-1-beta.1_patch.zip
+patch_hash = ba6450507aba7a413a044c7e59897dc926065d9a8814a3fdacc569492d339458
+source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libiberty/13.2.0-1-beta.1/gcc-13.2.0.tar.xz
+wrapdb_version = 13.2.0-1-beta.1
 
 [provide]
 dependency_names = libiberty
