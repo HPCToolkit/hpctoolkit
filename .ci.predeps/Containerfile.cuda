@@ -2,33 +2,48 @@
 ARG CUDA_VERSION=11.6.2
 FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-ubuntu20.04 as os-install
 
-# Some images set problematic environment variables. Wipe those out first for safety.
-ENV \
-  PYTHONPATH= \
-  PKG_CONFIG_PATH= \
-  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-  CPATH= \
-  LIBRARY_PATH= \
-  LD_LIBRARY_PATH= \
-  CMAKE_PREFIX_PATH=
-
 # Install the required OS packages
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   rm -f /etc/apt/apt.conf.d/docker-clean \
   && apt-get update -yqq \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ccache \
-    clang clang-9 clang-10 clang-11 \
+    clang \
+    clang-10 \
+    clang-11 \
+    clang-9 \
     cmake \
-    eatmydata \
-    g++ g++-8 g++-9 g++-10 \
-    gcc gcc-8 gcc-9 gcc-10 \
-    git git-lfs \
+    g++ \
+    g++-10 \
+    g++-8 \
+    g++-9 \
+    gcc \
+    gcc-10 \
+    gcc-8 \
+    gcc-9 \
+    git \
+    libbz2-dev \
+    libiberty-dev \
+    liblzma-dev \
     libomp-dev \
-    ninja-build \
     libopenmpi-dev \
+    libpapi-dev \
+    libpfm4-dev \
+    libtbb-dev \
+    libxerces-c-dev \
+    libyaml-cpp-dev \
+    libzstd-dev \
+    make  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    mawk  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    ninja-build \
+    opencl-headers \
     pkg-config \
-    python3 python3-pip python3-venv python3-dev \
+    python3 \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    sed  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    zlib1g-dev \
   && : # END
 
 # Install a up-to-date versions of Meson, using a suitable Python
@@ -38,10 +53,30 @@ RUN \
   && : # END
 
 
-# OS native-file side-stage: Collect and compose a native file for the OS software
-FROM os-install as os-native
+# From-source installation side-stage: Install (some) software from source
+FROM os-install as src-install
+RUN \
+  git clone --depth=1 https://github.com/HPCToolkit/libmonitor.git /tmp/libmonitor \
+  && mkdir /tmp/builddir && cd /tmp/builddir \
+  && /tmp/libmonitor/configure --prefix=/usr --disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38' \
+  && make \
+  && DESTDIR=/dest make install
 
-# Copy in the native files this OS image can support
+# FIXME: Boost doesn't support DESTDIR, so we install to a prefix under /dest and hope nothing
+# goes wrong. See https://github.com/boostorg/boost_install/issues/14 for discussion.
+# We only need to do this because we need a visibility=global Boost installation.
+# Tracking issue: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/815.
+ADD https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 /tmp/boost.tar.bz2
+RUN \
+  tar xjf /tmp/boost.tar.bz2 -C /tmp \
+  && cd /tmp/boost_1_84_0 \
+  && ./bootstrap.sh --prefix=/dest/usr --with-libraries=atomic,chrono,date_time,filesystem,graph,system,thread,timer \
+  && ./b2 install visibility=global
+
+
+# Composition stage: Produce what will become the final image
+FROM os-install
+COPY --from=src-install /dest /
 COPY ci/native/src/image.cuda.ini /usr/share/meson/native/image.ini
 COPY \
   ci/native/src/clang.ini \
@@ -53,34 +88,3 @@ COPY \
   ci/native/src/gcc8.ini \
   ci/native/src/gcc9.ini \
   /usr/share/meson/native/
-
-
-# Spack installation side-stage: Install (some) software from Spack to /opt/software
-FROM ghcr.io/spack/ubuntu-focal:0.21.0 as spack-install
-
-# Install the venv support for Python, which is a separate package on Ubuntu
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  apt-get update -yqq \
-  && apt-get install -y python3-venv
-
-# Install all the packages we want, using the environment. This also generates a Meson native file
-# referring to all the packages.
-COPY ci/spack-deps/ /opt/environment/
-ARG VERMODE=latest
-RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml \
-    --mount=type=cache,target=/mnt/cache/spack-src,sharing=locked \
-  export PATH=/opt/spack/bin:"$PATH" \
-  && /opt/environment/install.sh
-
-
-# Final native-file side-stage: Merge the OS and Spack native files
-FROM os-native as final-native
-COPY --from=spack-install /opt/environment/spack_env.ini /tmp/
-COPY ci/native/patch-native.py /tmp/
-RUN /tmp/patch-native.py /usr/share/meson/native/image.ini /tmp/spack_env.ini
-
-
-# Composition stage: Produce what will become the final image
-FROM os-install
-COPY --from=spack-install /opt/software/ /opt/software/
-COPY --from=final-native /usr/share/meson/native/ /usr/share/meson/native/
