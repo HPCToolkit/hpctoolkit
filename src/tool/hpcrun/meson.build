@@ -281,7 +281,7 @@ _my_aarch64_files = files(
 )
 
 _my_papi_files = []
-if cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component', dependencies: papi_dep)
+if papi_dep.found() and cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component', dependencies: papi_dep)
   _my_cpp_defines += '-DHPCRUN_SS_PAPI_C_INTEL'
   _my_papi_files = files(
     'sample-sources/papi-c.c',
