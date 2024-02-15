@@ -1,4 +1,4 @@
-if not python_dep.found()
+if not python_inst.found()
   subdir_done()
 endif
 

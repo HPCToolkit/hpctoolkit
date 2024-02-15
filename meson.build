@@ -30,12 +30,21 @@ if not python.found()
   python = find_program(_pynames, version: '>=3.8')
 endif
 
-# Find the Python dependency, used for the Python unwinding support. This needs to be the same
+# Find the Python installation, used for the Python unwinding support. This needs to be the same
 # version as the Python we test with to make everything compatible.
 python_inst = pymod.find_installation(python.full_path(), required: get_option('python'))
 if python_inst.found()
   assert(python_inst.language_version().version_compare('>=3.8'))
-  python_dep = python_inst.dependency(required: get_option('python'))
+  _py_dep = python_inst.dependency(required: get_option('python'))
+  # FIXME: Workaround for https://github.com/mesonbuild/meson/issues/12862
+  if not cc.has_header('Python.h', dependencies: _py_dep)
+    _py_dep = dependency('', required: false)
+  endif
+  # To support methods like extension_module(), we make the whole Python install object
+  # "not found" if the dependency was not found.
+  if not _py_dep.found()
+    python_inst = disabler()
+  endif
 endif
 
 
@@ -555,7 +564,7 @@ cfg.set('ENABLE_OPENMP', true,
         description: 'ParseAPI supports openmp (for hpcstruct)')
 cfg.set('ENABLE_OPENMP_SYMTAB', true,
         description: 'Symtab supports openmp (for fnbounds)')
-cfg.set('ENABLE_LOGICAL_PYTHON', python_dep.found(),
+cfg.set('ENABLE_LOGICAL_PYTHON', python_inst.found(),
         description: 'Support for Python logical unwinding')
 cfg.set('ENABLE_XOP', false,
         description: 'Support for AMD XOP instructions (disabled)')
