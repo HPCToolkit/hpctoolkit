@@ -22,13 +22,6 @@
       "settings": {
         "mesonbuild.buildFolder": ".devcontainer/rocm5.4/builddir-${devcontainerId}",
         "mesonbuild.configureOnOpen": true,
-        "mesonbuild.configureOptions": [
-          "--native-file=image.ini",
-          "-Dauto_features=enabled",
-          "-Dcuda=disabled",
-          "-Dlevel0=disabled",
-          "-Dgtpin=disabled"
-        ],
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.profiles.linux": {
           "bash": {

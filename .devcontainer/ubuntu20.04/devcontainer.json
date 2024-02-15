@@ -19,14 +19,6 @@
       "settings": {
         "mesonbuild.buildFolder": ".devcontainer/ubuntu20.04/builddir-${devcontainerId}",
         "mesonbuild.configureOnOpen": true,
-        "mesonbuild.configureOptions": [
-          "--native-file=image.ini",
-          "-Dauto_features=enabled",
-          "-Dcuda=disabled",
-          "-Drocm=disabled",
-          "-Dlevel0=disabled",
-          "-Dgtpin=disabled"
-        ],
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.profiles.linux": {
           "bash": {

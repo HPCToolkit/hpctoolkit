@@ -49,7 +49,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Install a up-to-date versions of Meson, using a suitable Python
 RUN \
   python3 -m pip install \
-    'meson>=1.1.0,<2' \
+    'meson>=1.3.2,<2' \
   && : # END
 
 
@@ -70,14 +70,14 @@ ADD https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_
 RUN \
   tar xjf /tmp/boost.tar.bz2 -C /tmp \
   && cd /tmp/boost_1_84_0 \
-  && ./bootstrap.sh --prefix=/dest/usr --with-libraries=atomic,chrono,date_time,filesystem,graph,system,thread,timer \
+  && ./bootstrap.sh --prefix=/dest/opt/boost --with-libraries=atomic,chrono,date_time,filesystem,graph,system,thread,timer \
   && ./b2 install visibility=global
 
 
 # Composition stage: Produce what will become the final image
 FROM os-install
 COPY --from=src-install /dest /
-COPY ci/native/src/image.cuda.ini /usr/share/meson/native/image.ini
+COPY ci/native/src/hpctoolkit-ci.cuda.ini /usr/share/meson/native/hpctoolkit-ci.ini
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/clang10.ini \
@@ -88,3 +88,6 @@ COPY \
   ci/native/src/gcc8.ini \
   ci/native/src/gcc9.ini \
   /usr/share/meson/native/
+
+# Add the custom Boost to the environment
+ENV BOOST_ROOT=/opt/boost LD_LIBRARY_PATH=/opt/boost/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
-import copy
 import fnmatch
 import functools
 import glob
-import itertools
 import json
 import os.path
 import re
@@ -129,55 +127,6 @@ def guess_provides(pkg: str) -> typing.Set[str]:
     return result
 
 
-STANDARD_IGNORE = {
-    # Standard C/C++ compiler installations
-    "/usr/include/sanitizer/**",
-    "/usr/lib??/clang/**",
-    "/usr/lib??/gcc/**",
-    "/usr/lib/*/clang/**",
-    "/usr/lib/*/gcc/**",
-    "/usr/lib/clang/**",
-    "/usr/lib/gcc/**",
-    # Header provided by standard Python installations
-    "/usr/include/python3.*/pyconfig*.h",
-}
-STANDARD_ESSENTIAL = {
-    # Standard header packages for various distros
-    "glibc-devel",
-    "glibc-headers-*",
-    "glibc-headers",
-    "kernel-headers",
-    "libc6-dev",
-    "libstdc++*-dev",
-    "libstdc++*-devel-*",
-    "libstdc++*-devel",
-    "linux-glibc-devel",
-    "linux-libc-dev",
-    # MPI often requires decode-mpi which by nature can't produce a useful dependency name.
-    # Just ignore anything MPI, since it's too much trouble to decipher on the fly.
-    "libmpich-dev",
-    "libopenmpi-dev",
-    "mpich-devel",
-    "mvapich2-devel",
-    "openmpi-devel",
-}
-STANDARD_PKG_PROVIDES = {
-    # On Ubuntu, Python is built with libcrypt
-    "libcrypt-dev": {f"python-3.{n:d}" for n in range(8, 15)},
-    # libiberty comes as part of binutils, when it comes from the OS
-    "binutils-devel": {"Libiberty"},
-    "libiberty-dev": {"Libiberty"},
-    # Perfmon comes from libpfm, when it comes from the OS
-    "libpfm-devel": {"Perfmon2"},
-    "libpfm4-dev": {"Perfmon2"},
-    # Boost is provided by Boost
-    "boost-devel": {"boost"},
-}
-STANDARD_DEP_PROVIDES = {
-    # CUDA is a builtin dependency from Meson, so we need to explicitly have it claim any CUDA install
-    "cuda": {"/usr/local/cuda-*/**"},
-}
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Inspect a build for appropriate use of dependencies"
@@ -212,7 +161,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     del parser
 
-    ignored = copy.deepcopy(STANDARD_IGNORE)
+    ignored = set()
     if args.ignore:
         for spec in args.ignore:
             if Path(spec).is_dir():
@@ -220,19 +169,17 @@ if __name__ == "__main__":
             else:
                 ignored.add(spec)
 
-    essential = copy.deepcopy(STANDARD_ESSENTIAL)
+    essential = set()
     if args.essential_pkgs:
         essential.update(args.essential_pkgs)
 
-    provides: typing.Dict[str, typing.Set[str]] = copy.deepcopy(STANDARD_PKG_PROVIDES)
+    provides: typing.Dict[str, typing.Set[str]] = {}
     if args.pkg_provides:
         for provide in args.pkg_provides:
             provides.setdefault(provide[0], set()).update(set(provide[1:]))
 
     provided_by: typing.Dict[Path, typing.Set[str]] = {}
-    for dep, files in itertools.chain(
-        STANDARD_DEP_PROVIDES.items(), ((spec[0], spec[1:]) for spec in (args.dep_provides or []))
-    ):
+    for dep, files in ((spec[0], spec[1:]) for spec in (args.dep_provides or [])):
         for file in files:
             filepath = Path(file)
             if not filepath.is_absolute():
