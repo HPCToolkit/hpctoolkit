@@ -1,11 +1,13 @@
-if not rocm_dep.found()
+if not rocm_dep.found() or not has_hip
   subdir_done()
 endif
 
 _tstexe_vecadd_hip = custom_target(
   output: 'tstexe-vecadd-hip',
-  input: files('vecadd.hip.cpp'),
-  command: hipcc_cmd,
+  command: hip_ld,
+  input: hip.process(
+    files('vecadd.hip.cpp')
+  ),
 )
 
 _preargs = ['--rocprofiler-path', rocprofiler_path]

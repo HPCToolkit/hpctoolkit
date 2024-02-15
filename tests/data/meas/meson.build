@@ -18,11 +18,18 @@ if cupti_dep.found() and has_cuda
   _exe_loops_cuda = executable('testmeas-loops-cuda', files('loops.cu'))
   _exe_recursion_cuda = executable('testmeas-recursion-cuda', files('recursion.cu'))
 endif
-_exe_loops_hip = custom_target(
-  output: 'testmeas-loops-hip',
-  input: files('loops.hip.cpp'),
-  command: hipcc_cmd,
-)
+
+_exe_loops_hip = disabler()
+if rocm_dep.found() and has_hip
+  _exe_loops_hip = custom_target(
+    output: 'testmeas-loops-hip',
+    command: hip_ld,
+    input: hip.process(
+      files('loops.hip.cpp')
+    ),
+  )
+endif
+
 
 _run = [find_program(files('run')), hpcrun, hpcstruct]
 

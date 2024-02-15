@@ -322,13 +322,24 @@ if rocm_dep.found()
   rocprofiler_path = fs.parent(rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML', internal: 'metrics_xml'))
 endif
 
-# Find HIP, the language used to test the ROCm support
-hipcc = disabler()
-hipcc_cmd = disabler()
+# Find HIP, the language used to test the ROCm support. Meson doesn't support it as a language, but
+# we emulate Meson's basic behavior for languages.
+# Similar to CUDA, we combine cpp_*args and hip_*args for the command lines here.
+has_hip = false
 if rocm_dep.found()
-  hipcc = find_program('hipcc', '/opt/rocm/bin/hipcc', required: get_option('extended_tests'))
-  if hipcc.found()
-    hipcc_cmd = [hipcc, '-o', '@OUTPUT@', '@INPUT@']
+  _hip_cc = find_program('hip', 'hipcc', required: get_option('extended_tests'))
+  has_hip = _hip_cc.found()
+
+  if has_hip
+    # For compilation:
+    hip = generator(
+      _hip_cc,
+      arguments: [get_option('cpp_args'), get_option('hip_args'), '-MD', '-MQ', '@OUTPUT@', '-MF', '@DEPFILE@', '-o', '@OUTPUT@', '-c', '@INPUT@'],
+      output: '@PLAINNAME@.o',
+      depfile: '@PLAINNAME@.o.d',
+    )
+    # For linking (to be used with custom_target()):
+    hip_ld = [_hip_cc, get_option('cpp_link_args'), get_option('hip_link_args'), '-o', '@OUTPUT0@', '@INPUT@']
   endif
 endif
 
