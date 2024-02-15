@@ -11,12 +11,12 @@ _exe_loops = executable(
   override_options: ['debug=true', 'optimization=0'],
   dependencies: dependency('openmp'),
 )
-if cupti_dep.found()
+
+_exe_loops_cuda = disabler()
+_exe_recursion_cuda = disabler()
+if cupti_dep.found() and has_cuda
   _exe_loops_cuda = executable('testmeas-loops-cuda', files('loops.cu'))
   _exe_recursion_cuda = executable('testmeas-recursion-cuda', files('recursion.cu'))
-else
-  _exe_loops_cuda = disabler()
-  _exe_recursion_cuda = disabler()
 endif
 _exe_loops_hip = custom_target(
   output: 'testmeas-loops-hip',

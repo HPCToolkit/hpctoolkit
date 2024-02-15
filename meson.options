@@ -1,3 +1,5 @@
+option('extended_tests', type: 'feature', description: 'Enable tests that require additional dependencies than those used for the build')
+
 option('hpcprof_mpi', type: 'feature', description: 'Build hpcprof-mpi')
 
 option(

@@ -238,8 +238,12 @@ endif
 # There are a couple different Meson bugs and antifeatures at play here to cause this, but it works.
 nvdisasm = find_program('nvdisasm', '/usr/local/cuda/bin/nvdisasm', required: get_option('cuda'))
 cupti_dep = dependency('CUDA', modules: ['cupti'], required: get_option('cuda'), version: '>=11.2').partial_dependency(compile_args: true, includes: true)
-if not add_languages('cuda', native: false, required: get_option('cuda'))
-  cupti_dep = dependency('', required: false)
+
+# Note that we only need the CUDA language for the tests, so if cupti_dep wasn't found we don't
+# enable this here either.
+has_cuda = false
+if cupti_dep.found()
+  has_cuda = add_languages('cuda', native: false, required: get_option('extended_tests'))
 endif
 
 
@@ -307,20 +311,25 @@ rocm_dep = declare_dependency(
   dependencies: _rocm_subdeps,
   version: hip_dep.version(),
 ).partial_dependency(compile_args: true, includes: true)
+rocprofiler_path = disabler()
 foreach dep : _rocm_subdeps
   if not dep.found()
     rocm_dep = dependency('', required: false)
     break
   endif
 endforeach
+if rocm_dep.found()
+  rocprofiler_path = fs.parent(rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML', internal: 'metrics_xml'))
+endif
 
+# Find HIP, the language used to test the ROCm support
 hipcc = disabler()
 hipcc_cmd = disabler()
-rocprofiler_path = disabler()
 if rocm_dep.found()
-  hipcc = find_program('hipcc', '/opt/rocm/bin/hipcc', required: true)
-  hipcc_cmd = [hipcc, '-o', '@OUTPUT@', '@INPUT@']
-  rocprofiler_path = fs.parent(rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML', internal: 'metrics_xml'))
+  hipcc = find_program('hipcc', '/opt/rocm/bin/hipcc', required: get_option('extended_tests'))
+  if hipcc.found()
+    hipcc_cmd = [hipcc, '-o', '@OUTPUT@', '@INPUT@']
+  endif
 endif
 
 
