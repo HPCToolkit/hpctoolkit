@@ -269,7 +269,7 @@ include:
     - .ccache/
   variables:
     CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
-    SETUP_ARGS: ''
+    SETUP_ARGS: '--native-file hpctoolkit-ci.ini'
     TEST_ARGS: ''
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
@@ -282,15 +282,9 @@ include:
     # We also want kernel symbols available (kallsyms), so enable that too.
     - if [ "$(cat /proc/sys/kernel/kptr_restrict)" -gt 0 ]; then echo 0 > /proc/sys/kernel/kptr_restrict; fi
     # Usual sequence from here: setup, build and test
-    - >-
-      meson setup
-      --native-file image.ini
-      -Dauto_features=enabled
-      --wrap-mode=nofallback
-      $SETUP_ARGS builddir
+    - meson setup $SETUP_ARGS builddir
   - meson compile -C builddir 2>&1 | tee compile.log
-  - meson compile -C builddir lint-depends
-  - if [ "$TEST_ARGS" != NOTESTS ]; then meson test -C builddir --maxfail 3 --repeat 7 $TEST_ARGS; fi
+  - meson test -C builddir --maxfail 3 --repeat 7 $TEST_ARGS ${TEST_ARGS:+--suite lint}
   after_script:
   - |
     echo "To reproduce this build, run:"
@@ -315,45 +309,29 @@ include:
 .individual test job std:
   extends: .individual test job
   tags: [saas-linux-small-amd64]
-  variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=$FALLBACKS
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
 ubuntu20.04 amd64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  variables:
-    FALLBACKS: dyninst,elfutils,libunwind,xed,xxhash
 ubuntu20.04 arm64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-arm64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
   tags: [rice-linux-small-arm64]
-  variables:
-    FALLBACKS: dyninst,elfutils,libunwind,xed,xxhash
 ubuntu20.04 ppc64le:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-ppc64le]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_PPC64LE
   tags: [rice-linux-small-ppc64le]
-  variables:
-    FALLBACKS: dyninst,elfutils,libunwind,xed,xxhash
 leap15 amd64:
   extends: .individual test job std
   needs: ['predeps: [leap15-amd64]']
   image: $PREDEPS_IMAGE_LEAP15_AMD64
-  variables:
-    FALLBACKS: dyninst,elfutils,libunwind,xed
 rhel8 amd64:
   extends: .individual test job std
   needs: ['predeps: [rhel8-amd64]']
   image: $PREDEPS_IMAGE_RHEL8_AMD64
   variables:
-    FALLBACKS: dyninst,libunwind,xed
     # FIXME: MVAPICH2 reacts badly in VMs, it claims to have no threading support. The same effect
     # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
     # MPI for now until a proper fix can be figured out.
@@ -363,7 +341,6 @@ fedora38 amd64:
   needs: ['predeps: [fedora38-amd64]']
   image: $PREDEPS_IMAGE_FEDORA38_AMD64
   variables:
-    FALLBACKS: dyninst,xed
     # FIXME: This particular version of OpenMPI reacts badly in VMs, hpcprof-mpi hangs. The same
     # effect can't be reproduced in a local container, for whatever reason. Disable the MPI tests
     # on this MPI for now until a proper fix can be figured out.
@@ -372,17 +349,6 @@ fedora38 amd64:
 .individual test job bare:
   extends: .individual test job
   tags: [saas-linux-medium-amd64]
-  variables:
-    SETUP_ARGS: >-
-      --wrap-mode=default
-      -Dzstd:lz4=disabled
-      -Dpython=disabled
-      -Dhpcprof_mpi=disabled
-      -Dpapi=disabled
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
 bare amd64:
   extends: .individual test job bare
   needs: ['predeps: [bare-amd64]']
@@ -402,11 +368,6 @@ bare ppc64le:
   extends: .individual test job
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
     TEST_ARGS: >-
       --suite cuda
       --suite hpcstruct
@@ -427,11 +388,6 @@ cuda12.0 amd64:
   extends: .individual test job
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
-      -Dcuda=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
     TEST_ARGS: >-
       --suite rocm
 rocm5.1 amd64:
@@ -480,11 +436,6 @@ intel amd64:
   tags: [saas-linux-medium-amd64]
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
-  variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash,gtpin
-      -Dcuda=disabled
-      -Drocm=disabled
 
 
 # Selected semi-fresh test runs. These regenerate suitable parts of the test data
@@ -494,6 +445,7 @@ intel amd64:
   extends: .test job
   stage: semi-fresh tests
   variables:
+    SETUP_ARGS: ''
     REGEN_SUITES: ''
   script:
   - *test_job_setup
@@ -523,12 +475,6 @@ semifresh none cpu:
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   tags: [saas-linux-medium-amd64]
   variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
     REGEN_SUITES: none cpu
 semifresh nvidia sw-cuda:
   extends: .semifresh test job
@@ -536,11 +482,6 @@ semifresh nvidia sw-cuda:
   image: $PREDEPS_IMAGE_CUDA11_8_AMD64
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
     REGEN_SUITES: nvidia sw-cuda
 semifresh amd:
   extends: .semifresh test job
@@ -548,11 +489,6 @@ semifresh amd:
   image: $PREDEPS_IMAGE_ROCM5_7_AMD64
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
-      -Dcuda=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
     REGEN_SUITES: amd
 
 # For easy access, the regenerated test data is made available as a single job artifact archive
@@ -582,19 +518,17 @@ fresh testdata:
   extends: .test job
   stage: configuration tests
   tags: [saas-linux-small-amd64]
+  variables:
+    SETUP_ARGS: >-
+      --native-file hpctoolkit-ci.ini
+      --native-file $JOB_CC.ini
+      --wrap-mode=forcefallback
 compiler gcc8:
   extends: .compiler compat test job
   needs: ['predeps: [rhel8-amd64]']
   image: $PREDEPS_IMAGE_RHEL8_AMD64
   variables:
-    SETUP_ARGS: >-
-      --wrap-mode=forcefallback
-      -Dzstd:lz4=disabled
-      --native-file gcc.ini
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
+    JOB_CC: gcc
     # FIXME: MVAPICH2 reacts badly in VMs, it claims to have no threading support. The same effect
     # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
     # MPI for now until a proper fix can be figured out.
@@ -604,27 +538,13 @@ compiler clang10:
   needs: ['predeps: [ubuntu20.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   variables:
-    SETUP_ARGS: >-
-      --wrap-mode=forcefallback
-      -Dzstd:lz4=disabled
-      --native-file clang10.ini
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
+    JOB_CC: clang10
 compiler clang16:
   extends: .compiler compat test job
   needs: ['predeps: [fedora38-amd64]']
   image: $PREDEPS_IMAGE_FEDORA38_AMD64
   variables:
-    SETUP_ARGS: >-
-      --wrap-mode=forcefallback
-      -Dzstd:lz4=disabled
-      --native-file clang.ini
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
+    JOB_CC: clang
     # FIXME: This particular version of OpenMPI reacts badly in VMs, hpcprof-mpi hangs. The same
     # effect can't be reproduced in a local container, for whatever reason. Disable the MPI tests
     # on this MPI for now until a proper fix can be figured out.
@@ -642,63 +562,58 @@ compiler clang16:
   extends: .option test job
   needs: ['predeps: [ubuntu20.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-      $OPTION
   parallel:
     matrix:
-    - OPTION:
+    - SETUP_ARGS:
       - --buildtype=release
       - -Dvalgrind_annotations=true
-    - OPTION:
+    - SETUP_ARGS:
       - -Dpapi=disabled
       - -Dpython=disabled
       - -Dopencl=disabled
       TEST_ARGS: --suite hpcrun
-    - OPTION: -Dhpcprof_mpi=disabled
-      TEST_ARGS: NOTESTS
+    - SETUP_ARGS:
+      - -Dhpcprof_mpi=disabled
+      TEST_ARGS: --suite lint
 'option: [bare amd64]':
   extends: .option test job
   needs: ['predeps: [bare-amd64]']
   image: $PREDEPS_IMAGE_BARE_AMD64
-  variables:
-    SETUP_ARGS: >-
-      --wrap-mode=default
-      -Dzstd:lz4=disabled
-      -Dpython=disabled
-      -Dhpcprof_mpi=disabled
-      -Dcuda=disabled
-      -Drocm=disabled
-      -Dlevel0=disabled
-      -Dgtpin=disabled
-      -Dpapi=disabled
-      $OPTION
   parallel:
     matrix:
-    - OPTION:
+    - SETUP_ARGS:
       - --buildtype=release
       - -Dvalgrind_annotations=true
-    - OPTION:
+    - SETUP_ARGS:
       - -Dopencl=disabled
+      TEST_ARGS: --suite hpcrun
+'option: [cuda amd64]':
+  extends: .option test job
+  needs: ['predeps: [cuda12.0-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_0_AMD64
+  parallel:
+    matrix:
+    - SETUP_ARGS:
+      - -Dcuda=disabled
+      TEST_ARGS: --suite hpcrun
+'option: [rocm amd64]':
+  extends: .option test job
+  needs: ['predeps: [rocm6.0-amd64]']
+  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
+  parallel:
+    matrix:
+    - SETUP_ARGS:
+      - -Drocm=disabled
       TEST_ARGS: --suite hpcrun
 'option: [intel amd64]':
   extends: .option test job
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
-  variables:
-    SETUP_ARGS: >-
-      --force-fallback-for=dyninst,elfutils,libunwind,xed,xxhash
-      -Dcuda=disabled
-      -Drocm=disabled
-      $OPTION
   parallel:
     matrix:
-    - OPTION: -Dgtpin=disabled
+    - SETUP_ARGS:
+      - -Dlevel0=disabled
+      - -Dgtpin=disabled
       TEST_ARGS: --suite hpcrun
 
 

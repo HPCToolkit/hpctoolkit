@@ -42,10 +42,13 @@ RUN \
     zlib-devel \
   && : # END
 
-# Install a up-to-date versions of Meson, using a suitable Python
+# Adjust the default Python, since 3.6 is ancient
+RUN ln -s /usr/bin/python3.11 /usr/local/bin/python3
+
+# Install a up-to-date version of Meson
 RUN \
   python3.11 -m pip install \
-    'meson>=1.1.0,<2' \
+    'meson>=1.3.2,<2' \
   && : # END
 
 # Ensure the appropriate MPI is loaded into the shell environment, always.
@@ -59,17 +62,21 @@ FROM os-install as src-install
 RUN \
   git clone --depth=1 https://github.com/HPCToolkit/libmonitor.git /tmp/libmonitor \
   && mkdir /tmp/builddir && cd /tmp/builddir \
-  && /tmp/libmonitor/configure --prefix=/usr --disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38' \
+  && /tmp/libmonitor/configure --prefix=/opt/libmonitor --disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38' \
   && make \
-  && DESTDIR=/dest make install \
-  && if ! [ -d /dest/usr/lib64 ]; then mv /dest/usr/lib /dest/usr/lib64; fi
+  && DESTDIR=/dest make install
 
 
 # Composition stage: Produce what will become the final image
 FROM os-install
 COPY --from=src-install /dest /
-COPY ci/native/src/image.leap15.ini /usr/share/meson/native/image.ini
+COPY ci/native/src/hpctoolkit-ci.leap15.ini /usr/share/meson/native/hpctoolkit-ci.ini
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/gcc12.ini \
   /usr/share/meson/native/
+
+# Set CMAKE_PREFIX_PATH to the paths for all the bits, and set the default compiler to GCC 12
+ENV \
+  CC="ccache gcc-12" CXX="ccache g++-12" \
+  CMAKE_PREFIX_PATH=/opt/libmonitor${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}
