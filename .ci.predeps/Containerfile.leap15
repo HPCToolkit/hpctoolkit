@@ -42,9 +42,6 @@ RUN \
     zlib-devel \
   && : # END
 
-# Adjust the default Python, since 3.6 is ancient
-RUN ln -s /usr/bin/python3.11 /usr/local/bin/python3
-
 # Install a up-to-date version of Meson
 RUN \
   python3.11 -m pip install \

@@ -20,13 +20,23 @@ cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 
 
-# Find Python. This is a hard requirement since we use Python for the regression test suite as well.
-python = pymod.find_installation('python3')
-assert(
-  python.language_version().version_compare('>=3.8'),
-  'Need Python >=3.8, got @0@'.format(python.language_version()),
-)
-python_dep = python.dependency(required: get_option('python'))
+# Find Python.
+python = find_program('python3', 'python', version: '>=3.8', required: false)
+if not python.found()
+  _pynames = []
+  foreach ver : range(8, 15)
+    _pynames += [f'python3.@ver@']
+  endforeach
+  python = find_program(_pynames, version: '>=3.8')
+endif
+
+# Find the Python dependency, used for the Python unwinding support. This needs to be the same
+# version as the Python we test with to make everything compatible.
+python_inst = pymod.find_installation(python.full_path(), required: get_option('python'))
+if python_inst.found()
+  assert(python_inst.language_version().version_compare('>=3.8'))
+  python_dep = python_inst.dependency(required: get_option('python'))
+endif
 
 
 # Collect all the dependencies we require for HPCToolkit

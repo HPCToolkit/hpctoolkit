@@ -3,11 +3,11 @@ directory = xed-2023.10.11
 source_url = https://github.com/intelxed/xed/archive/refs/tags/v2023.10.11.tar.gz
 source_filename = xed-2023.10.11.tar.gz
 source_hash = 7e9c6c3371186ba852c447c65fff1a093eaf9a5f10d5588ca75cf6305ed416fd
-patch_filename = xed-2023.10.11-1-beta.5_patch.zip
-patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/xed/2023.10.11-1-beta.5/xed-2023.10.11-1-beta.5_patch.zip
-patch_hash = 6b8875d41568714fa0eaf0d59fcee8745ce72ffb7cae3d9fa5a250ae52d6e5f0
-source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/xed/2023.10.11-1-beta.5/xed-2023.10.11.tar.gz
-wrapdb_version = 2023.10.11-1-beta.5
+patch_filename = xed-2023.10.11-1-beta.6_patch.zip
+patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/xed/2023.10.11-1-beta.6/xed-2023.10.11-1-beta.6_patch.zip
+patch_hash = 2ac35912413939f7dee9e2b36d9618fcc8f4bd2ffd5f13deb7bbdf912ba587e7
+source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/xed/2023.10.11-1-beta.6/xed-2023.10.11.tar.gz
+wrapdb_version = 2023.10.11-1-beta.6
 
 [provide]
 dependency_names = xed, xed-ild
