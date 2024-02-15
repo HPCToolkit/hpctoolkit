@@ -71,9 +71,9 @@ repos:
       (?x)^(
         .*/[^/]+\.patch |    # Patches
         src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
-        tests2/data/dbase/[^/]+\.d/.* |    # Generated test data
-        tests2/data/meas/[^/]+\.m/.* |    # Generated test data
-        tests2/data/struct/[^/]+\.hpcstruct |    # Generated test data
+        tests/data/dbase/[^/]+\.d/.* |    # Generated test data
+        tests/data/meas/[^/]+\.m/.* |    # Generated test data
+        tests/data/struct/[^/]+\.hpcstruct |    # Generated test data
       )$
   # All files must end in a single newline (or be perfectly empty)
   - id: end-of-file-fixer

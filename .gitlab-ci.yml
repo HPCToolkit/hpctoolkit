@@ -450,10 +450,10 @@ intel amd64:
   script:
   - *test_job_setup
   - meson compile -C builddir $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
-  - git add --intent-to-add tests2/data/
+  - git add --intent-to-add tests/data/
   - meson compile -C builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
   - mkdir testdata-patches/
-  - cp -t testdata-patches/ builddir/tests2/data/*.patch
+  - cp -t testdata-patches/ builddir/tests/data/*.patch
   # Make sure we run the tests once in the same build directory that generated them
   - meson test -C builddir --maxfail 3 $TEST_ARGS
   # Then wipe the build directory and re-test against a "sterilized" build

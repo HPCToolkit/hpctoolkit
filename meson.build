@@ -640,7 +640,7 @@ endif
 subdir('src')
 subdir('lib')
 subdir('doc')
-subdir('tests2') # FIXME: Eventually rename this to just tests/
+subdir('tests')
 subdir('meson')
 
 
