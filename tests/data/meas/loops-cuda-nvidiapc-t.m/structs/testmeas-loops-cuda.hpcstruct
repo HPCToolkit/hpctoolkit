@@ -7,9 +7,9 @@
 
 <!ELEMENT HPCToolkitStructure (LM)*>
 <!ATTLIST HPCToolkitStructure
-    version CDATA #REQUIRED
-       i       CDATA #REQUIRED
-       n       CDATA #IMPLIED>
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
   <!-- Load module: -->
   <!--   (i)d: unique identifier for cross referencing -->
   <!--   (n)ame -->
@@ -19,58 +19,58 @@
   <!--   (d)evice: device name -->
   <!ELEMENT LM (F|P)*>
   <!ATTLIST LM
-  i CDATA #REQUIRED
-     n CDATA #REQUIRED
-     has-calls CDATA #REQUIRED
-     v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
   <!-- File: -->
   <!ELEMENT F (P|L|S)*>
   <!ATTLIST F
-   i CDATA #REQUIRED
-     n CDATA #REQUIRED>
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
   <!-- Procedure: ln=link name (if different than name) -->
   <!ELEMENT P (P|A|L|S|C)*>
   <!ATTLIST P
-   i  CDATA #REQUIRED
-    n  CDATA #REQUIRED
-    ln CDATA #IMPLIED
-     l  CDATA #IMPLIED
-     s  CDATA #IMPLIED
-     v  CDATA #IMPLIED>
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
   <!-- Alien: (f)ilename -->
   <!ELEMENT A (A|L|S|C)*>
   <!ATTLIST A
-    i CDATA #REQUIRED
-     f CDATA #IMPLIED
-      n CDATA #IMPLIED
-      ln CDATA #IMPLIED
-     l CDATA #IMPLIED
-      v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
   <!-- Loop -->
   <!ELEMENT L (A|L|S|C)*>
   <!ATTLIST L
-  i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     f CDATA #IMPLIED
-      v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
   <!-- Statement -->
   <!ELEMENT S EMPTY>
   <!ATTLIST S
-  i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
   <!-- Callsite (a special Statement) -->
   <!ELEMENT C (C)*>
   <!ATTLIST C
-      i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     v CDATA #IMPLIED
-      t CDATA #IMPLIED
-      d CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
 ]>
 <HPCToolkitStructure i="0" version="4.9" n="">
-<LM i="2" n="/builds/hpctoolkit/hpctoolkit/ci/build/tests2/data/meas/testmeas-loops-cuda" has-calls="0" v="{}">
-<F i="3" n="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/loops.cu">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/builddir/tests/data/meas/testmeas-loops-cuda" has-calls="0" v="{}">
+<F i="3" n="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu">
 <P i="4" n="main" l="35" v="{[0xade0-0xade1)}">
 <S i="5" l="35" v="{[0xade0-0xadfa)}"/>
 <S i="6" l="40" v="{[0xadff-0xae07)}"/>
@@ -84,25 +84,25 @@
 <S i="14" l="61" v="{[0xaeea-0xaef1)}"/>
 <S i="15" l="65" v="{[0xaef1-0xaef5)}"/>
 <S i="16" l="66" v="{[0xaea6-0xaebd) [0xaef5-0xaefa)}"/>
-<L i="17" l="48" f="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/loops.cu" v="{[0xae46-0xae47)}">
+<L i="17" l="48" f="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu" v="{[0xae46-0xae47)}">
 <S i="18" l="48" v="{[0xae3d-0xae46)}"/>
 <S i="19" l="50" v="{[0xae46-0xae60) [0xae65-0xae6f) [0xae77-0xae80)}"/>
 <S i="20" l="51" v="{[0xae85-0xae8a)}"/>
 <S i="21" l="52" v="{[0xae8a-0xae8e)}"/>
 <S i="22" l="58" v="{[0xae30-0xae35)}"/>
 <S i="23" l="59" v="{[0xae35-0xae3d)}"/>
-<A i="24" l="50" f="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/loops.cu" n="" v="{}">
+<A i="24" l="50" f="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu" n="" v="{}">
 <A i="25" l="423" f="/usr/local/cuda-11.8/targets/x86_64-linux/include/vector_types.h" n="dim3::dim3(unsigned int, unsigned int, unsigned int)" v="{}">
 <S i="26" l="423" v="{[0xae60-0xae65) [0xae6f-0xae77)}"/>
 </A>
 </A>
-<A i="27" l="50" f="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/loops.cu" n="" v="{}">
-<A i="28" l="19" f="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/loops.cu" n="kernmain" v="{}">
+<A i="27" l="50" f="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu" n="" v="{}">
+<A i="28" l="19" f="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu" n="kernmain" v="{}">
 <S i="29" l="19" v="{[0xae80-0xae85)}"/>
 </A>
 </A>
 </L>
-<A i="30" l="50" f="/builds/hpctoolkit/hpctoolkit/tests2/data/meas/loops.cu" n="" v="{}">
+<A i="30" l="50" f="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu" n="" v="{}">
 <A i="31" l="423" f="/usr/local/cuda-11.8/targets/x86_64-linux/include/vector_types.h" n="dim3::dim3(unsigned int, unsigned int, unsigned int)" v="{}">
 <S i="32" l="423" v="{[0xae1d-0xae27)}"/>
 </A>
@@ -112,18 +112,18 @@
 <S i="34" l="19" v="{[0xb250-0xb259)}"/>
 </P>
 </F>
-<F i="35" n="/tmp/tmpxft_00003cab_00000000-6_loops.cudafe1.stub.c">
+<F i="35" n="/tmp/tmpxft_00000c95_00000000-6_loops.cudafe1.stub.c">
 <P i="36" n="__sti____cudaRegisterAll()" ln="_ZL24__sti____cudaRegisterAllv" l="2" v="{[0xaf00-0xaf01)}">
 <S i="37" l="2" v="{[0xaf00-0xaf14) [0xaf28-0xaf2b) [0xaf39-0xaf40) [0xaf45-0xaf65)}"/>
-<A i="38" l="2" f="/tmp/tmpxft_00003cab_00000000-6_loops.cudafe1.stub.c" n="" v="{}">
-<A i="39" l="1" f="/tmp/tmpxft_00003cab_00000000-6_loops.cudafe1.stub.c" n="__nv_cudaEntityRegisterCallback" v="{}">
+<A i="38" l="2" f="/tmp/tmpxft_00000c95_00000000-6_loops.cudafe1.stub.c" n="" v="{}">
+<A i="39" l="1" f="/tmp/tmpxft_00000c95_00000000-6_loops.cudafe1.stub.c" n="__nv_cudaEntityRegisterCallback" v="{}">
 <S i="40" l="1" v="{[0xaf14-0xaf28) [0xaf2b-0xaf39) [0xaf40-0xaf45)}"/>
 </A>
 </A>
 </P>
 <P i="41" n="_GLOBAL__sub_I_main" l="4" v="{[0xaf70-0xaf71)}">
 <S i="42" l="4" v="{[0xaf70-0xaf78) [0xaf8b-0xaf8f)}"/>
-<A i="43" l="4" f="/tmp/tmpxft_00003cab_00000000-6_loops.cudafe1.stub.c" n="" v="{}">
+<A i="43" l="4" f="/tmp/tmpxft_00000c95_00000000-6_loops.cudafe1.stub.c" n="" v="{}">
 <A i="44" l="74" f="/usr/include/c++/9/iostream" n="__static_initialization_and_destruction_0" v="{}">
 <S i="45" l="74" v="{[0xaf78-0xaf8b) [0xaf8f-0xafa2)}"/>
 </A>
@@ -131,7 +131,7 @@
 </P>
 <P i="46" n="__device_stub__Z8kernmainv()" ln="_ZL26__device_stub__Z8kernmainvv" l="13" v="{[0xb1b0-0xb1b1)}">
 <S i="47" l="13" v="{[0xb1b0-0xb203) [0xb22f-0xb24b)}"/>
-<A i="48" l="13" f="/tmp/tmpxft_00003cab_00000000-6_loops.cudafe1.stub.c" n="" v="{}">
+<A i="48" l="13" f="/tmp/tmpxft_00000c95_00000000-6_loops.cudafe1.stub.c" n="" v="{}">
 <A i="49" l="215" f="/usr/local/cuda-11.8/targets/x86_64-linux/include/cuda_runtime.h" n="cudaLaunchKernel&lt;char&gt;" v="{}">
 <S i="50" l="215" v="{[0xb203-0xb22f)}"/>
 </A>

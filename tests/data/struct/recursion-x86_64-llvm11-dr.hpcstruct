@@ -7,9 +7,9 @@
 
 <!ELEMENT HPCToolkitStructure (LM)*>
 <!ATTLIST HPCToolkitStructure
-    version CDATA #REQUIRED
-       i       CDATA #REQUIRED
-       n       CDATA #IMPLIED>
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
   <!-- Load module: -->
   <!--   (i)d: unique identifier for cross referencing -->
   <!--   (n)ame -->
@@ -19,57 +19,57 @@
   <!--   (d)evice: device name -->
   <!ELEMENT LM (F|P)*>
   <!ATTLIST LM
-  i CDATA #REQUIRED
-     n CDATA #REQUIRED
-     has-calls CDATA #REQUIRED
-     v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
   <!-- File: -->
   <!ELEMENT F (P|L|S)*>
   <!ATTLIST F
-   i CDATA #REQUIRED
-     n CDATA #REQUIRED>
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
   <!-- Procedure: ln=link name (if different than name) -->
   <!ELEMENT P (P|A|L|S|C)*>
   <!ATTLIST P
-   i  CDATA #REQUIRED
-    n  CDATA #REQUIRED
-    ln CDATA #IMPLIED
-     l  CDATA #IMPLIED
-     s  CDATA #IMPLIED
-     v  CDATA #IMPLIED>
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
   <!-- Alien: (f)ilename -->
   <!ELEMENT A (A|L|S|C)*>
   <!ATTLIST A
-    i CDATA #REQUIRED
-     f CDATA #IMPLIED
-      n CDATA #IMPLIED
-      ln CDATA #IMPLIED
-     l CDATA #IMPLIED
-      v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
   <!-- Loop -->
   <!ELEMENT L (A|L|S|C)*>
   <!ATTLIST L
-  i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     f CDATA #IMPLIED
-      v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
   <!-- Statement -->
   <!ELEMENT S EMPTY>
   <!ATTLIST S
-  i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     v CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
   <!-- Callsite (a special Statement) -->
   <!ELEMENT C (C)*>
   <!ATTLIST C
-      i CDATA #REQUIRED
-     l CDATA #REQUIRED
-     v CDATA #IMPLIED
-      t CDATA #IMPLIED
-      d CDATA #IMPLIED>
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
 ]>
 <HPCToolkitStructure i="0" version="4.9" n="">
-<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests2/data/bin/test-binaries/small/bin/recursion-x86_64-llvm11-dr" has-calls="0" v="{}">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/recursion-x86_64-llvm11-dr" has-calls="0" v="{}">
 <F i="3" n="/src/recursion.c">
 <P i="4" n="heart [recursion-x86_64-llvm11-dr]" ln="heart" l="38" v="{[0x1100-0x1101)}">
 <S i="5" l="38" v="{[0x1100-0x1105)}"/>
