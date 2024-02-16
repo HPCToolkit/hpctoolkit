@@ -118,6 +118,9 @@ Additional configuration arguments can be passed to the initial `meson setup` or
 - `-Dopencl=(disabled|auto|enabled)`: Enable OpenCL metrics (`-e gpu=opencl`). Requires OpenCL headers.
 - `-Drocm=(disabled|auto|enabled)`: Enable ROCm metrics (`-e gpu=amd`). Requires ROCm.
 - `-Dvalgrind_annotations=(false|true)`: Inject annotations for debugging with Valgrind.
+- `-Dextended_tests=(disabled|auto|enabled)`: Feature option for that require extra dependencies. Request:
+  - CUDA compiler (e.g. `nvcc`) if `-Dcuda` support is available/enabled
+  - HIP compiler (`hipcc`) if `-Drocm` support is available/enabled
 
 Note that many of the features above require additional optional dependencies when enabled.
 

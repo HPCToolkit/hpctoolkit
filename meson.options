@@ -1,3 +1,5 @@
+option('extended_tests', type: 'feature', description: 'Enable tests that require additional dependencies than those used for the build')
+
 option('hpcprof_mpi', type: 'feature', description: 'Build hpcprof-mpi')
 
 option(
@@ -23,6 +25,9 @@ option(
   value: false,
   description: 'Inject annotations for Valgrind debugging',
 )
+
+option('hip_args', type: 'array', description: 'Arguments to pass to HIP compile line (i.e. <lang>_args)')
+option('hip_link_args', type: 'array', description: 'Arguments to pass to HIP link line (i.e. <lang>_link_args)')
 
 option(
   'rocprofiler_metrics_xml',
