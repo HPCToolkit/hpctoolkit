@@ -422,12 +422,8 @@ rocm6.0 amd64:
   image: $PREDEPS_IMAGE_ROCM6_0_AMD64
 
 intel amd64:
-  # FIXME: Currently we have no tests that require Intel hardware nor any Intel
-  # hardware connected to CI! Until the situation improves, run all the tests
-  # but enable level0 and gtpin (so we at least build with something different).
-  # We need a *-medium-* runner here because the Intel images are huge.
   extends: .individual test job std
-  tags: [saas-linux-medium-amd64]
+  tags: [rice-linux-large-amd64-gpu-intel]
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
@@ -550,6 +546,7 @@ compiler clang16:
     TEST_ARGS: --no-suite mpi
 compiler icx:
   extends: .compiler compat test job
+  tags: [rice-linux-large-amd64-gpu-intel]
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
@@ -625,6 +622,7 @@ compiler icx:
       TEST_ARGS: --suite none
 'option: [intel amd64]':
   extends: .option test job
+  tags: [rice-linux-large-amd64-gpu-intel]
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   parallel:

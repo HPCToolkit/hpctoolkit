@@ -29,6 +29,9 @@ option(
 option('hip_args', type: 'array', description: 'Arguments to pass to HIP compile line (i.e. <lang>_args)')
 option('hip_link_args', type: 'array', description: 'Arguments to pass to HIP link line (i.e. <lang>_link_args)')
 
+option('sycl_args', type: 'array', description: 'Arguments to pass to SYCL compile line (i.e. <lang>_args)')
+option('sycl_link_args', type: 'array', description: 'Arguments to pass to SYCL link line (i.e. <lang>_link_args)')
+
 option(
   'rocprofiler_metrics_xml',
   type: 'string',

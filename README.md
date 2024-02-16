@@ -121,6 +121,7 @@ Additional configuration arguments can be passed to the initial `meson setup` or
 - `-Dextended_tests=(disabled|auto|enabled)`: Feature option for that require extra dependencies. Request:
   - CUDA compiler (e.g. `nvcc`) if `-Dcuda` support is available/enabled
   - HIP compiler (`hipcc`) if `-Drocm` support is available/enabled
+  - SYCL-compatible compiler (e.g. `icpx`) if `-Dlevel0` support is available/enabled
 
 Note that many of the features above require additional optional dependencies when enabled.
 

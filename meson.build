@@ -505,6 +505,85 @@ if gtpin_dep.found()
   add_project_arguments('-DENABLE_GTPIN', language: ['c', 'cpp'])
 endif
 
+# Find SYCL, the language we use to test Level Zero support. Meson doesn't support it as a language,
+# but we emulate Meson's basic behavior for languages.
+# Similar to CUDA, we combine cpp_*args and hip_*args for the command lines here.
+has_sycl = false
+if level0_dep.found() and get_option('extended_tests').allowed()
+  # Path 1: If "sycl" has been registered as a binary in the machine file, use that.
+  _sycl_cc = find_program('sycl', required: false)
+  _sycl_args = []
+  _sycl_link_args = []
+  has_sycl = _sycl_cc.found()
+  sycl_is_cpp = false
+
+  # Path 2: If the C++ compiler supports compiling SYCL code, possibly with an extra flag, use that.
+  # This path is a bit different because we use Meson's native C++ support instead of implementing
+  # our own mess on top of things.
+  if not has_sycl
+    foreach sycl_dep : [
+      declare_dependency(
+        compile_args: [get_option('sycl_args')],
+        link_args: [get_option('sycl_link_args')],
+      ),
+      declare_dependency(
+        compile_args: ['-fsycl', get_option('sycl_args')],
+        link_args: ['-fsycl', get_option('sycl_link_args')],
+      ),
+    ]
+      if cpp.compiles(files('meson/sanity.sycl.cpp'), dependencies: sycl_dep)
+        has_sycl = true
+        sycl_is_cpp = true
+        break
+      endif
+    endforeach
+  endif
+
+  # Path 3: Search for a known compiler that supports SYCL. These logics are tuned based on the
+  # history and quirks of the compilers being attempted.
+  if not has_sycl
+    _icpx = find_program('icpx', required: false)
+    if _icpx.found()
+      run_command(python, files('meson/in-tmpdir.py'),
+        _icpx, '-fsycl', '-c', '-o', 'sanity.sycl.cpp.o', files('meson/sanity.sycl.cpp'),
+        check: true)
+      _sycl_cc = _icpx
+      _sycl_args = ['-fsycl']
+      _sycl_link_args = ['-fsycl']
+      has_sycl = true
+    endif
+  endif
+  if not has_sycl
+    _dpcpp = find_program('dpcpp', required: false)
+    if _dpcpp.found()
+      run_command(python, files('meson/in-tmpdir.py'),
+        _dpcpp, '-c', '-o', 'sanity.sycl.cpp.o', files('meson/sanity.sycl.cpp'),
+        check: true)
+      _sycl_cc = _dpcpp
+      _sycl_args = []
+      _sycl_link_args = []
+      has_sycl = true
+    endif
+  endif
+
+  # Regardless of what route we take, if we need SYCL and don't have it, error out.
+  if get_option('extended_tests').enabled() and not has_sycl
+    error('Unable to find a SYCL compiler!')
+  endif
+
+  if has_sycl and not sycl_is_cpp
+    # For compilation:
+    sycl = generator(
+      _sycl_cc,
+      arguments: [_sycl_args, get_option('cpp_args'), get_option('sycl_args'), '-MD', '-MQ', '@OUTPUT@', '-MF', '@DEPFILE@', '-o', '@OUTPUT@', '-c', '@INPUT@'],
+      output: '@PLAINNAME@.o',
+      depfile: '@PLAINNAME@.o.d',
+    )
+    # For linking (to be used with custom_target()):
+    sycl_ld = [_sycl_cc, _sycl_link_args, get_option('cpp_link_args'), get_option('sycl_link_args'), '-o', '@OUTPUT0@', '@INPUT@']
+  endif
+endif
+
 
 # Collect features from the compiler itself
 add_project_dependencies(dependency('openmp'), language: ['c', 'cpp'])
