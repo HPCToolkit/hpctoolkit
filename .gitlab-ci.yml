@@ -454,6 +454,7 @@ intel amd64:
   - meson compile -C builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
   - mkdir testdata-patches/
   - cp -t testdata-patches/ builddir/tests/data/*.patch
+  - find testdata-patches/ -type f -size 0 -delete
   # Make sure we run the tests once in the same build directory that generated them
   - meson test -C builddir --maxfail 3 $TEST_ARGS
   # Then wipe the build directory and re-test against a "sterilized" build
