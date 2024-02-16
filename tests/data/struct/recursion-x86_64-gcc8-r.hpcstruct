@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/recursion-x86_64-gcc8-r" has-calls="0" v="{}">
+<F i="3" n="[recursion-x86_64-gcc8-r]">
+<P i="4" n="_init [recursion-x86_64-gcc8-r]" ln="_init" l="0" v="{[0x1000-0x1001)}">
+<S i="5" l="0" v="{[0x1000-0x1017)}"/>
+</P>
+<P i="6" n="targ1030@plt [recursion-x86_64-gcc8-r]" ln="targ1030@plt" l="0" v="{[0x1030-0x1031)}">
+<S i="7" l="0" v="{[0x1030-0x1038)}"/>
+</P>
+<P i="8" n="deregister_tm_clones [recursion-x86_64-gcc8-r]" ln="deregister_tm_clones" l="0" v="{[0x1040-0x1041)}">
+<S i="9" l="0" v="{[0x1040-0x1070)}"/>
+</P>
+<P i="10" n="register_tm_clones [recursion-x86_64-gcc8-r]" ln="register_tm_clones" l="0" v="{[0x1070-0x1071)}">
+<S i="11" l="0" v="{[0x1070-0x10b0)}"/>
+</P>
+<P i="12" n="__do_global_dtors_aux [recursion-x86_64-gcc8-r]" ln="__do_global_dtors_aux" l="0" v="{[0x10b0-0x10b1)}">
+<S i="13" l="0" v="{[0x10b0-0x10f0)}"/>
+</P>
+<P i="14" n="frame_dummy [recursion-x86_64-gcc8-r]" ln="frame_dummy" l="0" v="{[0x10f0-0x10f1)}">
+<S i="15" l="0" v="{[0x10f0-0x1100)}"/>
+</P>
+<P i="16" n="top2 [recursion-x86_64-gcc8-r]" ln="top2" l="0" v="{[0x1100-0x1101)}">
+<S i="17" l="0" v="{[0x1100-0x1119)}"/>
+</P>
+<P i="18" n="common2 [recursion-x86_64-gcc8-r]" ln="common2" l="0" v="{[0x1120-0x1121)}">
+<S i="19" l="0" v="{[0x1120-0x1145)}"/>
+</P>
+<P i="20" n="common1 [recursion-x86_64-gcc8-r]" ln="common1" l="0" v="{[0x1150-0x1151)}">
+<S i="21" l="0" v="{[0x1150-0x1169)}"/>
+</P>
+<P i="22" n="top1 [recursion-x86_64-gcc8-r]" ln="top1" l="0" v="{[0x1170-0x1171)}">
+<S i="23" l="0" v="{[0x1170-0x1189)}"/>
+</P>
+<P i="24" n="heart [recursion-x86_64-gcc8-r]" ln="heart" l="0" v="{[0x1190-0x1191)}">
+<S i="25" l="0" v="{[0x1190-0x123c)}"/>
+</P>
+<P i="26" n="_fini [recursion-x86_64-gcc8-r]" ln="_fini" l="0" v="{[0x123c-0x123d)}">
+<S i="27" l="0" v="{[0x123c-0x1245)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

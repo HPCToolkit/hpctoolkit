@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/recursion-sm_87-nvcc118-dr" has-calls="1" v="{}">
+<F i="3" n="/src/recursion.cu">
+<P i="4" n="kernmain()" ln="_Z8kernmainv" l="50" v="{[0x2a00-0x2a01)}">
+<S i="5" l="50" v="{[0x2a00-0x2b60)}"/>
+<S i="6" l="51" v="{[0x2b60-0x2b70)}"/>
+<S i="7" l="52" v="{[0x2b80-0x2b90)}"/>
+<C i="8" l="51" v="{[0x2b70-0x2b80)}" t="0x3080" d="NVIDIA sm_87"/>
+</P>
+<P i="9" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main4top1EPVdi" l="30" v="{[0x2b90-0x2b91)}">
+<S i="10" l="30" v="{[0x2b90-0x2bd0)}"/>
+<S i="11" l="31" v="{[0x2bd0-0x2c10) [0x2c30-0x2c50)}"/>
+<S i="12" l="32" v="{[0x2c10-0x2c30) [0x2c60-0x2ca0)}"/>
+<S i="13" l="33" v="{[0x2ca0-0x2cb0)}"/>
+<C i="14" l="32" v="{[0x2c50-0x2c60)}" t="0x32a0" d="NVIDIA sm_87"/>
+</P>
+<P i="15" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main4top2EPVdi" l="36" v="{[0x2cb0-0x2cb1)}">
+<S i="16" l="36" v="{[0x2cb0-0x2d80)}"/>
+<S i="17" l="37" v="{[0x2d80-0x2f10) [0x2f20-0x2f60) [0x2f70-0x2f80)}"/>
+<S i="18" l="38" v="{[0x2f60-0x2f70) [0x2f80-0x2fc0) [0x2fd0-0x3070)}"/>
+<S i="19" l="39" v="{[0x3070-0x3080)}"/>
+<C i="20" l="37" v="{[0x2f10-0x2f20)}" t="0x35d0" d="NVIDIA sm_87"/>
+<C i="21" l="38" v="{[0x2fc0-0x2fd0)}" t="0x32a0" d="NVIDIA sm_87"/>
+</P>
+<P i="22" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main5heartEv" l="42" v="{[0x3080-0x3081)}">
+<S i="23" l="42" v="{[0x30a0-0x30b0) [0x31a0-0x31b0)}"/>
+<S i="24" l="43" v="{[0x3080-0x30a0) [0x30b0-0x30c0) [0x30d0-0x31a0) [0x31b0-0x31c0) [0x31e0-0x31f0)}"/>
+<S i="25" l="44" v="{[0x30c0-0x30d0) [0x31c0-0x31e0) [0x31f0-0x3210)}"/>
+<S i="26" l="45" v="{[0x3220-0x3270) [0x3280-0x3290)}"/>
+<S i="27" l="46" v="{[0x3290-0x32a0)}"/>
+<C i="28" l="44" v="{[0x3210-0x3220)}" t="0x2b90" d="NVIDIA sm_87"/>
+<C i="29" l="45" v="{[0x3270-0x3280)}" t="0x2cb0" d="NVIDIA sm_87"/>
+</P>
+<P i="30" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main7common1EPVdi" l="24" v="{[0x32a0-0x32a1)}">
+<S i="31" l="24" v="{[0x32a0-0x32e0)}"/>
+<S i="32" l="25" v="{[0x32e0-0x3320) [0x3340-0x3360)}"/>
+<S i="33" l="26" v="{[0x3320-0x3340) [0x3370-0x33b0)}"/>
+<S i="34" l="27" v="{[0x33b0-0x33c0)}"/>
+<C i="35" l="26" v="{[0x3360-0x3370)}" t="0x33c0" d="NVIDIA sm_87"/>
+</P>
+<P i="36" n="$_Z8kernmainv$_ZN39_INTERNAL_f4e700d6_12_recursion_cu_main7common2EPVdi" l="13" v="{[0x33c0-0x33c1)}">
+<S i="37" l="13" v="{[0x33c0-0x3420)}"/>
+<S i="38" l="14" v="{[0x3420-0x3450)}"/>
+<S i="39" l="15" v="{[0x3470-0x3480) [0x3510-0x35d0)}"/>
+<S i="40" l="16" v="{[0x3450-0x3470) [0x34c0-0x34d0)}"/>
+<S i="41" l="17" v="{[0x34d0-0x34f0) [0x3500-0x3510)}"/>
+<S i="42" l="19" v="{[0x3480-0x34a0)}"/>
+<S i="43" l="21" v="{[0x34b0-0x34c0)}"/>
+<C i="44" l="17" v="{[0x34f0-0x3500)}" t="0x2b90" d="NVIDIA sm_87"/>
+<C i="45" l="19" v="{[0x34a0-0x34b0)}" t="0x2cb0" d="NVIDIA sm_87"/>
+</P>
+<P i="46" n="$_Z8kernmainv$__cuda_sm20_div_f64_slowpath_v2" l="15" v="{[0x35d0-0x35d1)}">
+<S i="47" l="15" v="{[0x35d0-0x3c80)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

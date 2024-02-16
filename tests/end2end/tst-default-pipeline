@@ -1,0 +1,15 @@
+#!/bin/sh -ex
+
+hpctesttool="$1"
+hpcrun="$2"
+hpcstruct="$3"
+hpcprof="$4"
+shift 4  # Remaining arguments are the app command line
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+"$hpcrun" -o "$tmpdir"/m "$@"
+"$hpcstruct" "$tmpdir"/m
+"$hpcprof" -j1 -o "$tmpdir"/d "$tmpdir"/m
+"$hpctesttool" test check-db "$tmpdir"/d

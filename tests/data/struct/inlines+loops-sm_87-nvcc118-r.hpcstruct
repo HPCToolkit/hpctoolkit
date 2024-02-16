@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/inlines+loops-sm_87-nvcc118-r" has-calls="0" v="{}">
+<F i="3" n="[inlines+loops-sm_87-nvcc118-r]">
+<P i="4" n="f4_2()" ln="_Z4f4_2v" s="22" l="0" v="{[0x2100-0x2101)}">
+<S i="5" l="0" v="{[0x2100-0x2700)}"/>
+</P>
+<P i="6" n="f4_1()" ln="_Z4f4_1v" s="24" l="0" v="{[0x2700-0x2701)}">
+<S i="7" l="0" v="{[0x2700-0x2c00)}"/>
+</P>
+<P i="8" n="f3_3()" ln="_Z4f3_3v" s="25" l="0" v="{[0x2c00-0x2c01)}">
+<S i="9" l="0" v="{[0x2c00-0x3200)}"/>
+</P>
+<P i="10" n="f3_2()" ln="_Z4f3_2v" s="26" l="0" v="{[0x3200-0x3201)}">
+<S i="11" l="0" v="{[0x3200-0x3700)}"/>
+</P>
+<P i="12" n="f3_1()" ln="_Z4f3_1v" s="27" l="0" v="{[0x3700-0x3701)}">
+<S i="13" l="0" v="{[0x3700-0x3b00)}"/>
+</P>
+<P i="14" n="f2()" ln="_Z2f2v" s="28" l="0" v="{[0x3b00-0x3b01)}">
+<S i="15" l="0" v="{[0x3b00-0x3d80)}"/>
+</P>
+<P i="16" n="f1()" ln="_Z2f1v" s="29" l="0" v="{[0x3d80-0x3d81)}">
+<S i="17" l="0" v="{[0x3d80-0x4000)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

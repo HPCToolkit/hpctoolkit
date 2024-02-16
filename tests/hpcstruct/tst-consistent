@@ -1,0 +1,23 @@
+#!/bin/sh -ex
+
+hpctesttool="$1"
+hpcstruct="$2"
+canonical="$3"
+shift 3  # Remaining arguments go to hpcstruct
+
+for arg in "$@"; do
+  case "$arg" in
+  --skip*)
+    if [ "$arg" != "--skip" ]; then
+      echo "$arg" | cut -d= -f2-
+    fi
+    exit 77
+    ;;
+  esac
+done
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+"$hpcstruct" -o "$tmpdir"/s.hpcstruct --nocache "$@"
+"$hpctesttool" test struct-compare "$tmpdir"/s.hpcstruct "$canonical"

@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/recursion-x86_64-gcc12-d" has-calls="0" v="{}">
+<F i="3" n="/src/recursion.c">
+<P i="4" n="top2 [recursion-x86_64-gcc12-d]" ln="top2" l="33" v="{[0x10f9-0x10fa)}">
+<S i="5" l="33" v="{[0x10f9-0x10fd)}"/>
+<S i="6" l="34" v="{[0x10fd-0x1114)}"/>
+<S i="7" l="35" v="{[0x1114-0x1119)}"/>
+<S i="8" l="36" v="{[0x1119-0x111e)}"/>
+</P>
+<P i="9" n="common2 [recursion-x86_64-gcc12-d]" ln="common2" l="11" v="{[0x111e-0x111f)}">
+<S i="10" l="11" v="{[0x111e-0x1122)}"/>
+<S i="11" l="12" v="{[0x1138-0x114c)}"/>
+<S i="12" l="13" v="{[0x1126-0x112b)}"/>
+<S i="13" l="14" v="{[0x112b-0x1133)}"/>
+<S i="14" l="16" v="{[0x114c-0x1154)}"/>
+<S i="15" l="18" v="{[0x1133-0x1138) [0x1154-0x1156)}"/>
+<A i="16" l="10" f="/src/recursion.c" n="&lt;inline&gt;" v="{}">
+<S i="17" l="10" v="{[0x1122-0x1126)}"/>
+</A>
+</P>
+<P i="18" n="common1 [recursion-x86_64-gcc12-d]" ln="common1" l="21" v="{[0x1156-0x1157)}">
+<S i="19" l="21" v="{[0x1156-0x115a)}"/>
+<S i="20" l="22" v="{[0x115a-0x1171)}"/>
+<S i="21" l="23" v="{[0x1171-0x1176)}"/>
+<S i="22" l="24" v="{[0x1176-0x117b)}"/>
+</P>
+<P i="23" n="top1 [recursion-x86_64-gcc12-d]" ln="top1" l="27" v="{[0x117b-0x117c)}">
+<S i="24" l="27" v="{[0x117b-0x117f)}"/>
+<S i="25" l="28" v="{[0x117f-0x1196)}"/>
+<S i="26" l="29" v="{[0x1196-0x119b)}"/>
+<S i="27" l="30" v="{[0x119b-0x11a0)}"/>
+</P>
+<P i="28" n="heart [recursion-x86_64-gcc12-d]" ln="heart" l="38" v="{[0x11a0-0x11a1)}">
+<S i="29" l="38" v="{[0x11a0-0x11a5)}"/>
+<S i="30" l="39" v="{[0x11a5-0x120c)}"/>
+<S i="31" l="40" v="{[0x120c-0x121e)}"/>
+<S i="32" l="41" v="{[0x121e-0x122b)}"/>
+<S i="33" l="42" v="{[0x122b-0x1263)}"/>
+<S i="34" l="43" v="{[0x1263-0x1269)}"/>
+</P>
+</F>
+<F i="35" n="[recursion-x86_64-gcc12-d]">
+<P i="36" n="_init [recursion-x86_64-gcc12-d]" ln="_init" l="0" v="{[0x1000-0x1001)}">
+<S i="37" l="0" v="{[0x1000-0x1017)}"/>
+</P>
+<P i="38" n="targ1030@plt [recursion-x86_64-gcc12-d]" ln="targ1030@plt" l="0" v="{[0x1030-0x1031)}">
+<S i="39" l="0" v="{[0x1030-0x1038)}"/>
+</P>
+<P i="40" n="deregister_tm_clones [recursion-x86_64-gcc12-d]" ln="deregister_tm_clones" l="0" v="{[0x1040-0x1041)}">
+<S i="41" l="0" v="{[0x1040-0x1070)}"/>
+</P>
+<P i="42" n="register_tm_clones [recursion-x86_64-gcc12-d]" ln="register_tm_clones" l="0" v="{[0x1070-0x1071)}">
+<S i="43" l="0" v="{[0x1070-0x10b0)}"/>
+</P>
+<P i="44" n="__do_global_dtors_aux [recursion-x86_64-gcc12-d]" ln="__do_global_dtors_aux" l="0" v="{[0x10b0-0x10b1)}">
+<S i="45" l="0" v="{[0x10b0-0x10f0)}"/>
+</P>
+<P i="46" n="frame_dummy [recursion-x86_64-gcc12-d]" ln="frame_dummy" l="0" v="{[0x10f0-0x10f1)}">
+<S i="47" l="0" v="{[0x10f0-0x10f9)}"/>
+</P>
+<P i="48" n="_fini [recursion-x86_64-gcc12-d]" ln="_fini" l="0" v="{[0x126c-0x126d)}">
+<S i="49" l="0" v="{[0x126c-0x1275)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

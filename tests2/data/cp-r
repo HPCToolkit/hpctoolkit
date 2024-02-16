@@ -1,8 +1,0 @@
-#!/bin/sh
-
-while [ "$#" -ge 1 ]; do
-  echo "$1 -> $2"
-  rm -rf "$2"
-  cp -rT "$1" "$2"
-  shift 2
-done

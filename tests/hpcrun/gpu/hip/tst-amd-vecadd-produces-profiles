@@ -1,0 +1,28 @@
+#!/bin/sh -ex
+
+hpctesttool="$1"
+hpcrun="$2"
+tstexe_amd_vecadd="$3"
+trace="$4"
+shift 4  # Remaining arguments to go hpcrun
+
+case "$trace" in
+"")
+  threads=1
+  tracearg=--no-trace
+  ;;
+-t|-tt)
+  threads=2
+  tracearg=--trace
+  ;;
+*)
+  exit 2
+  ;;
+esac
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+# shellcheck disable=SC2086
+"$hpcrun" -o "$tmpdir"/m -e gpu=amd $trace "$@" "$tstexe_amd_vecadd"
+"$hpctesttool" test produces-profiles -t "$threads" -t $((threads + 1)) "$tracearg" "$tmpdir"/m

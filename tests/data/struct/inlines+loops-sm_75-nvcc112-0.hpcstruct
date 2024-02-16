@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/inlines+loops-sm_75-nvcc112-0" has-calls="0" v="{}">
+<F i="3" n="/src/inlines+loops.cu">
+<P i="4" n="f1()" ln="_Z2f1v" s="43" l="13" v="{[0x12b80-0x12b81)}">
+<S i="5" l="13" v="{[0x12b80-0x12b90)}"/>
+<S i="6" l="14" v="{[0x12b90-0x12cc0)}"/>
+<S i="7" l="15" v="{[0x12cc0-0x12d80)}"/>
+</P>
+<P i="8" n="f2()" ln="_Z2f2v" s="45" l="9" v="{[0x12d80-0x12d81)}">
+<S i="9" l="18" v="{[0x12d80-0x12d90)}"/>
+<S i="10" l="19" v="{[0x12d90-0x12da0)}"/>
+<S i="11" l="20" v="{[0x12ed0-0x12f80)}"/>
+<A i="12" l="19" f="/src/inlines+loops.cu" n="" v="{}">
+<A i="13" l="9" f="/src/inlines+loops.cu" n="_INTERNAL_48_tmpxft_00000008_00000000_7_inlines_loops_cpp1_ii_d1d8cd7d::f_inlined()" v="{}">
+<S i="14" l="9" v="{[0x12da0-0x12ed0)}"/>
+</A>
+</A>
+</P>
+<P i="15" n="f3_1()" ln="_Z4f3_1v" s="46" l="23" v="{[0x12f80-0x12f81)}">
+<S i="16" l="23" v="{[0x12f80-0x12f90)}"/>
+<S i="17" l="24" v="{[0x12f90-0x13100) [0x13230-0x132b0)}"/>
+<S i="18" l="25" v="{[0x13100-0x13230)}"/>
+<S i="19" l="27" v="{[0x132b0-0x13300)}"/>
+</P>
+<P i="20" n="f3_2()" ln="_Z4f3_2v" s="47" l="28" v="{[0x13300-0x13301)}">
+<S i="21" l="28" v="{[0x13300-0x13310)}"/>
+<S i="22" l="29" v="{[0x13310-0x13480) [0x137d0-0x13850)}"/>
+<S i="23" l="30" v="{[0x13480-0x13610) [0x13740-0x137d0)}"/>
+<S i="24" l="31" v="{[0x13610-0x13740)}"/>
+<S i="25" l="34" v="{[0x13850-0x13900)}"/>
+</P>
+<P i="26" n="f3_3()" ln="_Z4f3_3v" s="48" l="35" v="{[0x13900-0x13901)}">
+<S i="27" l="35" v="{[0x13900-0x13910)}"/>
+<S i="28" l="36" v="{[0x13910-0x13a80) [0x13ff0-0x14070)}"/>
+<S i="29" l="37" v="{[0x13a80-0x13c10) [0x13f60-0x13ff0)}"/>
+<S i="30" l="38" v="{[0x13c10-0x13da0) [0x13ed0-0x13f60)}"/>
+<S i="31" l="39" v="{[0x13da0-0x13ed0)}"/>
+<S i="32" l="43" v="{[0x14070-0x14100)}"/>
+</P>
+<P i="33" n="f4_1()" ln="_Z4f4_1v" s="49" l="48" v="{[0x14100-0x14101)}">
+<S i="34" l="48" v="{[0x145b0-0x145d0)}"/>
+<S i="35" l="52" v="{[0x14100-0x14110)}"/>
+<S i="36" l="53" v="{[0x14110-0x14280) [0x145d0-0x14650)}"/>
+<S i="37" l="54" v="{[0x14280-0x14290)}"/>
+<S i="38" l="56" v="{[0x14650-0x14700)}"/>
+<A i="39" l="54" f="/src/inlines+loops.cu" n="" v="{}">
+<A i="40" l="48" f="/src/inlines+loops.cu" n="_INTERNAL_48_tmpxft_00000008_00000000_7_inlines_loops_cpp1_ii_d1d8cd7d::f4_inline()" v="{}">
+<S i="41" l="48" v="{[0x14290-0x14420) [0x14550-0x145b0)}"/>
+<S i="42" l="49" v="{[0x14420-0x14550)}"/>
+</A>
+</A>
+</P>
+<P i="43" n="f4_2()" ln="_Z4f4_2v" s="50" l="57" v="{[0x14700-0x14701)}">
+<S i="44" l="57" v="{[0x14700-0x14710)}"/>
+<S i="45" l="58" v="{[0x14710-0x14880) [0x14df0-0x14e70)}"/>
+<S i="46" l="59" v="{[0x14880-0x14a10) [0x14d60-0x14df0)}"/>
+<S i="47" l="60" v="{[0x14a10-0x14a20)}"/>
+<S i="48" l="63" v="{[0x14e70-0x14f00)}"/>
+<A i="49" l="48" f="/src/inlines+loops.cu" n="&lt;inline&gt;" v="{}">
+<S i="50" l="48" v="{[0x14d40-0x14d60)}"/>
+</A>
+<A i="51" l="60" f="/src/inlines+loops.cu" n="" v="{}">
+<A i="52" l="48" f="/src/inlines+loops.cu" n="_INTERNAL_48_tmpxft_00000008_00000000_7_inlines_loops_cpp1_ii_d1d8cd7d::f4_inline()" v="{}">
+<S i="53" l="48" v="{[0x14a20-0x14bb0) [0x14ce0-0x14d40)}"/>
+<S i="54" l="49" v="{[0x14bb0-0x14ce0)}"/>
+</A>
+</A>
+</P>
+</F>
+<F i="55" n="/usr/local/cuda-11.8/targets/x86_64-linux/include/cuda_device_runtime_api.h">
+<P i="56" n="cudaMalloc" s="1" l="75" v="{[0x11e00-0x11e01)}">
+<S i="57" l="75" v="{[0x11e00-0x12060)}"/>
+<S i="58" l="77" v="{[0x12060-0x12100)}"/>
+</P>
+<P i="59" n="cudaFuncGetAttributes" s="8" l="80" v="{[0x12100-0x12101)}">
+<S i="60" l="80" v="{[0x12100-0x12360)}"/>
+<S i="61" l="82" v="{[0x12360-0x12400)}"/>
+</P>
+<P i="62" n="cudaDeviceGetAttribute" s="10" l="85" v="{[0x12400-0x12401)}">
+<S i="63" l="85" v="{[0x12400-0x12500)}"/>
+<S i="64" l="87" v="{[0x12500-0x12580)}"/>
+</P>
+<P i="65" n="cudaGetDevice" s="12" l="90" v="{[0x12580-0x12581)}">
+<S i="66" l="90" v="{[0x12580-0x12600)}"/>
+<S i="67" l="92" v="{[0x12600-0x12680)}"/>
+</P>
+<P i="68" n="cudaOccupancyMaxActiveBlocksPerMultiprocessor" s="14" l="95" v="{[0x12680-0x12681)}">
+<S i="69" l="95" v="{[0x12680-0x12840)}"/>
+<S i="70" l="97" v="{[0x12840-0x12900)}"/>
+</P>
+<P i="71" n="cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags" s="16" l="100" v="{[0x12900-0x12901)}">
+<S i="72" l="100" v="{[0x12900-0x12b00)}"/>
+<S i="73" l="102" v="{[0x12b00-0x12b80)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

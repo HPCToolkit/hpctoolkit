@@ -19,7 +19,7 @@ meson.add_devenv({'PATH': _venv / 'bin'}, method: 'prepend')
 
 # Also run pytest to test the utilities themselves
 _env = environment()
-_env.set('TEST_DATA_DIR', meson.current_source_dir() / '../../tests2/data')
+_env.set('TEST_DATA_DIR', meson.current_source_dir() / '../../tests/data')
 test(
   'pytest',
   _venv_python,
