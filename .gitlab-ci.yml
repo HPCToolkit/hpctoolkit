@@ -284,7 +284,7 @@ include:
     # Usual sequence from here: setup, build and test
     - meson setup $SETUP_ARGS builddir
   - meson compile -C builddir 2>&1 | tee compile.log
-  - meson test -C builddir --maxfail 3 --repeat 7 $TEST_ARGS ${TEST_ARGS:+--suite lint}
+  - meson test -C builddir --maxfail 3 --repeat 7 $TEST_ARGS
   after_script:
   - |
     echo "To reproduce this build, run:"
@@ -369,6 +369,7 @@ bare ppc64le:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     TEST_ARGS: >-
+      --suite lint
       --suite cuda
       --suite hpcstruct
 cuda11.6 amd64:
@@ -389,6 +390,7 @@ cuda12.0 amd64:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     TEST_ARGS: >-
+      --suite lint
       --suite rocm
 rocm5.1 amd64:
   extends: .individual test job rocm
@@ -572,7 +574,7 @@ compiler clang16:
       - -Dpapi=disabled
       - -Dpython=disabled
       - -Dopencl=disabled
-      TEST_ARGS: --suite hpcrun
+      TEST_ARGS: --suite lint --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
       - -Dhpcprof_mpi=disabled
@@ -588,7 +590,7 @@ compiler clang16:
       - -Dvalgrind_annotations=true
     - SETUP_ARGS:
       - -Dopencl=disabled
-      TEST_ARGS: --suite hpcrun
+      TEST_ARGS: --suite lint --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
       TEST_ARGS: --suite lint
@@ -600,7 +602,7 @@ compiler clang16:
     matrix:
     - SETUP_ARGS:
       - -Dcuda=disabled
-      TEST_ARGS: --suite hpcrun
+      TEST_ARGS: --suite lint --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
       TEST_ARGS: --suite lint
@@ -612,7 +614,7 @@ compiler clang16:
     matrix:
     - SETUP_ARGS:
       - -Drocm=disabled
-      TEST_ARGS: --suite hpcrun
+      TEST_ARGS: --suite lint --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
       TEST_ARGS: --suite lint
@@ -625,7 +627,7 @@ compiler clang16:
     - SETUP_ARGS:
       - -Dlevel0=disabled
       - -Dgtpin=disabled
-      TEST_ARGS: --suite hpcrun
+      TEST_ARGS: --suite lint --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
       TEST_ARGS: --suite lint
