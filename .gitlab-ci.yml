@@ -308,7 +308,7 @@ include:
   stage: individual tests
 .individual test job std:
   extends: .individual test job
-  tags: [saas-linux-small-amd64]
+  tags: [saas-linux-medium-amd64]
 ubuntu20.04 amd64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-amd64]']
@@ -317,12 +317,12 @@ ubuntu20.04 arm64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-arm64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-arm64]
+  tags: [rice-linux-medium-arm64]
 ubuntu20.04 ppc64le:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-ppc64le]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_PPC64LE
-  tags: [rice-linux-small-ppc64le]
+  tags: [rice-linux-medium-ppc64le]
 leap15 amd64:
   extends: .individual test job std
   needs: ['predeps: [leap15-amd64]']
@@ -357,12 +357,12 @@ bare arm64:
   extends: .individual test job bare
   needs: ['predeps: [bare-arm64]']
   image: $PREDEPS_IMAGE_BARE_ARM64
-  tags: [rice-linux-small-arm64]
+  tags: [rice-linux-medium-arm64]
 bare ppc64le:
   extends: .individual test job bare
   needs: ['predeps: [bare-ppc64le]']
   image: $PREDEPS_IMAGE_BARE_PPC64LE
-  tags: [rice-linux-small-ppc64le]
+  tags: [rice-linux-medium-ppc64le]
 
 .individual test job cuda:
   extends: .individual test job
@@ -518,7 +518,7 @@ fresh testdata:
 .compiler compat test job:
   extends: .test job
   stage: configuration tests
-  tags: [saas-linux-small-amd64]
+  tags: [saas-linux-medium-amd64]
   variables:
     SETUP_ARGS: >-
       --native-file hpctoolkit-ci.ini
@@ -558,7 +558,7 @@ compiler clang16:
 .option test job:
   extends: .test job
   stage: configuration tests
-  tags: [saas-linux-small-amd64]
+  tags: [saas-linux-medium-amd64]
 'option: [ubuntu20.04 amd64]':
   extends: .option test job
   needs: ['predeps: [ubuntu20.04-amd64]']
