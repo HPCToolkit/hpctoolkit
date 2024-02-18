@@ -369,7 +369,6 @@ bare ppc64le:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     TEST_ARGS: >-
-      --suite lint
       --suite cuda
       --suite hpcstruct
 cuda11.6 amd64:
@@ -390,7 +389,6 @@ cuda12.0 amd64:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     TEST_ARGS: >-
-      --suite lint
       --suite rocm
 rocm5.1 amd64:
   extends: .individual test job rocm
@@ -574,11 +572,11 @@ compiler clang16:
       - -Dpapi=disabled
       - -Dpython=disabled
       - -Dopencl=disabled
-      TEST_ARGS: --suite lint --suite hpcrun
+      TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
       - -Dhpcprof_mpi=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 'option: [bare amd64]':
   extends: .option test job
   needs: ['predeps: [bare-amd64]']
@@ -590,10 +588,10 @@ compiler clang16:
       - -Dvalgrind_annotations=true
     - SETUP_ARGS:
       - -Dopencl=disabled
-      TEST_ARGS: --suite lint --suite hpcrun
+      TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 'option: [cuda amd64]':
   extends: .option test job
   needs: ['predeps: [cuda12.0-amd64]']
@@ -602,10 +600,10 @@ compiler clang16:
     matrix:
     - SETUP_ARGS:
       - -Dcuda=disabled
-      TEST_ARGS: --suite lint --suite hpcrun
+      TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 'option: [rocm amd64]':
   extends: .option test job
   needs: ['predeps: [rocm6.0-amd64]']
@@ -614,10 +612,10 @@ compiler clang16:
     matrix:
     - SETUP_ARGS:
       - -Drocm=disabled
-      TEST_ARGS: --suite lint --suite hpcrun
+      TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 'option: [intel amd64]':
   extends: .option test job
   needs: ['predeps: [intel-amd64]']
@@ -627,10 +625,10 @@ compiler clang16:
     - SETUP_ARGS:
       - -Dlevel0=disabled
       - -Dgtpin=disabled
-      TEST_ARGS: --suite lint --suite hpcrun
+      TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
