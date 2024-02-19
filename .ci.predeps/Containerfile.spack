@@ -1,0 +1,71 @@
+# We always install using the latest release of Spack rather than than develop. This makes the
+# builds more likely to work and to be reused by develop.
+ARG SPACKOS=almalinux8
+FROM ghcr.io/spack/$SPACKOS:latest as install
+# FIXME: Spack images require SHELL, but buildah doesn't support it. So we do this.
+ENV PATH=/opt/spack/bin:$PATH
+
+# The configuration is generic to adapt as new Spack releases are minted. Here we adjust the
+# configuration based on the current release of Spack being used.
+COPY ci/spack/config/ /etc/spack/
+RUN \
+  ver=$(spack --version) \
+  && spack_current_release=$(echo "$ver" | grep -Eo '^(0+\.0+\.[0-9]+|0+\.[0-9]+|[0-9]+)') \
+  && sed -ie "s/@SPACK_CURRENT_RELEASE@/$spack_current_release/g" /etc/spack/mirrors.yaml \
+  && echo "spack_current_release=$spack_current_release" > /tmp/spack.env
+
+# Copy the hpctoolkit recipe from @develop into this version. Save a backup which we will restore
+# if the result ends up breaking the concretization (the only part we need).
+ENV PACKAGE_PY=var/spack/repos/builtin/packages/hpctoolkit/package.py
+RUN mv $SPACK_ROOT/$PACKAGE_PY $SPACK_ROOT/$PACKAGE_PY.bak
+ADD https://raw.githubusercontent.com/spack/spack/develop/$PACKAGE_PY $SPACK_ROOT/$PACKAGE_PY
+
+# Copy in the environment and concretize it. If the concretization fails, we use the backup recipe
+# instead which is certain to work even if it doesn't capture everything about the current state of
+# the world.
+#
+# Then, generate a Makefile which we will use to actually do the installation.
+COPY ci/spack/predeps-env/ /tmp/env/
+RUN \
+  if ! spack -D /tmp/env concretize; then \
+    mv $SPACK_ROOT/$PACKAGE_PY.bak $SPACK_ROOT/$PACKAGE_PY && spack -D /tmp/env concretize; \
+  fi \
+  && spack -D /tmp/env env depfile --generator make --make-prefix predeps -o /tmp/env/spack.mk
+
+# Install all the packages, and push the bits up to the configured buildcache. Note that hpctoolkit
+# is never built here, we explicitly skip it in the Makefile.
+# FIXME: We need `--no-check-signature` here to support the OCI buildcache.
+# FIXME: We run the "secret" mirrors.yaml through sed to get the URL right, but really Spack should
+# support a separate "secrets.yaml" file (or something) that doesn't require this security semi-hole.
+RUN --mount=type=secret,id=spack_mirrors,target=/root/.spack/mirrors.yaml.in \
+    --mount=type=cache,target=/mnt/cache/spack-src,sharing=locked \
+  . /tmp/spack.env \
+  && if [ -e /root/.spack/mirrors.yaml.in ]; then sed -e "s/@SPACK_CURRENT_RELEASE@/$spack_current_release/g" /root/.spack/mirrors.yaml.in > /root/.spack/mirrors.yaml; fi \
+  && trap 'rm -f /root/.spack/mirrors.yaml' EXIT \
+  && make -j "$(nproc)" -C /tmp/env --output-sync=recurse SPACK_INSTALL_FLAGS=--no-check-signature
+
+
+# Construct the final image we will be using in practice
+FROM ghcr.io/spack/$SPACKOS:develop
+# FIXME: Spack images require SHELL, but buildah doesn't support it. So we do this.
+ENV PATH=/opt/spack/bin:$PATH
+
+# Transfer the customized configuration to the final image.
+COPY --from=install /etc/spack/ /etc/spack/
+
+# FIXME: Spack develop supports per-buildcache signing settings, but Spack 0.21.x doesn't.
+# We adjust the installed mirrors.yaml here so that we can use this feature when available.
+RUN \
+  spack mirror set --scope system --unsigned upstream-cache \
+  && spack mirror set --scope system --signed spack-binaries \
+  && spack mirror list
+
+# The image has a Spack, but it will go out of date quickly. Reconfigure the repository where
+# Spack is cloned in this image so that a `git pull` will update it to the latest.
+RUN \
+  git -C $SPACK_ROOT checkout develop \
+  && git -C $SPACK_ROOT remote set-branches origin develop \
+  && git -C $SPACK_ROOT pull
+
+# Transfer the installed software over so it can be reused. Do this last for the layer cache.
+COPY --from=install /opt/software/ /opt/software/

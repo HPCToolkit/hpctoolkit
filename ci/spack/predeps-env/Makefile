@@ -7,6 +7,9 @@ all: post-all
 
 include spack.mk
 
+predeps/install/hpctoolkit-%:
+	@echo "Skipping hpctoolkit spec: $(SPEC)"
+
 ifeq ($(shell spack mirror list | grep -c '^$(REMOTE_CACHE_MIRROR)'),0)
 $(warning Remote cache mirror $(REMOTE_CACHE_MIRROR) not found, will not be pushing to the remote cache)
 post-all: $(addprefix predeps/install/,$(predeps/SPACK_PACKAGE_IDS))

@@ -1,0 +1,31 @@
+spack:
+  view: false
+  concretizer:
+    unify: when_possible
+    reuse: false
+
+  specs:
+  - matrix:
+    - - hpctoolkit@develop
+    - - ~viewer ~mpi +opencl ~cuda ~rocm ~level_zero
+    - [+papi, ~papi]
+
+  packages:
+    all:
+      # NB: These requirements must be anchor-copied to all packages with custom requires
+      require:
+      # We only concretize for generic targets
+      - &target {any_of: ['target=:x86_64', 'target=:aarch64', 'target=:ppc64le']}
+      # Do not allow infinity versions, we only build full "point" releases
+      - &noinf '@:999999999'
+
+    hpctoolkit:
+      require:
+      - *target
+
+    libevent:
+      require:
+      - *target
+      - *noinf
+      # Workaround for https://github.com/spack/spack/issues/41056
+      - spec: '^libtool @2.4.6'

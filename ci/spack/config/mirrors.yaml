@@ -1,0 +1,12 @@
+mirrors:
+  upstream-cache:
+    url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v@SPACK_CURRENT_RELEASE@
+    # signed: false  # FIXME: This can be added once we build with Spack 0.22
+    binary: true
+    source: false
+
+  spack-binaries:
+    url: https://binaries.spack.io/develop
+    # signed: true  # FIXME: This can be added once we build with Spack 0.22
+    binary: true
+    source: false
