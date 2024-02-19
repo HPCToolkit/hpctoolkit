@@ -80,7 +80,7 @@ HPCToolkit supports building from source using [Meson].
 
 Install:
 
-- [Meson] >=1.1.0 and a working C/C++ compiler (GCC, Clang, etc.)
+- [Meson] >=1.3.2 and a working C/C++ compiler (GCC, Clang, etc.)
 - [Boost](https://www.boost.org/) >=1.71.0, if using CUDA support this must also be built with `visibility=global` (see [#815](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/815))
 - [libmonitor](https://github.com/hpctoolkit/libmonitor) configured with `--disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38'` (also see [#793](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/793))
 - `make`, `awk`, and `sed` for `hpcstruct` measurement directory support (see [#704](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704)).
@@ -126,19 +126,20 @@ Note that many of the features above require additional optional dependencies wh
 
 ### Prerequisites
 
-#### Debian/Ubuntu
+#### Debian/Ubuntu and derivatives
 
 For Debian Sid/Ubuntu 23.10:
 
 ```bash
 sudo apt-get install git build-essential ccache ninja-build meson cmake pkg-config python3-venv libboost-all-dev libbz2-dev libtbb-dev libelf-dev libdw-dev libunwind-dev libxerces-c-dev libiberty-dev libyaml-cpp-dev libpfm4-dev libxxhash-dev zlib1g-dev
+pipx install 'meson>=1.3.2'  # Optional but recommended
 ```
 
-Recommended install Meson with `pipx` (required for older Debian/Ubuntu versions):
+For older versions:
 
 ```bash
-sudo apt-get install pipx
-pipx install 'meson>=1.1.0'
+sudo apt-get install git build-essential ccache ninja-build cmake pkg-config pipx python3 python3-pip python3-venv libboost-all-dev libbz2-dev libtbb-dev libelf-dev libdw-dev libunwind-dev libxerces-c-dev libiberty-dev libyaml-cpp-dev libpfm4-dev libxxhash-dev zlib1g-dev
+pipx install 'meson>=1.3.2'
 ```
 
 Note that some dependencies may be [built from wraps](#wraps-no-root-required) by default, either because they aren't packaged in Debian/Ubuntu (e.g. Dyninst) or because the version is too old.
