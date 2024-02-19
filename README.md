@@ -156,6 +156,64 @@ Additional packages can be installed for optional features:
 | `opencl-headers` | `-Dopencl=enabled` | [Optional, available as wrap](#wraps-no-root-required) |
 | [`rocm-hip-libraries`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html) | `-Drocm=enabled` |
 
+#### Fedora/RHEL and derivatives
+
+For RHEL 8:
+
+```bash
+sudo dnf install git gcc gcc-c++ ccache ninja-build cmake pkg-config python39 python39-pip boost-devel bzip2-devel tbb-devel elfutils-devel xerces-c-devel binutils-devel yaml-cpp-devel libpfm-devel xxhash-devel zlib-devel
+python3.9 -m pip install pipx
+pipx install 'meson>=1.3.2'
+```
+
+For RHEL 9:
+
+```bash
+sudo dnf install git gcc gcc-c++ ccache ninja-build cmake pkg-config python3 pipx boost-devel bzip2-devel tbb-devel elfutils-devel xerces-c-devel binutils-devel yaml-cpp-devel libpfm-devel libunwind-devel xxhash-devel zlib-devel
+pipx install 'meson>=1.3.2'
+```
+
+For Fedora:
+
+```bash
+sudo dnf install git gcc gcc-c++ ccache ninja-build cmake pkg-config python3 meson pipx boost-devel bzip2-devel tbb-devel elfutils-devel xerces-c-devel binutils-devel yaml-cpp-devel libpfm-devel libunwind-devel xxhash-devel zlib-devel
+pipx install 'meson>=1.3.2'  # Optional but recommended
+```
+
+Note that some dependencies may be [built from wraps](#wraps-no-root-required) by default, either because they aren't packaged in Fedora/RHEL (e.g. Xed) or because the version is too old.
+Additional packages can be installed for optional features:
+
+| Package | Feature option | Notes |
+| --- | --- | --- |
+| `openmpi-devel` or `mpich-devel` or `mvapich2-devel` | `-Dhpcprof_mpi=enabled` |
+| `papi-devel` | `-Dpapi=enabled` |
+| `cuda-toolkit` | `-Dcuda=enabled` |
+| [`level-zero-devel`](https://dgpu-docs.intel.com/driver/installation.html#red-hat-enterprise-linux-install-steps) | `-Dlevel0=enabled` |
+| `intel-igc-opencl-devel` | `-Dlevel0=enabled` |
+| `opencl-headers` | `-Dopencl=enabled` | [Optional, available as wrap](#wraps-no-root-required) |
+| [`rocm`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html) | `-Drocm=enabled` |
+
+#### SUSE Leap/SLES 15 and derivatives
+
+```bash
+sudo zypper install git gcc12 gcc12-c++ ccache ninja-build cmake pkg-config python311 python311-pip libboost_atomic-devel libboost_chrono-devel libboost_date_time-devel libboost_filesystem-devel libboost_graph-devel libboost_system-devel libboost_thread-devel libboost_timer-devel libbz2-devel tbb-devel libxerces-c-devel binutils-devel yaml-cpp-devel libpfm-devel xxhash-devel zlib-devel
+python3.11 -m pip install pipx
+pipx install 'meson>=1.3.2'
+```
+
+Note that some dependencies may be [built from wraps](#wraps-no-root-required) by default, either because they aren't packaged in SUSE Leap (e.g. Xed) or because the version is too old.
+Additional packages can be installed for optional features:
+
+| Package | Feature option | Notes |
+| --- | --- | --- |
+| `openmpi-devel` or `mpich-devel` | `-Dhpcprof_mpi=enabled` |
+| `papi-devel` | `-Dpapi=enabled` |
+| `cuda-toolkit` | `-Dcuda=enabled` |
+| [`level-zero-devel`](https://dgpu-docs.intel.com/driver/installation.html#red-hat-enterprise-linux-install-steps) | `-Dlevel0=enabled` |
+| `intel-igc-opencl-devel` | `-Dlevel0=enabled` |
+| `opencl-headers` | `-Dopencl=enabled` | [Optional, available as wrap](#wraps-no-root-required) |
+| [`rocm`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html) | `-Drocm=enabled` |
+
 #### Wraps (no root required)
 
 HPCToolkit provides [Meson wraps] for most core dependencies, by default these wraps act as a fallback if they cannot be found otherwise.
