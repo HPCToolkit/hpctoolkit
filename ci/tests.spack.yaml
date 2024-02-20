@@ -15,9 +15,3 @@ spack:
     - - ~viewer ~mpi +opencl ~cuda ~rocm ~level_zero
     - - buildtype=release
     - [+papi, ~papi]
-
-  mirrors:
-    upstream-cache:
-      url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v0.21
-      binary: true
-      source: false

@@ -1,5 +1,2 @@
 **
-!ci/verify-image.sh
-!ci/os/
 !ci/native/
-!ci/spack-deps/

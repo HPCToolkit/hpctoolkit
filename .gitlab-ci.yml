@@ -167,79 +167,57 @@ include:
     name: intel-amd64
     containerfile: .ci.predeps/Containerfile.intel
 
-'predeps: [rhel8-amd64]':
-  before_script: &predeps_before_script
-  - export PREDEPS_SECRET_spack_mirrors=/tmp/mirrors.yaml
-  - >-
-    printf "mirrors: {%s: {url: '%s', access_pair: ['%s', '%s'], binary: true, source: false}}"
-    __ci_remote_cache_push_mirror oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21
-    "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD"
-    > "$PREDEPS_SECRET_spack_mirrors"
-'predeps: [ubuntu20.04-amd64]':
-  before_script: *predeps_before_script
-'predeps: [ubuntu20.04-arm64]':
-  before_script: *predeps_before_script
-'predeps: [ubuntu20.04-ppc64le]':
-  before_script: *predeps_before_script
-'predeps: [fedora38-amd64]':
-  before_script: *predeps_before_script
-'predeps: [leap15-amd64]':
-  before_script: *predeps_before_script
-'predeps: [bare-amd64]':
-  before_script: *predeps_before_script
-'predeps: [bare-arm64]':
-  before_script: *predeps_before_script
-'predeps: [bare-ppc64le]':
-  before_script: *predeps_before_script
+# Image(s) containing Spack-installed software for Spack-based verification
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: spack
+    containerfile: .ci.predeps/Containerfile.spack
+    ignorefile: .ci.predeps/ignore.spack
 
 'predeps: [cuda11.6-amd64]':
   variables:
     PREDEPS_BUILD_ARG_CUDA_VERSION: '11.6.2'
-  before_script: *predeps_before_script
 'predeps: [cuda11.8-amd64]':
   variables:
     PREDEPS_BUILD_ARG_CUDA_VERSION: '11.8.0'
-  before_script: *predeps_before_script
 'predeps: [cuda12.0-amd64]':
   variables:
     PREDEPS_BUILD_ARG_CUDA_VERSION: '12.0.1'
-  before_script: *predeps_before_script
 
 'predeps: [rocm5.1-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.1.3'
-  before_script: *predeps_before_script
 'predeps: [rocm5.2-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.2.3'
-  before_script: *predeps_before_script
 'predeps: [rocm5.3-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.3.3'
-  before_script: *predeps_before_script
 'predeps: [rocm5.4-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.4.3'
-  before_script: *predeps_before_script
 'predeps: [rocm5.5-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.5.1'
-  before_script: *predeps_before_script
 'predeps: [rocm5.6-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.6.1'
-  before_script: *predeps_before_script
 'predeps: [rocm5.7-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.7.1'
-  before_script: *predeps_before_script
 'predeps: [rocm6.0-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '6.0'
-  before_script: *predeps_before_script
 
-'predeps: [intel-amd64]':
-  before_script: *predeps_before_script
+'predeps: [spack]':
+  before_script:
+  - export PREDEPS_SECRET_spack_mirrors=/tmp/mirrors.yaml
+  - >-
+    printf "mirrors: {%s: {url: '%s', access_pair: ['%s', '%s'], binary: true, source: false}}"
+    __ci_remote_cache_push_mirror oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v@SPACK_CURRENT_RELEASE@
+    "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD"
+    > "$PREDEPS_SECRET_spack_mirrors"
 
 
 # The vast majority of jobs in this sequence do a build and then run some tests. This is the base
@@ -284,7 +262,7 @@ include:
     # Usual sequence from here: setup, build and test
     - meson setup $SETUP_ARGS builddir
   - meson compile -C builddir 2>&1 | tee compile.log
-  - meson test -C builddir --maxfail 3 --repeat 7 $TEST_ARGS ${TEST_ARGS:+--suite lint}
+  - meson test -C builddir --maxfail 3 --repeat 7 $TEST_ARGS
   after_script:
   - |
     echo "To reproduce this build, run:"
@@ -308,7 +286,7 @@ include:
   stage: individual tests
 .individual test job std:
   extends: .individual test job
-  tags: [saas-linux-small-amd64]
+  tags: [saas-linux-medium-amd64]
 ubuntu20.04 amd64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-amd64]']
@@ -317,12 +295,12 @@ ubuntu20.04 arm64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-arm64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-arm64]
+  tags: [rice-linux-medium-arm64]
 ubuntu20.04 ppc64le:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-ppc64le]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_PPC64LE
-  tags: [rice-linux-small-ppc64le]
+  tags: [rice-linux-medium-ppc64le]
 leap15 amd64:
   extends: .individual test job std
   needs: ['predeps: [leap15-amd64]']
@@ -357,12 +335,12 @@ bare arm64:
   extends: .individual test job bare
   needs: ['predeps: [bare-arm64]']
   image: $PREDEPS_IMAGE_BARE_ARM64
-  tags: [rice-linux-small-arm64]
+  tags: [rice-linux-medium-arm64]
 bare ppc64le:
   extends: .individual test job bare
   needs: ['predeps: [bare-ppc64le]']
   image: $PREDEPS_IMAGE_BARE_PPC64LE
-  tags: [rice-linux-small-ppc64le]
+  tags: [rice-linux-medium-ppc64le]
 
 .individual test job cuda:
   extends: .individual test job
@@ -518,7 +496,7 @@ fresh testdata:
 .compiler compat test job:
   extends: .test job
   stage: configuration tests
-  tags: [saas-linux-small-amd64]
+  tags: [saas-linux-medium-amd64]
   variables:
     SETUP_ARGS: >-
       --native-file hpctoolkit-ci.ini
@@ -558,7 +536,7 @@ compiler clang16:
 .option test job:
   extends: .test job
   stage: configuration tests
-  tags: [saas-linux-small-amd64]
+  tags: [saas-linux-medium-amd64]
 'option: [ubuntu20.04 amd64]':
   extends: .option test job
   needs: ['predeps: [ubuntu20.04-amd64]']
@@ -576,7 +554,7 @@ compiler clang16:
     - SETUP_ARGS:
       - -Dextended_tests=disabled
       - -Dhpcprof_mpi=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 'option: [bare amd64]':
   extends: .option test job
   needs: ['predeps: [bare-amd64]']
@@ -591,7 +569,7 @@ compiler clang16:
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 'option: [cuda amd64]':
   extends: .option test job
   needs: ['predeps: [cuda12.0-amd64]']
@@ -603,7 +581,7 @@ compiler clang16:
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 'option: [rocm amd64]':
   extends: .option test job
   needs: ['predeps: [rocm6.0-amd64]']
@@ -615,7 +593,7 @@ compiler clang16:
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 'option: [intel amd64]':
   extends: .option test job
   needs: ['predeps: [intel-amd64]']
@@ -628,18 +606,16 @@ compiler clang16:
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
       - -Dextended_tests=disabled
-      TEST_ARGS: --suite lint
+      TEST_ARGS: --suite none
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
 'spack install':
   stage: configuration tests
   image:
-    name: ghcr.io/spack/fedora37:develop
+    name: $PREDEPS_IMAGE_SPACK
     entrypoint: ['spack-env']
-  needs:
-  - job: 'predeps: [fedora38-amd64]'  # Reuses buildcache from this image
-    artifacts: false
+  needs: ['predeps: [spack]']
   tags: [saas-linux-medium-amd64]
   rules:
   - if: $CI_COMMIT_REF_PROTECTED == "true"
@@ -651,17 +627,21 @@ compiler clang16:
     - .cache/spack-src/
   before_script:
   - mkdir -p .cache/spack-src
-  - >-
-    spack config add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src
-  - >-
-    test -z "$CI_REGISTRY" ||
-    spack mirror add --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
-    --type binary remote-cache oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21
+  - spack config add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src
   script:
+  # Update to the latest Spack develop, from whatever we have here
+  - git -C $SPACK_ROOT pull
+  # Install the environment, running the tests along the way
   - spack env create -d /tmp/env ci/tests.spack.yaml
-  - spack -D /tmp/env install --fail-fast --no-check-signature
+  # FIXME: Apparently the reuse concretization allows deprecated versions to appear in the final
+  # spec? For now allow installing deprecated versions as needed until this can be properly fixed.
+  - spack -D /tmp/env install --fail-fast --test=root --deprecated
+  - spack -D /tmp/env test run --log-file spack.junit.xml --log-format junit hpctoolkit
   after_script:
   - |
     echo "To reproduce:"
     echo "    cd path/to/hpctoolkit"
     echo "    podman run --rm -it -v ./:/hpctoolkit:O --workdir /hpctoolkit $CI_JOB_IMAGE"
+  artifacts:
+    reports:
+      junit: spack.junit.xml

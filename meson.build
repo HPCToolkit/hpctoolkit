@@ -661,7 +661,6 @@ subdir('src')
 subdir('lib')
 subdir('doc')
 subdir('tests')
-subdir('meson')
 
 
 # Install a few files from this directory
