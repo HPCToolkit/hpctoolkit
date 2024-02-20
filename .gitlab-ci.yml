@@ -74,8 +74,8 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: fedora38-amd64
-    containerfile: .ci.predeps/Containerfile.fedora38
+    name: fedora39-amd64
+    containerfile: .ci.predeps/Containerfile.fedora39
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -314,10 +314,10 @@ rhel8 amd64:
     # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
     # MPI for now until a proper fix can be figured out.
     TEST_ARGS: --no-suite mpi
-fedora38 amd64:
+fedora39 amd64:
   extends: .individual test job std
-  needs: ['predeps: [fedora38-amd64]']
-  image: $PREDEPS_IMAGE_FEDORA38_AMD64
+  needs: ['predeps: [fedora39-amd64]']
+  image: $PREDEPS_IMAGE_FEDORA39_AMD64
   variables:
     # FIXME: This particular version of OpenMPI reacts badly in VMs, hpcprof-mpi hangs. The same
     # effect can't be reproduced in a local container, for whatever reason. Disable the MPI tests
@@ -520,8 +520,8 @@ compiler clang10:
     JOB_CC: clang10
 compiler clang16:
   extends: .compiler compat test job
-  needs: ['predeps: [fedora38-amd64]']
-  image: $PREDEPS_IMAGE_FEDORA38_AMD64
+  needs: ['predeps: [fedora39-amd64]']
+  image: $PREDEPS_IMAGE_FEDORA39_AMD64
   variables:
     JOB_CC: clang
     # FIXME: This particular version of OpenMPI reacts badly in VMs, hpcprof-mpi hangs. The same

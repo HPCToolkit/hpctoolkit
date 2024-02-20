@@ -249,7 +249,7 @@ See the official Meson documentation for [Meson subprojects] and [wraps][meson w
 
 Multiple [Dev Container](https://containers.dev/) configurations are provided for common distros and vendor software:
 
-- `ubuntu20.04`, `rhel8`, `leap15`, `fedora38`: CPU-only configurations for common distros
+- `ubuntu20.04`, `rhel8`, `leap15`, `fedora39`: CPU-only configurations for common distros
 - `cuda*`: Ubuntu 20.04 with NVIDIA CUDA toolkit installed
 - `rocm*`: Ubuntu 20.04 with AMD ROCm installed
 - `intel`: Ubuntu 20.04 with Intel OneAPI Base Toolkit
