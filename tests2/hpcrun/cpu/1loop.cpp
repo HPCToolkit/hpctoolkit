@@ -1,13 +1,18 @@
-#include <math.h>
+#include <cmath>
 #include <omp.h>
+#include <vector>
+
+enum {
+  N = 1ULL<<21,
+};
 
 int main() {
 #pragma omp parallel num_threads(4)
   {
-    double d_p1[30] = {0};
-    double d_l1[30] = {0};
-    double d_r1[30] = {0};
-    for (unsigned int i = 0; i < sizeof d_p1 / sizeof d_p1[0]; i++) {
+    std::vector<double> d_p1(N, 0);
+    std::vector<double> d_l1(N, 0);
+    std::vector<double> d_r1(N, 0);
+    for (unsigned int i = 0; i < N; i++) {
       // use transcendental function in the kernel
       d_p1[i] = d_p1[i] + 1.
               + (sqrt(exp(log(d_l1[i] * d_l1[i])) + exp(log(d_r1[i] * d_r1[i]))))
