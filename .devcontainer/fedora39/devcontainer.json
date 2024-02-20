@@ -1,8 +1,8 @@
 {
-  "name": "ci.predeps-fedora38",
+  "name": "ci.predeps-fedora39",
   "build": {
     "context": "${localWorkspaceFolder}",
-    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.fedora38"
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.fedora39"
   },
   "capAdd": [
     "SYS_ADMIN"
@@ -17,7 +17,7 @@
         "mesonbuild.mesonbuild"
       ],
       "settings": {
-        "mesonbuild.buildFolder": ".devcontainer/fedora38/builddir-${devcontainerId}",
+        "mesonbuild.buildFolder": ".devcontainer/fedora39/builddir-${devcontainerId}",
         "mesonbuild.configureOnOpen": true,
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.profiles.linux": {
@@ -47,7 +47,7 @@
     "ghcr.io/devcontainers/features/common-utils:2": {}
   },
   "remoteEnv": {
-    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/fedora38/builddir-${devcontainerId}",
-    "builddir": "${containerWorkspaceFolder}/.devcontainer/fedora38/builddir-${devcontainerId}"
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/fedora39i/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/fedora39/builddir-${devcontainerId}"
   }
 }

@@ -1,5 +1,5 @@
 # OS installation stage: Install build tools from the OS
-FROM docker.io/fedora:38 as os-install
+FROM docker.io/fedora:39 as os-install
 
 # Install the required OS packages
 RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
@@ -10,6 +10,7 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
     ccache \
     clang \
     cmake \
+    dyninst-devel \
     elfutils-devel \
     gcc \
     gcc-c++ \
@@ -57,7 +58,7 @@ RUN \
 # Composition stage: Produce what will become the final image
 FROM os-install
 COPY --from=src-install /dest /
-COPY ci/native/src/hpctoolkit-ci.fedora38.ini /usr/share/meson/native/hpctoolkit-ci.ini
+COPY ci/native/src/hpctoolkit-ci.fedora39.ini /usr/share/meson/native/hpctoolkit-ci.ini
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/gcc.ini \
