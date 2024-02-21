@@ -136,6 +136,15 @@ cuda_get_driver_version
 
 // returns 0 on success
 int
+cuda_get_runtime_version
+(
+ int *major,
+ int *minor
+);
+
+
+// returns 0 on success
+int
 cuda_get_code
 (
  void* host,
