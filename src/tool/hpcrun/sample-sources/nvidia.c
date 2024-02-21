@@ -417,7 +417,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     monitor_real_exit(-1);
 
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
-  // TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
+  TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
   TMSG(CUDA, "Kernel serialization %s", kernel_serialization);
 
   // By default we enable concurrent kernel monitoring,
@@ -431,8 +431,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   monitor_disable_new_threads();
 
-  // cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
-  cupti_device_buffer_config(device_buffer_size, 0);
+  cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
 
   // Register cupti callbacks
   cupti_init();
