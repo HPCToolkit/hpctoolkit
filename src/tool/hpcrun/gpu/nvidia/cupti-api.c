@@ -1227,14 +1227,14 @@ void
 cupti_device_buffer_config
 (
  size_t buf_size,
- size_t sem_size
+ size_t // sem_size
 )
 {
   size_t value_size = sizeof(size_t);
   HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
                    (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &buf_size));
-  HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
-                   (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, &value_size, &sem_size));
+  // HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
+  //                  (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, &value_size, &sem_size));
 }
 
 

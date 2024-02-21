@@ -265,7 +265,7 @@ METHOD_FN(init)
   self->state = INIT;
 
   control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
-  control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
+  // control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
 
   // Reset cupti flags
@@ -404,16 +404,18 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (control_knob_value_get_int("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", &device_buffer_size) != 0)
     monitor_real_exit(-1);
 
+  /*
   int device_semaphore_size;
   if (control_knob_value_get_int("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", &device_semaphore_size) != 0)
     monitor_real_exit(-1);
+  */
 
   char *kernel_serialization = NULL;
   if (control_knob_value_get_string("HPCRUN_CUDA_KERNEL_SERIALIZATION", &kernel_serialization) != 0)
     monitor_real_exit(-1);
 
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
-  TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
+  // TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
   TMSG(CUDA, "Kernel serialization %s", kernel_serialization);
 
   // By default we enable concurrent kernel monitoring,
@@ -427,7 +429,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   monitor_disable_new_threads();
 
-  cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+  // cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+  cupti_device_buffer_config(device_buffer_size, 0);
 
   // Register cupti callbacks
   cupti_init();
