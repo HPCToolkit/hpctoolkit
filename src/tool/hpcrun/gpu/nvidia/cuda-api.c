@@ -131,7 +131,7 @@
 // CUDA encodes the runtime version number as (1000 * major + 10 * minor)
 
 #define RUNTIME_MAJOR_VERSION(rt_version) (rt_version / 1000)
-#define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10)
+#define RUNTIME_MINOR_VERSION(rt_version) ((rt_version % 100) / 10)
 
 
 //******************************************************************************
@@ -285,15 +285,13 @@ cuda_device_id
 }
 
 
-// returns 0 on success
-static int
+static void
 cuda_runtime_version
 (
   int *rt_version
 )
 {
   HPCRUN_CUDA_RUNTIME_CALL(cudaRuntimeGetVersion, (rt_version));
-  return 0;
 }
 
 
@@ -370,7 +368,7 @@ cuda_global_pc_sampling_required
   if (cuda_device_compute_capability(device_id, &dev_major, &dev_minor)) return -1;
 
   int rt_version;
-  if (cuda_runtime_version(&rt_version)) return -1;
+  cuda_runtime_version(&rt_version);
 
 #ifdef DEBUG
   printf("cuda_global_pc_sampling_required: "
@@ -410,6 +408,23 @@ cuda_get_driver_version
 
   *major = version / 1000;
   *minor = version - *major * 1000;
+
+  return 0;
+}
+
+
+int
+cuda_get_runtime_version
+(
+ int *major,
+ int *minor
+)
+{
+  int rt_version;
+  cuda_runtime_version(&rt_version);
+
+  *major = RUNTIME_MAJOR_VERSION(rt_version);
+  *minor = RUNTIME_MINOR_VERSION(rt_version);
 
   return 0;
 }
