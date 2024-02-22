@@ -117,6 +117,11 @@ include:
     <<: *ci_predeps_shared
     name: cuda12.0-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: cuda12.3-amd64
+    containerfile: .ci.predeps/Containerfile.cuda
 
 # Images based on (containing) AMD's ROCm
 - component: *ci_predeps
@@ -184,6 +189,9 @@ include:
 'predeps: [cuda12.0-amd64]':
   variables:
     PREDEPS_BUILD_ARG_CUDA_VERSION: '12.0.1'
+'predeps: [cuda12.3-amd64]':
+  variables:
+    PREDEPS_BUILD_ARG_CUDA_VERSION: '12.3.1'
 
 'predeps: [rocm5.1-amd64]':
   variables:
@@ -361,6 +369,10 @@ cuda12.0 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda12.0-amd64]']
   image: $PREDEPS_IMAGE_CUDA12_0_AMD64
+cuda12.3 amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [cuda12.3-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_3_AMD64
 
 .individual test job rocm:
   extends: .individual test job
