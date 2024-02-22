@@ -143,6 +143,11 @@ include:
     <<: *ci_predeps_shared
     name: cuda12.0-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: cuda12.3-amd64
+    containerfile: .ci.predeps/Containerfile.cuda
 
 - component: *ci_predeps
   inputs:
@@ -269,6 +274,10 @@ include:
 'predeps: [cuda12.0-amd64]':
   variables:
     PREDEPS_BUILD_ARG_CUDA_VERSION: '12.0.1'
+  before_script: *predeps_before_script
+'predeps: [cuda12.3-amd64]':
+  variables:
+    PREDEPS_BUILD_ARG_CUDA_VERSION: '12.3.1'
   before_script: *predeps_before_script
 
 'predeps: [min-cuda11.8-amd64]':
@@ -452,6 +461,9 @@ validate:
   variables:
     COMMON_SETTINGS: '-Dcuda=enabled -Drocm=disabled -Dlevel0=disabled'
 
+'buildmany: [amd64, cuda12.3]':
+  extends: .buildmany amd64 cuda
+  image: $PREDEPS_IMAGE_CUDA12_3_AMD64
 'buildmany: [amd64, cuda12.0]':
   extends: .buildmany amd64 cuda
   image: $PREDEPS_IMAGE_CUDA12_0_AMD64
