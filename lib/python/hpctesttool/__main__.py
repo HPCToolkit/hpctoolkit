@@ -54,6 +54,9 @@ def produces_profiles(
     meas.check_standard(procs=procs, threads_per_proc=threads_per_proc, traces=trace)
 
 
+del produces_profiles
+
+
 @test.command
 @click.option("-T", "--trace/--no-trace", help="Expect a trace.db")
 @click.argument(
@@ -63,6 +66,9 @@ def check_db(*, trace: bool, database: Path) -> None:
     """Test that the given database has the required data."""
     db = Database(database)
     db.check_standard(tracedb=trace)
+
+
+del check_db
 
 
 @test.command
@@ -129,6 +135,9 @@ def unwind_py_simple(*, script: Path, database: Path) -> None:
         raise ValueError(f"Found {len(matches)} matches, expected 1!")
 
 
+del unwind_py_simple
+
+
 @test.command
 @click.argument(
     "database", type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path)
@@ -144,6 +153,9 @@ def db_compare(*, database: Path, canonical: Path) -> None:
         diff.render(sys.stdout)
         acc.render(sys.stdout)
         raise click.ClickException("Comparison failed!")
+
+
+del db_compare
 
 
 @test.command
@@ -183,6 +195,9 @@ def match_struct(
         raise click.ClickException("Missing <LM> tag?")
 
 
+del match_struct
+
+
 @test.command
 @click.argument("structfile", type=click.File("rb"))
 @click.argument("canonical", type=click.File("rb"))
@@ -196,6 +211,9 @@ def struct_compare(*, structfile: typing.BinaryIO, canonical: typing.BinaryIO) -
         raise click.ClickException("Differences found between obtained and expected structure!")
 
 
+del struct_compare
+
+
 @test.command
 @click.argument(
     "database", type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path)
@@ -205,6 +223,8 @@ def yaml(*, database: Path, output: typing.BinaryIO) -> None:
     """Transcode the given database into a YAML file."""
     ruamel.yaml.YAML(typ="rt").dump(from_path(database), output)
 
+
+del yaml
 
 if __name__ == "__main__":
     main()

@@ -194,11 +194,9 @@ class StrictDiff(DiffStrategy):
         self.added = self.added.copy()
         self.altered = self.altered.copy()
         try:
-            self._preserving = True
             yield
         finally:
             self._contexts, self.removed, self.added, self.altered = old_state
-            del self._preserving
 
     def _failure_canary(self):
         """Return an object which, when changes, indicates new failures have been encountered."""
@@ -270,6 +268,8 @@ class StrictDiff(DiffStrategy):
     def _(self, a: None, b: None):
         pass
 
+    del _
+
     @functools.singledispatchmethod
     def _key(self, o: typing.Any, *, side_a: bool) -> collections.abc.Hashable:
         """Derive a hashable key from the given object, that uniquely identifies it compared to its
@@ -287,16 +287,6 @@ class StrictDiff(DiffStrategy):
         self, o, *, side_a: bool, key: typing.Optional[typing.Tuple[dict, dict]] = None
     ) -> collections.abc.Hashable:
         return self._key(key[0 if side_a else 1][o] if key is not None else o, side_a=side_a)
-
-    def _key_ma(
-        self, o: typing.Any, *, key: typing.Optional[typing.Tuple[dict, dict]] = None
-    ) -> collections.abc.Hashable:
-        return self._key_m(o, side_a=True, key=key)
-
-    def _key_mb(
-        self, o: typing.Any, *, key: typing.Optional[typing.Tuple[dict, dict]] = None
-    ) -> collections.abc.Hashable:
-        return self._key_m(o, side_a=False, key=key)
 
     @_key.register
     def _(self, o: None, *, side_a: bool):

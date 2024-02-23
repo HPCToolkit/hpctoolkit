@@ -32,6 +32,8 @@ yamls = [ruamel.yaml.YAML(typ=x) for x in ("rt", "safe", "base", "unsafe", "rtsc
 def yaml_object(*, yaml_tag: str):
     def wrapper(cls):
         cls.yaml_tag = yaml_tag
+        if typing.TYPE_CHECKING:
+            _ = cls.from_yaml, cls.to_yaml  # Used in ruamel.yaml
         for y in yamls:
             y.register_class(cls)
         return cls
@@ -301,6 +303,8 @@ class Enumeration(enum.Enum):
     @classmethod
     def to_yaml(cls, representer, node):
         representer.alias_key = None
+        if typing.TYPE_CHECKING:
+            _ = representer.alias_key
         return representer.represent_scalar(cls.yaml_tag, node.name)
 
     @classmethod
@@ -343,6 +347,8 @@ class BitFlags(enum.Flag):
     @classmethod
     def to_yaml(cls, representer, node):
         representer.alias_key = None
+        if typing.TYPE_CHECKING:
+            _ = representer.alias_key
         return representer.represent_sequence(
             cls.yaml_tag,
             sorted(val.name or str(val) for val in cls if val in node),

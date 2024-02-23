@@ -1,9 +1,5 @@
 import collections
 import functools
-import os
-import shlex
-import subprocess
-import sys
 import typing
 from pathlib import Path
 
@@ -11,53 +7,6 @@ from .errors import PredictableFailureError
 
 if typing.TYPE_CHECKING:
     import collections.abc
-
-
-def _subproc_run(arg0, cmd, *args, wrapper: "collections.abc.Iterable[str]" = (), **kwargs):
-    msg = f"--- --- Running command: {' '.join([shlex.quote(str(s)) for s in [*wrapper] + [arg0] + cmd[1:]])}"
-    print(msg, flush=True)
-    print(msg, file=sys.stderr, flush=True)
-    return subprocess.run(list(wrapper) + cmd, *args, check=False, **kwargs)
-
-
-def _identify_mpiexec(ranks: int):
-    if "HPCTOOLKIT_DEV_MPIEXEC" not in os.environ:
-        raise RuntimeError("mpiexec not available, cannot continue! Run under meson devenv!")
-    mpiexec = [*os.environ["HPCTOOLKIT_DEV_MPIEXEC"].split(";"), f"{ranks:d}"]
-
-    def attempt(
-        args: "collections.abc.Iterable[str]",
-    ) -> typing.Optional["collections.abc.Iterable[str]"]:
-        proc = subprocess.run(
-            mpiexec + list(args) + ["echo"],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        return args if proc.returncode in (0, 77) else None
-
-    # Make sure mpiexec actually works
-    if attempt([]) is not None:
-        pass  # Default settings work
-    elif (args := attempt(["--oversubscribe"])) is not None:
-        mpiexec.extend(args)
-    else:
-        raise RuntimeError("mpiexec appears to be non-functional!")
-
-    # Count the number of ranks that come out and ensure we get the number we expect
-    proc = subprocess.run(
-        [*mpiexec, "echo", "!!RANK!!"],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    ranks_got = proc.stdout.splitlines().count(b"!!RANK!!")
-    if ranks_got != ranks:
-        raise RuntimeError(
-            f"mpiexec did not spawn the correct number of ranks: expected {ranks:d}, got {ranks_got:d}"
-        )
-
-    return mpiexec
 
 
 class Measurements:
