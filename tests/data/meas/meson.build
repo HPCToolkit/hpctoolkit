@@ -9,7 +9,7 @@ _exe_loops = executable(
   'testmeas-loops',
   files('loops.c'),
   override_options: ['debug=true', 'optimization=0'],
-  dependencies: dependency('openmp'),
+  dependencies: openmp_dep,
 )
 
 _exe_loops_cuda = disabler()

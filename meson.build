@@ -586,9 +586,11 @@ endif
 
 
 # Collect features from the compiler itself
-add_project_dependencies(dependency('openmp'), language: ['c', 'cpp'])
+math_dep = cc.find_library('m')
+threads_dep = dependency('threads')
+openmp_dep = dependency('openmp')
 dl_dep = dependency('dl')
-add_project_dependencies(cc.find_library('rt'), language: ['c'])
+rt_dep = cc.find_library('rt')
 _fs_code = '''
 #include <filesystem>
 int main() {

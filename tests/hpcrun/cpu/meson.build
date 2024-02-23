@@ -1,4 +1,4 @@
-tstexe_1loop = executable('tstexe-1loop', files('1loop.cpp'), dependencies: dependency('openmp'))
+tstexe_1loop = executable('tstexe-1loop', files('1loop.cpp'), dependencies: openmp_dep)
 
 test(
   'Measurement of tstexe-1loop produces profiles',
