@@ -218,6 +218,10 @@ include:
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '6.0'
 
+'predeps: [intel-amd64]':
+  variables:
+    PREDEPS_BUILD_ARG_ONEAPI_VERSION: '2024.0.1'
+
 'predeps: [spack]':
   before_script:
   - export PREDEPS_SECRET_spack_mirrors=/tmp/mirrors.yaml
@@ -418,14 +422,14 @@ rocm6.0 amd64:
   image: $PREDEPS_IMAGE_ROCM6_0_AMD64
 
 intel amd64:
-  # FIXME: Currently we have no tests that require Intel hardware nor any Intel
-  # hardware connected to CI! Until the situation improves, run all the tests
-  # but enable level0 and gtpin (so we at least build with something different).
-  # We need a *-medium-* runner here because the Intel images are huge.
   extends: .individual test job std
-  tags: [saas-linux-medium-amd64]
+  tags: [rice-linux-large-amd64-gpu-intel]
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
+  variables:
+    # FIXME: Intel MPI doesn't work on a single node, it tries to ssh to localhost and doesn't get
+    # very far as a result. Don't try to run the MPI tests here.
+    TEST_ARGS: --no-suite mpi
 
 
 # Selected semi-fresh test runs. These regenerate suitable parts of the test data
@@ -540,6 +544,16 @@ compiler clang16:
     # effect can't be reproduced in a local container, for whatever reason. Disable the MPI tests
     # on this MPI for now until a proper fix can be figured out.
     TEST_ARGS: --no-suite mpi
+compiler icx:
+  extends: .compiler compat test job
+  tags: [rice-linux-large-amd64-gpu-intel]
+  needs: ['predeps: [intel-amd64]']
+  image: $PREDEPS_IMAGE_INTEL_AMD64
+  variables:
+    JOB_CC: icx
+    # FIXME: Intel MPI doesn't work on a single node, it tries to ssh to localhost and doesn't get
+    # very far as a result. Don't try to run the MPI tests here.
+    TEST_ARGS: --no-suite mpi
 
 
 # Non-default option checks. There are a small number of options that users/packagers can
@@ -608,6 +622,7 @@ compiler clang16:
       TEST_ARGS: --suite none
 'option: [intel amd64]':
   extends: .option test job
+  tags: [rice-linux-large-amd64-gpu-intel]
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   parallel:
