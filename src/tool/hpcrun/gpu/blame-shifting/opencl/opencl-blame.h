@@ -30,15 +30,17 @@ opencl_queue_epilogue
 void
 opencl_kernel_prologue
 (
- cl_event event,
- uint32_t kernel_module_id
+  typeof(&clRetainEvent) pfn_clRetainEvent,
+  cl_event event,
+  uint32_t kernel_module_id
 );
 
 
 void
 opencl_kernel_epilogue
 (
- cl_event event
+  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
+  cl_event event
 );
 
 
@@ -52,8 +54,9 @@ opencl_sync_prologue
 void
 opencl_sync_epilogue
 (
- cl_command_queue queue,
- uint16_t num_sync_events
+  typeof(&clReleaseEvent) pfn_clReleaseEvent,
+  cl_command_queue queue,
+  uint16_t num_sync_events
 );
 
 #endif  //blame_shift_opencl_h

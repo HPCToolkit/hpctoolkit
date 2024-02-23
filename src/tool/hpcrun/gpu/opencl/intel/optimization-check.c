@@ -411,34 +411,10 @@ clearBufferEntry
 }
 
 
-/* using host device as an accelerator */
-static unsigned int
-getTotalDeviceCount
-(
- void
-)
-{
-  cl_uint platformCount;
-  cl_platform_id* platforms;
-  cl_uint platformDeviceCount;
-  unsigned int totalDeviceCount;
-
-  clGetPlatformIDs(0, NULL, &platformCount);
-  platforms = (cl_platform_id*) malloc(sizeof(cl_platform_id) * platformCount);
-  clGetPlatformIDs(platformCount, platforms, NULL);
-
-  for (int i = 0; i < platformCount; i++) {
-    clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &platformDeviceCount);
-    totalDeviceCount += platformDeviceCount;
-  }
-  return totalDeviceCount;
-}
-
-
 void
 areAllDevicesUsed
 (
- void
+  unsigned int totalDeviceCount
 )
 {
   /* DPC++ provides access to different kinds of devices through abstraction of device selectors. Queues can be created for each of the devices,
@@ -453,7 +429,6 @@ areAllDevicesUsed
   In order to achieve good balance one will have to split the work proportional to the capability of the accelerator instead of distributing it evenly
   */
 
-  unsigned int totalDeviceCount = getTotalDeviceCount();
   if (totalDeviceCount != usedDeviceCount) {
     intel_optimization_t i;
     i.intelOptKind = UNUSED_DEVICES;

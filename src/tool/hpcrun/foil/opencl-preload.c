@@ -50,6 +50,18 @@
 #include "../gpu/opencl/opencl-api-wrappers.h"
 #include "../../../lib/prof-lean/hpcrun-opencl.h"
 
+
+FOIL_DLSYM_FUNC(clGetKernelInfo);
+FOIL_DLSYM_FUNC(clRetainEvent);
+FOIL_DLSYM_FUNC(clReleaseEvent);
+FOIL_DLSYM_FUNC(clGetEventInfo);
+FOIL_DLSYM_FUNC(clGetEventProfilingInfo);
+FOIL_DLSYM_FUNC(clGetPlatformIDs);
+FOIL_DLSYM_FUNC(clGetDeviceIDs);
+FOIL_DLSYM_FUNC(clGetProgramInfo);
+FOIL_DLSYM_FUNC(clSetEventCallback);
+
+
 HPCRUN_EXPOSED cl_int
 clBuildProgram
 (
@@ -62,7 +74,8 @@ clBuildProgram
 )
 {
   LOOKUP_FOIL_BASE(base, clBuildProgram);
-  return base(program, num_devices, device_list,
+  FOIL_DLSYM(real, clBuildProgram);
+  return base(real, pfn_clGetProgramInfo(), program, num_devices, device_list,
                         options, pfn_notify,
                         user_data);
 }
@@ -80,7 +93,9 @@ clCreateContext
 )
 {
   LOOKUP_FOIL_BASE(base, clCreateContext);
-  return base(properties, num_devices, devices, pfn_notify, user_data, errcode_ret);
+  FOIL_DLSYM(real, clCreateContext);
+  return base(real, pfn_clGetPlatformIDs(), pfn_clGetDeviceIDs(),
+    properties, num_devices, devices, pfn_notify, user_data, errcode_ret);
 }
 
 
@@ -94,7 +109,8 @@ clCreateCommandQueue
 )
 {
   LOOKUP_FOIL_BASE(base, clCreateCommandQueue);
-  return base(context, device,
+  FOIL_DLSYM(real, clCreateCommandQueue);
+  return base(real, context, device,
         properties,errcode_ret);
 }
 
@@ -108,8 +124,8 @@ clCreateCommandQueueWithProperties
 )
 {
   LOOKUP_FOIL_BASE(base, clCreateCommandQueueWithProperties);
-  return base(
-                              context, device, properties, errcode_ret);
+  FOIL_DLSYM(real, clCreateCommandQueueWithProperties);
+  return base(real, context, device, properties, errcode_ret);
 }
 
 
@@ -128,7 +144,8 @@ clEnqueueNDRangeKernel
 )
 {
   LOOKUP_FOIL_BASE(base, clEnqueueNDRangeKernel);
-  return base(
+  FOIL_DLSYM(real, clEnqueueNDRangeKernel);
+  return base(real, pfn_clGetKernelInfo(), pfn_clRetainEvent(), pfn_clGetEventProfilingInfo(), pfn_clReleaseEvent(), pfn_clSetEventCallback(),
        command_queue, ocl_kernel, work_dim, global_work_offset,
         global_work_size, local_work_size, num_events_in_wait_list,
         event_wait_list, event);
@@ -145,7 +162,8 @@ clEnqueueTask
 )
 {
   LOOKUP_FOIL_BASE(base, clEnqueueTask);
-  return base(
+  FOIL_DLSYM(real, clEnqueueTask);
+  return base(real, pfn_clGetKernelInfo(), pfn_clGetEventProfilingInfo(), pfn_clReleaseEvent(), pfn_clSetEventCallback(),
       command_queue, kernel, num_events_in_wait_list,
       event_wait_list, event
   );
@@ -167,7 +185,8 @@ clEnqueueReadBuffer
 )
 {
   LOOKUP_FOIL_BASE(base, clEnqueueReadBuffer);
-  return base(
+  FOIL_DLSYM(real, clEnqueueReadBuffer);
+  return base(real, pfn_clGetEventProfilingInfo(), pfn_clReleaseEvent(), pfn_clSetEventCallback(),
       command_queue, buffer, blocking_read, offset,
           cb, ptr, num_events_in_wait_list,
           event_wait_list, event);
@@ -188,7 +207,8 @@ clEnqueueWriteBuffer
 )
 {
   LOOKUP_FOIL_BASE(base, clEnqueueWriteBuffer);
-  return base(
+  FOIL_DLSYM(real, clEnqueueWriteBuffer);
+  return base(real, pfn_clGetEventProfilingInfo(), pfn_clReleaseEvent(), pfn_clSetEventCallback(),
       command_queue, buffer, blocking_write, offset, cb,
       ptr, num_events_in_wait_list, event_wait_list, event
   );
@@ -211,7 +231,8 @@ clEnqueueMapBuffer
 )
 {
   LOOKUP_FOIL_BASE(base, clEnqueueMapBuffer);
-  return base(
+  FOIL_DLSYM(real, clEnqueueMapBuffer);
+  return base(real, pfn_clGetEventProfilingInfo(), pfn_clReleaseEvent(), pfn_clSetEventCallback(),
       command_queue, buffer, blocking_map, map_flags,
       offset, size, num_events_in_wait_list,
       event_wait_list, event, errcode_ret
@@ -230,7 +251,8 @@ clCreateBuffer
 )
 {
   LOOKUP_FOIL_BASE(base, clCreateBuffer);
-  return base(context, flags, size, host_ptr, errcode_ret);
+  FOIL_DLSYM(real, clCreateBuffer);
+  return base(real, pfn_clGetEventProfilingInfo(), pfn_clReleaseEvent(), context, flags, size, host_ptr, errcode_ret);
 }
 
 
@@ -244,7 +266,8 @@ clSetKernelArg
 )
 {
   LOOKUP_FOIL_BASE(base, clSetKernelArg);
-  return base(kernel, arg_index, arg_size, arg_value);
+  FOIL_DLSYM(real, clSetKernelArg);
+  return base(real, kernel, arg_index, arg_size, arg_value);
 }
 
 
@@ -255,7 +278,8 @@ clReleaseMemObject
 )
 {
   LOOKUP_FOIL_BASE(base, clReleaseMemObject);
-  return base(mem);
+  FOIL_DLSYM(real, clReleaseMemObject);
+  return base(real, mem);
 }
 
 
@@ -266,7 +290,8 @@ clReleaseKernel
 )
 {
   LOOKUP_FOIL_BASE(base, clReleaseKernel);
-  return base(kernel);
+  FOIL_DLSYM(real, clReleaseKernel);
+  return base(real, kernel);
 }
 
 
@@ -279,7 +304,8 @@ clWaitForEvents
 )
 {
         LOOKUP_FOIL_BASE(base, clWaitForEvents);
-        return base(num_events, event_list);
+        FOIL_DLSYM(real, clWaitForEvents);
+        return base(real, pfn_clReleaseEvent(), pfn_clGetEventInfo(), num_events, event_list);
 }
 
 
@@ -290,7 +316,8 @@ clReleaseCommandQueue
 )
 {
   LOOKUP_FOIL_BASE(base, clReleaseCommandQueue);
-  return base(command_queue);
+  FOIL_DLSYM(real, clReleaseCommandQueue);
+  return base(real, command_queue);
 }
 
 
@@ -301,5 +328,6 @@ clFinish
 )
 {
         LOOKUP_FOIL_BASE(base, clFinish);
-        return base(command_queue);
+        FOIL_DLSYM(real, clFinish);
+        return base(real, pfn_clReleaseEvent(), command_queue);
 }

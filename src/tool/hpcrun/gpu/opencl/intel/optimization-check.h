@@ -121,7 +121,7 @@ clearBufferEntry
 void
 areAllDevicesUsed
 (
- void
+  unsigned int totalDeviceCount
 );
 
 #endif  // _OPTIMIZATION_CHECK_H_

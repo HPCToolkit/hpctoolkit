@@ -390,7 +390,7 @@ if opencl_dep.found()
     'foil/opencl-preload.c',
     gnu_symbol_visibility: 'hidden',
     link_language: 'c',
-    dependencies: opencl_dep,
+    dependencies: [opencl_dep, dl_dep],
     install: true, install_dir: 'lib' / meson.project_name())
 endif
 _my_include_dirs_deps = [

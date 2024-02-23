@@ -30,7 +30,8 @@
 static void
 releasing_opencl_events
 (
- kernel_id_t id_node
+  typeof(&clReleaseEvent) pfn_clReleaseEvent,
+  kernel_id_t id_node
 )
 {
   cl_event ev;
@@ -38,7 +39,7 @@ releasing_opencl_events
     kernel_cleanup_map_entry_t *e = kernel_cleanup_map_lookup(id_node.id[i]);
     kernel_cleanup_data_t *d = kernel_cleanup_map_entry_data_get(e);
     ev = d->event;
-    clReleaseEvent(ev);
+    pfn_clReleaseEvent(ev);
     kcd_free_helper(d);
     kernel_cleanup_map_delete(id_node.id[i]);
   }
@@ -73,8 +74,9 @@ opencl_queue_epilogue
 void
 opencl_kernel_prologue
 (
- cl_event event,
- uint32_t kernel_module_id
+  typeof(&clRetainEvent) pfn_clRetainEvent,
+  cl_event event,
+  uint32_t kernel_module_id
 )
 {
   // prevent self a sample interrupt while gathering calling context
@@ -83,7 +85,7 @@ opencl_kernel_prologue
   uint64_t event_id = (uint64_t) event;
 
   // increment the reference count for the event
-  clRetainEvent(event);
+  pfn_clRetainEvent(event);
   kernel_cleanup_data_t *data = kcd_alloc_helper();
   data->event = event;
   kernel_cleanup_map_insert(event_id, data);
@@ -100,7 +102,8 @@ opencl_kernel_prologue
 void
 opencl_kernel_epilogue
 (
- cl_event event
+  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
+  cl_event event
 )
 {
   // prevent self a sample interrupt while gathering calling context
@@ -109,11 +112,11 @@ opencl_kernel_epilogue
   uint64_t event_id = (uint64_t) event;
   unsigned long kernel_start, kernel_end;
   // clGetEventProfilingInfo returns time in nanoseconds
-  cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &kernel_end, NULL);
+  cl_int err_cl = pfn_clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &kernel_end, NULL);
 
   if (err_cl == CL_SUCCESS) {
     float elapsedTime;
-    err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &kernel_start, NULL);
+    err_cl = pfn_clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &kernel_start, NULL);
 
     if (err_cl != CL_SUCCESS) {
       EMSG("clGetEventProfilingInfo failed");
@@ -161,8 +164,9 @@ opencl_sync_prologue
 void
 opencl_sync_epilogue
 (
- cl_command_queue queue,
- uint16_t num_sync_events
+  typeof(&clReleaseEvent) pfn_clReleaseEvent,
+  cl_command_queue queue,
+  uint16_t num_sync_events
 )
 {
   // prevent self a sample interrupt while gathering calling context
@@ -176,7 +180,7 @@ opencl_sync_epilogue
   // we can't release opencl events at kernel_epilogue. Their unique event ids can be used later for attributing cpu_idle_blame.
   // so we release them once they are processed in sync_epilogue
   kernel_id_t id_node = sync_epilogue((uint64_t)queue, sync_end, num_sync_events);
-  releasing_opencl_events(id_node);
+  releasing_opencl_events(pfn_clReleaseEvent, id_node);
 
   hpcrun_safe_exit();
 }

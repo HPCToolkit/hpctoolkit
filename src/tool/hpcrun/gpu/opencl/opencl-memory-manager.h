@@ -132,6 +132,8 @@ typedef struct opencl_object_t {
   bool internal_event;
   opencl_object_details_t details;
   atomic_int *pending_operations;
+  void* pfn_clGetEventProfilingInfo;
+  void* pfn_clReleaseEvent;
 } opencl_object_t;
 
 
@@ -150,7 +152,9 @@ opencl_malloc
 opencl_object_t *
 opencl_malloc_kind
 (
- gpu_activity_kind_t kind
+  void* pfn_clGetEventProfilingInfo,
+  void* pfn_clReleaseEvent,
+  gpu_activity_kind_t kind
 );
 
 
