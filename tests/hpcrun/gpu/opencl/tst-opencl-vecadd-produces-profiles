@@ -1,0 +1,29 @@
+#!/bin/sh -ex
+
+hpctesttool="$1"
+hpcrun="$2"
+tstexe_opencl_vecadd="$3"
+event="$4"
+trace="$5"
+
+case "$trace" in
+"")
+  tracearg=--no-trace
+  ;;
+-t|-tt)
+  tracearg=--trace
+  ;;
+*)
+  exit 2
+  ;;
+esac
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+# shellcheck disable=SC2086
+"$hpcrun" -o "$tmpdir"/m -e "$event" $trace "$tstexe_opencl_vecadd"
+"$hpctesttool" test produces-profiles "$tracearg" "$tmpdir"/m \
+  '^NODE [^A-Z]+\s+(((CORE [^A-Z]+\s+)?THREAD [^A-Z]+)|(GPUCONTEXT [^A-Z]+\s+GPUSTREAM [^A-Z]+))$' \
+  'THREAD 0/0:logical' \
+  'GPUCONTEXT 0/0:logical GPUSTREAM 0/0:logical'

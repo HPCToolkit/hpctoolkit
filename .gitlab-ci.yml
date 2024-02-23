@@ -359,6 +359,7 @@ bare ppc64le:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     TEST_ARGS: >-
+      --suite opencl
       --suite cuda
       --suite hpcstruct
 cuda11.6 amd64:
@@ -383,6 +384,7 @@ cuda12.3 amd64:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     TEST_ARGS: >-
+      --suite opencl
       --suite rocm
 rocm5.1 amd64:
   extends: .individual test job rocm
@@ -429,7 +431,10 @@ intel amd64:
   variables:
     # FIXME: Intel MPI doesn't work on a single node, it tries to ssh to localhost and doesn't get
     # very far as a result. Don't try to run the MPI tests here.
-    TEST_ARGS: --no-suite mpi
+    TEST_ARGS: >-
+      --suite opencl
+      --suite level0
+      --no-suite mpi
 
 
 # Selected semi-fresh test runs. These regenerate suitable parts of the test data
