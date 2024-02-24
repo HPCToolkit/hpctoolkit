@@ -49,7 +49,7 @@
 // system includes
 //******************************************************************************
 
-#define CL_TARGET_OPENCL_VERSION 220
+#define CL_TARGET_OPENCL_VERSION 210
 #include <CL/cl.h>
 
 #endif

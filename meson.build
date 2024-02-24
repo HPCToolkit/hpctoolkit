@@ -347,7 +347,7 @@ endif
 # Find OpenCL support. We only need the headers, but there are many ways to acquire them.
 opencl_dep = dependency('', required: false)
 if get_option('opencl').allowed()
-  _opencl_ver = '>=2.2'
+  _opencl_ver = '>=2.1'
 
   # - As of OpenCL >=2023.02.06 (found in Debian >=12, Ubuntu >=23.04, and Fedora) the headers can
   #   be accessed via pkg-config as OpenCL-Headers.pc.
