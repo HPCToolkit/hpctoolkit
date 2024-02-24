@@ -4,6 +4,7 @@
 #include <threads.h>
 
 enum {
+  Y = 1ULL<<10,
   N = 1ULL<<21,
 };
 
@@ -16,6 +17,8 @@ static int body(void* _) {
     d_p1[i] = d_p1[i] + 1.
             + (sqrt(exp(log(d_l1[i] * d_l1[i])) + exp(log(d_r1[i] * d_r1[i]))))
                   / (sqrt(exp(log(d_l1[i] * d_r1[i])) + exp(log((d_r1[i] * d_l1[i])))));
+    if (i % Y == 0)
+      thrd_yield();
   }
   free(d_p1);
   free(d_l1);
@@ -24,12 +27,11 @@ static int body(void* _) {
 }
 
 int main() {
-  thrd_t threads[3];
+  thrd_t threads[2];
   for(int i = 0; i < sizeof threads / sizeof threads[0]; ++i) {
     if(thrd_create(&threads[i], body, NULL) != thrd_success)
       error(1, 0, "error creating thread");
   }
-  body(NULL);
   for(int i = 0; i < sizeof threads / sizeof threads[0]; ++i) {
     if(thrd_join(threads[i], NULL) != thrd_success)
       error(1, 0, "error joining thread");

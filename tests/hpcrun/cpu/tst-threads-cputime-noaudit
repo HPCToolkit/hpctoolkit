@@ -12,5 +12,4 @@ tmpdir=$(mktemp --directory --tmpdir=.)
   '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [^A-Z]+(\s+CORE [^A-Z]+)?$' \
   'THREAD 0/0:logical' \
   'THREAD 1/1:logical' \
-  'THREAD 2/2:logical' \
-  'THREAD 3/3:logical'
+  'THREAD 2/2:logical'

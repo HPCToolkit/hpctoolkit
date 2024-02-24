@@ -2,8 +2,10 @@
 #include <math.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <sched.h>
 
 enum {
+  Y = 1ULL<<10,
   N = 1ULL<<21,
 };
 
@@ -16,6 +18,8 @@ static void* body(void* _) {
     d_p1[i] = d_p1[i] + 1.
             + (sqrt(exp(log(d_l1[i] * d_l1[i])) + exp(log(d_r1[i] * d_r1[i]))))
                   / (sqrt(exp(log(d_l1[i] * d_r1[i])) + exp(log((d_r1[i] * d_l1[i])))));
+    if (i % Y == 0)
+      sched_yield();
   }
   free(d_p1);
   free(d_l1);
@@ -25,12 +29,11 @@ static void* body(void* _) {
 
 int main() {
   int err;
-  pthread_t threads[3];
+  pthread_t threads[2];
   for(int i = 0; i < sizeof threads / sizeof threads[0]; ++i) {
     if((err = pthread_create(&threads[i], NULL, body, NULL)) != 0)
       error(1, err, "error creating thread");
   }
-  body(NULL);
   for(int i = 0; i < sizeof threads / sizeof threads[0]; ++i) {
     if((err = pthread_join(threads[i], NULL)) != 0)
       error(1, err, "error joining thread");

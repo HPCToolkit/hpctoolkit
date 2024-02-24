@@ -3,6 +3,7 @@
 #include <vector>
 
 enum {
+  Y = 1ULL<<10,
   N = 1ULL<<21,
 };
 
@@ -15,14 +16,15 @@ static void body() {
     d_p1[i] = d_p1[i] + 1.
             + (sqrt(exp(log(d_l1[i] * d_l1[i])) + exp(log(d_r1[i] * d_r1[i]))))
                   / (sqrt(exp(log(d_l1[i] * d_r1[i])) + exp(log((d_r1[i] * d_l1[i])))));
+    if (i % Y == 0)
+      std::this_thread::yield();
   }
 }
 
 int main() {
-  std::vector<std::thread> threads(3);
+  std::vector<std::thread> threads(2);
   for(std::thread& t: threads)
     t = std::thread(body);
-  body();
   for(std::thread& t: threads)
     t.join();
   return 0;
