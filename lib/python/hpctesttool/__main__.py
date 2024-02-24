@@ -1,4 +1,5 @@
 import difflib
+import re
 import sys
 import typing
 import xml.etree.ElementTree as XmlET
@@ -29,29 +30,49 @@ def test() -> None:
 
 
 @test.command
-@click.option("-p", "--procs", type=int, default=1, help="Expected number of processes")
-@click.option(
-    "-t",
-    "--threads-per-proc",
-    type=int,
-    default=[1],
-    multiple=True,
-    help="Expected number of threads per process",
-)
 @click.option("-T", "--trace/--no-trace", help="Expect to have traces")
 @click.argument(
     "measurements", type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path)
 )
+@click.argument("pattern_all", type=re.compile)
+@click.argument("patterns_any", type=re.compile, nargs=-1)
+@click.pass_context
 def produces_profiles(
+    ctx: click.Context,
     *,
     measurements: Path,
-    procs: int,
-    threads_per_proc: "collections.abc.Sequence[int]",
     trace: bool,
+    pattern_all: re.Pattern,
+    patterns_any: typing.Tuple[re.Pattern],
 ) -> None:
     """Test that the given MEASUREMENTS contain a sufficient number of profiles."""
+    ok = True
+
     meas = Measurements(measurements)
-    meas.check_standard(procs=procs, threads_per_proc=threads_per_proc, traces=trace)
+    for stem in meas.thread_stems:
+        ids = meas.parse_idtuple(stem)
+        print(f"Found profile: {ids}")
+
+        if trace and not meas.tracefile(stem):
+            print(
+                f"  Error: Expected associated trace file but none found: {stem}.hpctrace not found"
+            )
+            ok = False
+        elif not trace and meas.tracefile(stem):
+            print(f"  Error: Did not expect trace but found: {stem}.hpctrace is present")
+            ok = False
+
+        if not pattern_all.search(ids):
+            print(f"  Error: Profile did not match all pattern: {pattern_all.pattern!r}")
+            ok = False
+
+    for pat in patterns_any:
+        if not any(pat.search(meas.parse_idtuple(stem)) for stem in meas.thread_stems):
+            print(f"Error: Did not find match for regex {pat.pattern!r}")
+            ok = False
+
+    if not ok:
+        ctx.exit(1)
 
 
 del produces_profiles

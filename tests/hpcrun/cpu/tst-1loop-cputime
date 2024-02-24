@@ -8,4 +8,10 @@ trap 'rm -rf "$tmpdir"' EXIT
 tmpdir=$(mktemp --directory --tmpdir=.)
 
 "$hpcrun" -o "$tmpdir"/m -e CPUTIME@500 "$tstexe_1loop"
-"$hpctesttool" test produces-profiles -t4 "$tmpdir"/m
+# "$hpctesttool" test produces-profiles -t4 "$tmpdir"/m
+"$hpctesttool" test produces-profiles "$tmpdir"/m \
+  '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [^A-Z]+$' \
+  'THREAD 0/0:logical' \
+  'THREAD 1/1:logical' \
+  'THREAD 2/2:logical' \
+  'THREAD 3/3:logical'

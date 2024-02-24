@@ -10,4 +10,9 @@ tmpdir=$(mktemp --directory --tmpdir=.)
 if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt 1 ]; then exit 77; fi
 
 "$hpcrun" -o "$tmpdir"/m --disable-auditor -e perf::cpu-clock@f100 -e perf::task-clock@1000000 "$tstexe_1loop"
-"$hpctesttool" test produces-profiles -t4 "$tmpdir"/m
+"$hpctesttool" test produces-profiles "$tmpdir"/m \
+  '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [^A-Z]+$' \
+  'THREAD 0/0:logical' \
+  'THREAD 1/1:logical' \
+  'THREAD 2/2:logical' \
+  'THREAD 3/3:logical'

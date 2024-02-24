@@ -7,10 +7,21 @@ python="$4"
 script="$5"
 threads="$6"
 
+if [ "$threads" -eq 1 ]; then
+  set -- 'THREAD 0/0:logical'
+elif [ "$threads" -eq 3 ]; then
+  set -- 'THREAD 0/0:logical' 'THREAD 1/1:logical' 'THREAD 2/2:logical'
+else
+  echo "Unconfigured thread count: $threads" >&2
+  exit 2
+fi
+
 trap 'rm -rf "$tmpdir"' EXIT
 tmpdir=$(mktemp --directory --tmpdir=.)
 
 "$hpcrun" -o "$tmpdir"/m -a python -e REALTIME --disable-auditor "$python" "$script"
-"$hpctesttool" test produces-profiles -t "$threads" "$tmpdir"/m
+"$hpctesttool" test produces-profiles "$tmpdir"/m \
+  '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [^A-Z]+$' \
+  "$@"
 "$hpcprof" -j1 -o "$tmpdir"/d "$tmpdir/m"
 "$hpctesttool" test unwind-py-simple "$script" "$tmpdir"/d
