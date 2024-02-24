@@ -460,6 +460,9 @@ class Module(StructureBase):
         # bits are allocated.
         RESERVED = EnumEntry(33, min_version=0x100)
 
+    if typing.TYPE_CHECKING:
+        _ = Flags.RESERVED
+
     flags: Flags
     path: str
 
@@ -597,6 +600,9 @@ class Function(StructureBase):
         # Flag bits reserved for future use. This entry may be removed once
         # bits are allocated.
         RESERVED = EnumEntry(33, min_version=0x100)
+
+    if typing.TYPE_CHECKING:
+        _ = Flags.RESERVED
 
     name: str
     module: typing.Optional[Module]
@@ -848,7 +854,9 @@ class Context(StructureBase):
             bits.append(f"{self.module.shortpath}+0x{self.offset:x}")
         r = self.relation.name if self.relation is not None else "<unknown>"
         lt = self.lexical_type.name if self.lexical_type is not None else "<unknown>"
-        return f"-{r}> [{lt}] {' '.join(bits)}  #{self.ctx_id}"
+        ms = [i for i in range(16) if self.propagation & (1 << i) != 0]
+        p = f" ^M[{','.join(map(str, ms))}]" if ms else ""
+        return f"-{r}> [{lt}] {' '.join(bits)}  #{self.ctx_id}{p}"
 
     @classmethod
     def _from_file(

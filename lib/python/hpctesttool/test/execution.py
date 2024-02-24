@@ -1,9 +1,8 @@
 import collections
 import functools
 import os
-import shlex
-import subprocess
-import sys
+import struct
+import types
 import typing
 from pathlib import Path
 
@@ -11,53 +10,6 @@ from .errors import PredictableFailureError
 
 if typing.TYPE_CHECKING:
     import collections.abc
-
-
-def _subproc_run(arg0, cmd, *args, wrapper: "collections.abc.Iterable[str]" = (), **kwargs):
-    msg = f"--- --- Running command: {' '.join([shlex.quote(str(s)) for s in [*wrapper] + [arg0] + cmd[1:]])}"
-    print(msg, flush=True)
-    print(msg, file=sys.stderr, flush=True)
-    return subprocess.run(list(wrapper) + cmd, *args, check=False, **kwargs)
-
-
-def _identify_mpiexec(ranks: int):
-    if "HPCTOOLKIT_DEV_MPIEXEC" not in os.environ:
-        raise RuntimeError("mpiexec not available, cannot continue! Run under meson devenv!")
-    mpiexec = [*os.environ["HPCTOOLKIT_DEV_MPIEXEC"].split(";"), f"{ranks:d}"]
-
-    def attempt(
-        args: "collections.abc.Iterable[str]",
-    ) -> typing.Optional["collections.abc.Iterable[str]"]:
-        proc = subprocess.run(
-            mpiexec + list(args) + ["echo"],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        return args if proc.returncode in (0, 77) else None
-
-    # Make sure mpiexec actually works
-    if attempt([]) is not None:
-        pass  # Default settings work
-    elif (args := attempt(["--oversubscribe"])) is not None:
-        mpiexec.extend(args)
-    else:
-        raise RuntimeError("mpiexec appears to be non-functional!")
-
-    # Count the number of ranks that come out and ensure we get the number we expect
-    proc = subprocess.run(
-        [*mpiexec, "echo", "!!RANK!!"],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    ranks_got = proc.stdout.splitlines().count(b"!!RANK!!")
-    if ranks_got != ranks:
-        raise RuntimeError(
-            f"mpiexec did not spawn the correct number of ranks: expected {ranks:d}, got {ranks_got:d}"
-        )
-
-    return mpiexec
 
 
 class Measurements:
@@ -83,6 +35,69 @@ class Measurements:
 
     def __str__(self):
         return f"{self.__class__.__name__}({self.basedir}, {len(self.thread_stems)} threads)"
+
+    _HPCRUN_STRUCT_FOOTER_END = struct.Struct(">QQ")
+    _HPCRUN_STRUCT_FOOTER = struct.Struct(">" + "QQ" * 6)
+    _HPCRUN_STRUCT_TUPLE_START = struct.Struct(">H")
+    _HPCRUN_STRUCT_TUPLE_ELEM = struct.Struct(">HQQ")
+    _HPCRUN_KIND_CODES = types.MappingProxyType(
+        {
+            0: "SUMMARY",
+            1: "NODE",
+            2: "RANK",
+            3: "THREAD",
+            4: "GPUDEVICE",
+            5: "GPUCONTEXT",
+            6: "GPUSTREAM",
+            7: "CORE",
+        }
+    )
+    _HPCRUN_INTERPRET_CODES = types.MappingProxyType(
+        {
+            0: "both",
+            1: "l-local",
+            2: "l-global",
+            3: "logical",
+        }
+    )
+
+    def parse_idtuple(self, stem) -> str:
+        filename = self.profile(stem)
+        if not filename:
+            raise ValueError(f"No profile with stem: {stem!r}")
+        with open(filename, "rb") as pf:
+
+            def read(numbytes: int) -> bytes:
+                result = pf.read(numbytes)
+                while len(result) < numbytes:
+                    seg = pf.read(numbytes - len(result))
+                    if not seg:
+                        raise RuntimeError("Unexpected EOF")
+                    result += seg
+                return result
+
+            def read_unpack(strct):
+                return strct.unpack(read(strct.size))
+
+            assert self._HPCRUN_STRUCT_FOOTER_END.size == 16
+            pf.seek(-16, os.SEEK_END)
+            footer_offset, magic = read_unpack(self._HPCRUN_STRUCT_FOOTER_END)
+            if magic != 0x48504352554E736D:
+                raise ValueError(f"Invalid magic bytes encountered: 0x{magic:016x}")
+
+            pf.seek(footer_offset, os.SEEK_SET)
+            sparse_start = read_unpack(self._HPCRUN_STRUCT_FOOTER)[10]
+
+            pf.seek(sparse_start, os.SEEK_SET)
+            (num_elems,) = read_unpack(self._HPCRUN_STRUCT_TUPLE_START)
+            bits = []
+            for _ in range(num_elems):
+                kind_interp, pidx, lidx = read_unpack(self._HPCRUN_STRUCT_TUPLE_ELEM)
+                kind, interpret = kind_interp & 0x3FFF, (kind_interp >> 14) & 0x3
+                kind_name = self._HPCRUN_KIND_CODES[kind]
+                interpret_name = self._HPCRUN_INTERPRET_CODES[interpret]
+                bits.append(f"{kind_name} {lidx:x}/{pidx:x}:{interpret_name}")
+            return " ".join(bits)
 
     def check_standard(
         self,

@@ -6,13 +6,18 @@ tstexe_cuda_vecadd="$3"
 event="$4"
 trace="$5"
 
+set -- '^NODE [^A-Z]+\s+(((CORE [^A-Z]+\s+)?THREAD [^A-Z]+)|(GPUCONTEXT [^A-Z]+\s+GPUSTREAM [^A-Z]+))$' \
+  'THREAD 0/0:logical' \
+  'GPUCONTEXT [0-9a-f]+/[0-9a-f]+:logical GPUSTREAM [0-9a-f]+/[0-9a-f]+:logical'
+
 case "$trace" in
 "")
-  threads=1
+  # When not tracing, we don't expect a GPU profile because performance is attributed in the CPU profile
+  set -- '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [^A-Z]+$' \
+    'THREAD 0/0:logical'
   tracearg=--no-trace
   ;;
 -t|-tt)
-  threads=2
   tracearg=--trace
   ;;
 *)
@@ -25,4 +30,4 @@ tmpdir=$(mktemp --directory --tmpdir=.)
 
 # shellcheck disable=SC2086
 "$hpcrun" -o "$tmpdir"/m -e "$event" $trace "$tstexe_cuda_vecadd"
-"$hpctesttool" test produces-profiles -t "$threads" "$tracearg" "$tmpdir"/m
+"$hpctesttool" test produces-profiles "$tracearg" "$tmpdir"/m "$@"

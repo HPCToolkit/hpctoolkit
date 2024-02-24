@@ -1,5 +1,7 @@
 _tst = find_program(files('tst-default-pipeline'))
-foreach exe : [tstexe_1loop]
+foreach exe : [
+  executable(f'tstexe-e2e-openmp', files('openmp.cpp'), dependencies: openmp_dep)
+]
   test(
     'Default analysis pipeline on @0@ works'.format(exe.name()),
     _tst,

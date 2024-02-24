@@ -131,6 +131,8 @@ class LiteralValue(Value):
         def parse_wildcard(toks: pp.ParseResults) -> typing.List[bool]:
             return [bool(toks.any)]
 
+        del parse_wildcard
+
         bsuffix = pp.Opt(
             pp.Combine(
                 pp.Literal("[")
@@ -156,17 +158,23 @@ class LiteralValue(Value):
                 return [not debug]
             return [False]
 
+        del parse_brackets
+
         std = pp.Combine(wprefix("wpfx") + pp.QuotedString('"')("literal") + bsuffix("bs"))
 
         @std.set_parse_action
         def lift_std(toks: pp.ParseResults) -> LiteralValue:
             return cls(toks.literal, wildcard_prefix=toks.wpfx, bracket_suffix=toks.bs)
 
+        del lift_std
+
         c_file = pp.Combine(pp.Literal("file") + bsuffix("bs"))
 
         @c_file.set_parse_action
         def lift_file(toks: pp.ParseResults) -> LiteralValue:
             return cls(file if debug else "", bracket_suffix=toks.bs)
+
+        del lift_file
 
         c_binary = pp.Literal("binary").set_parse_action(lambda: cls(binary))
 
@@ -361,6 +369,8 @@ class Tag:
         def lift_attrs(toks: pp.ParseResults) -> typing.Dict[str, Value]:
             return {a.key: a.value for a in toks}
 
+        del lift_attrs
+
         dbg_prefix = pp.Opt(pp.Literal("dbg:")("debugonly") | pp.Literal("nodbg:")("nodebugonly"))
 
         shorthand_tag = (
@@ -384,11 +394,15 @@ class Tag:
                 )
             ]
 
+        del lift_shorthand
+
         lineno = pp.Empty()
 
         @lineno.set_parse_action
         def get_lineno(s: str, loc: int, _toks: pp.ParseResults) -> int:
             return pp.lineno(loc, s)
+
+        del get_lineno
 
         open_tag = pp.Combine(
             dbg_prefix + "<" + pp.Word(pp.alphas)("opentag") + mode("mode")
@@ -428,6 +442,8 @@ class Tag:
                 )
             ]
 
+        del lift
+
         tag <<= predefined_parser | shorthand_tag | paired_tag
         return tag
 
@@ -442,6 +458,8 @@ def parse_sources(  # noqa: C901
     @def_parser.set_parse_action
     def expand(toks: pp.ParseResults) -> typing.List[Tag]:
         return definitions[toks.name]
+
+    del expand
 
     macros: typing.Dict[str, str] = {}
 

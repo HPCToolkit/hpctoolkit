@@ -1,18 +1,24 @@
-#!/bin/sh -ex
+#!/bin/bash -ex
 
 hpctesttool="$1"
 hpcrun="$2"
 tstexe_amd_vecadd="$3"
 trace="$4"
-shift 4  # Remaining arguments to go hpcrun
+shift 4
+remaining_args=("$@")
+
+set -- '^NODE [^A-Z]+\s+(((CORE [^A-Z]+\s+)?THREAD [^A-Z]+)|(GPUCONTEXT [^A-Z]+\s+GPUSTREAM [^A-Z]+))$' \
+  'THREAD 0/0:logical' \
+  'GPUCONTEXT [0-9a-f]+/[0-9a-f]+:logical GPUSTREAM [0-9a-f]+/[0-9a-f]+:logical'
 
 case "$trace" in
 "")
-  threads=1
+  # When not tracing, we don't expect a GPU profile because performance is attributed in the CPU profile
+  set -- '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [^A-Z]+$' \
+    'THREAD 0/0:logical'
   tracearg=--no-trace
   ;;
 -t|-tt)
-  threads=2
   tracearg=--trace
   ;;
 *)
@@ -24,5 +30,5 @@ trap 'rm -rf "$tmpdir"' EXIT
 tmpdir=$(mktemp --directory --tmpdir=.)
 
 # shellcheck disable=SC2086
-"$hpcrun" -o "$tmpdir"/m -e gpu=amd $trace "$@" "$tstexe_amd_vecadd"
-"$hpctesttool" test produces-profiles -t "$threads" -t $((threads + 1)) "$tracearg" "$tmpdir"/m
+"$hpcrun" -o "$tmpdir"/m -e gpu=amd $trace "${remaining_args[@]}" "$tstexe_amd_vecadd"
+"$hpctesttool" test produces-profiles "$tracearg" "$tmpdir"/m "$@"

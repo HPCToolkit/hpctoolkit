@@ -82,7 +82,7 @@ def test_small_diff(v4_data_small):
 +        16:  # for function  #16
 +          1: 1000000000.0  # for {NODE 0 [0x7f0101] / THREAD 0}
 +        1: {} # for function  #1
-     contexts[6]:   # for -lexical> [loop] /foo.c:1464  #6
+     contexts[6]:   # for -lexical> [loop] /foo.c:1464  #6 ^M[0]
 -      !cct.db/v4/PerContext
 -      values:
 -        16:  # for function  #16
@@ -93,7 +93,7 @@ def test_small_diff(v4_data_small):
 +        16:  # for function  #16
 +          1: 1000000000.0  # for {NODE 0 [0x7f0101] / THREAD 0}
 +        1: {} # for function  #1
-     contexts[7]:   # for -lexical> [line] /foo.c:1464  #7
+     contexts[7]:   # for -lexical> [line] /foo.c:1464  #7 ^M[0]
 -      !cct.db/v4/PerContext
 -      values:
 -        16:  # for function  #16
@@ -104,7 +104,7 @@ def test_small_diff(v4_data_small):
 +        16:  # for function  #16
 +          1: 1000000000.0  # for {NODE 0 [0x7f0101] / THREAD 0}
 +        1: {} # for function  #1
-     contexts[9]:   # for -lexical> [line] /foo.c:1464  #9
+     contexts[9]:   # for -lexical> [line] /foo.c:1464  #9 ^M[0]
 -      !cct.db/v4/PerContext
 -      values: {}
 +      !cct.db/v4/PerContext
@@ -113,7 +113,7 @@ def test_small_diff(v4_data_small):
    context:
      entry_points[1]:   # main thread (= main_thread)  #1
        children[0]:   # -call> [function] main  #2
-         children[0]:   # -lexical> [line] /foo.c:1464  #3
+         children[0]:   # -lexical> [line] /foo.c:1464  #3 ^M[0]
            children[1]:   # -call> [function] foo  #5
 -            !meta.db/v4/Context
 -            ctx_id: 5
@@ -137,7 +137,7 @@ def test_small_diff(v4_data_small):
 -            module:
 -            offset:
 -            children:
--            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9
+-            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9 ^M[0]
 -              ctx_id: 9
 -              flags: !meta.db/v4/Context.Flags [has_srcloc]
 -              relation: !meta.db/v4/Context.Relation lexical
@@ -149,7 +149,7 @@ def test_small_diff(v4_data_small):
 -              module:
 -              offset:
 -              children: []
--            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6
+-            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6 ^M[0]
 -              ctx_id: 6
 -              flags: !meta.db/v4/Context.Flags [has_srcloc]
 -              relation: !meta.db/v4/Context.Relation lexical
@@ -161,7 +161,7 @@ def test_small_diff(v4_data_small):
 -              module:
 -              offset:
 -              children:
--              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7
+-              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7 ^M[0]
 -                ctx_id: 7
 -                flags: !meta.db/v4/Context.Flags [has_srcloc]
 -                relation: !meta.db/v4/Context.Relation lexical
@@ -196,7 +196,7 @@ def test_small_diff(v4_data_small):
 +            module:
 +            offset:
 +            children:
-+            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9
++            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9 ^M[0]
 +              ctx_id: 9
 +              flags: !meta.db/v4/Context.Flags [has_srcloc]
 +              relation: !meta.db/v4/Context.Relation lexical
@@ -208,7 +208,7 @@ def test_small_diff(v4_data_small):
 +              module:
 +              offset:
 +              children: []
-+            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6
++            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6 ^M[0]
 +              ctx_id: 6
 +              flags: !meta.db/v4/Context.Flags [has_srcloc]
 +              relation: !meta.db/v4/Context.Relation lexical
@@ -220,7 +220,7 @@ def test_small_diff(v4_data_small):
 +              module:
 +              offset:
 +              children:
-+              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7
++              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7 ^M[0]
 +                ctx_id: 7
 +                flags: !meta.db/v4/Context.Flags [has_srcloc]
 +                relation: !meta.db/v4/Context.Relation lexical
@@ -255,7 +255,7 @@ def test_small_diff(v4_data_small):
  trace:
    ctx_traces:
      traces[0]:   # 0.460766000s (1656693533.987950087-1656693534.448715925) for {NODE 0 [0x7f0101] / THREAD 0}
-       line[0]:   # +0.000000000s at -lexical> [line] /foo.c:1464  #9
+       line[0]:   # +0.000000000s at -lexical> [line] /foo.c:1464  #9 ^M[0]
          !trace.db/v4/ContextTraceElement
           timestamp: 1656693533987950000
           ctx_id: 9
@@ -281,7 +281,7 @@ def test_small_diff(v4_data_small):
 -        16:  # for function  #16
 -          1: 1000000000.0  # for {NODE 0 [0x7f0101] / THREAD 0}
 -        1: {} # for function  #1
-     contexts[6]:   # for -lexical> [loop] /foo.c:1464  #6
+     contexts[6]:   # for -lexical> [loop] /foo.c:1464  #6 ^M[0]
 -      !cct.db/v4/PerContext
 -      values:
 -        16:  # for function  #16
@@ -292,7 +292,7 @@ def test_small_diff(v4_data_small):
 +        16:  # for function  #16
 +          1: 1000000000.0  # for {NODE 0 [0x7f0101] / THREAD 0}
 +        1: {} # for function  #1
-     contexts[7]:   # for -lexical> [line] /foo.c:1464  #7
+     contexts[7]:   # for -lexical> [line] /foo.c:1464  #7 ^M[0]
 -      !cct.db/v4/PerContext
 -      values:
 -        16:  # for function  #16
@@ -303,7 +303,7 @@ def test_small_diff(v4_data_small):
 +        16:  # for function  #16
 +          1: 1000000000.0  # for {NODE 0 [0x7f0101] / THREAD 0}
 +        1: {} # for function  #1
-     contexts[9]:   # for -lexical> [line] /foo.c:1464  #9
+     contexts[9]:   # for -lexical> [line] /foo.c:1464  #9 ^M[0]
 -      !cct.db/v4/PerContext
 -      values: {}
 +      !cct.db/v4/PerContext
@@ -312,7 +312,7 @@ def test_small_diff(v4_data_small):
    context:
      entry_points[1]:   # main thread (= main_thread)  #1
        children[0]:   # -call> [function] main  #2
-         children[0]:   # -lexical> [line] /foo.c:1464  #3
+         children[0]:   # -lexical> [line] /foo.c:1464  #3 ^M[0]
            children[1]:   # -call> [function] foo  #5
 +            !meta.db/v4/Context
 +            ctx_id: 5
@@ -336,7 +336,7 @@ def test_small_diff(v4_data_small):
 +            module:
 +            offset:
 +            children:
-+            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9
++            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9 ^M[0]
 +              ctx_id: 9
 +              flags: !meta.db/v4/Context.Flags [has_srcloc]
 +              relation: !meta.db/v4/Context.Relation lexical
@@ -348,7 +348,7 @@ def test_small_diff(v4_data_small):
 +              module:
 +              offset:
 +              children: []
-+            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6
++            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6 ^M[0]
 +              ctx_id: 6
 +              flags: !meta.db/v4/Context.Flags [has_srcloc]
 +              relation: !meta.db/v4/Context.Relation lexical
@@ -360,7 +360,7 @@ def test_small_diff(v4_data_small):
 +              module:
 +              offset:
 +              children:
-+              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7
++              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7 ^M[0]
 +                ctx_id: 7
 +                flags: !meta.db/v4/Context.Flags [has_srcloc]
 +                relation: !meta.db/v4/Context.Relation lexical
@@ -395,7 +395,7 @@ def test_small_diff(v4_data_small):
 -            module:
 -            offset:
 -            children:
--            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9
+-            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9 ^M[0]
 -              ctx_id: 9
 -              flags: !meta.db/v4/Context.Flags [has_srcloc]
 -              relation: !meta.db/v4/Context.Relation lexical
@@ -407,7 +407,7 @@ def test_small_diff(v4_data_small):
 -              module:
 -              offset:
 -              children: []
--            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6
+-            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6 ^M[0]
 -              ctx_id: 6
 -              flags: !meta.db/v4/Context.Flags [has_srcloc]
 -              relation: !meta.db/v4/Context.Relation lexical
@@ -419,7 +419,7 @@ def test_small_diff(v4_data_small):
 -              module:
 -              offset:
 -              children:
--              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7
+-              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7 ^M[0]
 -                ctx_id: 7
 -                flags: !meta.db/v4/Context.Flags [has_srcloc]
 -                relation: !meta.db/v4/Context.Relation lexical
@@ -454,7 +454,7 @@ def test_small_diff(v4_data_small):
  trace:
    ctx_traces:
      traces[0]:   # 0.460766000s (1656693533.987950087-1656693534.448715925) for {NODE 0 [0x7f0101] / THREAD 0}
-       line[0]:   # +0.000000000s at -lexical> [line] /foo.c:1464  #9
+       line[0]:   # +0.000000000s at -lexical> [line] /foo.c:1464  #9 ^M[0]
          !trace.db/v4/ContextTraceElement
           timestamp: 1656693533987950000
           ctx_id: 9

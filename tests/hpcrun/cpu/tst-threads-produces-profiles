@@ -1,0 +1,15 @@
+#!/bin/sh -ex
+
+hpctesttool="$1"
+hpcrun="$2"
+tstexe_1loop="$3"
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+"$hpcrun" -o "$tmpdir"/m "$tstexe_1loop"
+"$hpctesttool" test produces-profiles "$tmpdir"/m \
+  '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [^A-Z]+$' \
+  'THREAD 0/0:logical' \
+  'THREAD 1/1:logical' \
+  'THREAD 2/2:logical'
