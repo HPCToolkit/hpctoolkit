@@ -13,6 +13,7 @@ test(
 )
 
 subdir('cpu')
+subdir('threads')
 subdir('python')
 subdir('gpu/opencl')
 subdir('gpu/cuda')
