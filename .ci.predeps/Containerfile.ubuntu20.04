@@ -43,7 +43,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     make  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
     mawk  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
     ninja-build \
-    opencl-headers \
+    ocl-icd-opencl-dev \
     pkg-config \
     python3 \
     python3-dev \

@@ -339,6 +339,7 @@ if opencl_dep.found()
     'gpu/blame-shifting/blame-kernel-cleanup-map.c',
     'gpu/blame-shifting/opencl/opencl-blame.c',
   )
+  _my_cpp_defines += '-DHPCRUN_SS_OPENCL'
 
   _hpcrun_libs += shared_module('hpcrun_opencl', config_h,
     'foil/opencl-preload.c',

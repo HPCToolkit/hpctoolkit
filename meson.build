@@ -347,15 +347,21 @@ endif
 # Find OpenCL support. We only need the headers, but there are many ways to acquire them.
 opencl_dep = dependency('', required: false)
 if get_option('opencl').allowed()
+  _opencl_ver = '>=2.1'
+
   # - As of OpenCL >=2023.02.06 (found in Debian >=12, Ubuntu >=23.04, and Fedora) the headers can
   #   be accessed via pkg-config as OpenCL-Headers.pc.
   # - Before that, since OpenCL >=2020.12.18 (found in Debian >=10, Ubuntu >=20.04, and RHEL >=9)
   #   the headers can be accessed via CMake as OpenCLHeaders-config.cmake.
-  # - For older distros, CMake >=3.1 ships a FindOpenCL.cmake script, but it requires a full OpenCL
-  #   installation and not just the headers.
-  #
-  # Try all three approaches and take it if it works.
-  opencl_dep = dependency('OpenCL-Headers', 'OpenCLHeaders', 'OpenCL', required: false, version: '>=2.2').partial_dependency(includes: true, compile_args: true)
+  opencl_dep = dependency('OpenCL-Headers', 'OpenCLHeaders', required: false, version: _opencl_ver)
+
+  if not opencl_dep.found()
+    # For older distros, CMake >=3.1 ships a FindOpenCL.cmake script, but it requires a full OpenCL
+    # installation and not just the headers. If that's all we got, use it and cut out the link
+    # flags so we only get the headers.
+    opencl_dep = (dependency('OpenCL', required: false, version: _opencl_ver)
+      .partial_dependency(includes: true, compile_args: true))
+  endif
 
   if not opencl_dep.found() and cc.has_header('CL/cl.h', required: false)
     # For Spack builds and partial system installations, we also support the case where the header
@@ -367,6 +373,12 @@ if get_option('opencl').allowed()
     # Fall back to dependency() to get a good error message and enable wrap fallbacks.
     opencl_dep = dependency('OpenCL-Headers', required: get_option('opencl'))
   endif
+endif
+
+# Find a full OpenCL installation. We need this to run some of the tests.
+opencl_full_dep = dependency('', required: false)
+if opencl_dep.found()
+  opencl_full_dep = dependency('OpenCL', required: get_option('extended_tests'), version: _opencl_ver)
 endif
 
 

@@ -29,6 +29,7 @@ RUN \
     make  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
     mpich-devel \
     ninja \
+    ocl-icd-devel \
     opencl-headers \
     papi-devel \
     pkg-config \

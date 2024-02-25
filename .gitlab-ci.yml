@@ -127,11 +127,6 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: rocm5.1-amd64
-    containerfile: .ci.predeps/Containerfile.rocm
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
     name: rocm5.2-amd64
     containerfile: .ci.predeps/Containerfile.rocm
 - component: *ci_predeps
@@ -193,9 +188,6 @@ include:
   variables:
     PREDEPS_BUILD_ARG_CUDA_VERSION: '12.3.1'
 
-'predeps: [rocm5.1-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.1.3'
 'predeps: [rocm5.2-amd64]':
   variables:
     PREDEPS_BUILD_ARG_ROCM_VERSION: '5.2.3'
@@ -359,6 +351,7 @@ bare ppc64le:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     TEST_ARGS: >-
+      --suite opencl
       --suite cuda
       --suite hpcstruct
 cuda11.6 amd64:
@@ -383,15 +376,8 @@ cuda12.3 amd64:
   tags: [rice-linux-large-amd64-gpu-amd]
   variables:
     TEST_ARGS: >-
+      --suite opencl
       --suite rocm
-rocm5.1 amd64:
-  extends: .individual test job rocm
-  needs: ['predeps: [rocm5.1-amd64]']
-  image: $PREDEPS_IMAGE_ROCM5_1_AMD64
-  variables:
-    # FIXME: For some reason the RUNPATHs don't work for ROCm 5.1 specifically. Not sure if anyone
-    # uses this version anymore, so for now hack it to work.
-    LD_LIBRARY_PATH: /opt/rocm/lib
 rocm5.2 amd64:
   extends: .individual test job rocm
   needs: ['predeps: [rocm5.2-amd64]']
@@ -429,7 +415,10 @@ intel amd64:
   variables:
     # FIXME: Intel MPI doesn't work on a single node, it tries to ssh to localhost and doesn't get
     # very far as a result. Don't try to run the MPI tests here.
-    TEST_ARGS: --no-suite mpi
+    TEST_ARGS: >-
+      --suite opencl
+      --suite level0
+      --no-suite mpi
 
 
 # Selected semi-fresh test runs. These regenerate suitable parts of the test data
