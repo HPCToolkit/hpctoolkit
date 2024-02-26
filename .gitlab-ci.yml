@@ -266,7 +266,7 @@ include:
     # Usual sequence from here: setup, build and test
     - meson setup $SETUP_ARGS builddir
   - meson compile -C builddir 2>&1 | tee compile.log
-  - meson test -C builddir --maxfail 3 --repeat 7 $TEST_ARGS
+  - meson test -C builddir -j $(nproc) --maxfail 3 --repeat 7 $TEST_ARGS
   after_script:
   - |
     echo "To reproduce this build, run:"
@@ -439,10 +439,10 @@ intel amd64:
   - cp -t testdata-patches/ builddir/tests/data/*.patch
   - find testdata-patches/ -type f -size 0 -delete
   # Make sure we run the tests once in the same build directory that generated them
-  - meson test -C builddir --maxfail 3 $TEST_ARGS
+  - meson test -C builddir -j $(nproc) --maxfail 3 $TEST_ARGS
   # Then wipe the build directory and re-test against a "sterilized" build
   - meson setup --wipe builddir
-  - meson test -C builddir --maxfail 3 --repeat 6 $TEST_ARGS
+  - meson test -C builddir -j $(nproc) --maxfail 3 --repeat 6 $TEST_ARGS
   after_script:
   - EXTRA_ENVS=" -e REGEN_SUITES='$REGEN_SUITES'"
   - !reference [.test job, after_script]
