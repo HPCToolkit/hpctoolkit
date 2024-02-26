@@ -9,7 +9,4 @@ tmpdir=$(mktemp --directory --tmpdir=.)
 
 "$hpcrun" -o "$tmpdir"/m -e REALTIME@1000 "$tstexe_1loop"
 "$hpctesttool" test produces-profiles "$tmpdir"/m \
-  '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [^A-Z]+$' \
-  'THREAD 0/0:logical' \
-  'THREAD 1/1:logical' \
-  'THREAD 2/2:logical'
+  '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD 0/0:logical$'
