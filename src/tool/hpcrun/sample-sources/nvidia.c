@@ -80,11 +80,11 @@
 #include "../control-knob.h"
 
 #include "../gpu/gpu-metrics.h"
-#include "../gpu/gpu-monitoring.h"
+#include "../gpu/common/gpu-monitoring.h"
 
-#include "../gpu/gpu-trace.h"
-#include "../gpu/nvidia/cuda-api.h"
-#include "../gpu/nvidia/cupti-api.h"
+#include "../gpu/trace/gpu-trace-api.h"
+#include "../gpu/api/nvidia/cuda-api.h"
+#include "../gpu/api/nvidia/cupti-api.h"
 
 #include "../audit/audit-api.h"
 #include "../messages/messages.h"

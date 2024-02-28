@@ -42,13 +42,40 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
+// global includes
+//******************************************************************************
+
+#include <stdlib.h>
+#include <stdint.h>
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
 #define _GNU_SOURCE
 
-#include "gpu-correlation-channel-set.h"
+#include "activity/correlation/gpu-correlation-channel.h"
+#include "activity/correlation/gpu-host-correlation-map.h"
 #include "gpu-monitoring-thread-api.h"
+
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+void
+receive_correlation
+(
+  uint64_t correlation_id,
+  gpu_activity_channel_t *activity_channel,
+  void *arg
+)
+{
+  gpu_host_correlation_map_insert(correlation_id, activity_channel);
+}
 
 
 
@@ -62,14 +89,14 @@ gpu_monitoring_thread_activities_ready
  void
 )
 {
-  gpu_correlation_channel_set_consume_with_idx(0);
+  gpu_monitoring_thread_activities_ready_with_idx(0);
 }
 
 void
 gpu_monitoring_thread_activities_ready_with_idx
 (
- int idx
+ uint64_t idx
 )
 {
-  gpu_correlation_channel_set_consume_with_idx(idx);
+  gpu_correlation_channel_receive(idx, receive_correlation, NULL);
 }

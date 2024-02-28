@@ -75,22 +75,23 @@
 #include "ompt-device.h"
 
 #include "../gpu/gpu-application-thread-api.h"
-#include "../gpu/gpu-binary.h"
-#include "../gpu/gpu-correlation-channel.h"
-#include "../gpu/gpu-correlation-channel-set.h"
-#include "../gpu/gpu-correlation-id.h"
+#include "../gpu/activity/correlation/gpu-correlation-channel.h"
 #include "../gpu/gpu-metrics.h"
-#include "../gpu/gpu-monitoring.h"
+#include "../gpu/common/gpu-monitoring.h"
 #include "../gpu/gpu-monitoring-thread-api.h"
-#include "../gpu/gpu-op-placeholders.h"
-#include "../gpu/gpu-trace.h"
+#include "../gpu/activity/gpu-activity-channel.h"
+#include "../gpu/activity/gpu-op-placeholders.h"
+#include "../gpu/trace/gpu-trace-api.h"
+#include "../gpu/activity/gpu-op-ccts-map.h"
 
-#include "../gpu/ompt/ompt-gpu-api.h"
+#include "../gpu/api/common/gpu-binary.h"
+
+#include "../gpu/api/ompt/ompt-gpu-api.h"
 
 #include "../libmonitor/monitor.h"
 
 #ifdef ENABLE_CUDA
-#include "../gpu/nvidia/cuda-api.h"
+#include "../gpu/api/nvidia/cuda-api.h"
 #endif
 
 
@@ -308,7 +309,11 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     // Inform the worker about the placeholders
     uint64_t cpu_submit_time = hpcrun_nanotime();
     PRINT("producing correlation %lu\n", host_op_id);
-    gpu_correlation_channel_produce(host_op_id, &gpu_op_ccts, cpu_submit_time);
+
+    gpu_op_ccts_map_insert(host_op_id, (gpu_op_ccts_map_entry_value_t) {
+      .gpu_op_ccts = gpu_op_ccts,
+      .cpu_submit_time = cpu_submit_time
+    });
   } else {
     PRINT("exit ompt runtime op %lu\n", host_op_id);
     // Enter a runtime api
@@ -661,7 +666,7 @@ ompt_target_callback_emi
 
   ompt_need_flush = true;
 
-  target_data->value = gpu_correlation_id();
+  target_data->value = gpu_activity_channel_generate_correlation_id();
   PRINT("ompt_target_callback->target_id 0x%lx\n", target_data->value);
 
   target_node = get_callpath();
@@ -684,7 +689,7 @@ ompt_data_op_callback_emi
 )
 {
   if (endpoint == ompt_scope_begin) {
-    *host_op_id = gpu_correlation_id();
+    *host_op_id = gpu_activity_channel_generate_correlation_id();
   }
 
   enum hpcrun_placeholder op = hpcrun_placeholder_ompt_tgt_none;
@@ -715,7 +720,7 @@ ompt_submit_callback_emi
 )
 {
   if (endpoint == ompt_scope_begin) {
-    *host_op_id = gpu_correlation_id();
+    *host_op_id = gpu_activity_channel_generate_correlation_id();
   }
 
   PRINT("ompt_submit_callback enter->target_id %" PRIu64 "\n", target_id);

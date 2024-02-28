@@ -51,10 +51,10 @@
 
 #define DEBUG 0
 
-#include "gpu-trace-channel-set.h"
-#include "gpu-trace.h"
-#include "gpu-trace-demultiplexer.h"
-#include "gpu-print.h"
+#include "trace/gpu-trace-channel-set.h"
+#include <gpu-trace.h>
+#include "trace/gpu-trace-demultiplexer.h"
+#include "common/gpu-print.h"
 
 #include "../libmonitor/monitor.h"
 

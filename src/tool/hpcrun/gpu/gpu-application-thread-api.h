@@ -50,7 +50,7 @@
 // local includes
 //******************************************************************************
 
-#include "gpu-activity.h"
+#include "activity/gpu-activity.h"
 
 
 

@@ -44,6 +44,12 @@
 #ifndef gpu_monitoring_thread_api_h
 #define gpu_monitoring_thread_api_h
 
+//******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <stdint.h>
+
 
 
 //******************************************************************************
@@ -60,9 +66,8 @@ gpu_monitoring_thread_activities_ready
 void
 gpu_monitoring_thread_activities_ready_with_idx
 (
- int idx
+ uint64_t idx
 );
-
 
 
 #endif

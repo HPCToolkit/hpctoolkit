@@ -50,7 +50,7 @@
 
 #include "../../../include/gpu-metric-names.h"
 
-#include "gpu-activity.h"
+#include "activity/gpu-activity.h"
 
 //*****************************************************************************
 // types

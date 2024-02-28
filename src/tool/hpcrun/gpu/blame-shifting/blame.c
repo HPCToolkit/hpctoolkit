@@ -20,10 +20,10 @@
 #include "blame.h"
 
 #include "../../cct/cct.h"                                         // cct_node_t
-#include "../gpu-activity.h"                                // gpu_activity_t
+#include "../activity/gpu-activity.h"                                // gpu_activity_t
 #include "../gpu-metrics.h"                                 // gpu_metrics_attribute
 #include "../gpu-application-thread-api.h"                  // gpu_application_thread_correlation_callback
-#include "../gpu-activity-channel.h"                        // gpu_activity_channel_get
+#include "../activity/gpu-activity-channel.h"                        // gpu_activity_channel_get_local
 #include "../../memory/hpcrun-malloc.h"                            // hpcrun_malloc_safe
 #include "../../safe-sampling.h"                                   // hpcrun_safe_enter, hpcrun_safe_exit
 
@@ -174,7 +174,7 @@ create_and_insert_kernel_entry
   kernel_node_t *kernel_node = kernel_node_alloc_helper(&kernel_node_free_list);
   kernel_node->kernel_id = kernelexec_id;
   kernel_node->launcher_cct = launcher_cct;
-  kernel_node->activity_channel = gpu_activity_channel_get();
+  kernel_node->activity_channel = gpu_activity_channel_get_local();
   kernel_node->next = NULL;
   kernel_map_insert(kernelexec_id, kernel_node);
 }

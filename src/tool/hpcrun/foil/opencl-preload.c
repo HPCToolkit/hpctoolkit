@@ -47,7 +47,7 @@
 #define _GNU_SOURCE
 
 #include "foil.h"
-#include "../gpu/opencl/opencl-api-wrappers.h"
+#include "../gpu/api/opencl/opencl-api-wrappers.h"
 #include "../../../lib/prof-lean/hpcrun-opencl.h"
 
 
