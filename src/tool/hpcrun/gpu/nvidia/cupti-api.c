@@ -55,11 +55,12 @@
 // system includes
 //***************************************************************************
 
-#include <sys/stat.h>
-
-#include <dlfcn.h>
-#undef _GNU_SOURCE
 #define _GNU_SOURCE
+
+#include "control-knob.h"
+
+#include <sys/stat.h>
+#include <dlfcn.h>
 #include <link.h>          // dl_iterate_phdr
 #include <linux/limits.h>  // PATH_MAX
 #include <string.h>        // strstr
@@ -247,7 +248,8 @@ typedef void (*cupti_error_callback_t)
 (
  const char *type,
  const char *fn,
- const char *error_string
+ const char *error_string,
+ int exitcode
 );
 
 
@@ -301,7 +303,8 @@ cupti_error_callback_dummy
 (
  const char *type,
  const char *fn,
- const char *error_string
+ const char *error_string,
+ int exitcode
 );
 
 
@@ -674,14 +677,15 @@ cupti_error_callback_dummy // __attribute__((unused))
 (
  const char *type,
  const char *fn,
- const char *error_string
+ const char *error_string,
+ int exitcode
 )
 {
 
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
       "function %s failed with error %s", type, fn, error_string);
   EEMSG("See the 'FAQ and Troubleshooting' chapter in the HPCToolkit manual for guidance");
-  monitor_real_exit(1);
+  monitor_real_exit(exitcode);
 }
 
 
@@ -694,7 +698,21 @@ cupti_error_report
 {
   const char *error_string;
   CUPTI_FN_NAME(cuptiGetResultString)(error, &error_string);
-  cupti_error_callback("CUPTI result error", fn, error_string);
+
+  int exitcode;
+  switch(error) {
+  case CUPTI_ERROR_NOT_INITIALIZED:
+  case CUPTI_ERROR_DISABLED:
+  case CUPTI_ERROR_HARDWARE_BUSY:
+  case CUPTI_ERROR_NOT_SUPPORTED:
+    control_knob_value_get_int("HPCRUN_CUPTI_SYSTEM_ERROR_EXITCODE", &exitcode);
+    break;
+  default:
+    exitcode = 1;
+    break;
+  }
+
+  cupti_error_callback("CUPTI result error", fn, error_string, exitcode);
 }
 
 
@@ -1256,7 +1274,7 @@ cupti_buffer_alloc
     (size_t) HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE);
 
   if (retval != 0) {
-    cupti_error_callback("CUPTI", "cupti_buffer_alloc", "out of memory");
+    cupti_error_callback("CUPTI", "cupti_buffer_alloc", "out of memory", 1);
   }
 
   *buffer_size = HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE;
@@ -1643,6 +1661,8 @@ cupti_correlation_id_pop()
 void
 cupti_device_init()
 {
+  control_knob_register("HPCRUN_CUPTI_SYSTEM_ERROR_EXITCODE", "1", ck_int);
+
   cupti_stop_flag = false;
   cupti_runtime_api_flag = false;
 
