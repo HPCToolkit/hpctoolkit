@@ -19,6 +19,7 @@ _env = {
   'HPCTOOLKIT_HPCPROFLM': hpcproflm.full_path(),
 }
 hpcstruct_test_env = environment(_env)
+meson.add_devenv(hpcstruct_test_env)
 foreach k,v : _env
   test_env.set(k, v)
 endforeach
