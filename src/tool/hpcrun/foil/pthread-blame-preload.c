@@ -88,7 +88,7 @@ pthread_mutex_lock(pthread_mutex_t* mutex) {
 HPCRUN_EXPOSED int
 pthread_mutex_unlock(pthread_mutex_t* mutex) {
   LOOKUP_FOIL_BASE(base, pthread_mutex_unlock);
-  FOIL_DLSYM(real, pthread_mutex_lock);
+  FOIL_DLSYM(real, pthread_mutex_unlock);
   return base(real, mutex);
 }
 

@@ -1,0 +1,14 @@
+#!/bin/sh -ex
+
+hpctesttool="$1"
+hpcrun="$2"
+tstexe="$3"
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+"$hpcrun" -o "$tmpdir"/m -e PTHREAD_WAIT -e REALTIME --disable-auditor "$tstexe"
+"$hpctesttool" test produces-profiles "$tmpdir"/m \
+  '^NODE [^A-Z]+\s+(CORE [^A-Z]+\s+)?THREAD [0-9]+/[0-9]+:logical$' \
+  'THREAD 0/0:logical' \
+  'THREAD 1/1:logical'
