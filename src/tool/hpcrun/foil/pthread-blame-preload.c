@@ -81,13 +81,15 @@ pthread_cond_signal(pthread_cond_t* cond) {
 HPCRUN_EXPOSED int
 pthread_mutex_lock(pthread_mutex_t* mutex) {
   LOOKUP_FOIL_BASE(base, pthread_mutex_lock);
-  return base(mutex);
+  FOIL_DLSYM(real, pthread_mutex_lock);
+  return base(real, mutex);
 }
 
 HPCRUN_EXPOSED int
 pthread_mutex_unlock(pthread_mutex_t* mutex) {
   LOOKUP_FOIL_BASE(base, pthread_mutex_unlock);
-  return base(mutex);
+  FOIL_DLSYM(real, pthread_mutex_lock);
+  return base(real, mutex);
 }
 
 HPCRUN_EXPOSED int

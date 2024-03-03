@@ -100,6 +100,12 @@ static inline void* hpcrun_foil_dlsym_cached(hpcrun_pfn_cache_t* cache, const ch
   static hpcrun_pfn_cache_t _cache_real_ ## VAR; \
   typeof(NAME)* VAR = hpcrun_foil_dlsym_cached(&_cache_real_ ## VAR, #NAME);
 
+/// Helper macro to generate a function to lazily fetch a symbol with dlsym.
+/// The name of this function will always be pfn_<symbol>.
+/// Usable only for LD_PRELOAD foils.
+#define FOIL_DLSYM_FUNC(SYMBOL) \
+  static typeof(&SYMBOL) pfn_ ## SYMBOL() { FOIL_DLSYM(pfn, SYMBOL); return pfn; }
+
 /// Variant of #hpcrun_foil_dlsym_cached that allows specifying the version (dlvsym).
 /// Usable only for LD_PRELOAD foils.
 static inline void* hpcrun_foil_dlvsym_cached(hpcrun_pfn_cache_t* cache, const char* name,
