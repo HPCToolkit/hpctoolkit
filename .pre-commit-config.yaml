@@ -173,15 +173,7 @@ repos:
   hooks:
   # Find common errors in shell scripts using shellcheck
   - id: shellcheck
-    # Exclude the shell fragments in this pass. We need to add an option to them to make them pass.
-    exclude: &shell-fragments '^config/(copyright-hash|export-hpctoolkit|launch-options)$'
     args: ['--exclude=SC2154']
-  - id: shellcheck
-    # These files get injected into the launch scripts manually with a lot of context, so we have
-    # to give it a few extra arguments to get these through.
-    files: *shell-fragments
-    types: [file]
-    args: ['--shell=sh', '--exclude=SC2154']
 
 - repo: https://github.com/python-jsonschema/check-jsonschema
   rev: '0.28.0'

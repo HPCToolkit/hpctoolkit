@@ -561,69 +561,12 @@ _hpcrun_libs += shared_module('hpcrun_pthread', config_h,
   install: true, install_dir: 'lib' / meson.project_name())
 
 
-# Configure and install the hpcrun launch script
-_launch_script_vars = '''
-# If this script can't find its install directory, then set 'prefix'
-# here.  This should only be necessary if you've moved both the script
-# and the install directory.
-#
-# Set 'hash_value' to empty to disable matching the hash with the
-# install directory.  Note: re-running configure creates a new hash.
-# If you copy this script out of its install directory and rerun
-# configure, then the hashes won't match.
+# Configure and install the hpcrun launcher
+hpcrun = executable('hpcrun', config_h, 'launch.cpp',
+  dependencies: [dl_dep, libmonitor_dep, threads_dep],
+  install: true)
 
-prefix='@0@'
-hash_value=''
-
-VERSION='@1@'
-git_version='unknown (TODO)'
-spack_spec='unknown (deprecated)'
-
-opt_have_cuda='@2@'
-opt_have_gtpin='@3@'
-opt_have_level0='@4@'
-opt_have_opencl='@5@'
-opt_have_rocm='@6@'
-opt_enable_python='@7@'
-
-cuda_version='@8@'
-
-rocm_version='@9@'
-
-level0_version='@10@'
-gtpin_version='@11@'
-'''.format(
-  get_option('prefix'),
-  meson.project_version(),
-  cupti_dep.found() ? 'yes' : 'no',
-  gtpin_dep.found() ? 'yes' : 'no',
-  level0_dep.found() ? 'yes' : 'no',
-  opencl_dep.found() ? 'yes' : 'no',
-  rocm_dep.found() ? 'yes' : 'no',
-  python_inst.found() ? 'yes' : 'no',
-  cupti_dep.version(),
-  rocm_dep.version(),
-  level0_dep.version(),
-  gtpin_dep.version() == 'unknown' ? 'enabled' : gtpin_dep.version(),
-)
-hpcrun = configure_file(output: 'hpcrun', input: files('hpcrun.in'),
-  configuration: {
-    'copyright_hash': fs.read(meson.project_source_root() / 'config/copyright-hash'),
-    'export_hpctoolkit': fs.read(meson.project_source_root() / 'config/export-hpctoolkit'),
-    'launch_early_options': fs.read(meson.project_source_root() / 'config/launch-options'),
-    'launch_script_vars': _launch_script_vars,
-    'HOST_CPU_AARCH64': host_machine.cpu_family() == 'aarch64' ? 'yes' : 'no',
-    'OPT_ENABLE_PYTHON': python_inst.found() ? 'yes' : 'no',
-    'OPT_HAVE_CUDA': cupti_dep.found() ? 'yes' : 'no',
-    'OPT_HAVE_GTPIN': gtpin_dep.found() ? 'yes' : 'no',
-    'OPT_HAVE_LEVEL0': level0_dep.found() ? 'yes' : 'no',
-    'OPT_HAVE_OPENCL': opencl_dep.found() ? 'yes' : 'no',
-    'OPT_HAVE_ROCM': rocm_dep.found() ? 'yes': 'no',
-  },
-  install: true, install_dir: get_option('bindir'),
-  install_mode: 'rwxr-xr-x')
-
-# Make sure the hpcrun launch script is available in devenv
+# Make sure the hpcrun launcher is available in devenv
 _devenv = environment()
 _devenv.prepend('PATH', meson.current_build_dir())
 _devenv.set('HPCRUN_FNBOUNDS_CMD', hpcfnbounds.full_path())
