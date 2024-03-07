@@ -1,3 +1,4 @@
+option('manpages', type: 'feature', description: 'Include and install man pages')
 option('extended_tests', type: 'feature', description: 'Enable tests that require additional dependencies than those used for the build')
 
 option('hpcprof_mpi', type: 'feature', description: 'Build hpcprof-mpi')

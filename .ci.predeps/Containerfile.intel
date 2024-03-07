@@ -57,9 +57,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   && : # END
 
 # Install a up-to-date versions of Meson, using a suitable Python
+# Also install docutils for processing documentation.
 RUN \
   python3 -m pip install \
     'meson>=1.1.0,<2' \
+    'docutils' \
   && : # END
 
 
