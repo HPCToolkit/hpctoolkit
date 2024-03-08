@@ -1,2 +1,6 @@
 **
 !ci/native/
+
+# The following is needed to make here-docs work.
+# See https://github.com/containers/buildah/issues/5391
+!EOF

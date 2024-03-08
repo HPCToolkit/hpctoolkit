@@ -61,11 +61,26 @@ RUN \
 # Composition stage: Produce what will become the final image
 FROM os-install
 COPY --from=src-install /dest /
-COPY ci/native/src/hpctoolkit-ci.rhel8.ini /usr/share/meson/native/hpctoolkit-ci.ini
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/gcc.ini \
   /usr/share/meson/native/
+
+COPY <<EOF /usr/share/meson/native/hpctoolkit-ci.ini
+[built-in options]
+wrap_mode = 'nofallback'
+force_fallback_for = ['dyninst', 'libunwind', 'xed']
+
+[project options]
+auto_features = 'enabled'
+cuda = 'disabled'
+rocm = 'disabled'
+level0 = 'disabled'
+gtpin = 'disabled'
+
+[zstd:project options]
+lz4 = 'disabled'
+EOF
 
 # Set CMAKE_PREFIX_PATH to the paths for all the bits
 ENV CMAKE_PREFIX_PATH=/opt/libmonitor${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}

@@ -79,7 +79,6 @@ RUN \
 # Composition stage: Produce what will become the final image
 FROM os-install
 COPY --from=src-install /dest /
-COPY ci/native/src/hpctoolkit-ci.cuda.ini /usr/share/meson/native/hpctoolkit-ci.ini
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/clang10.ini \
@@ -90,6 +89,21 @@ COPY \
   ci/native/src/gcc8.ini \
   ci/native/src/gcc9.ini \
   /usr/share/meson/native/
+
+COPY <<EOF /usr/share/meson/native/hpctoolkit-ci.ini
+[built-in options]
+wrap_mode = 'nofallback'
+force_fallback_for = ['dyninst', 'elfutils', 'libunwind', 'xed', 'xxhash']
+
+[project options]
+auto_features = 'enabled'
+rocm = 'disabled'
+level0 = 'disabled'
+gtpin = 'disabled'
+
+[zstd:project options]
+lz4 = 'disabled'
+EOF
 
 # Add the custom Boost to the environment
 ENV BOOST_ROOT=/opt/boost LD_LIBRARY_PATH=/opt/boost/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
