@@ -46,7 +46,7 @@ include:
 - component: gitlab.com/blue42u/ci.pre-commit/lite@0.2.0
 
 # These images are based on classic distributions and contain no vendor software
-- component: &ci_predeps gitlab.com/blue42u/ci.predeps/build@0.3.0
+- component: &ci_predeps gitlab.com/blue42u/ci.predeps/buildah@0.4.0
   inputs:
     <<: &ci_predeps_shared
       fallback_registry: registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
@@ -107,21 +107,25 @@ include:
     <<: *ci_predeps_shared
     name: cuda11.6-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: CUDA_VERSION=11.6.2
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: cuda11.8-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: CUDA_VERSION=11.8.0
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: cuda12.0-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: CUDA_VERSION=12.0.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: cuda12.3-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: CUDA_VERSION=12.3.1
 
 # Images based on (containing) AMD's ROCm
 - component: *ci_predeps
@@ -129,36 +133,43 @@ include:
     <<: *ci_predeps_shared
     name: rocm5.2-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: ROCM_VERSION=5.2.3
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.3-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: ROCM_VERSION=5.3.3
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.4-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: ROCM_VERSION=5.4.3
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.5-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: ROCM_VERSION=5.5.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.6-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: ROCM_VERSION=5.6.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.7-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: ROCM_VERSION=5.7.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm6.0-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: ROCM_VERSION=6.0
 
 # Image(s) based on (containing) Intel's Level Zero, IGC, GTPin, etc.
 - component: *ci_predeps
@@ -166,6 +177,7 @@ include:
     <<: *ci_predeps_shared
     name: intel-amd64
     containerfile: .ci.predeps/Containerfile.intel
+    build_args: ONEAPI_VERSION=2024.0.1
 
 # Image(s) containing Spack-installed software for Spack-based verification
 - component: *ci_predeps
@@ -174,45 +186,6 @@ include:
     name: spack
     containerfile: .ci.predeps/Containerfile.spack
     ignorefile: .ci.predeps/ignore.spack
-
-'predeps: [cuda11.6-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '11.6.2'
-'predeps: [cuda11.8-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '11.8.0'
-'predeps: [cuda12.0-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '12.0.1'
-'predeps: [cuda12.3-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '12.3.1'
-
-'predeps: [rocm5.2-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.2.3'
-'predeps: [rocm5.3-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.3.3'
-'predeps: [rocm5.4-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.4.3'
-'predeps: [rocm5.5-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.5.1'
-'predeps: [rocm5.6-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.6.1'
-'predeps: [rocm5.7-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.7.1'
-'predeps: [rocm6.0-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '6.0'
-
-'predeps: [intel-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ONEAPI_VERSION: '2024.0.1'
 
 'predeps: [spack]':
   before_script:

@@ -67,7 +67,6 @@ RUN \
 # Composition stage: Produce what will become the final image
 FROM os-install
 COPY --from=src-install /dest /
-COPY ci/native/src/hpctoolkit-ci.bare.ini /usr/share/meson/native/hpctoolkit-ci.ini
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/clang10.ini \
@@ -78,3 +77,23 @@ COPY \
   ci/native/src/gcc8.ini \
   ci/native/src/gcc9.ini \
   /usr/share/meson/native/
+
+COPY <<EOF /usr/share/meson/native/hpctoolkit-ci.ini
+[built-in options]
+wrap_mode = 'default'
+
+[project options]
+auto_features = 'enabled'
+extended_tests = 'disabled'
+manpages = 'disabled'
+python = 'disabled'
+hpcprof_mpi = 'disabled'
+papi = 'disabled'
+cuda = 'disabled'
+rocm = 'disabled'
+level0 = 'disabled'
+gtpin = 'disabled'
+
+[zstd:project options]
+lz4 = 'disabled'
+EOF
