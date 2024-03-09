@@ -705,6 +705,7 @@ cupti_error_report
   case CUPTI_ERROR_DISABLED:
   case CUPTI_ERROR_HARDWARE_BUSY:
   case CUPTI_ERROR_NOT_SUPPORTED:
+  case CUPTI_ERROR_UNKNOWN:
     control_knob_value_get_int("HPCRUN_CUPTI_SYSTEM_ERROR_EXITCODE", &exitcode);
     break;
   default:
