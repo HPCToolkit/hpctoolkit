@@ -18,6 +18,7 @@ try_gen() {
     grep -E 'SUMMARY:[[:space:]]+samples:[[:space:]]+[[:digit:]]+[[:space:]]+\(recorded:[[:space:]]+[[:digit:]]+' "$output"/*.log \
     | grep -Eo 'recorded:[[:space:]]+[[:digit:]]+' \
     | grep -Eo -m1 '[[:digit:]]+')
+  if [ -z "$samples" ]; then samples=0; fi
   printf '%s' "Collected $samples samples...  "
   if [ "$samples" -lt "$min_samples" ]; then echo "FAIL, need >= $min_samples"; return 1; fi
   echo "OK"
