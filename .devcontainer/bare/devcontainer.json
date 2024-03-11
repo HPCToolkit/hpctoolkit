@@ -13,6 +13,9 @@
         "mesonbuild.mesonbuild"
       ],
       "settings": {
+        "clangd.arguments": [
+          "--compile-commands-dir=${config:mesonbuild.buildFolder}"
+        ],
         "mesonbuild.buildFolder": ".devcontainer/bare/builddir-${devcontainerId}",
         "mesonbuild.configureOnOpen": true,
         "terminal.integrated.defaultProfile.linux": "bash",
