@@ -527,7 +527,7 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
     uint64_t allpvs = 0;
 
     // Pull the data out for one context and save it to cmb
-    while(heap.front().first->first == ctx_id) {
+    while(!heap.empty() && heap.front().first->first == ctx_id) {
       // Pop the top entry from the heap, and increment it
       std::pop_heap(heap.begin(), heap.end(), heap_comp);
       const auto& curPair = *(heap.back().first++);
