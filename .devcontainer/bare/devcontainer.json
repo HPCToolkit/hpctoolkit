@@ -42,7 +42,6 @@
     "../bash-completion-feature": {},
     "ghcr.io/devcontainers-contrib/features/poetry:2": {},
     "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
-    "ghcr.io/devcontainers-contrib/features/ripgrep:1": {},
     "ghcr.io/devcontainers/features/common-utils:2": {},
     "ghcr.io/devcontainers/features/git:1": {
       "ppa": true,
