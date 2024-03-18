@@ -2,7 +2,7 @@
   "name": "ci.predeps-cuda12.3",
   "build": {
     "args": {
-      "CUDA_VERSION": "12.3.1"
+      "CUDA_VERSION": "12.3.2"
     },
     "context": "${localWorkspaceFolder}",
     "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.cuda"

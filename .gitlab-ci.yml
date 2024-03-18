@@ -125,7 +125,7 @@ include:
     <<: *ci_predeps_shared
     name: cuda12.3-amd64
     containerfile: .ci.predeps/Containerfile.cuda
-    build_args: CUDA_VERSION=12.3.1
+    build_args: CUDA_VERSION=12.3.2
 
 # Images based on (containing) AMD's ROCm
 - component: *ci_predeps
@@ -169,7 +169,7 @@ include:
     <<: *ci_predeps_shared
     name: rocm6.0-amd64
     containerfile: .ci.predeps/Containerfile.rocm
-    build_args: ROCM_VERSION=6.0
+    build_args: ROCM_VERSION=6.0.2
 
 # Image(s) based on (containing) Intel's Level Zero, IGC, GTPin, etc.
 - component: *ci_predeps

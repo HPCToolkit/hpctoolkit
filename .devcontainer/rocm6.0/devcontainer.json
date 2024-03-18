@@ -2,7 +2,7 @@
   "name": "ci.predeps-rocm6.0",
   "build": {
     "args": {
-      "ROCM_VERSION": "6.0"
+      "ROCM_VERSION": "6.0.2"
     },
     "context": "${localWorkspaceFolder}",
     "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.rocm"
