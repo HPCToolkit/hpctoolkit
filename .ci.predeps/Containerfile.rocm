@@ -86,20 +86,20 @@ COPY \
   ci/native/src/gcc9.ini \
   /usr/share/meson/native/
 
-COPY <<EOF /usr/share/meson/native/hpctoolkit-ci.ini
-[built-in options]
-wrap_mode = 'nofallback'
-force_fallback_for = ['dyninst', 'elfutils', 'libunwind', 'xed', 'xxhash']
-
-[project options]
-auto_features = 'enabled'
-cuda = 'disabled'
-level0 = 'disabled'
-gtpin = 'disabled'
-
-[zstd:project options]
-lz4 = 'disabled'
-EOF
+RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
+  && echo "[built-in options]" >> "$t" \
+  && echo "wrap_mode = 'nofallback'" >> "$t" \
+  && echo "force_fallback_for = ['dyninst', 'elfutils', 'libunwind', 'xed', 'xxhash']" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[project options]" >> "$t" \
+  && echo "auto_features = 'enabled'" >> "$t" \
+  && echo "cuda = 'disabled'" >> "$t" \
+  && echo "level0 = 'disabled'" >> "$t" \
+  && echo "gtpin = 'disabled'" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[zstd:project options]" >> "$t" \
+  && echo "lz4 = 'disabled'" >> "$t" \
+  && : # EOF
 
 # Set CMAKE_PREFIX_PATH to the paths for all the bits
 ENV CMAKE_PREFIX_PATH=/opt/rocm${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}

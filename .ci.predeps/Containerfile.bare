@@ -78,22 +78,22 @@ COPY \
   ci/native/src/gcc9.ini \
   /usr/share/meson/native/
 
-COPY <<EOF /usr/share/meson/native/hpctoolkit-ci.ini
-[built-in options]
-wrap_mode = 'default'
-
-[project options]
-auto_features = 'enabled'
-extended_tests = 'disabled'
-manpages = 'disabled'
-python = 'disabled'
-hpcprof_mpi = 'disabled'
-papi = 'disabled'
-cuda = 'disabled'
-rocm = 'disabled'
-level0 = 'disabled'
-gtpin = 'disabled'
-
-[zstd:project options]
-lz4 = 'disabled'
-EOF
+RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
+  && echo "[built-in options]" >> "$t" \
+  && echo "wrap_mode = 'default'" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[project options]" >> "$t" \
+  && echo "auto_features = 'enabled'" >> "$t" \
+  && echo "extended_tests = 'disabled'" >> "$t" \
+  && echo "manpages = 'disabled'" >> "$t" \
+  && echo "python = 'disabled'" >> "$t" \
+  && echo "hpcprof_mpi = 'disabled'" >> "$t" \
+  && echo "papi = 'disabled'" >> "$t" \
+  && echo "cuda = 'disabled'" >> "$t" \
+  && echo "rocm = 'disabled'" >> "$t" \
+  && echo "level0 = 'disabled'" >> "$t" \
+  && echo "gtpin = 'disabled'" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[zstd:project options]" >> "$t" \
+  && echo "lz4 = 'disabled'" >> "$t" \
+  && : # EOF
