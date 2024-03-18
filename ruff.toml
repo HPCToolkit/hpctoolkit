@@ -1,3 +1,4 @@
+[lint]
 select = [
   "F",  # Pyflakes
   "E", "W",  # pycodestyle
@@ -44,5 +45,5 @@ unfixable = [
   "F8",
 ]
 
-[mccabe]
+[lint.mccabe]
 max-complexity = 15
