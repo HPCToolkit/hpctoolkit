@@ -126,7 +126,7 @@ private:
     std::optional<hpctoolkit::util::File::Instance> inst;
     std::uint_fast64_t off = -1;
     std::array<char, 12 * 1024 * 86> buffer;
-    char* cursor = buffer.data();
+    size_t buffer_cursor = 0;
     uint64_t tmcntr = 0;
     bool lastWasBlank = false;
 

@@ -87,13 +87,17 @@ foreach name, variants : _structfiles
         '-j1', '--gpucfg=' + (features.get('gpucfg', false) ? 'yes' : 'no'),
       ],
     )
+
     _tag = 'none'
-    if _bin.get('cuda', false) # CUDA binaries can only be parsed with a CUDA-enabled hpcstruct
+
+    # CUDA binaries can only be CFG-parsed with a CUDA-enabled hpcstruct
+    if _bin.get('cuda', false) and features.get('gpucfg', false)
       _tag = 'sw-cuda'
       if not nvdisasm.found()
         _gen = disabler()
       endif
     endif
+
     testdata_files += {testdata_struct[f'@name@@suffix@']['structfile']: {'src': _gen, 'tag': _tag}}
   endforeach
 endforeach

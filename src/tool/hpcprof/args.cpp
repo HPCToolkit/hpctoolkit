@@ -689,7 +689,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     for(auto& ps: *extras) {
       for(auto& p: ps) {
         while(1) {
-          while((*avails)[next] <= (nearfull ? 0 : 1) && next < avails->size()) {
+          while(next < avails->size() && (*avails)[next] <= (nearfull ? 0 : 1)) {
             next++;
           }
           if(next < avails->size()) break;

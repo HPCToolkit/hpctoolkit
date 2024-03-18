@@ -189,8 +189,7 @@ if get_option('hpcprof_mpi').allowed()
   if not mpi_dep.found()
     _mpicxx = find_program('mpicxx', 'mpic++', required: false)
     if _mpicxx.found()
-      _decode_mpi = find_program('meson/decode-mpi', native: true)
-      _decoded_mpi = run_command(_decode_mpi, '--machine-readable', _mpicxx, check: false, capture: true)
+      _decoded_mpi = run_command(python, files('meson/decode-mpi'), '--machine-readable', _mpicxx, check: false, capture: true)
       if _decoded_mpi.returncode() == 0 and _decoded_mpi.stdout() != ''
         _mpi_parts = _decoded_mpi.stdout().split('\0\0')
         mpi_dep = declare_dependency(
