@@ -46,7 +46,7 @@ include:
 - component: gitlab.com/blue42u/ci.pre-commit/lite@0.2.0
 
 # These images are based on classic distributions and contain no vendor software
-- component: &ci_predeps gitlab.com/blue42u/ci.predeps/buildah@0.4.0
+- component: &ci_predeps gitlab.com/blue42u/ci.predeps/buildah@0.4.1
   inputs:
     <<: &ci_predeps_shared
       fallback_registry: registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
