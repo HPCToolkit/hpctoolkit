@@ -645,6 +645,19 @@ compiler icx:
       TEST_ARGS: --suite none
 
 
+# Check that meson setup passes under specific off-configurations.
+'setup: [no libdw]':
+  extends: .test job
+  stage: configuration tests
+  needs: ['predeps: [ubuntu22.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU22_04_AMD64
+  variables:
+    SETUP_ARGS: ''
+  before_script:
+  - apt-get purge -yqq libdw-dev libdw1
+  script: *test_job_setup
+
+
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
 'spack install':
   stage: configuration tests
