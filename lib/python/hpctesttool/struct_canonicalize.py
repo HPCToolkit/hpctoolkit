@@ -45,7 +45,7 @@ class VRange:
 
         result = None
         for part in v[1:-1].split():
-            mat = re.fullmatch(r"\[0x([0-9a-f]+)-0x([0-9a-f]+)\)", part)
+            mat = re.fullmatch(r"\[(0|0x[0-9a-f]+)-(0|0x[0-9a-f]+)\)", part)
             if not mat:
                 raise ValueError(f"Invalid v=* range: {part!r} (from {v!r})")
             result += cls(int(mat.group(1), base=16), int(mat.group(2), base=16))
