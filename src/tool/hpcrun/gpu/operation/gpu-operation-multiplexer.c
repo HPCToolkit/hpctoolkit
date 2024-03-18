@@ -172,6 +172,10 @@ gpu_operation_multiplexer_fini
 {
   PRINT("gpu_operation_multiplexer_fini called\n");
 
+  // It may be that we never initialized. Even though we have no data, initialize now so that
+  // we can finalize properly.
+  pthread_once(&is_initialized, gpu_operation_multiplexer_create);
+
   atomic_store(&stop_operation_flag, true);
 
   gpu_operation_channel_set_notify(channel_set);
