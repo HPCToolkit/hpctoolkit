@@ -81,7 +81,7 @@
 
 #include "../disabled.h"
 #include "messages.h"
-#include "messages.i"
+#include "messages-internal.h"
 #include "fmt.h"
 #include "../sample_event.h"
 #include "../sample_prob.h"

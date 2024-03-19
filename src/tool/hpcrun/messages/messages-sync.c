@@ -91,7 +91,7 @@
 
 #include "debug-flag.h"
 #include "messages.h"
-#include "messages.i"
+#include "messages-internal.h"
 #include "fmt.h"
 
 

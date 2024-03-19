@@ -67,7 +67,7 @@
 #include "ompt/omp-tools.h"
 #include "logical/common.h"
 
-#include "lush/lush-pthread.i"
+#include "lush/lush-pthread-internal.h"
 #include "unwind/common/backtrace.h"
 #include "unwind/common/uw_hash.h"
 
