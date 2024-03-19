@@ -59,9 +59,9 @@ def test_small_diff(v4_data_small):
             scope_name="foo", type=v4.metadb.PropagationScope.Type.custom, propagation_index=255
         )
     )
-    altered.meta.context.entry_points[1].children[0].children[0].children[
-        1
-    ].function = altered.meta.functions.functions[2]
+    altered.meta.context.entry_points[1].children[0].children[0].children[1].function = (
+        altered.meta.functions.functions[2]
+    )
 
     with io.StringIO() as buf:
         StrictDiff(v4_data_small, altered).render(buf)

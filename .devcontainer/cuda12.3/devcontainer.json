@@ -1,11 +1,11 @@
 {
-  "name": "ci.predeps-rocm6.0",
+  "name": "ci.predeps-cuda12.3",
   "build": {
     "args": {
-      "ROCM_VERSION": "6.0.2"
+      "CUDA_VERSION": "12.3.2"
     },
     "context": "${localWorkspaceFolder}",
-    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.rocm"
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.cuda"
   },
   "capAdd": [
     "SYS_ADMIN"
@@ -23,7 +23,7 @@
         "clangd.arguments": [
           "--compile-commands-dir=${config:mesonbuild.buildFolder}"
         ],
-        "mesonbuild.buildFolder": ".devcontainer/rocm6.0/builddir-${devcontainerId}",
+        "mesonbuild.buildFolder": ".devcontainer/cuda12.3/builddir-${devcontainerId}",
         "mesonbuild.configureOnOpen": true,
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.profiles.linux": {
@@ -56,9 +56,11 @@
       "version": "latest"
     }
   },
-  "privileged": true,
   "remoteEnv": {
-    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/rocm6.0/builddir-${devcontainerId}",
-    "builddir": "${containerWorkspaceFolder}/.devcontainer/rocm6.0/builddir-${devcontainerId}"
-  }
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/cuda12.3/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/cuda12.3/builddir-${devcontainerId}"
+  },
+  "runArgs": [
+    "--gpus=all"
+  ]
 }
