@@ -129,7 +129,7 @@ public:
   bool operator==(const Function& o) const noexcept {
     return m_module == o.m_module && m_offset == o.m_offset && m_name == o.m_name
            && ((!m_file && !o.m_file)
-               || (&*m_file == &*o.m_file && m_line == o.m_line));
+               || (m_file && o.m_file && &*m_file == &*o.m_file && m_line == o.m_line));
   }
   bool operator!=(const Function& o) const noexcept { return !operator==(o); }
 
