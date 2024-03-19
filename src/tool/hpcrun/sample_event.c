@@ -329,8 +329,9 @@ hpcrun_sample_callpath(void* context, int metricId,
     leaf_ip = td->btbuf_beg->the_function;
   }
 
-  if (!isSync) {
-    uint64_t sampling_period = data->sampling_period;;
+  // a proxy sample (data == NULL) is never a time based metric
+  if (!isSync && data != NULL) {
+    uint64_t sampling_period = data->sampling_period;
     int is_time_based_metric = data->is_time_based_metric;
     if (is_time_based_metric > 0) {
       ret.trace_node = hpcrun_trace_ip(leaf_ip, hpcrun_cct_parent(node), metricId, sampling_period);
