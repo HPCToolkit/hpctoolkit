@@ -72,7 +72,7 @@
 #include "../../prof-lean/crypto-hash.h"
 #include "../ElfHelper.hpp"
 #include "../../support/diagnostics.h"
-#include "../../support/RealPathMgr.cpp"
+#include "../../support/RealPathMgr.hpp"
 #include "IntelGPUBinutils.hpp"
 
 

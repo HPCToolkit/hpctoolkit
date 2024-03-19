@@ -64,6 +64,10 @@
 #include "x86-decoder.h"
 #include "../../fnbounds/fnbounds_interface.h"
 
+#include "../common/unwindr_info.h"
+#include "../common/uw_recipe_map.h"
+#include "../../messages/messages.h"
+
 static void
 x86_print_intervals(btuwi_status_t intervals)
 {

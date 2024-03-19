@@ -69,7 +69,6 @@
 //*************************** User Include Files ****************************
 
 #include "lushi-cb.h"
-#include "../os/linux/dylib.h"
 
 #include "../messages/messages.h"
 
@@ -90,7 +89,5 @@ LUSHCB_loadmap_find(void* addr,
                     void** start,
                     void** end)
 {
-  int r = 0;
-  r = dylib_find_module_containing_addr(addr, module_name, start, end);
-  return r;
+  hpcrun_terminate();
 }

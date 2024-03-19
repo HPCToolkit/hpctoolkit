@@ -131,7 +131,6 @@
 
 #include "memory/hpcrun-malloc.h"
 #include "memory/mmap.h"
-#include "sample-sources/gpu/stream-tracing.h"
 
 #include "cct/cct.h"
 
@@ -667,9 +666,6 @@ hpcrun_init_internal(bool is_child)
   }
 
   hpcrun_is_initialized_private = true;
-
-  // FIXME: this isn't in master-gpu-trace. how is it managed?
-  // stream_tracing_init();
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \

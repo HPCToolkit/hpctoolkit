@@ -13,7 +13,21 @@ _unw_common_files = files(
 )
 
 _unw_x86_files = _unw_common_files + files(
-  'unwind/x86-family/x86-all.c',
+  'unwind/x86-family/x86-addsub.c',
+  'unwind/x86-family/x86-and.c',
+  'unwind/x86-family/x86-build-intervals.c',
+  'unwind/x86-family/x86-call.c',
+  'unwind/x86-family/x86-canonical.c',
+  'unwind/x86-family/x86-debug.c',
+  'unwind/x86-family/x86-decoder.c',
+  'unwind/x86-family/x86-enter.c',
+  'unwind/x86-family/x86-jump.c',
+  'unwind/x86-family/x86-lea.c',
+  'unwind/x86-family/x86-leave.c',
+  'unwind/x86-family/x86-move.c',
+  'unwind/x86-family/x86-process-inst.c',
+  'unwind/x86-family/x86-push.c',
+  'unwind/x86-family/x86-return.c',
   'unwind/x86-family/amd-xop.c',
   'unwind/x86-family/x86-cold-path.c',
   'unwind/x86-family/x86-validate-retn-addr.c',
