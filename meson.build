@@ -706,12 +706,18 @@ cfg.set_quoted('CUDA_NVDISASM_PATH', nvdisasm.found() ? nvdisasm.full_path() : '
         description: 'Path to CUDA nvdisasm utility')
 cfg.set_quoted('CUPTI_INSTALL_PREFIX', '/nonexistent',  # TODO
         description: 'CUPTI install prefix')
+cfg.set_quoted('CUDA_VERSION', cupti_dep.version())
 cfg.set('ENABLE_OPENCL', opencl_dep.found(),
         description: 'Enable OpenCL monitoring')
 cfg.set('HAVE_ROCM_ACTIVITY_KERNEL_NAME', cc.has_member('roctracer_record_t', 'kernel_name', prefix: '#include <roctracer/roctracer_hip.h>', dependencies: rocm_dep),
         description: 'activity_record has kernel_name field')
 cfg.set('USE_ROCM', rocm_dep.found(),
         description: 'use ROCM')
+cfg.set_quoted('ROCM_VERSION', rocm_dep.version())
+cfg.set('USE_LEVEL0', level0_dep.found())
+cfg.set_quoted('LEVEL0_VERSION', level0_dep.version())
+cfg.set('USE_GTPIN', gtpin_dep.found())
+cfg.set_quoted('GTPIN_VERSION', gtpin_dep.version() == 'unknown' ? 'enabled' : gtpin_dep.version())
 cfg.set('DATACENTRIC_TRACE', false, description: 'Data-centric tracing (disabled, deprecated)')
 
 # Xed compiler checks
