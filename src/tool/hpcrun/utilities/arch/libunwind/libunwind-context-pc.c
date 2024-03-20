@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #define UNW_LOCAL_ONLY
 
 #include <sys/types.h>

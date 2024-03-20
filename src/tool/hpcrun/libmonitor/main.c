@@ -44,6 +44,8 @@
  *    monitor_get_addr_main
  */
 
+#define _GNU_SOURCE
+
 #include "hpctoolkit-config.h"
 
 #include <sys/types.h>

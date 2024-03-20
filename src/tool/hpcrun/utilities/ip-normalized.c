@@ -46,6 +46,8 @@
 
 //************************* System Include Files ****************************
 
+#define _GNU_SOURCE
+
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/types.h>

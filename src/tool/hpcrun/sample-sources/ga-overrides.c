@@ -62,6 +62,8 @@
 // system includes
 //***************************************************************************
 
+#define _GNU_SOURCE
+
 #include "ga-overrides.h"
 #include <sys/types.h>
 #include <stdio.h>

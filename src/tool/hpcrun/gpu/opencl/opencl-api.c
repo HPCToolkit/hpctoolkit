@@ -45,6 +45,8 @@
 // system includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <inttypes.h>
 #include <errno.h>     // errno

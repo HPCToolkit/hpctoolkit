@@ -49,6 +49,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../../../lib/prof-lean/placeholders.h"
 
 #include "../cct_backtrace_finalize.h"

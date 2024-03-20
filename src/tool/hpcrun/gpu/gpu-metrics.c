@@ -49,6 +49,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../cct2metrics.h"
 #include "../memory/hpcrun-malloc.h"
 #include "../metrics.h"

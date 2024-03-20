@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "device-finalizers.h"
 
 static device_finalizer_fn_entry_t *kinds[2] = {0, 0};

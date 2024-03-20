@@ -50,6 +50,8 @@
 //******************************************************************************
 
 
+#define _GNU_SOURCE
+
 #include "../../../lib/prof-lean/bichannel.h"
 
 #include "../memory/hpcrun-malloc.h"

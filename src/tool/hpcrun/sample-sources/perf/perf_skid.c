@@ -45,13 +45,11 @@
 // includes
 // -----------------------------------------------------
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <limits.h>
 #include <ctype.h>
-
-#ifdef _PERF_SKID_DEBUG_
-#define _GNU_SOURCE         /* See feature_test_macros(7) */
-#endif
 
 #include <string.h>
 

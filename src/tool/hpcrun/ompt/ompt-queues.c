@@ -48,6 +48,8 @@
 // local includes
 //*****************************************************************************
 
+#define _GNU_SOURCE
+
 #include "ompt-queues.h"
 
 

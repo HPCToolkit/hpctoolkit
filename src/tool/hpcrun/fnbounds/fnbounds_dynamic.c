@@ -66,6 +66,8 @@
 // system includes
 //*********************************************************************
 
+#define _GNU_SOURCE
+
 #include <stdio.h>     // fopen, fclose, etc
 #include <dlfcn.h>     // for dlopen/dlclose
 #include <string.h>    // for strcmp, strerror

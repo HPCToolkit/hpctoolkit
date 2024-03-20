@@ -56,6 +56,10 @@
 // system include files
 //*****************************************************************************
 
+#define _GNU_SOURCE
+#define __HIP_PLATFORM_AMD__
+#define __HIP_PLATFORM_HCC__
+
 #include <dlfcn.h>
 #include <stdio.h>
 #include <string.h>    // memset

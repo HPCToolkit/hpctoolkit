@@ -49,12 +49,9 @@
 
 //************************* System Include Files ****************************
 
-#include <assert.h>
-
-#ifndef _GNU_SOURCE
-// needed for pthread_getaffinity_np
 #define _GNU_SOURCE
-#endif
+
+#include <assert.h>
 
 #include <pthread.h>
 #include <sched.h>

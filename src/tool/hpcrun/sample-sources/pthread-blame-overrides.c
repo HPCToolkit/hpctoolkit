@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "pthread-blame-overrides.h"
 
 #include <pthread.h>

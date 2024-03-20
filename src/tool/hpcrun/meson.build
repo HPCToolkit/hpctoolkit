@@ -61,9 +61,6 @@ _unw_libunw_files = _unw_common_files + files(
 )
 
 _my_cpp_defines = [
-  '-D_GNU_SOURCE',
-  '-D__HIP_PLATFORM_HCC__=1',
-  '-D__HIP_PLATFORM_AMD__=1',
 ]
 
 _my_base_files = files(

@@ -53,6 +53,8 @@
 
 //************************* System Include Files ****************************
 
+#define _GNU_SOURCE
+
 #include <string.h>
 #include <stdio.h>
 #include <inttypes.h>

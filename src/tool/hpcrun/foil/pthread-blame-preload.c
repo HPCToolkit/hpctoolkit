@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "foil.h"
 #include "../sample-sources/pthread-blame-overrides.h"
 

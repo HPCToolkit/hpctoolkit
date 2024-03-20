@@ -56,6 +56,8 @@
 //
 //***************************************************************************
 
+#define _GNU_SOURCE
+
 #include "hpctoolkit.h"
 
 void __attribute__ ((weak))

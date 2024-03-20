@@ -45,6 +45,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "common.h"
 
 #include "../libmonitor/monitor.h"

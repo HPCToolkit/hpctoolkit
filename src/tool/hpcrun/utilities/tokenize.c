@@ -48,6 +48,8 @@
 // FIXME: don't use strtok(), don't use single static buffer,
 // factor out delimiters, etc.
 
+#define _GNU_SOURCE
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -51,6 +51,8 @@
 // include files
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <linux/perf_event.h>
 #include "perfmon-util.h"
 #include "perf-util.h"

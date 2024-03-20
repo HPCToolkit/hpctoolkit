@@ -45,6 +45,8 @@
 // system includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <pthread.h>
 #include <unistd.h>
 

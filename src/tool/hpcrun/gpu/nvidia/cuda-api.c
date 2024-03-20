@@ -56,6 +56,8 @@
 // system include files
 //*****************************************************************************
 
+#define _GNU_SOURCE
+
 #include <dlfcn.h>
 #include <stdio.h>
 #include <string.h>    // memset

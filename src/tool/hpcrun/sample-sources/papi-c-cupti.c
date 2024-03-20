@@ -1,4 +1,6 @@
 // ******************* System Includes ********************
+#define _GNU_SOURCE
+
 #include <ucontext.h>
 #include <dlfcn.h>
 

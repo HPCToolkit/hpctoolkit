@@ -46,6 +46,8 @@
 
 //************************* System Include Files ****************************
 
+#define _GNU_SOURCE
+
 #if __has_include(<xed/xed-interface.h>)
 #include <xed/xed-interface.h>
 #else

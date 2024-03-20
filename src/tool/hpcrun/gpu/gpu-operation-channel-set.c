@@ -46,6 +46,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../../../lib/prof-lean/stacks.h"
 
 #include "../memory/hpcrun-malloc.h"

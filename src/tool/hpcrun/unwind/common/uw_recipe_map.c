@@ -57,6 +57,8 @@
 // debugging support
 //---------------------------------------------------------------------
 
+#define _GNU_SOURCE
+
 #define UW_RECIPE_MAP_DEBUG 0
 
 #define UW_RECIPE_MAP_DEBUG_VERBOSE 0

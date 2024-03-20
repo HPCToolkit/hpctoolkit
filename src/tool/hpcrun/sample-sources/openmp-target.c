@@ -2,6 +2,8 @@
 // system includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <alloca.h>
 #include <ctype.h>
 #include <setjmp.h>

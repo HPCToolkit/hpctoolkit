@@ -45,6 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 
+#define _GNU_SOURCE
+
 #include <setjmp.h>
 #include <string.h>
 

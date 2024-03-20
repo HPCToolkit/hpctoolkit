@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include <stdbool.h>
 
 #include "x86-interval-highwatermark.h"

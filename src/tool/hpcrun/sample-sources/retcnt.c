@@ -53,6 +53,8 @@
  * system includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>

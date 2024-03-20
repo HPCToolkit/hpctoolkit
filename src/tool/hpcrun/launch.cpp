@@ -44,8 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#define _GNU_SOURCE
-
 #include "hpctoolkit-config.h"
 #include "hpctoolkit-version.h"
 

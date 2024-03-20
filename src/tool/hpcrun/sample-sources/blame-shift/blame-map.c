@@ -59,6 +59,8 @@
  * local includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "blame-map.h"
 
 #include "../../messages/messages.h"

@@ -53,6 +53,8 @@
  * system includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <alloca.h>
 #include <assert.h>
 #include <ctype.h>

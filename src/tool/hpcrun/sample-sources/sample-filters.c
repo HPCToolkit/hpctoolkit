@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "sample-filters.h"
 
 static sf_fn_entry_t *sf_filters = 0;

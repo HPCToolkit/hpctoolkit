@@ -9,6 +9,8 @@
  * local includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "../messages/messages.h"
 #include "../memory/hpcrun-malloc.h"
 #include "cct-node-vector.h"

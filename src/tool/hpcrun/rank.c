@@ -62,6 +62,8 @@
 //
 //***************************************************************************
 
+#define _GNU_SOURCE
+
 #include <stdint.h>
 #include "libmonitor/monitor.h"
 #include "../../lib/support-lean/OSUtil.h"

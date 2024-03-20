@@ -103,6 +103,8 @@
 // global includes
 //***************************************************************
 
+#define _GNU_SOURCE
+
 #include <errno.h>   // errno
 #include <fcntl.h>   // open
 #include <limits.h>  // PATH_MAX

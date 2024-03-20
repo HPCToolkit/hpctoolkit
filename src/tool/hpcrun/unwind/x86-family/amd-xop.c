@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "amd-xop.h"
 
 typedef unsigned char uc;

@@ -46,6 +46,8 @@
  * includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <linux/version.h>
 #include <ctype.h>
 

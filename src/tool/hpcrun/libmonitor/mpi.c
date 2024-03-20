@@ -39,6 +39,8 @@
  *  for defining weak versions of these functions in main.c.
  */
 
+#define _GNU_SOURCE
+
 #include "common.h"
 #include "monitor.h"
 

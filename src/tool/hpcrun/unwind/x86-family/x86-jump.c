@@ -48,6 +48,8 @@
  * includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "../../messages/messages.h"
 
 #include "x86-build-intervals.h"

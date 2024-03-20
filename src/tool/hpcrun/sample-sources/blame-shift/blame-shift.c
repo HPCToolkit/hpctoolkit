@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "blame-shift.h"
 
 static bs_fn_entry_t *bs_fns = 0;

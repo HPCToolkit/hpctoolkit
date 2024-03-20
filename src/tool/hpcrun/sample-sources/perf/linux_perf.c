@@ -50,6 +50,8 @@
  * system includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>

@@ -53,6 +53,8 @@
 
 //************************* System Include Files ****************************
 
+#define _GNU_SOURCE
+
 #include <stddef.h>
 #include <stdbool.h>
 #include <ucontext.h>

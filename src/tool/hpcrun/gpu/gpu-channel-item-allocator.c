@@ -45,6 +45,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../memory/hpcrun-malloc.h"
 
 #include "gpu-channel-item-allocator.h"

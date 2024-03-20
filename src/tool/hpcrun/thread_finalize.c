@@ -2,6 +2,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "thread_finalize.h"
 
 

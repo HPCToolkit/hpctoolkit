@@ -53,6 +53,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "gpu-activity.h"
 #include "gpu-channel-item-allocator.h"
 

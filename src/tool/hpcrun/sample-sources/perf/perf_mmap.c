@@ -49,6 +49,8 @@
  * system includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <sys/mman.h>
 #include <string.h>

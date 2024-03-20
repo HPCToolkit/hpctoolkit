@@ -4,6 +4,8 @@
 // system includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <math.h>                                                                                                                       // pow
 #include <stdbool.h>                          // bool
 #include <ucontext.h>                         // getcontext

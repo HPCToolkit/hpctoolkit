@@ -2,6 +2,10 @@
 // system includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+#define __HIP_PLATFORM_AMD__
+#define __HIP_PLATFORM_HCC__
+
 #include <alloca.h>
 #include <ctype.h>
 #include <setjmp.h>

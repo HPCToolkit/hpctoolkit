@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "libunwind-interface.h"
 
 #include "../../audit/binding.h"

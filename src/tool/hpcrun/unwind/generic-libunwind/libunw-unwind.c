@@ -71,6 +71,8 @@
 // system includes
 //************************************************
 
+#define _GNU_SOURCE
+
 #define UNW_LOCAL_ONLY
 
 #include <stdlib.h>

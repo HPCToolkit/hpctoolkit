@@ -45,6 +45,8 @@
 // local includes
 //*****************************************************************************
 
+#define _GNU_SOURCE
+
 #include "level0-command-process.h"
 #include "level0-data-node.h"
 #include "level0-binary.h"

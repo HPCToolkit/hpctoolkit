@@ -56,6 +56,8 @@
 // nvidia includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <cupti_version.h>
 #include <cupti_activity.h>
 
