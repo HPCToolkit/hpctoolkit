@@ -58,8 +58,6 @@
 //
 //******************************************************************************
 
-#include "hpctoolkit-config.h"
-
 SAMPLE_SOURCE_DECL_MACRO(ga)
 SAMPLE_SOURCE_DECL_MACRO(io)
 #ifdef ENABLE_CLOCK_REALTIME

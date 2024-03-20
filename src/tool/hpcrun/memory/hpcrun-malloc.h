@@ -64,8 +64,6 @@
 
 #include <stddef.h>
 
-#include "hpctoolkit-config.h"
-
 //*************************** User Include Files ****************************
 
 //*************************** Forward Declarations **************************

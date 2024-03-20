@@ -58,7 +58,6 @@
 // local includes
 //******************************************************************************
 
-#include "hpctoolkit-config.h"
 #include "../gpu-print.h"
 #include "../gpu-kernel-table.h"
 

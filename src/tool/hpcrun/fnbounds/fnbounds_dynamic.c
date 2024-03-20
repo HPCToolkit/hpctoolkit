@@ -80,7 +80,6 @@
 #include <unistd.h>    // getpid
 
 
-
 //*********************************************************************
 // external libraries
 //*********************************************************************
@@ -110,7 +109,6 @@
 #include "../../../lib/prof-lean/spinlock.h"
 #include "../../../lib/prof-lean/vdso.h"
 
-#include "hpctoolkit-config.h"
 
 
 

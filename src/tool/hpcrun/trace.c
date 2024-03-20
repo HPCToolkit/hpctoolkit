@@ -60,8 +60,6 @@
 // local includes
 //*********************************************************************
 
-#include "hpctoolkit-config.h"
-
 #include "disabled.h"
 #include "env.h"
 #include "files.h"

@@ -83,8 +83,6 @@
 
 #include <ucontext.h>
 
-#include "hpctoolkit-config.h"
-
 //************************************************
 // external includes
 //************************************************

@@ -66,7 +66,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "hpctoolkit-config.h"
 #ifdef ENABLE_CLOCK_REALTIME
 #include <sys/syscall.h>
 #endif

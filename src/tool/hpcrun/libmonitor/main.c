@@ -46,8 +46,6 @@
 
 #define _GNU_SOURCE
 
-#include "hpctoolkit-config.h"
-
 #include <sys/types.h>
 #include <alloca.h>
 #include <dlfcn.h>

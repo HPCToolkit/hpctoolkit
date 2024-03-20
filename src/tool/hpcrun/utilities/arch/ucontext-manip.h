@@ -1,8 +1,6 @@
 #ifndef UCONTEXT_MANIP
 #define UCONTEXT_MANIP
 
-#include "hpctoolkit-config.h"
-
 #if defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64)
 #include "x86-family/specific-ucontext-manip.h"
 #elif defined(HOST_CPU_PPC)

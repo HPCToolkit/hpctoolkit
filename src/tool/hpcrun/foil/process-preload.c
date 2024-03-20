@@ -46,8 +46,6 @@
 
 #define _GNU_SOURCE
 
-#include "hpctoolkit-config.h"
-
 #include "foil.h"
 #include "../libmonitor/monitor.h"
 #include <unistd.h>

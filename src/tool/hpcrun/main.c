@@ -81,7 +81,6 @@
 //***************************************************************************
 
 
-#include "hpctoolkit-config.h"
 #include "../../lib/prof-lean/placeholders.h"
 
 #include "main.h"

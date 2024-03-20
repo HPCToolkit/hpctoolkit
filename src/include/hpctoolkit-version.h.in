@@ -4,10 +4,6 @@
 
 #include <stdio.h>
 
-#ifndef HPCTOOLKIT_VERSION_STRING
-#include "hpctoolkit-config.h"
-#endif
-
 static inline void
 hpctoolkit_print_version(const char * prog_name)
 {

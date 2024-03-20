@@ -76,8 +76,6 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "hpctoolkit-config.h"
-
 #include "Args.hpp"
 
 #include "../../lib/analysis/Util.hpp"

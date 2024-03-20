@@ -49,7 +49,6 @@
 #include "libunwind-interface.h"
 
 #include "../../audit/binding.h"
-#include "hpctoolkit-config.h"
 
 #include <stddef.h>
 

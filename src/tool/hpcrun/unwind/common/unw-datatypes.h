@@ -47,8 +47,6 @@
 #ifndef UNWIND_DATATYPE_H
 #define UNWIND_DATATYPE_H
 
-#include "hpctoolkit-config.h"
-
 #if defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64)
 #include "../x86-family/unw-datatypes-specific.h"
 #elif defined(HOST_CPU_PPC)

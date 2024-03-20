@@ -48,8 +48,6 @@
 
 #include "foil.h"
 
-#include "hpctoolkit-config.h"
-
 #include "../main.h"
 #include "../start-stop.h"
 #include "../libmonitor/monitor.h"

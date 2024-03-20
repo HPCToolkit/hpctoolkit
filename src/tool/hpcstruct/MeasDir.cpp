@@ -75,8 +75,6 @@ using std::endl;
 #include "../../lib/support/FileUtil.hpp"
 #include "../../lib/support/IOUtil.hpp"
 
-#include "hpctoolkit-config.h"
-
 #include "../../lib/support/RealPathMgr.hpp"
 
 using namespace std;

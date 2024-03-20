@@ -47,8 +47,6 @@
 #ifndef MCONTEXT_H
 #define MCONTEXT_H
 
-#include "hpctoolkit-config.h"
-
 #if defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64)
 #include "x86-family/_mcontext.h"
 #elif defined(HOST_CPU_PPC)

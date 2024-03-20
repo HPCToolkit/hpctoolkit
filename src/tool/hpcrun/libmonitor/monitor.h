@@ -37,8 +37,6 @@
 #ifndef  _MONITOR_H_
 #define  _MONITOR_H_
 
-#include "hpctoolkit-config.h"
-
 #include "pthread_h.h"
 #include <sys/types.h>
 #include <signal.h>

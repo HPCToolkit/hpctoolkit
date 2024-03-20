@@ -47,8 +47,6 @@
 #define _GNU_SOURCE
 #include "futex-detail.h"
 
-#include "hpctoolkit-config.h"
-
 // Now I ask, do we have futexes or not?
 #ifdef HAVE_FUTEX_H
 #include <unistd.h>

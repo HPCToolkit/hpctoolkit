@@ -44,7 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "hpctoolkit-config.h"
 #include "hpctoolkit-version.h"
 
 #include <cstdlib>

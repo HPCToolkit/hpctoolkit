@@ -67,7 +67,6 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "hpctoolkit-config.h"
 #include "../../include/gcc-attr.h"
 
 #include "Args.hpp"

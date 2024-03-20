@@ -1,8 +1,6 @@
 #ifndef INLINE_ASM_GCTXT_H
 #define INLINE_ASM_GCTXT_H
 
-#include "hpctoolkit-config.h"
-
 #if defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64)
 #include "x86-family/specific-inline-asm-gctxt.h"
 #elif defined(HOST_CPU_PPC)
