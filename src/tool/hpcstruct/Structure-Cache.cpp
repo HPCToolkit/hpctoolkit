@@ -184,43 +184,6 @@ ck_path
 
     ret = PATH_ABSENT;
   }
-#if 0
-  const char *retname;
-  switch (ret) {
-    case PATH_READABLE:
-      retname = "PATH_READABLE = ";
-      break;
-
-    case PATH_WRITEABLE:
-      retname = "PATH_WRITEABLE = ";
-      break;
-
-    case PATH_DIR_READABLE:
-      retname = "PATH_DIR_READABLE = ";
-      break;
-
-    case PATH_DIR_WRITEABLE:
-      retname = "PATH_DIR_WRITEABLE = ";
-      break;
-
-    case PATH_DIR_CREATED:
-      retname = "PATH_DIR_CREATED = ";
-      break;
-
-    case PATH_ABSENT:
-      retname = "PATH_ABSENT = ";
-      break;
-
-    case PATH_ERROR:
-      retname = "PATH_ERROR = ";
-      break;
-
-    default:
-      retname = "UNKNOWN_RETURN ? = ";
-      break;
-  }
-  std::cerr << "DEBUG " <<caller <<"ck_path ( "<< path << " ) returns " << retname << ret << std::endl;
-#endif
   return ret;
  }
 
@@ -402,9 +365,6 @@ hpcstruct_cache_cleanup
 )
 {
   if ( global_args->nocache == true) {
-#if 0
-    std::cerr << "DEBUG cache_cleanup nocache true, returning 0" << std::endl;
-#endif
     return 0;
   }
 
@@ -415,9 +375,6 @@ hpcstruct_cache_cleanup
     // First, try to remove the directory
     std::string command("rm -rf ");
     command += path;
-#if 0
-    std::cerr << "DEBUG PATH cleanup running " << command.c_str() << std::endl;
-#endif
     system(command.c_str());
 
     // check to see that it worked
@@ -436,9 +393,6 @@ hpcstruct_cache_cleanup
     // Remove that entry
     command = "rm -f " + fpath;
 
-#if 0
-    std::cerr << "DEBUG FLAT cleanup running " << command.c_str() << std::endl;
-#endif
     system(command.c_str());
 
     // check to see that it worked
@@ -447,9 +401,6 @@ hpcstruct_cache_cleanup
       std::cerr << "ERROR: cache_cleanup FLAT of " << fpath.c_str() << " failed" << std::endl;
       exit(1);
     }
-#if 0
-    std::cerr << "DEBUG cache_cleanup set state to CACHE_ENTRY_REMOVED = " << CACHE_ENTRY_REMOVED << std::endl;
-#endif
   }
 
   return 0;

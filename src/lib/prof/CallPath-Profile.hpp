@@ -110,17 +110,9 @@ public:
                   const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
                   std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep);
 
-#if 0
-  static int
-  fmt_cct_fread(FILE* infs, unsigned int rFlags,
-                const metric_tbl_t& metricTbl,
-                std::string ctxtStr, FILE* outfs);
-#else
-//YUMENG: No need to parse metricTbl for sparse format
 static int
   fmt_cct_fread(FILE* infs,
                 std::string ctxtStr, FILE* outfs);
-#endif
 };
 
 } // namespace CallPath

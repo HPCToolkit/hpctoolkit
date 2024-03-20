@@ -928,10 +928,6 @@ makeStructure(string filename,
       }
 
       delete code_obj;
-#if 0
-      // FIXME: CodeSource::~CodeSource needs to be public
-      delete code_src;
-#endif
       Inline::closeSymtab();
     }
   }

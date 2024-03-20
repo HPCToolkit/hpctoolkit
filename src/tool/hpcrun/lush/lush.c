@@ -381,29 +381,6 @@ lush_step_t
 lush_step_pchord(lush_cursor_t* cursor)
 {
   lush_step_t ty = LUSH_STEP_NULL;
-
-#if 0 // FIXME: check this
-  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_INIT)) {
-    // complete the current p-chord, if we haven't examined all p-notes
-    while (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_DONE_PCHORD)) {
-      lush_forcestep_pnote(cursor);
-    }
-    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_DONE_CHORD);
-
-    ty = lush_forcestep_pnote(cursor);
-
-    if (ty == LUSH_STEP_DONE_CHORDS || ty == LUSH_STEP_ERROR) {
-      // we have reached the outermost frame of the stack (or an error epoch)
-      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_DONE_CHORD);
-    }
-  }
-  else {
-    // the first p-chord begins at the current p-note (p-cursor)
-    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_INIT);
-    ty = LUSH_STEP_CONT;
-  }
-#endif
-
   return ty;
 }
 

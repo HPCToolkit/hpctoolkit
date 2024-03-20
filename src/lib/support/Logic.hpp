@@ -127,16 +127,6 @@ implies(T p, T q)
   return (!p || q);
 }
 
-#if 0
-// Would it be better to have a specialization of the template, like so?
-template <>
-inline bool
-implies<bool>(bool p, bool q)
-{
-  return (!p || q);
-}
-#endif
-
 
 } // namespace Logic
 

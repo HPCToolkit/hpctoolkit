@@ -327,19 +327,11 @@ confirm_plt_call(void *addr, void *callee)
   void *plt_callee = x86_plt_branch_target(plt_ins, xptr);
   if (plt_callee == callee) return UNW_ADDR_CONFIRMED;
 
-#if 0
-  unwind_interval *plt_callee_ui;
-  bool found = uw_recipe_map_lookup(plt_callee, NATIVE_UNWINDER, NULL, &plt_callee_ui);
-  if (found && UWI_RECIPE(plt_callee_ui)->has_tail_calls) return contains_tail_call_to_f(plt_callee, callee);
-#else
-
   unwindr_info_t unwr_info;
   bool found = uw_recipe_map_lookup(plt_callee, NATIVE_UNWINDER, &unwr_info);
   if (found && (unwr_info.treestat == READY)
           && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
         return contains_tail_call_to_f(plt_callee, callee);
-
-#endif
 
   return UNW_ADDR_WRONG;
 }

@@ -137,15 +137,3 @@ lush_lip_sprintf(char* str, const lush_lip_t* x)
 
   return str;
 }
-
-#if 0
-void
-lush_lip_fprint(FILE* fs, lush_lip_t* x);
-{
-  if (x) {
-    for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
-      fprintf(fs, " %"PRIx64, x->data8[i]);
-    }
-  }
-}
-#endif

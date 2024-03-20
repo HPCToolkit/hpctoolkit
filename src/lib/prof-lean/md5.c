@@ -250,25 +250,3 @@ void md5_finalize(struct md5_context* ctx, struct md5_digest* digest) {
     digest->bytes[14] = (uint8_t)(ctx->d >> 16);
     digest->bytes[15] = (uint8_t)(ctx->d >> 24);
 }
-
-#if 0
-
-char* md5(const char* input) {
-    struct md5_context context;
-    struct md5_digest digest;
-
-    md5_init(&context);
-    md5_update(&context, input, (unsigned long)strlen(input));
-    md5_finalize(&context, &digest);
-
-    char* output = malloc(sizeof(char) * (sizeof(digest)*2 + 1));
-    output[sizeof(digest)] = '\0';
-
-    for(int i=0; i<sizeof(digest); i++)
-    {
-        sprintf(&output[i*2], "%2.2x", digest.bytes[i]);
-    }
-
-    return output;
-}
-#endif

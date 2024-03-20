@@ -58,16 +58,4 @@ typedef enum DiscoverFnTy {
 
 void code_ranges_reinit();
 
-#if 0
-bool consider_possible_fn_address(void *addr);
-long offset_for_fn(void *addr);
-
-void new_code_range(const char *name, void *start, void *end, long offset,
-                    DiscoverFnTy discover);
-
-void process_code_ranges();
-
-long num_function_entries(void);
-#endif
-
 #endif // code_ranges_hpp

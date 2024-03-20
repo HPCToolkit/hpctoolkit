@@ -1105,10 +1105,6 @@ gtpin_instrumentation_options
   latency_knob = instrumentation->attribute_latency;
   collect_latency = instrumentation->attribute_latency;
   simd_knob = instrumentation->analyze_simd;
-#if 0
-  // this is the way things should work
-  count_knob = !latency_knob && (instrumentation->count_instructions || simd_knob);
-#else
   // instruction counting alone currently destroys correctness.
   // for now, replace instruction counting with latency measurements, which
   // performs instruction counting as a side effect.
@@ -1116,7 +1112,6 @@ gtpin_instrumentation_options
     latency_knob = true;
   }
   count_knob = false;
-#endif
 
   if (count_knob || latency_knob || simd_knob) {
     // customize GTPin behaviors

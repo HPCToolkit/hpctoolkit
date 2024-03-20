@@ -206,75 +206,6 @@ ROCTRACER_FN
 // private operations
 //******************************************************************************
 
-#if 0
-static void
-roctracer_correlation_id_push
-(
- uint64_t id
-)
-{
-  HPCRUN_ROCTRACER_CALL(roctracer_activity_push_external_correlation_id, (id));
-}
-
-
-static void
-roctracer_correlation_id_pop
-(
- uint64_t* id
-)
-{
-  HPCRUN_ROCTRACER_CALL(roctracer_activity_pop_external_correlation_id, (id));
-}
-#endif
-
-
-#if 0
-static void
-roctracer_kernel_data_set
-(
- const hip_api_data_t *data,
- entry_data_t *entry_data,
- uint32_t callback_id
-)
-{
-  switch(callback_id)
-    {
-    case HIP_API_ID_hipModuleLaunchKernel:
-      entry_data->kernel.blockSharedMemory =
-  data->args.hipModuleLaunchKernel.sharedMemBytes;
-
-      entry_data->kernel.blockThreads =
-  data->args.hipModuleLaunchKernel.blockDimX *
-  data->args.hipModuleLaunchKernel.blockDimY *
-  data->args.hipModuleLaunchKernel.blockDimZ;
-      break;
-
-    case HIP_API_ID_hipLaunchCooperativeKernel:
-      entry_data->kernel.blockSharedMemory =
-  data->args.hipLaunchCooperativeKernel.sharedMemBytes;
-
-      entry_data->kernel.blockThreads =
-  data->args.hipLaunchCooperativeKernel.blockDimX.x *
-  data->args.hipLaunchCooperativeKernel.blockDimX.y *
-  data->args.hipLaunchCooperativeKernel.blockDimX.z;
-      break;
-
-    case HIP_API_ID_hipHccModuleLaunchKernel:
-      entry_data->kernel.blockSharedMemory =
-  data->args.hipHccModuleLaunchKernel.sharedMemBytes;
-
-      entry_data->kernel.blockThreads =
-  (data->args.hipHccModuleLaunchKernel.globalWorkSizeX *
-   data->args.hipHccModuleLaunchKernel.globalWorkSizeY *
-   data->args.hipHccModuleLaunchKernel.globalWorkSizeZ) +
-  (data->args.hipHccModuleLaunchKernel.localWorkSizeX *
-   data->args.hipHccModuleLaunchKernel.localWorkSizeY *
-   data->args.hipHccModuleLaunchKernel.localWorkSizeZ);
-      break;
-    }
-}
-#endif
-
 static void
 roctracer_subscriber_callback
 (
@@ -533,14 +464,6 @@ roctracer_bind
  void
 )
 {
-#if 0
-  // DANGER: this workaround has been moved into the hpcrun.in script
-
-  // This is a workaround for roctracer to not hang when taking timer interrupts
-  // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
-  setenv("HSA_ENABLE_INTERRUPT", "0", 1);
-#endif
-
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(roctracer, roctracer_path(), RTLD_NOW | RTLD_GLOBAL);
 

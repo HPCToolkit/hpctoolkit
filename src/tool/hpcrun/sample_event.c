@@ -405,15 +405,6 @@ hpcrun_gen_thread_ctxt(void* context)
   // restore back the sigjmp
   td->current_jmp_buf = old;
 
-  // FIXME: What to do when thread context is partial ?
-#if 0
-  else {
-    cct_bundle_t* cct = &(td->epoch->csdata);
-    node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
-                                 metricId, metricIncr);
-    hpcrun_cleanup_partial_unwind();
-  }
-#endif
   hpcrun_clear_handling_sample(td);
   if (get_mem_low() || ENABLED(FLUSH_EVERY_SAMPLE)) {
     hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));

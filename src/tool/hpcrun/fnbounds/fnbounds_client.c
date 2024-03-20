@@ -80,43 +80,6 @@
 
 //***************************************************************************
 
-// To build an interactive, stand-alone client for testing:
-// (1) turn on this #if and (2) fetch copies of syserv-mesg.h
-// and fnbounds_file_header.h.
-
-// Usage:
-// To trace the client-side messages, use -v
-// To tell the server to run in verbose mode, use -V
-// To tell the server not to do aggressive function searching, use -d
-// To have the client write its output to a file, use -o <outfile>
-// The last argument should be the path to the server
-
-#if 0
-#define STAND_ALONE_CLIENT
-#define EMSG(...)
-#define EEMSG(...)
-#define TMSG(...)
-#define SAMPLE_SOURCES(...)  zero_fcn()
-#define dup2(...)  zero_fcn()
-#define hpcrun_set_disabled()
-#define monitor_real_exit  exit
-#define monitor_real_fork  fork
-#define monitor_real_execve  execve
-#define monitor_sigaction(...)  0
-int zero_fcn(void) { return 0; }
-int verbose = 0;
-int serv_verbose = 0;
-int noscan = 0;
-
-#include <stdio.h>
-FILE    *outf;
-
-char    *outfile;
-
-#endif
-
-//***************************************************************************
-
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -169,17 +132,6 @@ static int fdout = -1;
 static int fdin = -1;
 
 static pid_t my_pid;
-
-#if 0
-// Limit on memory use at which we restart the server in Meg.
-#define SERVER_MEM_LIMIT  140
-#define MIN_NUM_QUERIES   12
-
-// rusage units are Kbytes.
-static long mem_limit = SERVER_MEM_LIMIT * 1024;
-static int  num_queries = 0;
-static int  mem_warning = 0;
-#endif
 
 extern char **environ;
 
@@ -571,16 +523,6 @@ hpcrun_syserv_init(void)
 
   AMSG("fnbounds: %s", server);
 
-#if 0
-  // limit on server memory usage in Meg
-  char *str = getenv("HPCRUN_SERVER_MEMSIZE");
-  long size;
-  if (str == NULL || sscanf(str, "%ld", &size) < 1) {
-    size = SERVER_MEM_LIMIT;
-  }
-  mem_limit = size * 1024;
-#endif
-
   // Allocate enough space for fnbounds summoning.
   // Twice as much to allow for growth in either direction.
   server_stack = mmap_anon(SERVER_STACK_SIZE * 1024 * 2);
@@ -741,22 +683,6 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
        (int) fh->is_relocatable);
   TMSG(FNBOUNDS_CLIENT, "server memsize: %ld Meg,  time: %ld usec",
        fnb_info.memsize / 1024, tdiff(start, now));
-
-#if 0
-  // Restart the server if it's done a minimum number of queries and
-  // has exceeded its memory limit.  Issue a warning at 60%.
-  num_queries++;
-  if (!mem_warning && fnb_info.memsize > (6 * mem_limit)/10) {
-    EMSG("FNBOUNDS_CLIENT: warning: memory usage: %ld Meg",
-         fnb_info.memsize / 1024);
-    mem_warning = 1;
-  }
-  if (num_queries >= MIN_NUM_QUERIES && fnb_info.memsize > mem_limit) {
-    EMSG("FNBOUNDS_CLIENT: warning: memory usage: %ld Meg, restart server",
-         fnb_info.memsize / 1024);
-    shutdown_server();
-  }
-#endif
 
   return addr;
 }

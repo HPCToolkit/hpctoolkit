@@ -252,20 +252,6 @@ sp_ty_string(sp_ty_t ty)
 }
 
 
-#if 0
-static const char *
-register_name(int reg)
-{
-   switch(reg) {
-   case PPC_REG_LR: return "lr";
-   case PPC_REG_R0: return "r0";
-   default:          hpcrun_terminate();
-   }
-   return NULL;
-}
-#endif
-
-
 //***************************************************************************
 // build_intervals: helpers
 //***************************************************************************

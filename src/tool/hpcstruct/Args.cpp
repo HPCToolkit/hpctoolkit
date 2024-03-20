@@ -501,38 +501,10 @@ Args::parse(int argc, const char* const argv[])
       const string & arg = parser.getOptArg("meas_dir");
       meas_dir = arg.c_str();
       is_from_makefile = true;
-#if 0
-      fprintf(stderr, "DEBUG meas_dir = %s; is_from_makefile set to true\n", meas_dir.c_str() );
-#endif
     }
     if (parser.isOpt("time")) {
       show_time = true;
     }
-
-#if 0
-    // Check for other options: Structure recovery
-    if (parser.isOpt("include")) {
-      searchPathStr += ":" + parser.getOptArg("include");
-    }
-    if (parser.isOpt("replace-path")) {
-      string arg = parser.getOptArg("replace-path");
-
-      std::vector<std::string> replacePaths;
-      StrUtil::tokenize_str(arg, CLP_SEPARATOR, replacePaths);
-
-      for (unsigned int i = 0; i < replacePaths.size(); ++i) {
-        int occurancesOfEquals =
-          Analysis::Util::parseReplacePath(replacePaths[i]);
-
-        if (occurancesOfEquals > 1) {
-          ARG_ERROR("Too many occurrences of \'=\'; make sure to escape any \'=\' in your paths");
-        }
-        else if(occurancesOfEquals == 0) {
-          ARG_ERROR("The \'=\' between the old path and new path is missing");
-        }
-      }
-    }
-#endif
 
     if (parser.isOpt("show-gaps")) {
       show_gaps = true;
@@ -556,12 +528,6 @@ Args::parse(int argc, const char* const argv[])
         out_filenm = base_filenm + ".hpcstruct";
       }
     }
-#if 0
-    fprintf(stderr, "DEBUG in_filenm = `%s', is_from_makefile = %s\n",
-        in_filenm.c_str(),
-        (is_from_makefile == true ? "true" : (is_from_makefile == false? "false" : "bad value" ) ) );
-#endif
-
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());

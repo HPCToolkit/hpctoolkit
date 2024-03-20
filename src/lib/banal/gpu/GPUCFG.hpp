@@ -449,11 +449,6 @@ struct Block {
   }
 
   ~Block() {
-#if 0
-    for (auto *inst : insts) {
-      delete inst;
-    }
-#endif
     for (auto *target: targets) {
       delete target;
     }

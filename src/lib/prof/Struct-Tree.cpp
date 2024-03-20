@@ -233,10 +233,6 @@ ACodeNode::linkAndSetLineRange(ACodeNode* parent)
 }
 
 
-#if 0
-RealPathMgr& Root::s_realpathMgr = RealPathMgr::singleton();
-#endif
-
 void
 Root::Ctor(const char* nm)
 {
@@ -316,11 +312,6 @@ Group::demand(Root* pgm, const string& nm, ANode* parent)
 }
 
 
-#if 0
-RealPathMgr& LM::s_realpathMgr = RealPathMgr::singleton();
-#endif
-
-
 void
 LM::Ctor(const char* nm, ANode* parent)
 {
@@ -364,10 +355,6 @@ LM::demand(Root* pgm, const string& lm_nm)
   return lm;
 }
 
-
-#if 0
-RealPathMgr& File::s_realpathMgr = RealPathMgr::singleton();
-#endif
 
 void
 File::Ctor(const char* fname, ANode* parent)
@@ -524,10 +511,6 @@ Proc::demandGuardAlien(std::string & filenm, SrcFile::ln line)
 }
 
 
-#if 0
-RealPathMgr& Alien::s_realpathMgr = RealPathMgr::singleton();
-#endif
-
 void
 Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
             const char* displaynm)
@@ -657,21 +640,6 @@ ANode::ancestor(ANodeTy ty1, ANodeTy ty2, ANodeTy ty3) const
   }
   return const_cast<ANode*>(x);
 }
-
-
-#if 0
-int IsAncestorOf(ANode *parent, ANode *son, int difference)
-{
-  ANode *iter = son;
-  while (iter && difference > 0 && iter != parent) {
-    iter = iter->Parent();
-    difference--;
-  }
-  if (iter && iter == parent)
-     return 1;
-  return 0;
-}
-#endif
 
 
 ANode*
@@ -975,16 +943,6 @@ File::insertProcMap(Proc* p)
               << "' to Proc* " << p);
   m_procMap->insert(make_pair(p->name(), p)); // multimap
 }
-
-
-#if 0
-void
-Proc::insertStmtMap(Stmt* stmt)
-{
-  // FIXME: confusion between native and alien statements
-  (*m_stmtMap)[stmt->begLine()] = stmt;
-}
-#endif
 
 
 File*
@@ -1568,14 +1526,6 @@ Alien::toXML(unsigned int oFlags) const
     Proc *proc = file->findProc(m_displaynm);
 
     if (proc) {
-#if 0
-      // 3: check if alien's line range is within the function definition
-      bool inc = SrcFile::include(proc->begLine(), proc->endLine(), begLine(), endLine());
-      if (inc) {
-        // 4: add the link attribute to the function definition
-        self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id()));
-      }
-#endif
       self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id()));
     }
   }

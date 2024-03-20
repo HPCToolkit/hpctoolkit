@@ -394,41 +394,6 @@ hpcrun_loadmap_pushFront(load_module_t* lm)
 }
 
 
-#if 0
-// Pushes 'lm' to the end of the current loadmap. Should only occur
-// when lm's dso_info field has become invalidated, thus creating a
-// sub-list of invalid load modules at the end of the loadmap.
-static void
-hpcrun_loadmap_moveToBack(load_module_t* lm)
-{
-  // short-circuit if lm is already at end of list
-  if (lm == s_loadmap_ptr->lm_end) {
-    return;
-  }
-
-  // -------------------------------------------------------
-  // INVARIANT: lm is not at the end of the list
-  // -------------------------------------------------------
-
-  if (lm->prev) {
-    lm->prev->next = lm->next;
-  }
-  else { // if lm->prev == NULL => lm == s_loadmap_ptr->lm_head
-    s_loadmap_ptr->lm_head = lm->next;
-  }
-
-  if (lm->next) {
-    lm->next->prev = lm->prev;
-  }
-
-  lm->prev = s_loadmap_ptr->lm_end;
-  lm->prev->next = lm;
-  lm->next = NULL;
-  s_loadmap_ptr->lm_end = lm;
-}
-#endif
-
-
 static void
 hpcrun_loadmap_dump_dl_phdr_info(struct dl_phdr_info *x)
 {

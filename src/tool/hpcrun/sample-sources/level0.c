@@ -193,10 +193,6 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-#if 0
-  int nevents = (self->evl).nevents;
-#endif
-
   hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
   gpu_metrics_default_enable();
   gpu_metrics_KINFO_enable();

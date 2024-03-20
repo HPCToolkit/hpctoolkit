@@ -128,10 +128,6 @@ new_ui(
         int sp_arg,
         int ra_arg);
 
-#if 0
-ppc64recipe_t *
-ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg);
-#endif
 
 /*
  * Concrete implementation of the abstract val_tostr function of the

@@ -130,22 +130,7 @@ recordIfNvFatbin
  GElf_Shdr *shdr
  )
 {
-#if 0
-  bool isFatbin = strcmp(elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name),
-                         CUDA_FATBIN_DATASECTION) == 0;
-  if (isFatbin) {
-    NvidiaFatBinHeader_t *fatbin =
-      (NvidiaFatBinHeader_t *) elfSectionGetData(obj_ptr, shdr);
-    std::string empty;
-    ElfFile *elfFile = new ElfFile;
-    if (elfFile->open((char *) fatbin->data, (size_t) shdr->sh_size, empty)) {
-      fatbinSectionVector.push_back(fatbin);
-    }
-  }
-  return isFatbin;
-#else
   return false;
-#endif
 }
 
 

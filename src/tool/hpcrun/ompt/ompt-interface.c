@@ -560,13 +560,6 @@ init_idle_blame_shift
 
   if (!ompt_idle_blame_requested) return;
 
-#if 0
-  ompt_idle_blame_shift_request();
-
-  retval = ompt_set_callback(ompt_callback_idle, ompt_idle);
-  idle_blame_shift_avail |= ompt_event_may_occur(retval);
-#endif
-
   retval = ompt_set_callback(ompt_callback_sync_region_wait, ompt_sync);
   idle_blame_shift_avail |= ompt_event_may_occur(retval);
 
@@ -613,13 +606,6 @@ ompt_initialize
 
   init_threads();
   init_parallel_regions();
-
-#if 0
-  // johnmc: disable blame shifting for OpenMP 5 until we have
-  // an appropriate plan
-  init_mutex_blame_shift(ompt_runtime_version);
-  init_idle_blame_shift(ompt_runtime_version);
-#endif
 
   char* ompt_task_full_ctxt_str = getenv("OMPT_TASK_FULL_CTXT");
   if (ompt_task_full_ctxt_str) {

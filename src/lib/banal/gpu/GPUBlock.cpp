@@ -95,71 +95,7 @@ appendOperandstoInst
  InstructionAPI::Instruction& instruction
 )
 {
-#if 0 // intel::PR and intel::GPR are not defined -- johnmc
-  // Instruction predicate flags
-    int pred = 0;// single pred register;
-    if (inst->inst_stat->predicate_flag ==
-        GPUParse::InstructionStat::PredicateFlag::PREDICATE_TRUE) {
-      MachRegister r(pred | intel::PR | Arch_intelGen9);
-      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-      // bool isRead, bool isWritten, bool isImplicit, bool trueP, bool falseP
-      instruction.appendOperand(reg_ptr, true, false, false, true, false);
-    } else if (inst->inst_stat->predicate_flag ==
-               GPUParse::InstructionStat::PredicateFlag::PREDICATE_FALSE) {
-      MachRegister r(pred | intel::PR | Arch_intelGen9);
-      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-      // bool isRead, bool isWritten, bool isImplicit, bool trueP, bool falseP
-      instruction.appendOperand(reg_ptr, true, false, false, false, true);
-    }
-
-#if DEBUG
-    std::cout << "dst register: ";
-#endif
-    if (inst->inst_stat->dsts.size() == 0)
-    {
-#if DEBUG
-      std::cout << 128;
-#endif
-      // Fake register
-      MachRegister r(128 | intel::GPR | Arch_intelGen9);
-      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-      instruction.appendOperand(reg_ptr, false, true);
-  } else {
-    for (auto dst : inst->inst_stat->dsts) {
-      if (dst != -1) {
-#if DEBUG
-        std::cout << dst << ", ";
-#endif
-        MachRegister r(dst | intel::GPR | Arch_intelGen9);
-        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-        instruction.appendOperand(reg_ptr, false, true);
-      }
-    }
-  }
-#if DEBUG
-  std::cout << std::endl;
-#endif
-
-#if DEBUG
-  std::cout << "src register: ";
-#endif
-  for (auto src : inst->inst_stat->srcs) {
-    if (src != -1) {
-#if DEBUG
-      std::cout << src << ", ";
-#endif
-      MachRegister r(src | intel::GPR | Arch_intelGen9);
-      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-      instruction.appendOperand(reg_ptr, true, false);
-    }
-  }
-
-#if DEBUG
-  std::cout << std::endl;
-#endif
-#else
       abort();
-#endif
 }
 
 //******************************************************************************

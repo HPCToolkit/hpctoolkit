@@ -277,19 +277,6 @@ ompt_parallel_end
 {
   hpcrun_safe_enter();
 
-#if 0
-  uint64_t parallel_id = parallel_data->value;
-  uint64_t task_id = task_data->value;
-
-  ompt_data_t *parent_region_info = NULL;
-  int team_size = 0;
-  hpcrun_ompt_get_parallel_info(0, &parent_region_info, &team_size);
-  uint64_t parent_region_id = parent_region_info->value;
-
-  TMSG(DEFER_CTXT, "team end   id=0x%lx task_id=%x ompt_get_parallel_id(0)=0x%lx", parallel_id, task_id,
-       parent_region_id);
-#endif
-
   ompt_parallel_end_internal(parallel_data, flag);
 
   hpcrun_safe_exit();

@@ -148,13 +148,6 @@ main(int argc, char **argv, char **envp)
       p++;
       continue;
     }
-#if 0
-    if ( strcmp (*p, "-D") == 0 ) {
-      no_dwarf = 1;
-      p++;
-      continue;
-    }
-#endif
     if ( strcmp (*p, "-n") == 0 ) {
       p++;
       disable_sources(*p);
@@ -535,13 +528,6 @@ process_mapped_header(Elf *lelf)
   if (verbose > 1) {
     fprintf(stderr, "\n");
   }
-#if 0
-  // Print the function list, unsorted
-  printf ( "\n\n\tFunction list, unsorted:\n");
-     for (i=0; i<nfunc; i ++) {
-       printf("0x%08lx\t%s\n", farray[i].fadd, farray[i].fnam);
-     }
-#endif
 
   // We have the complete function table, now sort it
   qsort( (void *)farray, nfunc, sizeof(Function_t), &func_cmp );
@@ -813,10 +799,6 @@ func_cmp(const void *a, const void *b)
   } else {
     ret = strcmp (fp1.fnam, fp2.fnam);
   }
-#if 0
-  fprintf(stderr, "FNB2: %d = compare (%s, 0x08lx) with (%s, 0x08lx)\n",
-      ret, fp1.fnam, fp1.fadd, fp2.fnam, fp2.fadd );
-#endif
   return ret;
 }
 
@@ -843,9 +825,6 @@ usage()
       "\t-d\tdon't perform function discovery on stripped code\n"
       "\t\t    eguivalent to -n itfa\n"
       "\t-s fdin fdout\t" "run in server mode\n"
-#if 0
-      "\t-D\tdon't attempt to process DWARF\n"
-#endif
       "\t-c\twrite output in C source code\n"
       "\t-t\twrite output in text format (default)\n"
       "\t\tIf no format is specified, then text mode is used.\n"

@@ -610,38 +610,6 @@ void hpcrun_metric_set_dense_copy(cct_metric_data_t *dest,
 // make a sparse copy - YUMENG
 //
 
-// used to show what the datalist looks like, test purpose
-#if 0
-void
-datalist_display(metric_data_list_t *data_list)
-{
-  metric_data_list_t *curr;
-  metric_desc_list_t *curr_l;
-  for (curr = data_list; curr != NULL; curr = curr->next){
-
-    metric_desc_list_t *metric_list = curr->kind->metric_data;
-    printf("; kind info - name:");
-    for (curr_l = metric_list; curr_l != NULL; curr_l = curr_l->next) {
-      printf("%s ",metric_list->val.name);
-    }
-    printf("; metrics vals:");
-    metric_set_t* actual = curr->metrics;
-    for (int i = 0; i < curr->kind->idx; ++i) {
-      uint64_t v = actual[i].v1.bits; // local copy of val
-      printf(" %d",v);
-    /*int shift = 0, num_write = 0, c;
-
-    for (shift = 56; shift >= 0; shift -= 8) {
-      printf("%ld : ", ((v >> shift) & 0xff));
-    }*/
-    }
-    printf("\n");
-  }
-  printf("END\n");
-
-}
-#endif
-
 uint64_t
 hpcrun_metric_sparse_count(metric_data_list_t *list)
 {

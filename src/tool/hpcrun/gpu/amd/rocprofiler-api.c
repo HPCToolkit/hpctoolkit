@@ -171,26 +171,10 @@ typedef struct kernel_properties_s {
 } kernel_properties_t;
 
 
-#if 0
-// Vladimir: C++ism of the official rocprofiler example
-
-typedef struct symbols_map_data_s {
-    const char* name;
-    uint64_t refs_count;
-} symbols_map_data_t;
-
-typedef std::map<uint64_t, symbols_map_data_t> symbols_map_t;
-
-typedef symbols_map_t::iterator symbols_map_it_t;
-
-#else
-
 // Vladimir: Since the size of the `symbols_map_t::iterator` is 8-bytes,
 // I added this workaround.
 typedef void * symbols_map_it_t;
 
-
-#endif
 
 // Data structure that contains the information about all requested counters,
 // both basic and derived.
@@ -723,30 +707,6 @@ initialize_counter_information
   is_specified_by_user = (int*) malloc(total_counters_unique * sizeof(int));
   memset(is_specified_by_user, 0, total_counters_unique * sizeof(int));
 }
-
-// TODO: We no longer record binaries for ROCm, so no need for this callback
-#if 0
-// This function should be implemented in roctracer-api.c,
-// but due to c++ism in AMD software, I can only include rocprofiler header
-// filers in one .o
-static void
-roctracer_codeobj_callback
-(
-  uint32_t domain,
-  uint32_t cid,
-  const void* data,
-  void* arg
-)
-{
-  PRINT("codeobj_callback domain(%u) cid(%u): load_base(0x%lx) load_size(0x%lx) load_delta(0x%lx) uri(\"%s\")\n",
-    domain,
-    cid,
-    evt_data->codeobj.load_base,
-    evt_data->codeobj.load_size,
-    evt_data->codeobj.load_delta,
-    uri);
-}
-#endif
 
 //******************************************************************************
 // AMD hidden interface operations

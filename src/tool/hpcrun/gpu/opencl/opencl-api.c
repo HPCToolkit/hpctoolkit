@@ -1183,10 +1183,6 @@ foilbase_clBuildProgram
   if (len_options != 0) {
     strncat(options_with_debug_flags, options, len_options);
   }
-  #if 0
-  // intel only options
-  strcat(options_with_debug_flags, LINE_TABLE_FLAG);
-  #endif
   cl_int ret =
     HPCRUN_OPENCL_CALL(clBuildProgram,
                        (program, num_devices, device_list,

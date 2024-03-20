@@ -288,29 +288,6 @@ Profile::fmt_epoch_fread(FILE* infs,
 
   int ret;
 
-  // ------------------------------------------------------------
-  // Read epoch data
-  // ------------------------------------------------------------
-
-//YUMENG: no epoch info
-#if 0
-  // ----------------------------------------
-  // epoch-hdr
-  // ----------------------------------------
-  hpcrun_fmt_epochHdr_t ehdr;
-  ret = hpcrun_fmt_epochHdr_fread(&ehdr, infs, malloc);
-  if (ret == HPCFMT_EOF) {
-    return HPCFMT_EOF;
-  }
-  if (ret != HPCFMT_OK) {
-    DIAG_Throw("error reading 'epoch-hdr'");
-  }
-  if (outfs) {
-    if (Analysis::Util::option == Analysis::Util::Print_All)
-      hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
-  }
-#endif
-
   // ----------------------------------------
   // loadmap
   // ----------------------------------------
@@ -382,18 +359,6 @@ Profile::fmt_epoch_fread(FILE* infs,
   }
 
   // -------------------------
-  // environment
-  // -------------------------
-
-#if 0
-  string envPath;
-  val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_envPath);
-  if (val && strlen(val) > 0) {
-    envPath = val;
-  }
-#endif
-
-  // -------------------------
   // parallelism context (mpi rank, thread id)
   // -------------------------
   string mpiRankStr, tidStr;
@@ -449,28 +414,11 @@ Profile::fmt_epoch_fread(FILE* infs,
     }
   }
 
-  // -------------------------
-  //
-  // -------------------------
-
-  // N.B.: We currently assume FmtEpoch_NV_virtualMetrics is set iff
-  // we read from a memory buffer.  Possibly we need an explicit tag for this.
-  // YUMENG: needs to figure out the usage of this portion, cut right now due to missing of epoch
-#if 0
-  val = hpcfmt_nvpairList_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
-  if (val && strcmp(val, "0") != 0) {
-    isVirtualMetrics = true;
-    rFlags |= RFlg_NoMetricValues;
-  }
-#endif
 
   // ------------------------------------------------------------
   // cct
   // ------------------------------------------------------------
-#if 0
-  fmt_cct_fread(*prof, infs, rFlags, metricTbl, ctxtStr, outfs);
-#else
-  //YUMENG: no need to parse metricTbl for sparse format
+
   //file not consecutive anymore after making boundary multiple of 1024
   fseek(infs, footer.cct_start, SEEK_SET);
   fmt_cct_fread(infs, ctxtStr, outfs);
@@ -480,7 +428,6 @@ Profile::fmt_epoch_fread(FILE* infs,
      filename);
      prof_abort(-1);
   }
-#endif
 
   // ----------------------------------------
   // metric-tbl
@@ -550,17 +497,9 @@ Profile::fmt_epoch_fread(FILE* infs,
 }
 
 
-#if 0
-int
-Profile::fmt_cct_fread(Profile& prof, FILE* infs, unsigned int rFlags,
-                       const metric_tbl_t& metricTbl,
-                       std::string ctxtStr, FILE* outfs)
-#else
-//YUMENG: no need to parse metricTbl for sparse format
 int
 Profile::fmt_cct_fread(FILE* infs,
                        std::string ctxtStr, FILE* outfs)
-#endif
 {
 
   DIAG_Assert(infs, "Bad file descriptor!");
@@ -580,29 +519,7 @@ Profile::fmt_cct_fread(FILE* infs,
     fprintf(outfs, "[cct: (num-nodes: %" PRIu64 ")\n", numNodes);
   }
 
-//YUMENG: No metric info
-#if 0
-  // N.B.: numMetricsSrc <= [numMetricsDst = prof.metricMgr()->size()]
-  unsigned int numMetricsSrc = metricTbl.len;
-
-  if (rFlags & RFlg_NoMetricValues) {
-    numMetricsSrc = 0;
-  }
-#endif
-
   hpcrun_fmt_cct_node_t nodeFmt;
-
-//YUMENG: No metric info
-#if 0
-  nodeFmt.num_metrics = numMetricsSrc;
-  nodeFmt.metrics = (numMetricsSrc > 0) ?
-    (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
-    : NULL;
-#endif
-
-#if 0
-  ExprEval eval;
-#endif
 
   const epoch_flags_t flags = {.bits=0};
 
@@ -616,38 +533,9 @@ Profile::fmt_cct_fread(FILE* infs,
     }
     if (outfs) {
 
-#if 0
-      hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
-                                 &metricTbl, "  ");
-#else
-//YUMENG: No metric info
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, flags,
                                   "  ");
-#endif
     }
-
-#if 0
-    // ------------------------------------------
-    // check if the metric contains a formula
-    //  if this is the case, we'll compute the metric based on the formula
-    //  given by hpcrun.
-    // FIXME: we don't check the validity of the formula (yet).
-    //        If hpcrun has incorrect formula, the result can be anything
-    // ------------------------------------------
-    metric_desc_t* m_lst = metricTbl.lst;
-    VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
-
-    for (unsigned int i = 0; i < numMetricsSrc; i++) {
-      char *expr = (char*) m_lst[i].formula;
-      if (expr == NULL || strlen(expr)==0) continue;
-
-      double res = eval.Eval(expr, &var_map);
-      if (eval.GetErr() == EEE_NO_ERROR) {
-        // the formula syntax looks "correct". Update the the metric value
-        hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
-      }
-    }
-#endif
   }
 
   if (outfs) {
