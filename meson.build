@@ -760,6 +760,41 @@ void test() {
           description: 'dyninst supports cuda')
 endif
 
+
+has_perf_events = cc.has_type('struct perf_event_attr', prefix: ['#include <linux/perf_event.h>', '#include <linux/hw_breakpoint.h>', '#include <sys/syscall.h>', '#include <unistd.h>'])
+if has_perf_events
+  add_project_arguments('-DHPCRUN_SS_LINUX_PERF', language: ['c', 'cpp'])
+endif
+
+papi_has_components = papi_dep.found() and cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component', dependencies: papi_dep)
+if papi_has_components
+  add_project_arguments('-DHPCRUN_SS_PAPI_C_INTEL', language: ['c', 'cpp'])
+endif
+
+if opencl_dep.found()
+  add_project_arguments('-DENABLE_OPENCL', '-DHPCRUN_SS_OPENCL', language: ['c', 'cpp'])
+endif
+
+if papi_dep.found()
+  add_project_arguments('-DHPCRUN_SS_PAPI', language: ['c', 'cpp'])
+endif
+if cupti_dep.found()
+  add_project_arguments('-DENABLE_CUDA', '-DHPCRUN_SS_NVIDIA', language: ['c', 'cpp'])
+endif
+if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
+  add_project_arguments('-DHPCRUN_SS_PAPI_C_CUPTI', language: ['c', 'cpp'])
+endif
+if false  # get_option('papi_rocm')  # --enable-papi-c-rocm
+  add_project_arguments('-DHPCRUN_SS_PAPI_C_ROCM', language: ['c', 'cpp'])
+endif
+if rocm_dep.found()
+  add_project_arguments('-DHPCRUN_SS_AMD', language: ['c', 'cpp'])
+endif
+if level0_dep.found()
+  add_project_arguments('-DUSE_LEVEL0', '-DHPCRUN_SS_LEVEL0', language: ['c', 'cpp'])
+endif
+
+
 subdir('src')
 subdir('lib')
 subdir('doc')

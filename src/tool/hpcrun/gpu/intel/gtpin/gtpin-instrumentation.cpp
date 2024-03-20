@@ -63,8 +63,6 @@ SPDX-License-Identifier: MIT
 // system include files
 //*****************************************************************************
 
-#define _GNU_SOURCE
-
 #include <map>
 #include <mutex>
 #include <string>
