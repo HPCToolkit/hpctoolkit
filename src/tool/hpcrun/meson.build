@@ -83,7 +83,6 @@ _my_base_files = files(
   'gpu/blame-shifting/blame-helper.c',
   'gpu/blame-shifting/blame-kernel-map.c',
   'gpu/blame-shifting/blame-queue-map.c',
-  'gpu/blame-shifting/blame.c',
   'gpu/gpu-activity-channel.c',
   'gpu/gpu-activity-process.c',
   'gpu/gpu-activity.c',
@@ -375,6 +374,7 @@ if opencl_dep.found()
     'gpu/opencl/intel/maps/device-map.c',
     'gpu/blame-shifting/blame-kernel-cleanup-map.c',
     'gpu/blame-shifting/opencl/opencl-blame.c',
+    'gpu/blame-shifting/blame.c',
   )
 
   _hpcrun_libs += shared_module('hpcrun_opencl', config_h,

@@ -44,6 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef HPCRUN_OMPT_OMPT_GCC4_PPC64_H
+#define HPCRUN_OMPT_OMPT_GCC4_PPC64_H
+
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -100,3 +103,5 @@ offset_to_pc_after_next_call
 
   return ((char *) insn) - ((char *) ip);
 }
+
+#endif  // HPCRUN_OMPT_OMPT_GCC4_PPC64_H

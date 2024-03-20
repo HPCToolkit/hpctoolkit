@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef HPCRUN_FNBOUNDS_FNBOUNDS_INTERFACE_H
+#define HPCRUN_FNBOUNDS_FNBOUNDS_INTERFACE_H
 
 //*********************************************************************
 // local includes
@@ -82,3 +84,5 @@ fnbounds_table_lookup(void **table, int length, void *ip,
 
 
 #include "fnbounds_table_interface.h"
+
+#endif  // HPCRUN_FNBOUNDS_FNBOUNDS_INTERFACE_H

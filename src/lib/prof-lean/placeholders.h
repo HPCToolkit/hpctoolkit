@@ -44,10 +44,10 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <stdint.h>
-
 #ifndef _HPCTOOLKIT_PLACEHOLDERS_H_
 #define _HPCTOOLKIT_PLACEHOLDERS_H_
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

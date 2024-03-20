@@ -41,6 +41,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef HPCRUN_GPU_GPU_CCT_H
+#define HPCRUN_GPU_GPU_CCT_H
+
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -66,3 +69,5 @@ gpu_cct_insert_always
  cct_node_t *cct_node,
  ip_normalized_t ip
 );
+
+#endif  // HPCRUN_GPU_GPU_CCT_H

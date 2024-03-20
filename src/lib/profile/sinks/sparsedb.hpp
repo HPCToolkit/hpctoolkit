@@ -44,8 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef HPCTOOLKIT_PROF2MPI_SPARSE_H
 #define HPCTOOLKIT_PROF2MPI_SPARSE_H
-#ifdef HPCTOOLKIT_PROF2MPI_SPARSE_H
 
 #include "../sink.hpp"
 #include "../stdshim/filesystem.hpp"

@@ -1,5 +1,3 @@
-#ifdef ENABLE_OPENCL
-
 //******************************************************************************
 // system includes
 //******************************************************************************
@@ -464,5 +462,3 @@ gpu_idle_blame
   spinlock_unlock(&itimer_blame_lock);
 #endif
 }
-
-#endif  // ENABLE_OPENCL
