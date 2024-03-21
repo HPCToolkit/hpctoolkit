@@ -112,9 +112,6 @@ public:
         }
       } else {
         needed = true;
-#if 0
-        std::cerr << "DEBUG needed set true, found cachestat = " << global_args->cache_stat << std::endl;
-#endif
         if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
           if ( global_args->cache_stat == CACHE_ENTRY_REMOVED ) {
             // A previous entry at that path was removed
@@ -125,9 +122,6 @@ public:
             global_args->cache_stat = CACHE_ENTRY_ADDED;
           }
         }
-#if 0
-        std::cerr << "DEBUG needed set cachestat = " << global_args->cache_stat << std::endl;
-#endif
       }
     }
     return needed;

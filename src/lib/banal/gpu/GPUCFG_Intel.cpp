@@ -499,17 +499,6 @@ getIntelInstructionStat
   // So is fine to send a vector of 1 entry when an instruction is a barrier and
   // empty vector when the instruction is not a barrier?
 
-  // commenting this section since synchronization is not factored in backward slicing
-#if 0
-  bool instContainsBarrier = false;
-  if (opcode == iga::Op::SEND || opcode == iga::Op::SENDC || opcode == iga::Op::SENDS || opcode == iga::Op::SENDSC) {
-    char *output = strstr (inst_asm_text, "barrier");
-    if (output) {
-      instContainsBarrier = true;
-    }
-  }
-#endif
-
   // intel instructions follow SIMD model.
   // when predication is on for an instruction, flag register is used to check which SIMD lanes should be used by the instruction
   // predication does not switch on/off an instruction, just some lanes

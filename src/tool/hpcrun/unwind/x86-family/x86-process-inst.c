@@ -60,6 +60,12 @@
 #include "x86-return.h"
 #include "x86-cold-path.h"
 #include "x86-interval-arg.h"
+#include "x86-lea.h"
+#include "x86-and.h"
+
+#include "../common/unwindr_info.h"
+#include "../common/uw_recipe_map.h"
+#include "../../messages/messages.h"
 
 #define UWRECIPE_DEBUG 1
 

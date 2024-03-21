@@ -104,12 +104,6 @@ cct_insert_raw_backtrace(cct_node_t* cct,
   TMSG(BT_INSERT, "%s : start", __func__);
   if (!cct) return NULL; // nowhere to insert
 
-#if 0
-  if (path_beg < path_end) { // null backtrace
-     return cct_backtrace_null_handler(cct);
-  }
-#endif
-
   // FIXME: POGLEDAJ KOLIKO ON PUTA KROZ OVO PRODJE
 
   ip_normalized_t parent_routine = {0, 0};
@@ -268,43 +262,6 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   return n;
 }
 
-#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
-
-static cct_node_tt*
-help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
-               int metricId, uint64_t metricIncr,
-               bt_mut_fn bt_fn, bt_fn_arg bt_arg);
-
-//
-// utility routine that does 3 things:
-//   1) Generate a std backtrace
-//   2) Modifies the backtrace according to a passed in function
-//   3) enters the generated backtrace in the cct
-//
-cct_node_tt*
-hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
-              int metricId, uint64_t metricIncr,
-              bt_mut_fn bt_fn, bt_fn_arg arg, int isSync)
-{
-  cct_node_tt* n = NULL;
-  if (hpcrun_isLogicalUnwind()) {
-#ifdef LATER
-    TMSG(LUSH,"lush backtrace2cct invoked");
-    n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
-                           isSync);
-#endif
-  }
-  else {
-    TMSG(LUSH,"regular (NON-lush) bt2cct invoked");
-    n = help_hpcrun_bt2cct(cct, context, metricId, metricIncr, bt_fn);
-  }
-
-  // N.B.: for lush_backtrace() it may be that n = NULL
-
-  return n;
-}
-
-#endif
 
 cct_node_t*
 hpcrun_cct_record_backtrace(

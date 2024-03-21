@@ -162,12 +162,6 @@ METHOD_FN(finalize_event_list)
     monitor_real_exit(-1);
   }
 
-#if 0
-  // Fetch the event string for the sample source
-  // only one event is allowed
-  char* evlist = METHOD_CALL(self, get_event_str);
-  char* event = start_tok(evlist);
-#endif
   roctracer_init();
 
   device_finalizer_flush.fn = roctracer_flush;

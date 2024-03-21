@@ -10,12 +10,6 @@
 #ifndef __GENERIC_VAL__
 #define __GENERIC_VAL__
 
-#if 0
-// abstract function to compute and return a string representation of
-// a generic value.
-typedef char* (*val_str)(void* val);
-#endif
-
 // abstract function to compute a string representation of a generic value
 // and return the result in the str parameter.
 // caller to provide the appropriate length for the result string.

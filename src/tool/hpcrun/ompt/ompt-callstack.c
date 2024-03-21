@@ -503,15 +503,6 @@ ompt_elide_runtime_frame(
     bool reenter1_flag =
       interval_contains(low_sp, high_sp, fp_enter(frame1));
 
-#if 0
-    ompt_frame_t *help_frame = region_stack[top_index-i+1].parent_frame;
-    if (!ompt_eager_context && !reenter1_flag && help_frame) {
-      frame1 = help_frame;
-      reenter1_flag = interval_contains(low_sp, high_sp, fp_enter(frame1));
-      // printf("THIS ONLY HAPPENS IN MASTER: %d\n", TD_GET(master));
-    }
-#endif
-
     if (reenter1_flag) {
       for (; it <= *bt_outer; it++) {
         if ((uint64_t)(it->cursor.sp) >= (uint64_t)(fp_enter(frame1))) {
@@ -596,28 +587,6 @@ ompt_elide_runtime_frame(
       elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id);
       goto return_label;
     }
-
-#if 0
-    /* runtime frames with nothing else; it is harmless to reveal them all */
-    uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_idle_frame();
-
-    if (idle_frame) {
-      /* clip below the idle frame */
-      for (it = *bt_inner; it <= *bt_outer; it++) {
-        if ((uint64_t)(it->cursor.sp) >= idle_frame) {
-          *bt_outer = it - 2;
-              bt->bottom_frame_elided = true;
-              bt->partial_unwind = true;
-          break;
-        }
-      }
-    } else {
-      /* no idle frame. show the whole stack. */
-    }
-
-    elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer, region_id);
-    goto return_label;
-#endif
   }
 
 
@@ -875,24 +844,6 @@ ompt_cct_cursor_finalize
 
       // everything is ok with cursors
       cct_cursor = cct_not_master_region;
-
-// johnmc merge
-#if 0
-    if (region_id > 0 && bt->bottom_frame_elided) {
-
-      cct_node_t *prefix = lookup_region_id(region_id);
-      if (prefix) {
-              // full context is available now. use it.
-              cct_cursor = prefix;
-      } else {
-              // full context is not available. if the there is a node for region_id in
-              // the unresolved tree, use it as the cursor to anchor the sample for now.
-              // it will be resolved later. otherwise, use the default cursor.
-              prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root,
-          &(ADDR2(UNRESOLVED, region_id)));
-              if (prefix) cct_cursor = prefix;
-      }
-#endif
     }
   }
 

@@ -122,22 +122,6 @@
 #define OMPT_TARGET_API_FUNCTION(return_type, fn, args)  \
   OMPT_API_FUNCTION(return_type, fn, args)
 
-#if 0
-// documentation: list of all target functions
-#define FOREACH_OMPT_TARGET_FN(macro) \
-  macro(ompt_get_device_time) \
-  macro(ompt_translate_time) \
-  macro(ompt_set_trace_ompt) \
-  macro(ompt_start_trace) \
-  macro(ompt_pause_trace) \
-  macro(ompt_stop_trace) \
-  macro(ompt_flush_trace) \
-  macro(ompt_get_record_type) \
-  macro(ompt_get_record_ompt) \
-  macro(ompt_get_record_abstract) \
-  macro(ompt_advance_buffer_cursor)
-#endif
-
 // target functions currently used in this file
 #define FOREACH_OMPT_TARGET_FN(macro) \
   macro(ompt_set_trace_ompt) \

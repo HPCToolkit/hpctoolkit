@@ -92,7 +92,6 @@
 #include "fnbounds_interface.h"
 #include "fnbounds_file_header.h"
 #include "client.h"
-#include "../os/linux/dylib.h"
 
 #include "../main.h"
 #include "../hpcrun_stats.h"

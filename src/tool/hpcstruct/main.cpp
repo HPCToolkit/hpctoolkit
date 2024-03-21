@@ -160,17 +160,6 @@ main(int argc, char* argv[])
 static int
 realmain(int argc, char* argv[])
 {
-#if 0
-  fprintf(stderr, "DEBUG hpcstruct, argc = %d, pid = %d\n",
-    argc, getpid() );
-
-  char **p = argv;
-  for (int i = 0; i < argc; i ++) {
-    fprintf(stderr, "DEBUG  argv[%d] = %s\n", i, *p);
-    p ++;
-  }
-#endif
-
   // Process the arguments
   //
   Args args(argc, argv);

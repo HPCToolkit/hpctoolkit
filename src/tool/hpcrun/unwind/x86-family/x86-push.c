@@ -55,6 +55,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "../../messages/messages.h"
 #include "../../../../lib/isa-lean/x86/instruction-set.h"
 
 /******************************************************************************

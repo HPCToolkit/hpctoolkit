@@ -254,29 +254,13 @@ lush_assoc_info_gt(lush_assoc_info_t x, lush_assoc_info_t y)
   return lush_assoc_info_lt(y, x);
 }
 
-#if 0
-static inline void
-lush_assoc_info__set_assoc(lush_assoc_info_t& x, lush_assoc_t new_as)
-{
-  x->u.as = (new_as);
-}
-#else
 #define lush_assoc_info__set_assoc(/*lush_assoc_info_t*/ x,         \
                                    /*lush_assoc_t*/ new_as)         \
   (x).u.as = (new_as)
-#endif
 
-#if 0
-static inline void
-lush_assoc_info__set_path_len(lush_assoc_info_t& x, uint32_t new_len)
-{
-  x->.u.len = (new_len);
-}
-#else
 #define lush_assoc_info__set_path_len(/*lush_assoc_info_t*/ x,  \
                                       /*uint32_t*/ new_len)     \
   (x).u.len = (new_len)
-#endif
 
 
 static inline bool

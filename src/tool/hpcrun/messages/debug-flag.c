@@ -83,10 +83,8 @@ extern void unlimit_msgs(void);
 //*****************************************************************************
 
 static char *dbg_tbl[] = {
-# undef E
-# define E(s) #s
-# include "messages.flag-defns"
-# undef E
+#define STRINGIFY(S) #S
+ALL_DBG_FLAGS(STRINGIFY)
 };
 
 

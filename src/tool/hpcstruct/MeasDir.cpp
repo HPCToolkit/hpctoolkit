@@ -523,35 +523,6 @@ verify_measurements_directory
 }
 
 
-#if 0
-// check if measurements directory contains a GPU binary
-static bool
-check_gpubin
-(
-  string &measurements_dir
-)
-{
-  bool has_gpubin = false;
-
-  string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
-
-  DIR *dir = opendir(gpubin_dir.c_str());
-  if (dir != NULL) {
-    struct dirent *ent;
-    while ((ent = readdir(dir)) != NULL) {
-      string file_name(ent->d_name);
-      if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
-        has_gpubin = true;
-        break;
-      }
-    }
-    closedir(dir);
-  }
-
-  return has_gpubin;
-}
-#endif
-
 // Invoked for a measurements-directory handling to ensure
 //  that it has a subdirectory for structure files
 static void

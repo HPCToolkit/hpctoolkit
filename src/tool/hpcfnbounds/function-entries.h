@@ -44,12 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#if 0
-#include <string>
-#include <vector>
-
-using namespace std;
-#endif
 #include <sys/types.h>
 #include <inttypes.h>
 #include <stdbool.h>

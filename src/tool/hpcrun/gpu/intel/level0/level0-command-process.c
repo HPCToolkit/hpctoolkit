@@ -304,10 +304,6 @@ level0_command_begin
 #ifdef ENABLE_GTPIN
     if (level0_gtpin_enabled()) {
       kernel_ip = gtpin_lookup_kernel_ip(kernel_name);
-#if 0
-      if (kernel_ip.lm_id != get_load_module(kernel))
-        hpcrun_terminate();
-#endif
     } else
 #endif  // ENABLE_GTPIN
     {
@@ -348,9 +344,6 @@ level0_command_end
   uint64_t end
 )
 {
-#if 0
-  uint64_t correlation_id = (uint64_t)(command_node->event);
-#endif
   gpu_monitoring_thread_activities_ready();
   gpu_activity_t gpu_activity;
   gpu_activity_t* ga = &gpu_activity;

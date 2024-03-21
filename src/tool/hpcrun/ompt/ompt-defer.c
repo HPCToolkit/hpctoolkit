@@ -62,10 +62,6 @@
 //*****************************************************************************
 // local includes
 //*****************************************************************************
-// johnmc merge
-#if 0
-#include <ompt-parallel-region-map.h>
-#endif
 
 #include "../../../lib/prof-lean/placeholders.h"
 
@@ -836,12 +832,6 @@ ompt_resolve_region_contexts
       if (timer_elapsed(&start_time) > 3.0) break;
     }
   }
-
-#if 0
-  if (unresolved_cnt != 0) {
-    mark_remaining_unresolved_regions();
-  }
-#endif
 
   if (unresolved_cnt != 0 && hpcrun_ompt_region_check()) {
     // hang to let debugger attach

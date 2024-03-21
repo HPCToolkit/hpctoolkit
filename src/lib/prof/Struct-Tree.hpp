@@ -932,10 +932,6 @@ private:
 
   LMMap* lmMap_realpath; // mapped by 'realpath'
   LMMap* lmMap_basename;
-
-#if 0
-  static RealPathMgr& s_realpathMgr;
-#endif
 };
 
 
@@ -1225,10 +1221,6 @@ private:
   FileMap*                   m_fileMap; // mapped by RealPathMgr
   mutable VMAToProcMap*      m_procMap;
   mutable VMAToStmtRangeMap* m_stmtMap;
-
-#if 0
-  static RealPathMgr& s_realpathMgr;
-#endif
 };
 
 
@@ -1340,10 +1332,6 @@ private:
 private:
   std::string m_name; // the file name including the path
   ProcMap*    m_procMap;
-
-#if 0
-  static RealPathMgr& s_realpathMgr;
-#endif
 };
 
 
@@ -1450,22 +1438,6 @@ public:
 
 
   // --------------------------------------------------------
-  // search for enclosing nodes
-  // --------------------------------------------------------
-
-#if 0
-  // FIXME: confusion between native and alien statements
-  Stmt*
-  findStmt(SrcFile::ln begLn)
-  {
-    StmtMap::iterator it = m_stmtMap->find(begLn);
-    Stmt* x = (it != m_stmtMap->end()) ? it->second : NULL;
-    return x;
-  }
-#endif
-
-
-  // --------------------------------------------------------
   // Output
   // --------------------------------------------------------
 
@@ -1479,11 +1451,6 @@ public:
 private:
   void
   Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym);
-
-#if 0
-  void
-  insertStmtMap(Stmt* stmt);
-#endif
 
   friend class Stmt;
 
@@ -1614,10 +1581,6 @@ private:
   StmtMap *   m_stmtMap;
 
   Prof::Struct::Proc *m_proc;
-
-#if 0
-  static RealPathMgr& s_realpathMgr;
-#endif
 };
 
 
@@ -1708,17 +1671,6 @@ public:
     ANodeTy t = (parent) ? parent->type() : TyANY;
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile)
                 || (t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
-
-#if 0
-    // if parent is proc or alien, add to stmt map
-    if (t == TyProc) {
-      ((Proc *) parent)->insertStmtMap(this);
-    }
-    else if (t == TyAlien) {
-      Alien * alien = (Alien *) parent;
-      (* (alien->m_stmtMap))[begLn] = this;
-    }
-#endif
 
     // add vma to LM vma interval map
     LM* lmStrct = parent->ancestorLM();

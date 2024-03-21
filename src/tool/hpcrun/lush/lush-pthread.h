@@ -75,7 +75,7 @@
 #include "../../../include/gcc-attr.h"
 #include "../../../include/min-max.h"
 
-#include "lush-pthread.i"
+#include "lush-pthread-internal.h"
 #include "lush-backtrace.h" // for 'lush_agents'
 
 #include "../safe-sampling.h"

@@ -458,11 +458,6 @@ signal_handler_init(void)
   act.sa_flags = 0;
   sigemptyset(&act.sa_mask);
 
-#if 0
-  if (sigaction(SIGSEGV, &act, NULL) != 0) {
-    err(1, "sigaction failed on SIGSEGV");
-  }
-#endif
   if (sigaction(SIGBUS, &act, NULL) != 0) {
     err(1, "sigaction failed on SIGBUS");
   }

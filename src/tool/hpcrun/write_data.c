@@ -92,11 +92,6 @@
 static epoch_flags_t epoch_flags = {
     .bits = 0};
 
-// YUMENG: no epoch info needed
-#if 0
-static const uint64_t default_measurement_granularity = 1;
-#endif
-
 //*****************************************************************************
 // macro
 //*****************************************************************************
@@ -239,52 +234,12 @@ write_epochs(FILE *fs, core_profile_trace_data_t *cptd, epoch_t *epoch, hpcrun_f
   epoch_t *current_epoch = epoch;
   int ret;
 
-// YUMENG: no epoch info needed
-#if 0
-  for(epoch_t* s = current_epoch; s; s = s->next) {
-    num_epochs++;
-  }
-
-  TMSG(EPOCH, "Actual # epochs = %d", num_epochs);
-
-  TMSG(DATA_WRITE, "writing # epochs = %d", num_epochs);
-#endif
   //
   // for each epoch ...
   //
 
   for (epoch_t *s = current_epoch; s; s = s->next)
   {
-
-#if 0
-    if (ENABLED(SKIP_WRITE_EMPTY_EPOCH)){
-      if (hpcrun_empty_cct_bundle(&(s->csdata))){
-        EMSG("Empty cct encountered: it is not written out");
-        continue;
-      }
-    }
-#endif
-
-// YUMENG: no epoch info needed
-#if 0
-    //
-    //  == epoch header ==
-    //
-
-    TMSG(DATA_WRITE," epoch header");
-    //
-    // set epoch flags before writing
-    //
-
-    epoch_flags.fields.isLogicalUnwind = hpcrun_isLogicalUnwind();
-    TMSG(LUSH,"epoch lush flag set to %s", epoch_flags.fields.isLogicalUnwind ? "true" : "false");
-
-    TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.bits);
-    hpcrun_fmt_epochHdr_fwrite(fs, epoch_flags,
-                               default_measurement_granularity,
-                               "TODO:epoch-name","TODO:epoch-value",
-                               NULL);
-#endif
 
     //
     // == load map ==
@@ -328,9 +283,7 @@ write_epochs(FILE *fs, core_profile_trace_data_t *cptd, epoch_t *epoch, hpcrun_f
     //
 
     cct_bundle_t *cct = &(s->csdata);
-#if 0
-    int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map);
-#else
+
     // YUMENG: set up sparse_metrics and walk through cct
     // footer
     if (footer)
@@ -349,8 +302,6 @@ write_epochs(FILE *fs, core_profile_trace_data_t *cptd, epoch_t *epoch, hpcrun_f
       footer->cct_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->cct_end), SEEK_SET);
     }
-
-#endif
 
     if (ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx or collecting sparse metrics", cct);

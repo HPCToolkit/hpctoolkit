@@ -104,16 +104,9 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
 //
 // Write to file for cct bundle:
 //
-#if 0
-int
-hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
-                         cct2metrics_t* cct2metrics_map)
-#else
-//YUMENG: add sparse_metrics to collect metric values and info
 int
 hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
                          cct2metrics_t* cct2metrics_map, hpcrun_fmt_sparse_metrics_t* sparse_metrics)
-#endif
 {
   if (!fs) { return HPCRUN_ERR; }
 
@@ -133,12 +126,7 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
 //  hpcrun_cct_insert_node(partial_insert, bndl->unresolved_root);
 
   // write out newly constructed cct
-#if 0
-  return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags);
-#else
-//YUMENG: add sparse_metrics to collect metric values and info
   return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags, sparse_metrics);
-#endif
 }
 
 //

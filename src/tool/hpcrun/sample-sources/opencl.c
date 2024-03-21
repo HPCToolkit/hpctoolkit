@@ -182,31 +182,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (gpu_instrumentation_enabled(&opencl_instrumentation_options)) {
      gpu_metrics_GPU_INST_enable();
   }
-
-#if 0
-  int nevents = (self->evl).nevents;
-  TMSG(OPENCL,"nevents = %d", nevents);
-
-  char* evlist = METHOD_CALL(self, get_event_str);
-  char* event = start_tok(evlist);
-  for (event = start_tok(evlist); more_tok(); event = next_tok()) {
-    long th;
-    hpcrun_extract_ev_thresh(event, sizeof(event_name), event_name,
-      &th, NO_THRESHOLD);
-
-    if (hpcrun_ev_is(opencl_name, INTEL_OPTIMIZATION_CHECK)) {
-      opencl_optimization_check_enable();
-      gpu_metrics_INTEL_OPTIMIZATION_enable();
-    } else if (hpcrun_ev_is(event_name, ENABLE_OPENCL_BLAME_SHIFTING)) {
-                        opencl_blame_shifting_enable();
-                } else if (hpcrun_ev_is(event_name, ENABLE_INTEL_GPU_UTILIZATION)) {
-      // papi metric collection for OpenCL
-      intel_papi_setup();
-      gpu_metrics_gpu_utilization_enable();
-      set_gpu_utilization_flag();
-    }
-  }
-#endif
 }
 
 
@@ -247,38 +222,6 @@ METHOD_FN(display_events)
          "\t\tCollect timing information for GPU kernel invocations,\n"
          "\t\tmemory copies, etc.\n"
          "\n");
-
-#if 0
-// these options can't be enabled without further work.
-// GTPin_getElf is currently returns something much different for
-// Level 0 vs. OpenCL. Fixing it isn't worth the effort until
-// zeBinary becomes the standard across both.
-#ifdef ENABLE_GTPIN
-  printf("gpu=opencl,inst=<comma-separated list of options>\n"
-         "\t\tOperation-level monitoring for GPU-accelerated applications\n"
-         "\t\trunning on an Intel GPU atop Intel's OpenCL runtime. Collect\n"
-         "\t\ttiming information for GPU kernel invocations, memory copies, etc.\n"
-         "\t\tUse optional instrumentation within GPU kernels to collect\n"
-         "\t\tone or more of the following:\n"
-         "\t\t  count:   count how many times each GPU instruction executes\n"
-         "\t\t  latency: approximately attribute latency to GPU instructions\n"
-         "\t\t  simd:    analyze utilization of SIMD lanes\n"
-         "\t\t  silent:  silence warnings from instrumentation\n"
-         "\n");
-#endif
-
-  printf("%s\tIntel Optimization suggestions.\n"
-    "\t\tprovides oneapi optimization suggestions from the optimization guide.\n"
-    "\t\tTo use it, pass '-e %s -e %s' to your hpcrun command\n",
-    INTEL_OPTIMIZATION_CHECK, OPENCL_OPTION, INTEL_OPTIMIZATION_CHECK);
-  printf("\n");
-
-  printf("%s\tIntel GPU utilization metrics.\n"
-    "\t\tprovides GPU active, stalled and idle times for kernel executions.\n"
-    "\t\tTo use it, pass '-e %s' to your hpcrun command\n",
-    ENABLE_INTEL_GPU_UTILIZATION, OPENCL_OPTION, ENABLE_INTEL_GPU_UTILIZATION);
-  printf("\n");
-#endif
 #else
   return;
 #endif

@@ -131,7 +131,6 @@
 
 #include "memory/hpcrun-malloc.h"
 #include "memory/mmap.h"
-#include "sample-sources/gpu/stream-tracing.h"
 
 #include "cct/cct.h"
 
@@ -667,9 +666,6 @@ hpcrun_init_internal(bool is_child)
   }
 
   hpcrun_is_initialized_private = true;
-
-  // FIXME: this isn't in master-gpu-trace. how is it managed?
-  // stream_tracing_init();
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \
@@ -984,13 +980,6 @@ foilbase_monitor_init_process(int *argc, char **argv, void* data)
   // to provide settings just about anywhere.
   control_knob_init();
 
-#if 0
-  // temporary patch to avoid deadlock within PAMI's optimized implementation
-    // of all-to-all. a problem was observed when PAMI's optimized all-to-all
-    // implementation was invoked on behalf of darshan_shutdown
-    putenv("PAMID_COLLECTIVES=0");
-#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
-
   hpcrun_sample_prob_init();
 
   process_name = get_process_name();
@@ -1157,30 +1146,6 @@ foilbase_monitor_fini_process(int how, void* data)
 void
 foilbase_monitor_begin_process_exit(int how)
 {
-//TODO:Check with John if we should delete this or adjust hpcrun_fini_internal
-#if 0
-  if (hpcrun_get_disabled()) {
-    return;
-  }
-
-
-  hpcrun_safe_enter();
-
-  if (hpcrun_is_initialized()) {
-    TMSG(FINI, "process attempting sample shutdown");
-
-    SAMPLE_SOURCES(stop);
-    SAMPLE_SOURCES(shutdown);
-
-    // Call all registered auxiliary functions before termination.
-    // This typically means flushing files that were not done by their creators.
-    device_finalizer_apply(device_finalizer_type_flush);
-    device_finalizer_apply(device_finalizer_type_shutdown);
-  }
-
-
-  hpcrun_safe_exit();
-#endif
 }
 
 static fork_data_t from_fork;

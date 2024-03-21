@@ -366,36 +366,6 @@ void *
 hpcrun_malloc_freeable(size_t size)
 {
   return hpcrun_malloc(size);
-
-  // For now, don't bother with freeable memory.
-#if 0
-  hpcrun_meminfo_t *mi = &TD_GET(memstore);
-  void *addr, *result;
-
-  size = round_up(size);
-  addr = mi->mi_low + size;
-
-  // Recoverable out of memory.
-  if (addr >= mi->mi_high) {
-    TD_GET(mem_low) = 1;
-    TMSG(MALLOC, "%s: size = %ld, failure: temporary out of memory",
-         __func__, size);
-    num_failures++;
-    return NULL;
-  }
-
-  // Low on memory.
-  if (addr + low_memsize > mi->mi_high) {
-    TD_GET(mem_low) = 1;
-    TMSG(MALLOC, "%s: low on memory, setting epoch flush flag", __func__);
-  }
-
-  result = mi->mi_low;
-  mi->mi_low = addr;
-  total_freeable += size;
-  TMSG(MALLOC, "%s: size = %ld, addr = %p", __func__, size, addr);
-  return result;
-#endif
 }
 
 void

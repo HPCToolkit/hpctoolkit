@@ -279,31 +279,3 @@ BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y)
   x->right = y;
   y->parent = x;
 }
-
-
-#if 0
-static void
-BalancedTree_foreach_rec(BalancedTreeNode_t*,
-                         BalancedTree_foreach_func, void*);
-
-void
-BalancedTree_foreach(BalancedTree_t* tree,
-                     BalancedTree_foreach_func func, void* data)
-{
-  BalancedTree_foreach_rec(tree->root, func, data);
-}
-
-
-static void
-BalancedTree_foreach_rec(BalancedTreeNode_t* node,
-                         BalancedTree_foreach_func func, void* data)
-{
-  if (node != NULL) {
-    BalancedTree_foreach_rec(node->left, func, data);
-
-    func(node, data);
-
-    BalancedTree_foreach_rec(node->right, func, data);
-  }
-}
-#endif

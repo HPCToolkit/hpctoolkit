@@ -17,8 +17,6 @@ repos:
   # Automatically elide older Python syntax and replace with newer ones
   - id: pyupgrade
     args: [--py38-plus]
-    # XXX: Old Python 2.7-compatible script. Probably bitrot by now.
-    exclude: '^src/tool/hpcrun/sample-sources/make-wrappers.py$'
 
 - repo: https://github.com/charliermarsh/ruff-pre-commit
   rev: 'v0.3.3'
@@ -27,10 +25,6 @@ repos:
   # but can autofix a number of issues before they run. Also wicked fast.
   - id: ruff
     args: [--target-version=py38, --fix, --line-length=100]
-    exclude: &py_excludes |
-      (?x)(
-        ^src/tool/hpcrun/sample-sources/make-wrappers\.py$    # XXX: Old bitrotted Py <2.7 script
-      )
 
 
 # ------------------------------------------------------------------------------------
@@ -156,7 +150,6 @@ repos:
     - click >=8.1.5, <9
     - pyparsing >=3.0.9, <4
     - Jinja2 >=3.1, <4
-    exclude: *py_excludes
 
 - repo: https://github.com/pylint-dev/pylint
   rev: v3.1.0
@@ -166,7 +159,6 @@ repos:
     additional_dependencies:
     - ruamel.yaml >=0.17.32, <0.18
     - pylint-pytest
-    exclude: *py_excludes
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.10.0.1

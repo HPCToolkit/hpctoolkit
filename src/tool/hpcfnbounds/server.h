@@ -62,9 +62,4 @@ int     read_mesg(struct syserv_mesg *mesg);
 int     write_mesg(int32_t type, int64_t len);
 void    signal_handler(int);
 
-#if 0
-void syserv_add_addr(void *, long);
-void syserv_add_header(int is_relocatable, uintptr_t ref_offset);
-#endif
-
 #endif  // _FNBOUNDS_SERVER_H_

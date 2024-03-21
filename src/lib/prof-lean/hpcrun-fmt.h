@@ -317,32 +317,6 @@ typedef union hpcrun_metricFlags_XXX_t {
 extern const hpcrun_metricFlags_t hpcrun_metricFlags_NULL;
 
 
-#if 0
-static inline bool
-hpcrun_metricFlags_isFlag(hpcrun_metricFlags_t flagbits,
-                          hpcrun_metricFlags_t f)
-{
-  return (flagbits & f);
-}
-
-
-static inline void
-hpcrun_metricFlags_setFlag(hpcrun_metricFlags_t* flagbits,
-                           hpcrun_metricFlags_t f)
-{
-  *flagbits = (*flagbits | f);
-}
-
-
-static inline void
-hpcrun_metricFlags_unsetFlag(hpcrun_metricFlags_t* flagbits,
-                             hpcrun_metricFlags_t f)
-{
-  *flagbits = (*flagbits & ~f);
-}
-#endif
-
-
 // --------------------------------------------------------------------------
 // hpcrun_metricVal_t
 // --------------------------------------------------------------------------
@@ -563,17 +537,9 @@ extern int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
                            epoch_flags_t flags, FILE* fs);
 
-#if 0
-extern int
-hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
-                           epoch_flags_t flags, const metric_tbl_t* metricTbl,
-                           const char* pre);
-#else
-//YUMENG: no need to parse metricTbl for sparse format
 extern int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
                            epoch_flags_t flags,const char* pre);
-#endif
 
 // --------------------------------------------------------------------------
 //
@@ -873,31 +839,12 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
 
 // Time in nanoseconds is stored in lower HPCTRACE_FMT_TIME_BITS bits.
 #define HPCTRACE_FMT_TIME_BITS 64
-#if 0
-#define HPCTRACE_FMT_TIME_MAX ((~(0ULL)) >> (64 - HPCTRACE_FMT_TIME_BITS))
-#define HPCTRACE_FMT_GET_TIME(bits) \
-  (bits & HPCTRACE_FMT_TIME_MAX)
-#define HPCTRACE_FMT_SET_TIME(bits, time) \
-  bits = (bits & (~HPCTRACE_FMT_TIME_MAX)) | (time & HPCTRACE_FMT_TIME_MAX)
-// dLCA = distance of previous sample's leaf call frame to
-// the Least Common Ancestor (LCA) with this sample in the CCT.
-// dLCA is only valid when trampoline is used.
-// dLCA is stored in higher HPCTRACE_FMT_DLCA_BITS bits, supporting up to 1023.
-#define HPCTRACE_FMT_DLCA_BITS 10 // Use 10 bits to store dLCA.
-#define HPCTRACE_FMT_DLCA_NULL ((1ULL << HPCTRACE_FMT_DLCA_BITS) - 1) // 10 bits of 1s
-#define HPCTRACE_FMT_GET_DLCA(bits) \
-  ((bits >> HPCTRACE_FMT_TIME_BITS) & HPCTRACE_FMT_DLCA_NULL)
-#define HPCTRACE_FMT_SET_DLCA(bits, dLCA) \
-  bits = (bits & (~(HPCTRACE_FMT_DLCA_NULL << HPCTRACE_FMT_TIME_BITS))) \
-         | ((((uint64_t)dLCA) & HPCTRACE_FMT_DLCA_NULL) << HPCTRACE_FMT_TIME_BITS)
 
-#else
 #define HPCTRACE_FMT_GET_TIME(bits) (bits & ~0ULL)
 #define HPCTRACE_FMT_SET_TIME(bits, time) bits = time
 #define HPCTRACE_FMT_GET_DLCA(bits) (0ULL)
 #define HPCTRACE_FMT_SET_DLCA(bits, dLCA) ;
 #define HPCTRACE_FMT_DLCA_NULL  (0ULL)
-#endif
 
 #define HPCTRACE_FMT_MetricId_NULL (INT_MAX) // for Java, no UINT32_MAX
 

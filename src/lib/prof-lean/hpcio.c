@@ -441,27 +441,3 @@ hpcio_be8_swrite(uint64_t val, char* buf)
   }
   return buf;
 }
-
-
-//***************************************************************************
-//
-//***************************************************************************
-
-#if 0
-#define BIG_ENDIAN      0
-#define LITTLE_ENDIAN   1
-
-// hpcio_get_endianness: Return endianness of current architecture.
-int
-hpcio_get_endianness()
-{
-  uint16_t val = 0x0001;
-  char* bite = (char*) &val;
-  if (bite[0] == 0x00) {
-    return BIG_ENDIAN;    // 'bite' points to most significant byte
-  }
-  else { // bite[0] == 0x01
-    return LITTLE_ENDIAN; // 'bite' points to least significant byte
-  }
-}
-#endif

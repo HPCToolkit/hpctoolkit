@@ -684,17 +684,9 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 }
 
 
-#if 0
-int
-hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
-                           epoch_flags_t flags, const metric_tbl_t* metricTbl,
-                           const char* pre)
-#else
-//YUMENG: no need to parse metricTbl for sparse format
 int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
                            epoch_flags_t flags, const char* pre)
-#endif
 {
   // N.B.: convert 'id' and 'id_parent' to ints so leaf flag
   // (negative) is apparent
@@ -731,35 +723,6 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");
   }
 
-//YUMENG: no need for sparse format
-#if 0
-  fprintf(fs, "\n");
-
-  fprintf(fs, "%s(metrics:", pre);
-  for (unsigned int i = 0; i < x->num_metrics; ++i) {
-    hpcrun_metricFlags_t mflags = hpcrun_metricFlags_NULL;
-    if (metricTbl) {
-      const metric_desc_t* mdesc = &(metricTbl->lst[i]);
-      mflags = mdesc->flags;
-    }
-
-
-    switch (mflags.fields.valFmt) {
-      default:
-      case MetricFlags_ValFmt_Int:
-        fprintf(fs, " %"PRIu64, x->metrics[i].i);
-        break;
-      case MetricFlags_ValFmt_Real:
-        fprintf(fs, " %g", x->metrics[i].r);
-        break;
-    }
-
-    if (i + 1 < x->num_metrics) {
-      fprintf(fs, " ");
-    }
-  }
-  fprintf(fs, ")\n");
-#endif
   fprintf(fs, "]\n");
 
   return HPCFMT_OK;

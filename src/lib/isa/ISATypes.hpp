@@ -95,11 +95,4 @@ typedef unsigned char MachInsnByte;
 
 //****************************************************************************
 
-#if 0
-struct lt_VMA {
-  // return true if s1 < s2; false otherwise
-  bool operator()(const VMA x, const VMA y) const { return x < y; }
-};
-#endif
-
 #endif /* isa_ISATypes_hpp */

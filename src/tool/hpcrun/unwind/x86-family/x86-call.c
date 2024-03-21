@@ -49,6 +49,7 @@
 #include "x86-interval-highwatermark.h"
 #include "x86-decoder.h"
 #include "x86-interval-arg.h"
+#include "x86-unwind-analysis.h"
 
 #include "../../../../lib/isa-lean/x86/instruction-set.h"
 

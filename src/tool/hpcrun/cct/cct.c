@@ -137,17 +137,6 @@ struct cct_node_t {
   struct cct_node_t* previous;
 };
 
-#if 0
-//
-// cache of info from most recent splay
-//
-static struct {
-  cct_node_tt* node;
-  bool found;
-  cct_addr_t* addr;
-} splay_cache;
-#endif
-
 typedef cct_node_t* (*cct_op_merge_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
 
 //
@@ -946,14 +935,8 @@ hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path)
   hpcrun_walk_path(path, l_insert_path, (cct_op_arg_t) root);
 }
 
-#if 0
-int
-hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epoch_flags_t flags)
-#else
-//YUMENG: add sparse_metrics to collect metric values
 int
 hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epoch_flags_t flags, hpcrun_fmt_sparse_metrics_t* sparse_metrics)
-#endif
 {
   if (!fs) return HPCRUN_ERR;
 
@@ -999,13 +982,6 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
     //YUMENG: collect metric values and info while walking through the cct
     .sparse_metrics = sparse_metrics
   };
-
-
-//YUMENG: no metricTbl info needed to write cct
-#if 0
-  hpcrun_metricVal_t metrics[num_kind_metrics];
-  tmp_node.metrics = &(metrics[0]);
-#endif
 
   if (!HPCRUN_CCT_KEEP_DUMMY) {
     hpcrun_cct_walk_child_1st(cct, collapse_dummy_node, &write_arg);

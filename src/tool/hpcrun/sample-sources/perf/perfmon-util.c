@@ -408,15 +408,6 @@ int
 pfmu_init()
 {
   int ret;
-#if 0
-  // need to comment this block because it the setenv interferes with
-  // HPCRUN_EVENT_LIST if we start this before the "support_events" step
-
-  // to allow encoding of events from non detected PMU models
-  ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
-  if (ret != 0)
-    EMSG( "cannot force inactive encoding");
-#endif
 
   // pfm_initialize is idempotent, so it is not a problem if
   // another library (e.g., PAPI) also calls this.
@@ -444,49 +435,6 @@ pfmu_showEventList()
 {
   static char *argv_all =  ".*";
 
-#if 0
-  int total_supported_events = 0;
-  int total_available_events = 0;
-  int i, ret;
-  pfm_pmu_info_t pinfo;
-
-  memset(&pinfo, 0, sizeof(pinfo));
-  pinfo.size = sizeof(pinfo);
-
-  static const char *pmu_types[]={
-      "unknown type",
-      "core",
-      "uncore",
-      "OS generic",
-  };
-  printf("Detected PMU models:\n");
-
-  pfm_for_all_pmus(i) {
-    ret = pfm_get_pmu_info(i, &pinfo);
-    if (ret != PFM_SUCCESS)
-      continue;
-
-    if (pinfo.is_present) {
-      if (pinfo.type >= PFM_PMU_TYPE_MAX)
-        pinfo.type = PFM_PMU_TYPE_UNKNOWN;
-
-      printf("\t[%d, %s, \"%s\", %d events, %d max encoding, %d counters, %s PMU]\n",
-          i,
-          pinfo.name,
-          pinfo.desc,
-          pinfo.nevents,
-          pinfo.max_encoding,
-          pinfo.num_cntrs + pinfo.num_fixed_cntrs,
-          pmu_types[pinfo.type]);
-
-      total_supported_events += pinfo.nevents;
-    }
-    total_available_events += pinfo.nevents;
-  }
-  printf("Total events: %d available, %d supported\n", total_available_events, total_supported_events);
-
-  display_line_single(stdout);
-#endif
   show_info(argv_all);
 
   return 0;
