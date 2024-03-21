@@ -12,6 +12,17 @@ test(
   env: hpcrun_test_env,
 )
 
+_env = hpcrun_test_env
+_env.prepend('PATH', fs.parent(hpcrun.full_path()))
+test(
+  'Listing metrics as "hpcrun" does not error',
+  find_program('env'),
+  args: ['hpcrun', '-L'] + _args,
+  suite: 'hpcrun',
+  depends: hpcrun_test_depends,
+  env: _env,
+)
+
 subdir('cpu')
 subdir('threads')
 subdir('python')
