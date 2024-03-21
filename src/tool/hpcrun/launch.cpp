@@ -384,7 +384,7 @@ int main(int argc, char* argv[]) {
 
   // Find the path to this launch executable
   fs::path HPCTOOLKIT;
-  fs::path here = argc > 0 ? fs::canonical(fs::path(argv[0])).parent_path() : fs::path();
+  fs::path here = argc > 0 ? fs::canonical("/proc/self/exe").parent_path() : fs::path();
   if (!here.empty() && fs::exists(here / "libhpcrun.so")) {
     // This is (almost certainly) the build directory, not the installed version.
     // In this case, we don't have HPCTOOLKIT, HPCRUN_FNBOUNDS_CMD needs to be set,
