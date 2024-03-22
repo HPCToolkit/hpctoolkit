@@ -50,6 +50,7 @@
 #include <link.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <signal.h>
 
 #include "hpctoolkit-config.h"
 
@@ -112,6 +113,10 @@ typedef struct auditor_exports_t {
   pid_t (*waitpid)(pid_t, int*, int);
   int (*clone)(int (*)(void*), void*, int, void*, ...);
   int (*execve)(const char*, char* const[], char* const[]);
+  void (*exit)(int);
+  int (*sigprocmask)(int, const sigset_t*, sigset_t*);
+  int (*pthread_sigmask)(int, const sigset_t*, sigset_t*);
+  int (*sigaction)(int, const struct sigaction* restrict, struct sigaction* restrict);
 } auditor_exports_t;
 
 // Called as early as possible in the process startup, before any static

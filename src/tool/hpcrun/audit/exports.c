@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2024, Rice University
+// Copyright ((c)) 2002-2023, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,77 +44,25 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "foil.h"
-#include "../main.h"
+#define _GNU_SOURCE
 
-#include <monitor.h>
+#include "audit-api.h"
 
-HPCRUN_EXPOSED void monitor_at_main() {
-  LOOKUP_FOIL_BASE(base, monitor_at_main);
-  return base();
-}
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sched.h>
+#include <stdlib.h>
+#include <signal.h>
 
-HPCRUN_EXPOSED void monitor_begin_process_exit(int how) {
-  LOOKUP_FOIL_BASE(base, monitor_begin_process_exit);
-  return base(how);
-}
-
-HPCRUN_EXPOSED void monitor_fini_process(int how, void* data) {
-  LOOKUP_FOIL_BASE(base, monitor_fini_process);
-  return base(how, data);
-}
-
-HPCRUN_EXPOSED void monitor_fini_thread(void* init_thread_data) {
-  LOOKUP_FOIL_BASE(base, monitor_fini_thread);
-  return base(init_thread_data);
-}
-
-HPCRUN_EXPOSED void monitor_init_mpi(int* argc, char*** argv) {
-  LOOKUP_FOIL_BASE(base, monitor_init_mpi);
-  return base(argc, argv);
-}
-
-HPCRUN_EXPOSED void* monitor_init_process(int* argc, char** argv, void* data) {
-  LOOKUP_FOIL_BASE(base, monitor_init_process);
-  return base(argc, argv, data);
-}
-
-HPCRUN_EXPOSED void* monitor_init_thread(int tid, void* data) {
-  LOOKUP_FOIL_BASE(base, monitor_init_thread);
-  return base(tid, data);
-}
-
-HPCRUN_EXPOSED void monitor_mpi_pre_init() {
-  LOOKUP_FOIL_BASE(base, monitor_mpi_pre_init);
-  return base();
-}
-
-HPCRUN_EXPOSED void monitor_post_fork(pid_t child, void* data) {
-  LOOKUP_FOIL_BASE(base, monitor_post_fork);
-  return base(child, data);
-}
-
-HPCRUN_EXPOSED void* monitor_pre_fork() {
-  LOOKUP_FOIL_BASE(base, monitor_pre_fork);
-  return base();
-}
-
-HPCRUN_EXPOSED size_t monitor_reset_stacksize(size_t old_size) {
-  LOOKUP_FOIL_BASE(base, monitor_reset_stacksize);
-  return base(old_size);
-}
-
-HPCRUN_EXPOSED void monitor_start_main_init() {
-  LOOKUP_FOIL_BASE(base, monitor_start_main_init);
-  return base();
-}
-
-HPCRUN_EXPOSED void monitor_thread_post_create(void* data) {
-  LOOKUP_FOIL_BASE(base, monitor_thread_post_create);
-  return base(data);
-}
-
-HPCRUN_EXPOSED void* monitor_thread_pre_create() {
-  LOOKUP_FOIL_BASE(base, monitor_thread_pre_create);
-  return base();
+__attribute__((visibility("default")))
+void fill_exports(auditor_exports_t* exports) {
+  exports->pipe = pipe;
+  exports->close = close;
+  exports->waitpid = waitpid;
+  exports->clone = clone;
+  exports->execve = execve;
+  exports->exit = exit;
+  exports->sigprocmask = sigprocmask;
+  exports->pthread_sigmask = pthread_sigmask;
+  exports->sigaction = sigaction;
 }

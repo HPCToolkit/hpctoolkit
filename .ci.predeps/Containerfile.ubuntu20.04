@@ -64,17 +64,11 @@ RUN \
 
 # From-source installation side-stage: Install (some) software from source
 FROM os-install as src-install
-RUN \
-  git clone --depth=1 https://github.com/HPCToolkit/libmonitor.git /tmp/libmonitor \
-  && mkdir /tmp/builddir && cd /tmp/builddir \
-  && /tmp/libmonitor/configure --prefix=/usr --disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38' \
-  && make \
-  && DESTDIR=/dest make install
 
 
 # Composition stage: Produce what will become the final image
 FROM os-install
-COPY --from=src-install /dest /
+# COPY --from=src-install /dest /
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/clang10.ini \

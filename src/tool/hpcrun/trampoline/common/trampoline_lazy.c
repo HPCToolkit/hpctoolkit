@@ -71,7 +71,7 @@
 #include "../../safe-sampling.h"
 #include "../../sample_event.h"
 #include "../../sample-sources/retcnt.h"
-#include <monitor.h>
+#include "../../libmonitor/monitor.h"
 
 extern bool hpcrun_get_retain_recursion_mode();
 

@@ -57,12 +57,6 @@ RUN \
 
 # From-source installation side-stage: Install (some) software from source
 FROM os-install as src-install
-RUN \
-  git clone --depth=1 https://github.com/HPCToolkit/libmonitor.git /tmp/libmonitor \
-  && mkdir /tmp/builddir && cd /tmp/builddir \
-  && /tmp/libmonitor/configure --prefix=/usr --disable-dlfcn --enable-client-signals='SIGBUS, SIGSEGV, SIGPROF, 36, 37, 38' \
-  && make \
-  && DESTDIR=/dest make install
 
 # FIXME: Boost doesn't support DESTDIR, so we install to a prefix under /dest and hope nothing
 # goes wrong. See https://github.com/boostorg/boost_install/issues/14 for discussion.

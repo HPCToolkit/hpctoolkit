@@ -4,7 +4,6 @@
 // system includes
 //******************************************************************************
 
-#include <monitor.h>                                                // monitor_real_abort
 #include <math.h>                                                                                                                       // pow
 #include <stdbool.h>                          // bool
 #include <ucontext.h>                         // getcontext

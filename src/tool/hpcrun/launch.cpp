@@ -51,7 +51,6 @@
 
 #include <cstdlib>
 #include <deque>
-#include <dlfcn.h>
 #include <filesystem>
 #include <initializer_list>
 #include <iostream>
@@ -706,23 +705,6 @@ int main(int argc, char* argv[]) {
   // weird thread stacks in the PGI OpenMP implementation. Since this check is also hard to
   // implement it has been skipped for now.
   // A better check would dlsym() in libhpcrun.so instead of unportable mess in the wrapper script.
-
-  // Determine the path for libmonitor, and inject it with LD_PRELOAD.
-  //
-  // NB: The original hpcrun launch script uses ldd on the main libhpcrun.so to find libmonitor,
-  // however that approach is hard to implement here. The RPATHs for this wrapper executable and
-  // the main libhpcrun.so should be the same, so if we dlopen() libmonitor directly we should get
-  // pretty much the same result. This clause is hopefully temporary.
-  {
-    void* libm = ::dlopen("libmonitor.so", RTLD_LAZY);
-    if (libm == NULL) {
-      std::cerr << "hpcrun: failed to find libmonitor.so for preloading\n";
-      return 1;
-    }
-    struct link_map* m;
-    ::dlinfo(libm, RTLD_DI_LINKMAP, &m);
-    preload_list.emplace_front(m->l_name);
-  }
 
   // Inject the main libhpcrun.so with LD_PRELOAD
   preload_list.emplace_front(hpcrun_dir / "libhpcrun.so");

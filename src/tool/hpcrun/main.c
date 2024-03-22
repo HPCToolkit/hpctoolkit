@@ -71,7 +71,7 @@
 // libmonitor include files
 //***************************************************************************
 
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 
 
 //***************************************************************************
@@ -557,7 +557,7 @@ hpcrun_init_internal(bool is_child)
 
     if (monitor_sigaction(SIGSEGV, &dump_interval_handler, 0, NULL)) {
       fprintf(stderr, "Could not install dump interval segv handler\n");
-      monitor_real_exit(1);
+      auditor_exports->exit(1);
     }
 
     for (void** e = table.table; e < table.table + table.len - 1; e++) {
@@ -605,7 +605,7 @@ hpcrun_init_internal(bool is_child)
     fprintf(stderr, "Error: Tracing is specified at the command line without a suitable metric for tracing.\n");
     fprintf(stderr, "\tCPU tracing is only meaningful when a time based metric is given, such as REALTIME, CPUTIME, and CYCLES\n");
     fprintf(stderr, "\tGPU tracing is always meaningful.\n");
-    monitor_real_exit(1);
+    auditor_exports->exit(1);
   }
 
   // set up initial 'epoch'
@@ -634,7 +634,7 @@ hpcrun_init_internal(bool is_child)
         hpcrun_dump_intervals(addr2);
         fflush(NULL);
       }
-      if (addr1 || addr2) monitor_real_exit(0);
+      if (addr1 || addr2) auditor_exports->exit(0);
     }
 #endif
 
@@ -956,7 +956,7 @@ hpcrun_wait()
 void hpcrun_prepare_measurement_subsystem(bool is_child);
 
 void
-foilbase_monitor_start_main_init()
+monitor_start_main_init()
 {
   monitor_initialize();
   hpcrun_prepare_measurement_subsystem(false);
@@ -964,7 +964,7 @@ foilbase_monitor_start_main_init()
 
 
 void*
-foilbase_monitor_init_process(int *argc, char **argv, void* data)
+monitor_init_process(int *argc, char **argv, void* data)
 {
   const char* process_name;
   bool is_child = data && ((fork_data_t *) data)->is_child;
@@ -1051,7 +1051,7 @@ foilbase_monitor_init_process(int *argc, char **argv, void* data)
 
 
 void
-foilbase_monitor_at_main()
+monitor_at_main()
 {
   bool is_child = false;
 
@@ -1128,7 +1128,7 @@ void hpcrun_prepare_measurement_subsystem(bool is_child)
 
 
 void
-foilbase_monitor_fini_process(int how, void* data)
+monitor_fini_process(int how, void* data)
 {
   if (hpcrun_get_disabled()) {
     return;
@@ -1144,14 +1144,14 @@ foilbase_monitor_fini_process(int how, void* data)
 }
 
 void
-foilbase_monitor_begin_process_exit(int how)
+monitor_begin_process_exit(int how)
 {
 }
 
 static fork_data_t from_fork;
 
 void*
-foilbase_monitor_pre_fork(void)
+monitor_pre_fork(void)
 {
   if (!hpcrun_is_initialized()) {
     monitor_initialize();
@@ -1180,7 +1180,7 @@ foilbase_monitor_pre_fork(void)
 
 
 void
-foilbase_monitor_post_fork(pid_t child, void* data)
+monitor_post_fork(pid_t child, void* data)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -1211,7 +1211,7 @@ foilbase_monitor_post_fork(pid_t child, void* data)
 // IBM BlueGene and Cray XK6 (interlagos).
 //
 void
-foilbase_monitor_mpi_pre_init(void)
+monitor_mpi_pre_init(void)
 {
   if (!hpcrun_is_initialized()) {
     monitor_initialize();
@@ -1230,7 +1230,7 @@ foilbase_monitor_mpi_pre_init(void)
 
 
 void
-foilbase_monitor_init_mpi(int *argc, char ***argv)
+monitor_init_mpi(int *argc, char ***argv)
 {
   hpcrun_safe_enter();
 
@@ -1252,7 +1252,7 @@ foilbase_monitor_init_mpi(int *argc, char ***argv)
 // library init and before start.
 
 void*
-foilbase_monitor_thread_pre_create(void)
+monitor_thread_pre_create(void)
 {
   if (!hpcrun_local_rank_enabled()) {
     hpcrun_set_disabled();
@@ -1321,7 +1321,7 @@ foilbase_monitor_thread_pre_create(void)
 
 
 void
-foilbase_monitor_thread_post_create(void* data)
+monitor_thread_post_create(void* data)
 {
   if (! hpcrun_is_initialized()) {
     return;
@@ -1335,7 +1335,7 @@ foilbase_monitor_thread_post_create(void* data)
 }
 
 void*
-foilbase_monitor_init_thread(int tid, void* data)
+monitor_init_thread(int tid, void* data)
 {
 #ifdef USE_GCC_THREAD
   monitor_tid = tid;
@@ -1373,7 +1373,7 @@ foilbase_monitor_init_thread(int tid, void* data)
 
 
 void
-foilbase_monitor_fini_thread(void* init_thread_data)
+monitor_fini_thread(void* init_thread_data)
 {
   sigset_t oldset;
   hpcrun_block_profile_signal(&oldset);
@@ -1396,7 +1396,7 @@ foilbase_monitor_fini_thread(void* init_thread_data)
 
 
 size_t
-foilbase_monitor_reset_stacksize(size_t old_size)
+monitor_reset_stacksize(size_t old_size)
 {
   static const size_t MEG = (1024 * 1024);
 

@@ -53,7 +53,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 #include "metrics.h"
 
 #include "memory/hpcrun-malloc.h"

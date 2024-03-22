@@ -72,8 +72,9 @@
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <monitor.h>
+#include "libmonitor/monitor.h"
 #include "hpcrun_signals.h"
+#include "audit/audit-api.h"
 
 // Maximum number of signals
 #ifndef NSIG
@@ -140,7 +141,7 @@ hpcrun_block_profile_signal(sigset_t * oldset)
 {
   hpcrun_signals_init();
 
-  return monitor_real_pthread_sigmask(SIG_BLOCK, &the_profile_mask, oldset);
+  return auditor_exports->pthread_sigmask(SIG_BLOCK, &the_profile_mask, oldset);
 }
 
 int
@@ -148,13 +149,13 @@ hpcrun_block_shootdown_signal(sigset_t * oldset)
 {
   hpcrun_signals_init();
 
-  return monitor_real_pthread_sigmask(SIG_BLOCK, &the_shootdown_mask, oldset);
+  return auditor_exports->pthread_sigmask(SIG_BLOCK, &the_shootdown_mask, oldset);
 }
 
 int
 hpcrun_restore_sigmask(sigset_t * oldset)
 {
-  return monitor_real_pthread_sigmask(SIG_SETMASK, oldset, NULL);
+  return auditor_exports->pthread_sigmask(SIG_SETMASK, oldset, NULL);
 }
 
 //----------------------------------------------------------------------

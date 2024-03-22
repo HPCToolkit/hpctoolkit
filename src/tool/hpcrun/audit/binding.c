@@ -80,6 +80,14 @@ void hpcrun_bind_v(const char* libname, va_list bindings) {
   }
 }
 
+void* hpcrun_raw_dlopen(const char *libname, int flags) {
+  return dlopen(libname, flags);
+}
+
+void hpcrun_raw_dlclose(void* handle) {
+  dlclose(handle);
+}
+
 // In the dynamic case, the private namespace is the auditor's namespace, and as such
 // hpcrun_bind_private_v is implemented by the the auditor API.
 void hpcrun_bind_private_v(const char* libname, va_list bindings) {

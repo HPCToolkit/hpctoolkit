@@ -73,8 +73,8 @@
 //*****************************************************************************
 
 #include "debug-flag.h"
-#include <monitor.h>
 #include "../utilities/tokenize.h"
+#include "../audit/audit-api.h"
 
 extern void unlimit_msgs(void);
 
@@ -197,7 +197,7 @@ void debug_flag_init()
   debug_flag_process_env(debug_mode_only);
 
   if (debug_mode_only){
-    monitor_real_exit(1);
+    auditor_exports->exit(1);
   }
 }
 

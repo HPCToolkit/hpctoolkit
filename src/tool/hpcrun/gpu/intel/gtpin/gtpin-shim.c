@@ -65,6 +65,7 @@
 
 #include "gtpin-hpcrun-api.h"
 
+#include "../../../audit/audit-api.h"
 #include "../../../cct/cct.h"
 #include "../../gpu-binary.h"
 #include "../../gpu-activity-channel.h"
@@ -80,7 +81,7 @@
 
 #include "../../../../../lib/prof-lean/crypto-hash.h"
 
-#include <monitor.h>
+#include "../../../libmonitor/monitor.h"
 
 
 
@@ -88,10 +89,14 @@
 // local data
 //*****************************************************************************
 
+static void my_exit(int status) {
+  auditor_exports->exit(status);
+}
+
 static gtpin_hpcrun_api_t gtpin_hpcrun_api = {
   .safe_enter = hpcrun_safe_enter_noinline,
   .safe_exit = hpcrun_safe_exit_noinline,
-  .real_exit = monitor_real_exit,
+  .real_exit = my_exit,
   .binary_kind = gpu_binary_kind,
   .gpu_binary_path_generate = gpu_binary_path_generate,
   .gpu_operation_multiplexer_push = gpu_operation_multiplexer_push,
@@ -131,19 +136,19 @@ static void init()
                                   RTLD_LOCAL | RTLD_LAZY);
   if (hpcrun_gtpinlib == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
-    monitor_real_exit(-1);
+    auditor_exports->exit(-1);
   }
 
   void *malloc_lib = dlopen("libtbbmalloc.so.2", RTLD_LAZY | RTLD_GLOBAL);
   if (malloc_lib == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
-    monitor_real_exit(-1);
+    auditor_exports->exit(-1);
   }
 
   void (*gtpin_hpcrun_api_set_fn)(gtpin_hpcrun_api_t *) = dlsym(hpcrun_gtpinlib, "gtpin_hpcrun_api_set");
   if (gtpin_hpcrun_api_set_fn == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to connect to HPCToolkit's gtpin support library: %s", dlerror());
-    monitor_real_exit(-1);
+    auditor_exports->exit(-1);
   }
   gtpin_hpcrun_api_set_fn(&gtpin_hpcrun_api);
 

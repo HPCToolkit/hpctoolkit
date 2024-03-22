@@ -87,6 +87,18 @@ inline void hpcrun_bind(const char* libname, ...) {
   va_end(bindings);
 }
 
+/// Dlopen a shared library into the main linkage namespace.
+///
+/// This is a DEPRECATED function only for refactoring legacy code. New code should use #hpcrun_bind
+/// instead of this function.
+void* hpcrun_raw_dlopen(const char* libname, int flags);
+
+/// Dlclose a shared library in the main linkage namespace, returned by #hpcrun_raw_dlopen.
+///
+/// This is a DEPRECATED function only for refactoring legacy code. New code should not use this
+/// function and instead use #hpcrun_bind to load libraries into the application namespace.
+void hpcrun_raw_dlclose(void* handle);
+
 /// Dlopen a shared library into the private linkage namespace and bind symbols from it.
 ///
 /// See #hpcrun_bind for syntax and error handling.

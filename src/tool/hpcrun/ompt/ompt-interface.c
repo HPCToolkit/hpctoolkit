@@ -71,7 +71,7 @@
 #include "../sample-sources/sample-filters.h"
 #include "../thread_data.h"
 
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 
 #include "ompt-callstack.h"
 #include "ompt-defer.h"

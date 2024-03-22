@@ -105,7 +105,7 @@
 #include "../main.h"
 #include "../messages/messages.h"
 #include "../sample_sources_all.h"
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 #include "../audit/audit-api.h"
 #else
 #include "../../hpcfnbounds/syserv-mesg.h"
@@ -552,7 +552,7 @@ hpcrun_syserv_init(void)
   EEMSG("hpcrun: unable to launch the hpcfnbounds server.\n"
         "hpcrun: check that hpctoolkit is properly configured with dyninst\n"
         "and its prereqs (boost, elfutils, libdwarf, bzip, libz, lzma).");
-  monitor_real_exit(1);
+  auditor_exports->exit(1);
 
   return -1;
 }

@@ -50,8 +50,6 @@
 
 #include "audit-api.h"
 
-#include <monitor.h>
-
 #include <dlfcn.h>
 #include "../../../lib/binutils/intel/elf.h"
 #include <pthread.h>
@@ -143,46 +141,12 @@ void hpcrun_init_fake_auditor() {
     abort();
   }
 
-  exports.pipe = NULL;
-  exports.close = NULL;
-  exports.waitpid = NULL;
-  exports.clone = NULL;
-  exports.execve = NULL;
-
-  // Find our DYNAMIC section, and scan it for NEEDED entries to fill the exports
-  Dl_info selfinfo;
-  dladdr(&hpcrun_init_fake_auditor, &selfinfo);
-  self_baseaddr = (uintptr_t)selfinfo.dli_fbase;
-  dl_iterate_phdr(self_scan_dl, NULL);
-  const char* strtab = NULL;
-  for(const ElfW(Dyn)* d = self_dynamic; d->d_tag != DT_NULL; d++) {
-    if(d->d_tag != DT_STRTAB) continue;
-    strtab = (const void*)d->d_un.d_ptr;
-    break;
+  void (*fill_exports)(auditor_exports_t*) = dlsym(private_ns, "fill_exports");
+  if (exports.hpcrun_bind_v == NULL) {
+    fprintf(stderr, "ERROR: Unable to get private exports function: %s", dlerror());
+    abort();
   }
-  if(strtab != NULL) {
-    for(const ElfW(Dyn)* d = self_dynamic; d->d_tag != DT_NULL; d++) {
-      if(d->d_tag != DT_NEEDED) continue;
-      void* lib = real_dlopen(&strtab[d->d_un.d_val], RTLD_LAZY|RTLD_NOLOAD);
-      if(!lib) continue;
-      // Skip libmonitor, otherwise we'll spin out of control
-      if(!dlsym(lib, "monitor_initialize") && !dlsym(lib, "monitor_is_threaded")) {
-        if(!exports.pipe) exports.pipe = dlsym(lib, "pipe");
-        if(!exports.close) exports.close = dlsym(lib, "close");
-        if(!exports.waitpid) exports.waitpid = dlsym(lib, "waitpid");
-        if(!exports.clone) exports.clone = dlsym(lib, "clone");
-        if(!exports.execve) exports.execve = dlsym(lib, "execve");
-      }
-      real_dlclose(lib);
-    }
-  }
-
-  // If any exports are remaining, just link them into our best options
-  if(!exports.pipe) exports.pipe = pipe;
-  if(!exports.close) exports.close = close;
-  if(!exports.waitpid) exports.waitpid = waitpid;
-  if(!exports.clone) exports.clone = clone;
-  if(!exports.execve) exports.execve = monitor_real_execve;
+  fill_exports(&exports);
 
   exports.mainlib_connected = mainlib_connected;
   exports.mainlib_disconnect = mainlib_disconnect;

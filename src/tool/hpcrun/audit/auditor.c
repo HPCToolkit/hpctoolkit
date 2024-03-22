@@ -68,6 +68,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <signal.h>
 
 
 //******************************************************************************
@@ -150,7 +151,10 @@ static auditor_exports_t exports = {
   .mainlib_disconnect = mainlib_disconnect,
   .hpcrun_bind_v = hpcrun_bind_v,
   .pipe = pipe, .close = close, .waitpid = waitpid,
-  .clone = clone, .execve = execve
+  .clone = clone, .execve = execve,
+  .exit = exit,
+  .sigprocmask = sigprocmask, .pthread_sigmask = pthread_sigmask,
+  .sigaction = sigaction,
 };
 
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);

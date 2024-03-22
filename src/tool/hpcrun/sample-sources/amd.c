@@ -21,7 +21,7 @@
 // libmonitor
 //******************************************************************************
 
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 
 
 
@@ -37,6 +37,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
+#include "../audit/audit-api.h"
 #include "../control-knob.h"
 #include "../device-finalizers.h"
 #include "../gpu/amd/roctracer-api.h"
@@ -154,12 +155,12 @@ METHOD_FN(finalize_event_list)
 {
   if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
-    monitor_real_exit(-1);
+    auditor_exports->exit(-1);
   }
 
   if (hip_bind()) {
     EEMSG("hpcrun: unable to bind to HIP AMD library %s\n", dlerror());
-    monitor_real_exit(-1);
+    auditor_exports->exit(-1);
   }
 
   roctracer_init();

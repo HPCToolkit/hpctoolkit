@@ -87,7 +87,7 @@
 #include "../rank.h"
 #include "../thread_data.h"
 #include "../thread_use.h"
-#include <monitor.h>
+#include "../audit/audit-api.h"
 
 #include "debug-flag.h"
 #include "messages.h"
@@ -227,7 +227,7 @@ hpcrun_abort_w_info(void (*info)(void), const char *fmt, ...)
   write(STDERR_FD, buf, strlen(buf));
   va_list_box_end(box);
   info();
-  monitor_real_exit(-1);
+  auditor_exports->exit(-1);
 }
 
 // message to log file, also echo on stderr

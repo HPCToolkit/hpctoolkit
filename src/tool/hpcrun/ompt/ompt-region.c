@@ -57,7 +57,7 @@
 // libmonitor
 //*****************************************************************************
 
-#include <monitor.h>
+#include "../libmonitor/monitor.h"
 
 
 
