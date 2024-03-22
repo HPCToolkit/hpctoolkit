@@ -377,7 +377,7 @@ if opencl_dep.found()
     'gpu/blame-shifting/blame.c',
   )
 
-  _hpcrun_libs += shared_module('hpcrun_opencl', config_h,
+  _hpcrun_libs += shared_module('hpcrun_opencl',
     'foil/opencl-preload.c',
     gnu_symbol_visibility: 'hidden',
     link_language: 'c',
@@ -395,7 +395,7 @@ _my_include_dirs_deps = [
 if gtpin_dep.found()
   _my_dynamic_files += files('gpu/intel/gtpin/gtpin-shim.c')
 
-  _hpcrun_libs += shared_library('hpcrun_gtpin_cxx', config_h,
+  _hpcrun_libs += shared_library('hpcrun_gtpin_cxx',
     'gpu/intel/gtpin/gtpin-instrumentation.cpp',
     'gpu/intel/binaries/patchTokenSymbols.c',
     'gpu/intel/binaries/symbolVector.c',
@@ -435,7 +435,7 @@ if level0_dep.found()
     'gpu/intel/level0/level0-command-queue-map.c',
   )
 
-  _hpcrun_libs += shared_module('hpcrun_level0', config_h,
+  _hpcrun_libs += shared_module('hpcrun_level0',
     'foil/level0-preload.c',
     gnu_symbol_visibility: 'hidden',
     link_language: 'c',
@@ -457,7 +457,7 @@ if host_machine.cpu_family() in ['aarch64', 'ia64']  # UNW_LIBUNW
   _unw_source_files = _unw_libunw_files
 endif
 
-_hpcrun_libs += shared_module('hpcrun', config_h,
+_hpcrun_libs += shared_module('hpcrun',
   _my_base_files,
   _my_dynamic_files,
   host_machine.system() == 'linux' ? _my_linux_dynamic_files : [],
@@ -496,20 +496,20 @@ _hpcrun_libs += shared_module('hpcrun', config_h,
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
   install: true, install_dir: 'lib' / meson.project_name())
 
-_hpcrun_libs += shared_library('hpcrun_unwind', config_h,
+_hpcrun_libs += shared_library('hpcrun_unwind',
   'unwind/common/libunwind-pvt.c',
   gnu_symbol_visibility: 'hidden',
   dependencies: [libunwind_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_fake_audit', config_h,
+_hpcrun_libs += shared_module('hpcrun_fake_audit',
   'audit/fake-auditor.c',
   gnu_symbol_visibility: 'hidden',
   dependencies: [dl_dep, threads_dep],
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_library('hpcrun_private_ns', config_h,
+_hpcrun_libs += shared_library('hpcrun_private_ns',
   'audit/private-ns.c',
   'audit/exports.c',
   gnu_symbol_visibility: 'hidden',
@@ -517,7 +517,7 @@ _hpcrun_libs += shared_library('hpcrun_private_ns', config_h,
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_library('hpcrun_audit', config_h,
+_hpcrun_libs += shared_library('hpcrun_audit',
   'audit/auditor.c',
   'audit/private-ns.c',
   gnu_symbol_visibility: 'hidden',
@@ -525,36 +525,36 @@ _hpcrun_libs += shared_library('hpcrun_audit', config_h,
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_library('hpcrun_dlmopen', config_h,
+_hpcrun_libs += shared_library('hpcrun_dlmopen',
   'dlmopen/dlmopen.c',
   gnu_symbol_visibility: 'hidden',
   dependencies: [dl_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 
-_hpcrun_libs += shared_module('hpcrun_ga', config_h,
+_hpcrun_libs += shared_module('hpcrun_ga',
   'foil/ga-preload.c',
   gnu_symbol_visibility: 'hidden',
   dependencies: [dl_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_gprof', config_h,
+_hpcrun_libs += shared_module('hpcrun_gprof',
   'foil/gprof-preload.c',
   gnu_symbol_visibility: 'hidden',
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_io', config_h,
+_hpcrun_libs += shared_module('hpcrun_io',
   'foil/io-preload.c',
   gnu_symbol_visibility: 'hidden',
   dependencies: [dl_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_memleak', config_h,
+_hpcrun_libs += shared_module('hpcrun_memleak',
   'foil/memleak-preload.c',
   gnu_symbol_visibility: 'hidden',
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_pthread', config_h,
+_hpcrun_libs += shared_module('hpcrun_pthread',
   'foil/pthread-blame-preload.c',
   gnu_symbol_visibility: 'hidden',
   dependencies: [dl_dep],
@@ -563,7 +563,7 @@ _hpcrun_libs += shared_module('hpcrun_pthread', config_h,
 
 
 # Configure and install the hpcrun launcher
-hpcrun = executable('hpcrun', config_h, 'launch.cpp',
+hpcrun = executable('hpcrun', version_h, 'launch.cpp',
   install: true)
 
 # Make sure the hpcrun launcher is available in devenv

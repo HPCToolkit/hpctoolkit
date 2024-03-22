@@ -19,7 +19,7 @@ if igc_dep.found()
   _srcs += files('gpu/GPUCFG_Intel.cpp')
 endif
 
-banal_lib = static_library('banal', config_h, _srcs,
+banal_lib = static_library('banal', _srcs,
   pic: true,
   gnu_symbol_visibility: 'hidden',
   dependencies: [xed_dep, boost_dep, libdw_dep, libelf_dep, dyninst_dep, igc_dep, iga_dep, openmp_dep])

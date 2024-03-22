@@ -314,7 +314,6 @@ if cupti_dep.found()
     '-DENABLE_CUDA',
     '-DHPCRUN_SS_NVIDIA',
     '-DCUPTI_INSTALL_PREFIX="/nonexistent"',  # TODO
-    '-DCUDA_VERSION="@0@"'.format(cupti_dep.version().replace('\\', '\\\\').replace('"', '\\"')),
     language: ['c', 'cpp'])
 endif
 if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
@@ -416,7 +415,6 @@ if rocm_dep.found()
   add_project_arguments(
     '-DUSE_ROCM',
     '-DHPCRUN_SS_AMD',
-    '-DROCM_VERSION="@0@"'.format(rocm_dep.version().replace('\\', '\\\\').replace('"', '\\"')),
     language: ['c', 'cpp'])
   if cc.has_member('roctracer_record_t', 'kernel_name', prefix: '#include <roctracer/roctracer_hip.h>', dependencies: rocm_dep)
     add_project_arguments('-DHAVE_ROCM_ACTIVITY_KERNEL_NAME', language: ['c', 'cpp'])
@@ -562,7 +560,6 @@ if level0_dep.found()
   add_project_arguments(
     '-DUSE_LEVEL0',
     '-DHPCRUN_SS_LEVEL0',
-    '-DLEVEL0_VERSION="@0@"'.format(level0_dep.version().replace('\\', '\\\\').replace('"', '\\"')),
     language: ['c', 'cpp'])
 endif
 
@@ -633,10 +630,6 @@ if gtpin_dep.found()
   add_project_arguments(
     '-DENABLE_GTPIN',
     '-DUSE_GTPIN',
-    '-DGTPIN_VERSION="@0@"'.format(
-      (gtpin_dep.version() == 'unknown' ? 'enabled' : gtpin_dep.version())
-      .replace('\\', '\\\\').replace('"', '\\"')
-    ),
     language: ['c', 'cpp'])
 endif
 

@@ -37,7 +37,7 @@ _srcs = files(
   'vdso.c',
 )
 
-prof_lean_lib = static_library('prof-lean', config_h, _srcs,
+prof_lean_lib = static_library('prof-lean', _srcs,
   pic: true,
   gnu_symbol_visibility: 'hidden',
   dependencies: [libelf_dep])

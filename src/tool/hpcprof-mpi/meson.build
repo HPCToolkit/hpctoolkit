@@ -9,7 +9,7 @@ _srcs = files(
   'tree.cpp',
 )
 
-hpcprof_mpi = executable('hpcprof-mpi', config_h, _srcs,
+hpcprof_mpi = executable('hpcprof-mpi', _srcs,
   link_with: [profile_lib, prof_lean_lib, support_lean_lib],
   dependencies: [xxhash_dep, mpi_dep, boost_dep, xerces_dep, lzma_dep, yaml_cpp_dep, libelf_dep, libdw_dep, libiberty_dep, openmp_dep],
   install: true)

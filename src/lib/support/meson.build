@@ -29,6 +29,6 @@ _srcs = files(
   'WordSet.cpp',
 )
 
-support_lib = static_library('support', config_h, _srcs,
+support_lib = static_library('support', _srcs,
   pic: true,
   gnu_symbol_visibility: 'hidden')
