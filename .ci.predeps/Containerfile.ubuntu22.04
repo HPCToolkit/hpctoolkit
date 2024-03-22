@@ -1,6 +1,5 @@
 # OS installation stage: Install build tools from the OS
-ARG CUDA_VERSION=11.8.0
-FROM docker.io/nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04 as os-install
+FROM docker.io/ubuntu:22.04 as os-install
 
 # Install the required OS packages
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -24,13 +23,21 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     gcc-11 \
     gcc-12 \
     git \
+    libboost-atomic-dev \
+    libboost-chrono-dev \
+    libboost-date-time-dev \
+    libboost-filesystem-dev \
+    libboost-graph-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
+    libboost-timer-dev \
     libbz2-dev \
     libdw-dev \
     libelf-dev \
     libiberty-dev \
     liblzma-dev \
+    libmpich-dev \
     libomp-dev \
-    libopenmpi-dev \
     libpapi-dev \
     libpfm4-dev \
     libtbb-dev \
@@ -55,7 +62,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Also install docutils for processing documentation.
 RUN \
   python3 -m pip install \
-    'meson>=1.3.2,<2' \
+    'meson>=1.1.0,<2' \
     'docutils' \
   && : # END
 
@@ -63,21 +70,10 @@ RUN \
 # From-source installation side-stage: Install (some) software from source
 FROM os-install as src-install
 
-# FIXME: Boost doesn't support DESTDIR, so we install to a prefix under /dest and hope nothing
-# goes wrong. See https://github.com/boostorg/boost_install/issues/14 for discussion.
-# We only need to do this because we need a visibility=global Boost installation.
-# Tracking issue: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/815.
-ADD https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 /tmp/boost.tar.bz2
-RUN \
-  tar xjf /tmp/boost.tar.bz2 -C /tmp \
-  && cd /tmp/boost_1_84_0 \
-  && ./bootstrap.sh --prefix=/dest/opt/boost --with-libraries=atomic,chrono,date_time,filesystem,graph,system,thread,timer \
-  && ./b2 install visibility=global
-
 
 # Composition stage: Produce what will become the final image
 FROM os-install
-COPY --from=src-install /dest /
+# COPY --from=src-install /dest /
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/clang11.ini \
@@ -98,6 +94,7 @@ RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
   && echo "" >> "$t" \
   && echo "[project options]" >> "$t" \
   && echo "auto_features = 'enabled'" >> "$t" \
+  && echo "cuda = 'disabled'" >> "$t" \
   && echo "rocm = 'disabled'" >> "$t" \
   && echo "level0 = 'disabled'" >> "$t" \
   && echo "gtpin = 'disabled'" >> "$t" \
@@ -105,6 +102,3 @@ RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
   && echo "[zstd:project options]" >> "$t" \
   && echo "lz4 = 'disabled'" >> "$t" \
   && : # EOF
-
-# Add the custom Boost to the environment
-ENV BOOST_ROOT=/opt/boost LD_LIBRARY_PATH=/opt/boost/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}

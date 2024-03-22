@@ -60,15 +60,20 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: ubuntu20.04-arm64
-    containerfile: .ci.predeps/Containerfile.ubuntu20.04
+    name: ubuntu22.04-amd64
+    containerfile: .ci.predeps/Containerfile.ubuntu22.04
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: ubuntu22.04-arm64
+    containerfile: .ci.predeps/Containerfile.ubuntu22.04
     platform: linux/arm64
     job_tag: rice-linux-medium-arm64
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: ubuntu20.04-ppc64le
-    containerfile: .ci.predeps/Containerfile.ubuntu20.04
+    name: ubuntu22.04-ppc64le
+    containerfile: .ci.predeps/Containerfile.ubuntu22.04
     platform: linux/ppc64le
     job_tag: rice-linux-medium-ppc64le
 - component: *ci_predeps
@@ -105,12 +110,6 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: cuda11.6-amd64
-    containerfile: .ci.predeps/Containerfile.cuda
-    build_args: CUDA_VERSION=11.6.2
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
     name: cuda11.8-amd64
     containerfile: .ci.predeps/Containerfile.cuda
     build_args: CUDA_VERSION=11.8.0
@@ -131,12 +130,6 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: rocm5.2-amd64
-    containerfile: .ci.predeps/Containerfile.rocm
-    build_args: ROCM_VERSION=5.2.3
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
     name: rocm5.3-amd64
     containerfile: .ci.predeps/Containerfile.rocm
     build_args: ROCM_VERSION=5.3.3
@@ -145,7 +138,7 @@ include:
     <<: *ci_predeps_shared
     name: rocm5.4-amd64
     containerfile: .ci.predeps/Containerfile.rocm
-    build_args: ROCM_VERSION=5.4.3
+    build_args: ROCM_VERSION=5.4.2
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -268,15 +261,19 @@ ubuntu20.04 amd64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-ubuntu20.04 arm64:
+ubuntu22.04 amd64:
   extends: .individual test job std
-  needs: ['predeps: [ubuntu20.04-arm64]']
-  image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
+  needs: ['predeps: [ubuntu22.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU22_04_AMD64
+ubuntu22.04 arm64:
+  extends: .individual test job std
+  needs: ['predeps: [ubuntu22.04-arm64]']
+  image: $PREDEPS_IMAGE_UBUNTU22_04_ARM64
   tags: [rice-linux-medium-arm64]
-ubuntu20.04 ppc64le:
+ubuntu22.04 ppc64le:
   extends: .individual test job std
-  needs: ['predeps: [ubuntu20.04-ppc64le]']
-  image: $PREDEPS_IMAGE_UBUNTU20_04_PPC64LE
+  needs: ['predeps: [ubuntu22.04-ppc64le]']
+  image: $PREDEPS_IMAGE_UBUNTU22_04_PPC64LE
   tags: [rice-linux-medium-ppc64le]
 leap15 amd64:
   extends: .individual test job std
@@ -327,10 +324,6 @@ bare ppc64le:
       --suite opencl
       --suite cuda
       --suite hpcstruct
-cuda11.6 amd64:
-  extends: .individual test job cuda
-  needs: ['predeps: [cuda11.6-amd64]']
-  image: $PREDEPS_IMAGE_CUDA11_6_AMD64
 cuda11.8 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda11.8-amd64]']
@@ -351,10 +344,6 @@ cuda12.3 amd64:
     TEST_ARGS: >-
       --suite opencl
       --suite rocm
-rocm5.2 amd64:
-  extends: .individual test job rocm
-  needs: ['predeps: [rocm5.2-amd64]']
-  image: $PREDEPS_IMAGE_ROCM5_2_AMD64
 rocm5.3 amd64:
   extends: .individual test job rocm
   needs: ['predeps: [rocm5.3-amd64]']
@@ -525,10 +514,10 @@ compiler icx:
   extends: .test job
   stage: configuration tests
   tags: [saas-linux-medium-amd64]
-'option: [ubuntu20.04 amd64]':
+'option: [ubuntu22.04 amd64]':
   extends: .option test job
-  needs: ['predeps: [ubuntu20.04-amd64]']
-  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
+  needs: ['predeps: [ubuntu22.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU22_04_AMD64
   parallel:
     matrix:
     - SETUP_ARGS:

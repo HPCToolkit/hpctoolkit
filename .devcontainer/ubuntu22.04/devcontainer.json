@@ -1,11 +1,8 @@
 {
-  "name": "ci.predeps-rocm5.1",
+  "name": "ci.predeps-ubuntu22.04",
   "build": {
-    "args": {
-      "ROCM_VERSION": "5.1.3"
-    },
     "context": "${localWorkspaceFolder}",
-    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.rocm"
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.ubuntu22.04"
   },
   "capAdd": [
     "SYS_ADMIN"
@@ -23,7 +20,7 @@
         "clangd.arguments": [
           "--compile-commands-dir=${config:mesonbuild.buildFolder}"
         ],
-        "mesonbuild.buildFolder": ".devcontainer/rocm5.1/builddir-${devcontainerId}",
+        "mesonbuild.buildFolder": ".devcontainer/ubuntu22.04/builddir-${devcontainerId}",
         "mesonbuild.configureOnOpen": true,
         "terminal.integrated.defaultProfile.linux": "bash",
         "terminal.integrated.profiles.linux": {
@@ -56,9 +53,8 @@
       "version": "latest"
     }
   },
-  "privileged": true,
   "remoteEnv": {
-    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/rocm5.1/builddir-${devcontainerId}",
-    "builddir": "${containerWorkspaceFolder}/.devcontainer/rocm5.1/builddir-${devcontainerId}"
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/ubuntu22.04/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/ubuntu22.04/builddir-${devcontainerId}"
   }
 }
