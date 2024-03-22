@@ -588,6 +588,7 @@ _hpcrun_libs += shared_module('hpcrun_io', config_h,
   'foil/io-preload.c',
   gnu_symbol_visibility: 'hidden',
   c_args: _my_cpp_defines,
+  dependencies: [dl_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_memleak', config_h,

@@ -2,3 +2,6 @@ simple_tstexe = executable('tstexe-simple-spin', 'simple-spin.c', dependencies: 
 
 subdir('itimer')
 subdir('perf')
+subdir('pthread-blame')
+subdir('memleak')
+subdir('io')

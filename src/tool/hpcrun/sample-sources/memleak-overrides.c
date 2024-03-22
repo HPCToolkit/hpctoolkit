@@ -87,6 +87,7 @@
  * local include files
  *****************************************************************************/
 
+#include "memleak-overrides.h"
 #include "memleak.h"
 #include "../messages/messages.h"
 #include "../safe-sampling.h"
@@ -121,12 +122,6 @@ typedef struct leakinfo_s {
 
 leakinfo_t leakinfo_NULL = { .magic = 0, .context = NULL, .bytes = 0 };
 
-typedef void *memalign_fcn(size_t, size_t);
-typedef void *valloc_fcn(size_t);
-typedef void *malloc_fcn(size_t);
-typedef void  free_fcn(void *);
-typedef void *realloc_fcn(void *, size_t);
-
 
 
 /******************************************************************************
@@ -140,19 +135,6 @@ typedef void *realloc_fcn(void *, size_t);
 
 #define HPCRUN_MEMLEAK_PROB  "HPCRUN_MEMLEAK_PROB"
 #define DEFAULT_PROB  0.1
-
-#define real_memalign   __libc_memalign
-#define real_valloc   __libc_valloc
-#define real_malloc   __libc_malloc
-#define real_free     __libc_free
-#define real_realloc  __libc_realloc
-
-extern memalign_fcn       real_memalign;
-extern valloc_fcn         real_valloc;
-extern malloc_fcn         real_malloc;
-extern free_fcn           real_free;
-extern realloc_fcn        real_realloc;
-
 
 
 /******************************************************************************
@@ -476,7 +458,8 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
 // ret = return value from posix_memalign()
 //
 static void *
-memleak_malloc_helper(const char *name, size_t bytes, size_t align,
+memleak_malloc_helper(memalign_fcn* real_memalign, malloc_fcn* real_malloc,
+                      const char *name, size_t bytes, size_t align,
                       int clear, ucontext_t *uc, int *ret)
 {
   void *sys_ptr, *appl_ptr;
@@ -597,7 +580,7 @@ memleak_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
 // Use mmap and hpcrun_malloc instead.
 
 int
-foilbase_posix_memalign(void **memptr, size_t alignment, size_t bytes)
+foilbase_posix_memalign(memalign_fcn* real_memalign, malloc_fcn* real_malloc, void **memptr, size_t alignment, size_t bytes)
 {
   ucontext_t uc;
   int ret = 0;
@@ -614,14 +597,14 @@ foilbase_posix_memalign(void **memptr, size_t alignment, size_t bytes)
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  *memptr = memleak_malloc_helper("posix_memalign", bytes, alignment, 0, &uc, &ret);
+  *memptr = memleak_malloc_helper(real_memalign, real_malloc, "posix_memalign", bytes, alignment, 0, &uc, &ret);
   hpcrun_safe_exit();
   return ret;
 }
 
 
 void *
-foilbase_memalign(size_t boundary, size_t bytes)
+foilbase_memalign(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t boundary, size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -637,14 +620,14 @@ foilbase_memalign(size_t boundary, size_t bytes)
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  ptr = memleak_malloc_helper("memalign", bytes, boundary, 0, &uc, NULL);
+  ptr = memleak_malloc_helper(real_memalign, real_malloc, "memalign", bytes, boundary, 0, &uc, NULL);
   hpcrun_safe_exit();
   return ptr;
 }
 
 
 void *
-foilbase_valloc(size_t bytes)
+foilbase_valloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, valloc_fcn* real_valloc, size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -660,14 +643,14 @@ foilbase_valloc(size_t bytes)
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  ptr = memleak_malloc_helper("valloc", bytes, memleak_pagesize, 0, &uc, NULL);
+  ptr = memleak_malloc_helper(real_memalign, real_malloc, "valloc", bytes, memleak_pagesize, 0, &uc, NULL);
   hpcrun_safe_exit();
   return ptr;
 }
 
 
 void *
-foilbase_malloc(size_t bytes)
+foilbase_malloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -683,14 +666,14 @@ foilbase_malloc(size_t bytes)
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  ptr = memleak_malloc_helper("malloc", bytes, 0, 0, &uc, NULL);
+  ptr = memleak_malloc_helper(real_memalign, real_malloc, "malloc", bytes, 0, 0, &uc, NULL);
   hpcrun_safe_exit();
   return ptr;
 }
 
 
 void *
-foilbase_calloc(size_t nmemb, size_t bytes)
+foilbase_calloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t nmemb, size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -710,7 +693,7 @@ foilbase_calloc(size_t nmemb, size_t bytes)
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  ptr = memleak_malloc_helper("calloc", nmemb * bytes, 0, 1, &uc, NULL);
+  ptr = memleak_malloc_helper(real_memalign, real_malloc, "calloc", nmemb * bytes, 0, 1, &uc, NULL);
   hpcrun_safe_exit();
   return ptr;
 }
@@ -723,7 +706,7 @@ foilbase_calloc(size_t nmemb, size_t bytes)
 // system ptr or else free() will crash.
 //
 void
-foilbase_free(void *ptr)
+foilbase_free(free_fcn* real_free, void *ptr)
 {
   leakinfo_t *info_ptr;
   void *sys_ptr;
@@ -757,7 +740,8 @@ finish:
 
 
 void *
-foilbase_realloc(void *ptr, size_t bytes)
+foilbase_realloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, realloc_fcn* real_realloc,
+    free_fcn* real_free, void *ptr, size_t bytes)
 {
   ucontext_t uc;
   leakinfo_t *info_ptr;
@@ -784,7 +768,7 @@ foilbase_realloc(void *ptr, size_t bytes)
 
   // realloc(NULL, bytes) means malloc(bytes)
   if (ptr == NULL) {
-    appl_ptr = memleak_malloc_helper("realloc/malloc", bytes, 0, 0, &uc, NULL);
+    appl_ptr = memleak_malloc_helper(real_memalign, real_malloc, "realloc/malloc", bytes, 0, 0, &uc, NULL);
     goto finish;
   }
 

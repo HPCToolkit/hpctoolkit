@@ -132,33 +132,31 @@ foilbase_pthread_cond_signal(fn_pthread_cond_signal_t* real_fn, pthread_cond_t* 
   return retval;
 }
 
-extern fn_pthread_mutex_lock_t __pthread_mutex_lock;
 int
-foilbase_pthread_mutex_lock(pthread_mutex_t* mutex)
+foilbase_pthread_mutex_lock(fn_pthread_mutex_lock_t* real_fn, pthread_mutex_t* mutex)
 {
   TMSG(LOCKWAIT, "mutex lock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
-    return __pthread_mutex_lock(mutex);
+    return real_fn(mutex);
   }
 
   TMSG(LOCKWAIT, "pthread mutex LOCK override");
   pthread_directed_blame_shift_blocked_start(mutex);
-  int retval = __pthread_mutex_lock(mutex);
+  int retval = real_fn(mutex);
   pthread_directed_blame_shift_end();
 
   return retval;
 }
 
-extern fn_pthread_mutex_unlock_t __pthread_mutex_unlock;
 int
-foilbase_pthread_mutex_unlock(pthread_mutex_t* mutex)
+foilbase_pthread_mutex_unlock(fn_pthread_mutex_unlock_t* real_fn, pthread_mutex_t* mutex)
 {
   TMSG(LOCKWAIT, "mutex unlock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
-    return __pthread_mutex_unlock(mutex);
+    return real_fn(mutex);
   }
   TMSG(LOCKWAIT, "pthread mutex UNLOCK");
-  int retval = __pthread_mutex_unlock(mutex);
+  int retval = real_fn(mutex);
   pthread_directed_blame_accept(mutex);
   return retval;
 }

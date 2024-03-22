@@ -96,6 +96,8 @@
  * local include files
  *****************************************************************************/
 
+#include "io-over.h"
+
 #include "../main.h"
 #include "../safe-sampling.h"
 #include "../sample_event.h"
@@ -104,45 +106,12 @@
 #include "../messages/messages.h"
 #include "io.h"
 
-
-/******************************************************************************
- * type definitions
- *****************************************************************************/
-
-typedef ssize_t read_fn_t(int, void *, size_t);
-typedef ssize_t write_fn_t(int, const void *, size_t);
-
-typedef size_t  fread_fn_t(void *, size_t, size_t, FILE *);
-typedef size_t  fwrite_fn_t(const void *, size_t, size_t, FILE *);
-
-
-/******************************************************************************
- * macros
- *****************************************************************************/
-
-// Dynamically, there are two ways to get the real version of library
-// functions: the __libc_/_IO_ names or dlsym().  The __libc_ names
-// are GNU libc specific and may not be portable, and dlsym() may
-// interfere with our code via locks or override functions.  We'll try
-// the _IO_ names until we hit a problem.
-
-#define real_read    __read
-#define real_write   __write
-#define real_fread   _IO_fread
-#define real_fwrite  _IO_fwrite
-
-extern read_fn_t    real_read;
-extern write_fn_t   real_write;
-extern fread_fn_t   real_fread;
-extern fwrite_fn_t  real_fwrite;
-
-
 /******************************************************************************
  * interface operations
  *****************************************************************************/
 
 ssize_t
-foilbase_read(int fd, void *buf, size_t count)
+foilbase_read(read_fn_t* real_read, int fd, void *buf, size_t count)
 {
   ucontext_t uc;
   ssize_t ret;
@@ -179,7 +148,7 @@ foilbase_read(int fd, void *buf, size_t count)
 
 
 ssize_t
-foilbase_write(int fd, const void *buf, size_t count)
+foilbase_write(write_fn_t* real_write, int fd, const void *buf, size_t count)
 {
   ucontext_t uc;
   size_t ret;
@@ -216,7 +185,7 @@ foilbase_write(int fd, const void *buf, size_t count)
 
 
 size_t
-foilbase_fread(void *ptr, size_t size, size_t count, FILE *stream)
+foilbase_fread(fread_fn_t* real_fread, void *ptr, size_t size, size_t count, FILE *stream)
 {
   ucontext_t uc;
   size_t ret;
@@ -251,7 +220,7 @@ foilbase_fread(void *ptr, size_t size, size_t count, FILE *stream)
 
 
 size_t
-foilbase_fwrite(const void *ptr, size_t size, size_t count, FILE *stream)
+foilbase_fwrite(fwrite_fn_t* real_fwrite, const void *ptr, size_t size, size_t count, FILE *stream)
 {
   ucontext_t uc;
   size_t ret;

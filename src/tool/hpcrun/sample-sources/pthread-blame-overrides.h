@@ -77,12 +77,12 @@ foilbase_pthread_cond_signal(fn_pthread_cond_signal_t* real_fn, pthread_cond_t* 
 typedef int fn_pthread_mutex_lock_t(pthread_mutex_t* mutex);
 extern fn_pthread_mutex_lock_t pthread_mutex_lock;
 int
-foilbase_pthread_mutex_lock(pthread_mutex_t* mutex);
+foilbase_pthread_mutex_lock(fn_pthread_mutex_lock_t* real_fn, pthread_mutex_t* mutex);
 
 typedef int fn_pthread_mutex_unlock_t(pthread_mutex_t* mutex);
 extern fn_pthread_mutex_unlock_t pthread_mutex_unlock;
 int
-foilbase_pthread_mutex_unlock(pthread_mutex_t* mutex);
+foilbase_pthread_mutex_unlock(fn_pthread_mutex_unlock_t* real_fn, pthread_mutex_t* mutex);
 
 typedef int fn_pthread_mutex_timedlock_t(pthread_mutex_t* restrict mutex,
                                          const struct timespec* restrict abs_timeout);
