@@ -1,0 +1,78 @@
+# OS installation stage: Install build tools from the OS
+FROM quay.io/almalinuxorg/almalinux:9 as os-install
+
+# Install the required OS packages
+RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
+  dnf install -y epel-release \
+  && dnf config-manager --enable crb \
+  && dnf install -y \
+    binutils-devel \
+    boost-devel \
+    bzip2-devel \
+    ccache \
+    clang \
+    cmake \
+    elfutils-devel \
+    gcc \
+    gcc-c++ \
+    git \
+    libpfm-devel \
+    libunwind-devel \
+    make  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    mvapich2-devel \
+    ninja-build \
+    ocl-icd-devel \
+    papi-devel \
+    pkg-config \
+    python3 \
+    python3-devel \
+    python3-pip \
+    redhat-rpm-config \
+    tbb-devel \
+    xerces-c-devel \
+    xxhash-devel \
+    xz-devel \
+    yaml-cpp-devel \
+    zlib-devel \
+  && : # END
+
+# Install a up-to-date versions of Meson, using a suitable Python
+# Also install docutils for processing documentation.
+RUN \
+  python3 -m pip install \
+    'meson>=1.1.0,<2' \
+    'docutils' \
+  && : # END
+
+# Ensure the appropriate MPI is loaded into the shell environment, always.
+ENTRYPOINT ["/bin/sh", "-c", ". /etc/profile.d/modules.sh && module load mpi && exec \"$@\"", "sh"]
+CMD ["/bin/bash"]
+
+
+# From-source installation side-stage: Install (some) software from source
+FROM os-install as src-install
+
+
+# Composition stage: Produce what will become the final image
+FROM os-install
+# COPY --from=src-install /dest /
+COPY \
+  ci/native/src/clang.ini \
+  ci/native/src/gcc.ini \
+  /usr/share/meson/native/
+
+RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
+  && echo "[built-in options]" >> "$t" \
+  && echo "wrap_mode = 'nofallback'" >> "$t" \
+  && echo "force_fallback_for = ['dyninst', 'xed']" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[project options]" >> "$t" \
+  && echo "auto_features = 'enabled'" >> "$t" \
+  && echo "cuda = 'disabled'" >> "$t" \
+  && echo "rocm = 'disabled'" >> "$t" \
+  && echo "level0 = 'disabled'" >> "$t" \
+  && echo "gtpin = 'disabled'" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[zstd:project options]" >> "$t" \
+  && echo "lz4 = 'disabled'" >> "$t" \
+  && : # EOF

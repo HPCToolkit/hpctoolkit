@@ -1,0 +1,55 @@
+{
+  "name": "ci.predeps-rhel9",
+  "build": {
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.rhel9"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ],
+  "containerEnv": {
+    "OMPI_ALLOW_RUN_AS_ROOT": "1",
+    "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mesonbuild.mesonbuild"
+      ],
+      "settings": {
+        "clangd.arguments": [
+          "--compile-commands-dir=${config:mesonbuild.buildFolder}"
+        ],
+        "mesonbuild.buildFolder": ".devcontainer/rhel9/builddir-${devcontainerId}",
+        "mesonbuild.configureOnOpen": true,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/bash"
+          },
+          "zsh": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/zsh"
+          }
+        }
+      }
+    }
+  },
+  "features": {
+    "../bash-completion-feature": {},
+    "ghcr.io/devcontainers-contrib/features/poetry:2": {},
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {}
+  },
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/rhel9/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/rhel9/builddir-${devcontainerId}"
+  }
+}
