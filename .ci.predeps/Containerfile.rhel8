@@ -23,6 +23,7 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
     ocl-icd-devel \
     papi-devel \
     pkg-config \
+    python3-docutils \
     python39 \
     python39-devel \
     python39-pip \
@@ -40,7 +41,6 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
 RUN \
   python3.9 -m pip install \
     'meson>=1.1.0,<2' \
-    'docutils' \
   && : # END
 
 # Ensure the appropriate MPI is loaded into the shell environment, always.

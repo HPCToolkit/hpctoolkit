@@ -472,8 +472,6 @@ static void optimize_object_plt(const object_t* obj) {
 
 __attribute__((visibility("default")))
 unsigned int la_version(unsigned int version) {
-  if(version < 1) return 0;
-
   // Read in our arguments
   verbose = getenv("HPCRUN_AUDIT_DEBUG");
 
@@ -509,7 +507,7 @@ unsigned int la_version(unsigned int version) {
     exports.pure_environ[idx] = NULL;
   }
 
-  return 1;
+  return LAV_CURRENT;
 }
 
 

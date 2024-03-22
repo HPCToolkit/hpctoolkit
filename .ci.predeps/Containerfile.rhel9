@@ -1,57 +1,40 @@
 # OS installation stage: Install build tools from the OS
-FROM docker.io/ubuntu:20.04 as os-install
+FROM quay.io/almalinuxorg/almalinux:9 as os-install
 
 # Install the required OS packages
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  rm -f /etc/apt/apt.conf.d/docker-clean \
-  && apt-get update -yqq \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
+  dnf install -y epel-release \
+  && dnf config-manager --enable crb \
+  && dnf install -y \
+    binutils-devel \
+    boost-devel \
+    bzip2-devel \
     ccache \
     clang \
-    clang-10 \
-    clang-11 \
-    clang-9 \
     cmake \
-    g++ \
-    g++-10 \
-    g++-8 \
-    g++-9 \
+    elfutils-devel \
     gcc \
-    gcc-10 \
-    gcc-8 \
-    gcc-9 \
+    gcc-c++ \
     git \
-    libboost-atomic-dev \
-    libboost-chrono-dev \
-    libboost-date-time-dev \
-    libboost-filesystem-dev \
-    libboost-graph-dev \
-    libboost-system-dev \
-    libboost-thread-dev \
-    libboost-timer-dev \
-    libbz2-dev \
-    libiberty-dev \
-    liblzma-dev \
-    libmpich-dev \
-    libomp-dev \
-    libpapi-dev \
-    libpfm4-dev \
-    libtbb-dev \
-    libxerces-c-dev \
-    libyaml-cpp-dev \
-    libzstd-dev \
+    libpfm-devel \
+    libunwind-devel \
     make  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
-    mawk  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    mvapich2-devel \
     ninja-build \
-    ocl-icd-opencl-dev \
+    ocl-icd-devel \
+    papi-devel \
     pkg-config \
     python3 \
-    python3-dev \
+    python3-devel \
     python3-docutils \
     python3-pip \
-    python3-venv \
-    sed  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
-    zlib1g-dev \
+    redhat-rpm-config \
+    tbb-devel \
+    xerces-c-devel \
+    xxhash-devel \
+    xz-devel \
+    yaml-cpp-devel \
+    zlib-devel \
   && : # END
 
 # Install a up-to-date versions of Meson, using a suitable Python
@@ -60,6 +43,10 @@ RUN \
   python3 -m pip install \
     'meson>=1.1.0,<2' \
   && : # END
+
+# Ensure the appropriate MPI is loaded into the shell environment, always.
+ENTRYPOINT ["/bin/sh", "-c", ". /etc/profile.d/modules.sh && module load mpi && exec \"$@\"", "sh"]
+CMD ["/bin/bash"]
 
 
 # From-source installation side-stage: Install (some) software from source
@@ -71,19 +58,13 @@ FROM os-install
 # COPY --from=src-install /dest /
 COPY \
   ci/native/src/clang.ini \
-  ci/native/src/clang10.ini \
-  ci/native/src/clang11.ini \
-  ci/native/src/clang9.ini \
   ci/native/src/gcc.ini \
-  ci/native/src/gcc10.ini \
-  ci/native/src/gcc8.ini \
-  ci/native/src/gcc9.ini \
   /usr/share/meson/native/
 
 RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
   && echo "[built-in options]" >> "$t" \
   && echo "wrap_mode = 'nofallback'" >> "$t" \
-  && echo "force_fallback_for = ['dyninst', 'elfutils', 'libunwind', 'xed', 'xxhash']" >> "$t" \
+  && echo "force_fallback_for = ['dyninst', 'xed']" >> "$t" \
   && echo "" >> "$t" \
   && echo "[project options]" >> "$t" \
   && echo "auto_features = 'enabled'" >> "$t" \
