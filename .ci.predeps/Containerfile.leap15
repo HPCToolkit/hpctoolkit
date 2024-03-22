@@ -33,6 +33,7 @@ RUN \
     opencl-headers \
     papi-devel \
     pkg-config \
+    python3-docutils \
     python311 \
     python311-devel \
     python311-pip \
@@ -48,7 +49,6 @@ RUN \
 RUN \
   python3.11 -m pip install \
     'meson>=1.3.2,<2' \
-    'docutils' \
   && : # END
 
 # Ensure the appropriate MPI is loaded into the shell environment, always.
