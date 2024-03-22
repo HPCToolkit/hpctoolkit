@@ -7,10 +7,10 @@
 static inline void
 hpctoolkit_print_version(const char * prog_name)
 {
-  printf("%s: %s\n"
+  printf("%s: A member of HPCToolkit, version %s\n"
          "git branch:  %s\n"
          "install dir: %s\n",
-         prog_name, HPCTOOLKIT_VERSION_STRING, "@VCS_TAG@",
+         prog_name, "@VERSION@", "@VCS_TAG@",
          HPCTOOLKIT_INSTALL_PREFIX);
 }
 

@@ -40,5 +40,5 @@ features_msg += 'Python support: @0@\n'.format(python_inst.found() ? 'yes' : 'no
 
 # Generate the final version information header
 version_h = configure_file(output: 'hpctoolkit-version.h.vcs.in', input: 'hpctoolkit-version.h.in',
-  configuration: {'FEATURES_MESSAGE': features_msg, 'VCS_TAG': '@VCS_TAG@'})
+  configuration: {'FEATURES_MESSAGE': features_msg, 'VERSION': meson.project_version(), 'VCS_TAG': '@VCS_TAG@'})
 version_h = vcs_tag(output: 'hpctoolkit-version.h', input: version_h)

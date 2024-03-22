@@ -803,8 +803,6 @@ endif
 # Inject some strings into the build
 add_project_arguments(
   '-DHPCTOOLKIT_INSTALL_PREFIX="@0@"'.format(get_option('prefix').replace('\\', '\\\\').replace('"', '\\"')),
-  '-DHPCTOOLKIT_VERSION="@0@"'.format(meson.project_version().replace('\\', '\\\\').replace('"', '\\"')),
-  '-DHPCTOOLKIT_VERSION_STRING="A member of HPCToolkit, version @0@"'.format(meson.project_version().replace('\\', '\\\\').replace('"', '\\"')),
   language: ['c', 'cpp'])
 
 
