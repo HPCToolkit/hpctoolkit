@@ -1,8 +1,8 @@
-#ifdef ENABLE_OPENCL
-
 //******************************************************************************
 // system includes
 //******************************************************************************
+
+#define _GNU_SOURCE
 
 #include <math.h>                                                                                                                       // pow
 
@@ -184,5 +184,3 @@ opencl_sync_epilogue
 
   hpcrun_safe_exit();
 }
-
-#endif  // ENABLE_OPENCL

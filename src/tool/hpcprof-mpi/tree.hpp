@@ -44,6 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef HPCPROF_MPI_TREE_HPP
+#define HPCPROF_MPI_TREE_HPP
+
 #include "../../lib/profile/sinks/packed.hpp"
 #include "../../lib/profile/sources/packed.hpp"
 #include "../../lib/profile/pipeline.hpp"
@@ -150,3 +153,5 @@ private:
   std::vector<uint8_t> block;
   bool parsedBlock = false;
 };
+
+#endif  // HPCPROF_MPI_TREE_HPP

@@ -46,6 +46,8 @@
 // user include files
 //***************************************************************************
 
+#define _GNU_SOURCE
+
 #include <strings.h>       //  strcasecmp
 
 #include "../../../../include/queue.h" // Singly-linkled list macros

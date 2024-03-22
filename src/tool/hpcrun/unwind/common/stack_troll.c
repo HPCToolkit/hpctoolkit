@@ -60,6 +60,8 @@
  * method.
  */
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <inttypes.h>
 

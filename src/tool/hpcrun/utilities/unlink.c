@@ -48,6 +48,8 @@
  *  Function to recursively unlink a directory hierarchy.
  */
 
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>

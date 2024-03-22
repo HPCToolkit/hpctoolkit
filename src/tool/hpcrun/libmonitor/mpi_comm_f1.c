@@ -7,6 +7,8 @@
  *  $Id$
  */
 
+#define _GNU_SOURCE
+
 #include "common.h"
 #include "monitor.h"
 

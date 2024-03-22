@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "foil.h"
 #include "../ompt/ompt-interface.h"
 #include "../monitor-exts/openmp.h"

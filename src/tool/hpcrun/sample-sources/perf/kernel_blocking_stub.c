@@ -39,6 +39,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "kernel_blocking.h"
 
 void kernel_blocking_init()

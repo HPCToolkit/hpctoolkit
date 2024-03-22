@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include <stdint.h>
 #include <string.h>
 #include "../x86-unwind-interval-fixup.h"

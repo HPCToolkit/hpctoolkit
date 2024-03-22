@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <ucontext.h>

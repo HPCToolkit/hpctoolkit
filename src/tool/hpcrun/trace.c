@@ -48,6 +48,8 @@
 // global includes
 //*********************************************************************
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <sys/time.h>
 #include <assert.h>
@@ -57,8 +59,6 @@
 //*********************************************************************
 // local includes
 //*********************************************************************
-
-#include "hpctoolkit-config.h"
 
 #include "disabled.h"
 #include "env.h"

@@ -48,9 +48,10 @@
 
 //*************************** User Include Files ****************************
 
+#define _GNU_SOURCE
+
 #include <stdbool.h>
 
-#include "hpctoolkit-config.h"
 #include "x86-build-intervals.h"
 
 #include "../common/uw_recipe_map.h"

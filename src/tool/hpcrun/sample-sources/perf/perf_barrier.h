@@ -46,6 +46,9 @@
  *** https://github.com/deater/perf_event_tests/blob/master/include/perf_barrier.h
  ***/
 
+#ifndef HPCRUN_SAMPLE_SOURCES_PERF_PERF_BARRIER_H
+#define HPCRUN_SAMPLE_SOURCES_PERF_PERF_BARRIER_H
+
 #include <stdio.h>
 #ifdef __powerpc__
 #define rmb() asm volatile ("sync" : : : "memory")
@@ -114,3 +117,5 @@
 #error Need to define rmb for this architecture!
 #error See the kernel source directory: tools/perf/perf.h file
 #endif
+
+#endif  // HPCRUN_SAMPLE_SOURCES_PERF_PERF_BARRIER_H

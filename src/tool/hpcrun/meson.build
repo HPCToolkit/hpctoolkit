@@ -60,12 +60,6 @@ _unw_libunw_files = _unw_common_files + files(
   'unwind/common/default_validation_summary.c',
 )
 
-_my_cpp_defines = [
-  '-D_GNU_SOURCE',
-  '-D__HIP_PLATFORM_HCC__=1',
-  '-D__HIP_PLATFORM_AMD__=1',
-]
-
 _my_base_files = files(
   'audit/binding.c',
   'cct_backtrace_finalize.c',
@@ -89,7 +83,6 @@ _my_base_files = files(
   'gpu/blame-shifting/blame-helper.c',
   'gpu/blame-shifting/blame-kernel-map.c',
   'gpu/blame-shifting/blame-queue-map.c',
-  'gpu/blame-shifting/blame.c',
   'gpu/gpu-activity-channel.c',
   'gpu/gpu-activity-process.c',
   'gpu/gpu-activity.c',
@@ -242,7 +235,7 @@ else
   _my_base_files += files('trampoline/common/trampoline_lazy.c')
 endif
 
-if cc.has_type('struct perf_event_attr', prefix: ['#include <linux/perf_event.h>', '#include <linux/hw_breakpoint.h>', '#include <sys/syscall.h>', '#include <unistd.h>'])
+if has_perf_events
   _my_base_files += files(
     'sample-sources/perf/event_custom.c',
     'sample-sources/perf/linux_perf.c',
@@ -251,7 +244,6 @@ if cc.has_type('struct perf_event_attr', prefix: ['#include <linux/perf_event.h>
     'sample-sources/perf/perf_mmap.c',
     'sample-sources/perf/perf_skid.c',
   )
-  _my_cpp_defines += '-DHPCRUN_SS_LINUX_PERF'
 
   if perfmon_dep.found()
     _my_base_files += files('sample-sources/perf/perfmon-util.c')
@@ -326,8 +318,7 @@ _my_aarch64_files = files(
 )
 
 _my_papi_files = []
-if papi_dep.found() and cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component', dependencies: papi_dep)
-  _my_cpp_defines += '-DHPCRUN_SS_PAPI_C_INTEL'
+if papi_has_components
   _my_papi_files = files(
     'sample-sources/papi-c.c',
     'sample-sources/papi-c-extended-info.c',
@@ -383,8 +374,8 @@ if opencl_dep.found()
     'gpu/opencl/intel/maps/device-map.c',
     'gpu/blame-shifting/blame-kernel-cleanup-map.c',
     'gpu/blame-shifting/opencl/opencl-blame.c',
+    'gpu/blame-shifting/blame.c',
   )
-  _my_cpp_defines += '-DHPCRUN_SS_OPENCL'
 
   _hpcrun_libs += shared_module('hpcrun_opencl', config_h,
     'foil/opencl-preload.c',
@@ -453,18 +444,6 @@ if level0_dep.found()
   )
 endif
 
-if papi_dep.found()
-  _my_cpp_defines += '-DHPCRUN_SS_PAPI'
-endif
-if cupti_dep.found()
-  _my_cpp_defines += '-DHPCRUN_SS_NVIDIA'
-endif
-if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
-  _my_cpp_defines += '-DHPCRUN_SS_PAPI_C_CUPTI'
-endif
-if false  # get_option('papi_rocm')  # --enable-papi-c-rocm
-  _my_cpp_defines += '-DHPCRUN_SS_PAPI_C_ROCM'
-endif
 
 if host_machine.cpu_family() in ['x86', 'x86_64']  # UNW_X86
   _unw_source_files = _unw_x86_files
@@ -476,14 +455,6 @@ endif
 
 if host_machine.cpu_family() in ['aarch64', 'ia64']  # UNW_LIBUNW
   _unw_source_files = _unw_libunw_files
-endif
-
-if rocm_dep.found()
-  _my_cpp_defines += ['-DHPCRUN_SS_AMD']
-endif
-
-if level0_dep.found()
-  _my_cpp_defines += ['-DHPCRUN_SS_LEVEL0']
 endif
 
 _hpcrun_libs += shared_module('hpcrun', config_h,
@@ -505,12 +476,6 @@ _hpcrun_libs += shared_module('hpcrun', config_h,
   'utilities/last_func.c',
   gnu_symbol_visibility: 'hidden',
   link_language: 'c',
-  c_args: (
-    _my_cpp_defines
-    + (cupti_dep.found() ? ['-DENABLE_CUDA'] : [])
-    + (opencl_dep.found() ? ['-DENABLE_OPENCL'] : [])
-    + (level0_dep.found() ? ['-DUSE_LEVEL0'] : [])
-  ),
   link_with: [prof_lean_lib, support_lean_lib],
   dependencies: [
     _my_include_dirs_deps,
@@ -534,14 +499,12 @@ _hpcrun_libs += shared_module('hpcrun', config_h,
 _hpcrun_libs += shared_library('hpcrun_unwind', config_h,
   'unwind/common/libunwind-pvt.c',
   gnu_symbol_visibility: 'hidden',
-  c_args: _my_cpp_defines,
   dependencies: [libunwind_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_fake_audit', config_h,
   'audit/fake-auditor.c',
   gnu_symbol_visibility: 'hidden',
-  c_args: _my_cpp_defines,
   dependencies: [dl_dep, threads_dep],
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
   link_language: 'c',
@@ -550,7 +513,6 @@ _hpcrun_libs += shared_library('hpcrun_private_ns', config_h,
   'audit/private-ns.c',
   'audit/exports.c',
   gnu_symbol_visibility: 'hidden',
-  c_args: _my_cpp_defines,
   dependencies: [dl_dep, threads_dep],
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
   link_language: 'c',
@@ -559,7 +521,6 @@ _hpcrun_libs += shared_library('hpcrun_audit', config_h,
   'audit/auditor.c',
   'audit/private-ns.c',
   gnu_symbol_visibility: 'hidden',
-  c_args: _my_cpp_defines,
   dependencies: [dl_dep, threads_dep],
   build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
   link_language: 'c',
@@ -574,34 +535,29 @@ _hpcrun_libs += shared_library('hpcrun_dlmopen', config_h,
 _hpcrun_libs += shared_module('hpcrun_ga', config_h,
   'foil/ga-preload.c',
   gnu_symbol_visibility: 'hidden',
-  c_args: _my_cpp_defines,
   dependencies: [dl_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_gprof', config_h,
   'foil/gprof-preload.c',
   gnu_symbol_visibility: 'hidden',
-  c_args: _my_cpp_defines,
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_io', config_h,
   'foil/io-preload.c',
   gnu_symbol_visibility: 'hidden',
-  c_args: _my_cpp_defines,
   dependencies: [dl_dep],
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_memleak', config_h,
   'foil/memleak-preload.c',
   gnu_symbol_visibility: 'hidden',
-  c_args: _my_cpp_defines,
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 _hpcrun_libs += shared_module('hpcrun_pthread', config_h,
   'foil/pthread-blame-preload.c',
   gnu_symbol_visibility: 'hidden',
   dependencies: [dl_dep],
-  c_args: _my_cpp_defines,
   link_language: 'c',
   install: true, install_dir: 'lib' / meson.project_name())
 
@@ -622,7 +578,6 @@ install_headers(
 )
 hpctoolkit_client_lib = library('hpctoolkit',
   'hpctoolkit.c',
-  c_args: _my_cpp_defines,
   install: true, install_dir: 'lib' / meson.project_name())
 
 # Settings needed for dependencies

@@ -61,6 +61,8 @@
 //***************************************************************************
 
 
+#define _GNU_SOURCE
+
 #include <fcntl.h>   // open
 #include <dlfcn.h>  // dlopen
 #include <limits.h>  // PATH_MAX

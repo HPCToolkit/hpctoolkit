@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "../ompt/ompt-interface.h"
 
 #define BLAME_NAME OMP_IDLE

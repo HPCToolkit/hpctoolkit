@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include <unistd.h>
 #include <limits.h>
 #include <stdlib.h>

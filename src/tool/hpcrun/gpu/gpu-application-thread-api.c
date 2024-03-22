@@ -45,6 +45,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../cct/cct.h"
 #include "../module-ignore-map.h"
 #include "../safe-sampling.h"

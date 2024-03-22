@@ -43,6 +43,8 @@
  *  to put it all in one file.
  */
 
+#define _GNU_SOURCE
+
 #include "common.h"
 #include "monitor.h"
 #include <stdio.h>

@@ -52,6 +52,8 @@
  * system includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <ucontext.h>
 
 

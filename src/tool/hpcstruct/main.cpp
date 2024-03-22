@@ -96,8 +96,6 @@ using std::endl;
 #include <string.h>
 #include <unistd.h>
 
-#include "hpctoolkit-config.h"
-
 #include "Args.hpp"
 #include "Structure-Cache.hpp"
 

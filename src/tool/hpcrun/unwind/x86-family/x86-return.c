@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "x86-canonical.h"
 #include "x86-decoder.h"
 #include "x86-interval-highwatermark.h"

@@ -44,7 +44,7 @@
  *    monitor_get_addr_main
  */
 
-#include "hpctoolkit-config.h"
+#define _GNU_SOURCE
 
 #include <sys/types.h>
 #include <alloca.h>

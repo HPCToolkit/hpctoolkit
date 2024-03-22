@@ -48,6 +48,8 @@
 // system include files
 //***************************************************************************
 
+#define _GNU_SOURCE
+
 #include <assert.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
@@ -79,7 +81,6 @@
 //***************************************************************************
 
 
-#include "hpctoolkit-config.h"
 #include "../../lib/prof-lean/placeholders.h"
 
 #include "main.h"

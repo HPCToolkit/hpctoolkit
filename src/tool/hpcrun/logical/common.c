@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "common.h"
 
 #include "../cct_backtrace_finalize.h"

@@ -56,6 +56,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../../cct/cct.h"
 #include "../../cct/cct_addr.h"
 #include "../../utilities/ip-normalized.h"

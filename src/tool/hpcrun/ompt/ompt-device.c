@@ -50,6 +50,8 @@
  * global include files
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <sys/param.h>
 #include <assert.h>
 

@@ -53,6 +53,8 @@
  * (at least). This file will be updated once we find a way to make it work
  * properly.
  */
+#define _GNU_SOURCE
+
 #include "../../../../include/linux_info.h"
 
 #include "../../metrics.h"

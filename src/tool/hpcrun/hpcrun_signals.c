@@ -68,6 +68,8 @@
 
 //----------------------------------------------------------------------
 
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <pthread.h>
 #include <signal.h>

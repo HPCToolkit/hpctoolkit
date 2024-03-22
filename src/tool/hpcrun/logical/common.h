@@ -48,7 +48,6 @@
 #define LOGICAL_COMMON_H
 
 #include "../frame.h"
-#include "hpctoolkit-config.h"
 #include "../utilities/ip-normalized.h"
 #include "../unwind/common/unwind.h"
 

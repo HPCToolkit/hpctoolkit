@@ -45,6 +45,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../gpu-monitoring-thread-api.h"
 
 #include "../gpu-activity.h"

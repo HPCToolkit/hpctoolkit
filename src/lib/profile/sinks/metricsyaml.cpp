@@ -50,8 +50,6 @@
 
 #include "metadb.hpp"
 
-#include "hpctoolkit-config.h"
-
 #include <yaml-cpp/yaml.h>
 
 #include <fstream>

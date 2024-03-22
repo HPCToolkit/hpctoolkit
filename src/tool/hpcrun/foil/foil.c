@@ -44,9 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "foil.h"
+#define _GNU_SOURCE
 
-#include "hpctoolkit-config.h"
+#include "foil.h"
 
 #include "../main.h"
 #include "../start-stop.h"

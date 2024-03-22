@@ -34,6 +34,8 @@
  *  $Id$
  */
 
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <dlfcn.h>
 #include <err.h>

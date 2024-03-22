@@ -44,6 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef HPCFNBOUNDS_FUNCTION_ENTRIES_H
+#define HPCFNBOUNDS_FUNCTION_ENTRIES_H
+
 #include <sys/types.h>
 #include <inttypes.h>
 #include <stdbool.h>
@@ -65,3 +68,5 @@ void entries_in_range(void *start, void *end, void **result);
 bool query_function_entry(void *addr);
 
 void dump_reachable_functions();
+
+#endif  // HPCFNBOUNDS_FUNCTION_ENTRIES_H

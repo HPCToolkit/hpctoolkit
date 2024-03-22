@@ -2,6 +2,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "cct_backtrace_finalize.h"
 
 

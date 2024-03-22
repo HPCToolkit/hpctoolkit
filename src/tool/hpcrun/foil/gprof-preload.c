@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "foil.h"
 
 // stubs to override gprof support to avoid conflicts with hpcrun

@@ -2,6 +2,8 @@
 // system include
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <stdbool.h>                                                                                            // bool
 #include <math.h>                                                                                                   // pow
 

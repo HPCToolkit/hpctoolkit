@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "control-knob.h"
 #include "utilities/tokenize.h"
 #include <stdio.h>

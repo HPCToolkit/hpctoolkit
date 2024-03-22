@@ -52,6 +52,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../cct/cct.h"
 #include "gpu-activity.h"
 #include "gpu-activity-channel.h"

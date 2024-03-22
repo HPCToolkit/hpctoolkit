@@ -45,6 +45,10 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+#define __HIP_PLATFORM_AMD__
+#define __HIP_PLATFORM_HCC__
+
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
 

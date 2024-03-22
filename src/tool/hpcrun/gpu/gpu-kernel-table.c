@@ -42,6 +42,8 @@
 // ******************************************************* EndRiceCopyright *
 
 
+#define _GNU_SOURCE
+
 #include "gpu-kernel-table.h"
 #include "../logical/common.h"
 

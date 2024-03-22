@@ -68,7 +68,6 @@
 //******************************************************************************
 
 #include "../support/StrUtil.hpp"
-#include "hpctoolkit-config.h"
 
 #include <Elf_X.h>
 

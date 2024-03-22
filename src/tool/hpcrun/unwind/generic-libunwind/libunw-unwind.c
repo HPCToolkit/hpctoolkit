@@ -71,6 +71,8 @@
 // system includes
 //************************************************
 
+#define _GNU_SOURCE
+
 #define UNW_LOCAL_ONLY
 
 #include <stdlib.h>
@@ -80,8 +82,6 @@
 #include <stdbool.h>
 
 #include <ucontext.h>
-
-#include "hpctoolkit-config.h"
 
 //************************************************
 // external includes

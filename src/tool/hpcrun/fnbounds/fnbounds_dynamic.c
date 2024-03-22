@@ -66,6 +66,8 @@
 // system includes
 //*********************************************************************
 
+#define _GNU_SOURCE
+
 #include <stdio.h>     // fopen, fclose, etc
 #include <dlfcn.h>     // for dlopen/dlclose
 #include <string.h>    // for strcmp, strerror
@@ -76,7 +78,6 @@
 #include <sys/param.h> // for PATH_MAX
 #include <sys/types.h>
 #include <unistd.h>    // getpid
-
 
 
 //*********************************************************************
@@ -108,7 +109,6 @@
 #include "../../../lib/prof-lean/spinlock.h"
 #include "../../../lib/prof-lean/vdso.h"
 
-#include "hpctoolkit-config.h"
 
 
 

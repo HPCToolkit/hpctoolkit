@@ -48,6 +48,8 @@
 // system include files
 //***************************************************************************
 
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <stddef.h>
 #include <ucontext.h>

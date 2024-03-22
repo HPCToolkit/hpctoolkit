@@ -62,6 +62,8 @@
 // global includes
 //*****************************************************************************
 
+#define _GNU_SOURCE
+
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stddef.h>

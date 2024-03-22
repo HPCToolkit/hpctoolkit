@@ -54,6 +54,8 @@
  *    monitor_get_addr_thread_start
  */
 
+#define _GNU_SOURCE
+
 #include <sys/time.h>
 #include <sys/types.h>
 #include <alloca.h>

@@ -46,8 +46,6 @@
 
 #include "atomic.hpp"
 
-#include "hpctoolkit-config.h"
-
 #include <thread>
 
 using namespace hpctoolkit::stdshim;

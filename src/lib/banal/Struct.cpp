@@ -105,8 +105,6 @@
 #include <Region.h>
 #include <Symtab.h>
 
-#include "hpctoolkit-config.h"
-
 #include "Struct.hpp"
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"

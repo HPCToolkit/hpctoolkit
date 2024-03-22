@@ -1,7 +1,6 @@
 _srcs = files(
   'gpu/CudaCFGParser.cpp',
   'gpu/GPUBlock.cpp',
-  'gpu/GPUCFG_Intel.cpp',
   'gpu/GPUCFG.cpp',
   'gpu/GPUCFGFactory.cpp',
   'gpu/GPUCodeSource.cpp',
@@ -14,6 +13,10 @@ _srcs = files(
 
 if nvdisasm.found()
   _srcs += files('gpu/GPUCFG_Cuda.cpp')
+endif
+
+if igc_dep.found()
+  _srcs += files('gpu/GPUCFG_Intel.cpp')
 endif
 
 banal_lib = static_library('banal', config_h, _srcs,

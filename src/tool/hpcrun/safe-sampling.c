@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#define _GNU_SOURCE
+
 #include "safe-sampling.h"
 
 // functions exported to a separate library namespace

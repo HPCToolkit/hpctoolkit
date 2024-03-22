@@ -45,6 +45,8 @@
 // system includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include "../../../lib/binutils/intel/elf.h"
 #include <gelf.h>

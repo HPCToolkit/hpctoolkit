@@ -57,7 +57,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "hpctoolkit-config.h"
 #include "fence_enum.h"
 #include "../../utilities/ip-normalized.h"
 

@@ -52,7 +52,6 @@
 #include "../../lib/profile/sources/hpcrun4.hpp"
 #include "../../lib/profile/finalizers/kernelsyms.hpp"
 #include "../../lib/profile/finalizers/struct.hpp"
-#include "hpctoolkit-config.h"
 #include "../../include/hpctoolkit-version.h"
 #include "../../lib/profile/mpi/all.hpp"
 

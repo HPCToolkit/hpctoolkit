@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include "device-initializers.h"
 #include <errno.h>   // errno
 #include <fcntl.h>   // open

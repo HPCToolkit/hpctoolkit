@@ -49,6 +49,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "gpu-monitoring.h"
 
 

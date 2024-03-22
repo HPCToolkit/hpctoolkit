@@ -1,8 +1,8 @@
-#ifdef ENABLE_OPENCL
-
 //******************************************************************************
 // system includes
 //******************************************************************************
+
+#define _GNU_SOURCE
 
 #include <math.h>                                                                                                                       // pow
 #include <stdbool.h>                          // bool
@@ -462,5 +462,3 @@ gpu_idle_blame
   spinlock_unlock(&itimer_blame_lock);
 #endif
 }
-
-#endif  // ENABLE_OPENCL

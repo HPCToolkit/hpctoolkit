@@ -8,6 +8,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include "hpcrun-initializers.h"
 #include "main.h"
 

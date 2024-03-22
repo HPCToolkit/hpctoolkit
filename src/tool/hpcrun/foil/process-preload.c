@@ -44,7 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "hpctoolkit-config.h"
+#define _GNU_SOURCE
 
 #include "foil.h"
 #include "../libmonitor/monitor.h"

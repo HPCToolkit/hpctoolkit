@@ -62,6 +62,8 @@
 
 //************************* System Include Files ****************************
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdbool.h>
 

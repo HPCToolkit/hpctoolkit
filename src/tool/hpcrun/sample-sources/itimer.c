@@ -52,6 +52,8 @@
  * system includes
  *****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -64,7 +66,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "hpctoolkit-config.h"
 #ifdef ENABLE_CLOCK_REALTIME
 #include <sys/syscall.h>
 #endif

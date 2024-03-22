@@ -52,6 +52,8 @@
 // local includes
 //*****************************************************************************
 
+#define _GNU_SOURCE
+
 #include "../../../../lib/prof-lean/hpcrun-fmt.h"
 #include "../../../../lib/prof-lean/spinlock.h"
 #include "../../../../lib/prof-lean/splay-macros.h"

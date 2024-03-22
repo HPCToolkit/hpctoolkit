@@ -46,6 +46,9 @@ if python_inst.found()
     python_inst = disabler()
   endif
 endif
+if python_inst.found()
+  add_project_arguments('-DENABLE_LOGICAL_PYTHON', language: ['c', 'cpp'])
+endif
 
 
 # Collect all the dependencies we require for HPCToolkit
@@ -85,6 +88,14 @@ else
   endif
 endif
 papi_dep = dependency('papi', required: get_option('papi'), version: '>=5.6.0')
+papi_has_components = false
+if papi_dep.found()
+  add_project_arguments('-DHPCRUN_SS_PAPI', language: ['c', 'cpp'])
+  papi_has_components = cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component', dependencies: papi_dep)
+  if papi_has_components
+    add_project_arguments('-DHPCRUN_SS_PAPI_C_INTEL', language: ['c', 'cpp'])
+  endif
+endif
 
 
 # Dyninst ships config files, but up through 12.3 they aren't actually usable. We have a Find*
@@ -102,6 +113,57 @@ if not dyninst_dep.found()
     modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
     version: '>=12.3', default_options: _dyninst_opts)
 endif
+
+# Set flags for features available in Dyninst
+if dyninst_dep.type_name() == 'internal'
+  assert(dyninst_dep.version() != 'undefined')
+  if dyninst_dep.version().version_compare('>=13.0.0')
+    add_project_arguments('-DUSE_XED_FOR_GAPS', '-DUSE_GET_CONTAINING_MODULE', language: ['c', 'cpp'])
+  endif
+  if dyninst_dep.version().version_compare('>=11.0.0')
+    add_project_arguments('-DDYNINST_SUPPORTS_INTEL_GPU', language: ['c', 'cpp'])
+  endif
+  if dyninst_dep.version().version_compare('>=10.0.0')
+    add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
+  endif
+else
+  if cpp.compiles('''
+#include <InstructionDecoder.h>
+void test() {
+  (void)Dyninst::InstructionAPI::InstructionDecoder::unknown_instruction::register_callback;
+}
+''',
+      name: 'Dyninst::InstructionAPI::InstructionDecoder has unknown_instruction::register_callback',
+      dependencies: dyninst_dep)
+    add_project_arguments('-DUSE_XED_FOR_GAPS', language: ['c', 'cpp'])
+  endif
+  if cpp.compiles('''
+#include <Symtab.h>
+void test() {
+  Dyninst::SymtabAPI::Symtab sym;
+  sym.getContainingModule(42);
+}
+''',
+      name: 'Dyninst::SymtabAPI::Symtab uses getContainingModule()',
+      dependencies: dyninst_dep)
+    add_project_arguments('-DUSE_GET_CONTAINING_MODULE', language: ['c', 'cpp'])
+  endif
+  if cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general', dependencies: dyninst_dep)
+    add_project_arguments('-DDYNINST_SUPPORTS_INTEL_GPU', language: ['c', 'cpp'])
+  endif
+  if cpp.compiles('''
+#include <Symtab.h>
+void test() {
+  (void)Dyninst::Arch_cuda;
+}
+''',
+      name: 'Dyninst has Arch_cuda',
+      dependencies: dyninst_dep)
+    add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
+  endif
+endif
+add_project_arguments('-DENABLE_OPENMP', '-DENABLE_OPENMP_SYMTAB', language: ['c', 'cpp'])
+
 
 
 # These dependencies don't ship any dependency files, so we use CMake by default and fall back to
@@ -142,6 +204,19 @@ if host_machine.cpu_family() in ['x86', 'x86_64']
   endif
   if not xed_dep.found()
     xed_dep = dependency('xed', method: 'system', version: '>=2022.08.11')
+  endif
+endif
+if xed_dep.found()
+  if xed_dep.type_name() == 'internal'
+    assert(xed_dep.version() != 'undefined')
+    if xed_dep.version().version_compare('>=2023.08.21')
+      add_project_arguments('-DXED_DISPLACEMENT_INT64', language: ['c', 'cpp'])
+    endif
+  else
+    if (cc.has_header_symbol('xed/xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep) or
+      cc.has_header_symbol('xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep))
+      add_project_arguments('-DXED_DISPLACEMENT_INT64', language: ['c', 'cpp'])
+    endif
   endif
 endif
 
@@ -230,6 +305,21 @@ endif
 # There are a couple different Meson bugs and antifeatures at play here to cause this, but it works.
 nvdisasm = find_program('nvdisasm', '/usr/local/cuda/bin/nvdisasm', required: get_option('cuda'))
 cupti_dep = dependency('CUDA', modules: ['cupti'], required: get_option('cuda'), version: '>=11.2').partial_dependency(compile_args: true, includes: true)
+if nvdisasm.found()
+  add_project_arguments('-DCUDA_NVDISASM_PATH="@0@"'.format(nvdisasm.full_path().replace('\\', '\\\\').replace('"', '\\"')), language: ['c', 'cpp'])
+endif
+if cupti_dep.found()
+  add_project_arguments(
+    '-DOPT_HAVE_CUDA',
+    '-DENABLE_CUDA',
+    '-DHPCRUN_SS_NVIDIA',
+    '-DCUPTI_INSTALL_PREFIX="/nonexistent"',  # TODO
+    '-DCUDA_VERSION="@0@"'.format(cupti_dep.version().replace('\\', '\\\\').replace('"', '\\"')),
+    language: ['c', 'cpp'])
+endif
+if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
+  add_project_arguments('-DHPCRUN_SS_PAPI_C_CUPTI', language: ['c', 'cpp'])
+endif
 
 # Note that we only need the CUDA language for the tests, so if cupti_dep wasn't found we don't
 # enable this here either.
@@ -323,8 +413,20 @@ foreach dep : _rocm_subdeps
   endif
 endforeach
 if rocm_dep.found()
+  add_project_arguments(
+    '-DUSE_ROCM',
+    '-DHPCRUN_SS_AMD',
+    '-DROCM_VERSION="@0@"'.format(rocm_dep.version().replace('\\', '\\\\').replace('"', '\\"')),
+    language: ['c', 'cpp'])
+  if cc.has_member('roctracer_record_t', 'kernel_name', prefix: '#include <roctracer/roctracer_hip.h>', dependencies: rocm_dep)
+    add_project_arguments('-DHAVE_ROCM_ACTIVITY_KERNEL_NAME', language: ['c', 'cpp'])
+  endif
   rocprofiler_path = fs.parent(rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML', internal: 'metrics_xml'))
 endif
+if false  # get_option('papi_rocm')  # --enable-papi-c-rocm
+  add_project_arguments('-DHPCRUN_SS_PAPI_C_ROCM', language: ['c', 'cpp'])
+endif
+
 
 # Find HIP, the language used to test the ROCm support. Meson doesn't support it as a language, but
 # we emulate Meson's basic behavior for languages.
@@ -377,6 +479,9 @@ if get_option('opencl').allowed()
     # Fall back to dependency() to get a good error message and enable wrap fallbacks.
     opencl_dep = dependency('OpenCL-Headers', required: get_option('opencl'))
   endif
+endif
+if opencl_dep.found()
+  add_project_arguments('-DENABLE_OPENCL', '-DHPCRUN_SS_OPENCL', language: ['c', 'cpp'])
 endif
 
 # Find a full OpenCL installation. We need this to run some of the tests.
@@ -453,6 +558,13 @@ if get_option('level0').allowed()
     level0_dep = dependency('level-zero', required: get_option('level0'), version: '>=1.0')
   endif
 endif
+if level0_dep.found()
+  add_project_arguments(
+    '-DUSE_LEVEL0',
+    '-DHPCRUN_SS_LEVEL0',
+    '-DLEVEL0_VERSION="@0@"'.format(level0_dep.version().replace('\\', '\\\\').replace('"', '\\"')),
+    language: ['c', 'cpp'])
+endif
 
 # Find support for instruction level collection, which requires IGC and IGA
 _gtpin_f = get_option('gtpin').require(level0_dep.found(), error_message: 'gtpin is only available with level0')
@@ -518,7 +630,14 @@ else
   gtpin_dep = dependency('gtpin', method: 'system', required: get_option('gtpin'))
 endif
 if gtpin_dep.found()
-  add_project_arguments('-DENABLE_GTPIN', language: ['c', 'cpp'])
+  add_project_arguments(
+    '-DENABLE_GTPIN',
+    '-DUSE_GTPIN',
+    '-DGTPIN_VERSION="@0@"'.format(
+      (gtpin_dep.version() == 'unknown' ? 'enabled' : gtpin_dep.version())
+      .replace('\\', '\\\\').replace('"', '\\"')
+    ),
+    language: ['c', 'cpp'])
 endif
 
 # Find SYCL, the language we use to test Level Zero support. Meson doesn't support it as a language,
@@ -647,118 +766,55 @@ foreach lang : ['c', 'cpp']
 endforeach
 
 
-# Run a number of compile tests that are used for the various source files
-cfg = configuration_data()
-cfg.set_quoted('HPCTOOLKIT_INSTALL_PREFIX', get_option('prefix'),
-        description: 'HPCToolkit install prefix')
-cfg.set_quoted('HPCTOOLKIT_VERSION', meson.project_version(),
-        description: 'HPCToolkit version')
-cfg.set_quoted('HPCTOOLKIT_VERSION_STRING', 'A member of HPCToolkit, version @0@'.format(meson.project_version()),
-        description: 'HPCToolkit version string')
-cfg.set_quoted('HPCTOOLKIT_SPACK_SPEC', 'unknown (deprecated)',
-        description: 'Spack version and variants, if known. (legacy)')
-cfg.set('SIZEOF_VOIDP', cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8))
-cfg.set('HOST_CPU_x86', host_machine.cpu_family() == 'x86',
-        description: 'HOST CPU: x86 (32-bit)')
-cfg.set('HOST_CPU_x86_64', host_machine.cpu_family() == 'x86_64',
-        description: 'HOST CPU: x86_64 (64-bit)')
-cfg.set('HOST_CPU_IA64', host_machine.cpu_family() == 'ia64',
-        description: 'HOST CPU: ia64 (itanium)')
-cfg.set('HOST_CPU_PPC', host_machine.cpu_family() == 'ppc64',
-        description: 'HOST CPU: PowerPC (ppc)')
-cfg.set('HOST_CPU_ARM64', host_machine.cpu_family() == 'aarch64',
-        description: 'HOST CPU: ARM 64 (aarch64)')
-cfg.set('HOST_BIG_ENDIAN', host_machine.endian() == 'big',
-        description: 'Host is big endian.')
-cfg.set('HOST_LITTLE_ENDIAN', host_machine.endian() == 'little',
-        description: 'Host is little endian.')
-cfg.set('USE_SYSTEM_BYTESWAP', cc.has_header_symbol('byteswap.h', 'bswap_64'),
-        description: 'Use system byteswap.h')
-cfg.set('HAVE_FUTEX_H', cc.has_header_symbol('linux/futex.h', 'SYS_futex', prefix: ['#include <sys/syscall.h>', '#include <unistd.h>']),
-        description: 'Whether futexes are available for use')
-cfg.set('HOST_SYSTEM_IBM_BLUEGENE', false, description: 'IBM Blue Gene support (disabled, deprecated)')
-cfg.set('ENABLE_OPENMP', true,
-        description: 'ParseAPI supports openmp (for hpcstruct)')
-cfg.set('ENABLE_OPENMP_SYMTAB', true,
-        description: 'Symtab supports openmp (for fnbounds)')
-cfg.set('ENABLE_LOGICAL_PYTHON', python_inst.found(),
-        description: 'Support for Python logical unwinding')
-cfg.set('ENABLE_XOP', false,
-        description: 'Support for AMD XOP instructions (disabled)')
-cfg.set('ENABLE_CLOCK_REALTIME', cc.has_header_symbol('time.h', 'CLOCK_REALTIME') and cc.has_header_symbol('signal.h', 'SIGEV_THREAD_ID'),
-        description: 'Support for CLOCK_REALTIME and SIGEV_THREAD_ID')
-cfg.set('ENABLE_CLOCK_CPUTIME', cfg.get('ENABLE_CLOCK_REALTIME') and cc.has_header_symbol('time.h', 'CLOCK_THREAD_CPUTIME_ID'),
-        description: 'Support for CLOCK_THREAD_CPUTIME_ID')
-cfg.set('OPT_HAVE_CUDA', cupti_dep.found(),
-        description: 'Have support for cuda')
-cfg.set_quoted('CUDA_NVDISASM_PATH', nvdisasm.found() ? nvdisasm.full_path() : '',
-        description: 'Path to CUDA nvdisasm utility')
-cfg.set_quoted('CUPTI_INSTALL_PREFIX', '/nonexistent',  # TODO
-        description: 'CUPTI install prefix')
-cfg.set_quoted('CUDA_VERSION', cupti_dep.version())
-cfg.set('ENABLE_OPENCL', opencl_dep.found(),
-        description: 'Enable OpenCL monitoring')
-cfg.set('HAVE_ROCM_ACTIVITY_KERNEL_NAME', cc.has_member('roctracer_record_t', 'kernel_name', prefix: '#include <roctracer/roctracer_hip.h>', dependencies: rocm_dep),
-        description: 'activity_record has kernel_name field')
-cfg.set('USE_ROCM', rocm_dep.found(),
-        description: 'use ROCM')
-cfg.set_quoted('ROCM_VERSION', rocm_dep.version())
-cfg.set('USE_LEVEL0', level0_dep.found())
-cfg.set_quoted('LEVEL0_VERSION', level0_dep.version())
-cfg.set('USE_GTPIN', gtpin_dep.found())
-cfg.set_quoted('GTPIN_VERSION', gtpin_dep.version() == 'unknown' ? 'enabled' : gtpin_dep.version())
-cfg.set('DATACENTRIC_TRACE', false, description: 'Data-centric tracing (disabled, deprecated)')
+# Expose the results of various compile-time checks
+add_project_arguments('-DSIZEOF_VOIDP=@0@'.format(cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8)), language: ['c', 'cpp'])
 
-# Xed compiler checks
-if xed_dep.type_name() == 'internal'
-  assert(xed_dep.version() != 'undefined')
-  cfg.set('XED_DISPLACEMENT_INT64', xed_dep.version().version_compare('>=2023.08.21'))
-else
-  cfg.set('XED_DISPLACEMENT_INT64',
-    (cc.has_header_symbol('xed/xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep) or
-     cc.has_header_symbol('xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep)),
-          description: 'xed uses xed_operand_values_get_branch_displacement_int64')
+if host_machine.cpu_family() == 'x86'
+  add_project_arguments('-DHOST_CPU_x86', language: ['c', 'cpp'])
+elif host_machine.cpu_family() == 'x86_64'
+  add_project_arguments('-DHOST_CPU_x86_64', language: ['c', 'cpp'])
+elif host_machine.cpu_family() == 'ia64'
+  add_project_arguments('-DHOST_CPU_IA64', language: ['c', 'cpp'])
+elif host_machine.cpu_family() == 'ppc64'
+  add_project_arguments('-DHOST_CPU_PPC', language: ['c', 'cpp'])
+elif host_machine.cpu_family() == 'aarch64'
+  add_project_arguments('-DHOST_CPU_ARM64', language: ['c', 'cpp'])
 endif
 
-# Dyninst feature checks
-if dyninst_dep.type_name() == 'internal'
-  assert(dyninst_dep.version() != 'undefined')
-  cfg.set('USE_XED_FOR_GAPS', dyninst_dep.version().version_compare('>=13.0.0'))
-  cfg.set('USE_GET_CONTAINING_MODULE', dyninst_dep.version().version_compare('>=13.0.0'))
-  cfg.set('DYNINST_SUPPORTS_INTEL_GPU', dyninst_dep.version().version_compare('>=11.0.0'))
-  cfg.set('DYNINST_USE_CUDA', dyninst_dep.version().version_compare('>=10.0.0'))
-else
-  cfg.set('USE_XED_FOR_GAPS', cpp.compiles('''
-#include <InstructionDecoder.h>
-void test() {
-  (void)Dyninst::InstructionAPI::InstructionDecoder::unknown_instruction::register_callback;
-}
-''',
-            name: 'Dyninst::InstructionAPI::InstructionDecoder has unknown_instruction::register_callback',
-            dependencies: dyninst_dep),
-          description: 'use dyninst and xed for unknown instructions')
-  cfg.set('USE_GET_CONTAINING_MODULE', cpp.compiles('''
-#include <Symtab.h>
-void test() {
-  Dyninst::SymtabAPI::Symtab sym;
-  sym.getContainingModule(42);
-}
-''',
-            name: 'Dyninst::SymtabAPI::Symtab uses getContainingModule()',
-            dependencies: dyninst_dep),
-          description: 'use getContainingModule API')
-  cfg.set('DYNINST_SUPPORTS_INTEL_GPU', cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general', dependencies: dyninst_dep),
-          description: 'dyninst supports Intel GPUs')
-  cfg.set('DYNINST_USE_CUDA', cpp.compiles('''
-#include <Symtab.h>
-void test() {
-  (void)Dyninst::Arch_cuda;
-}
-''',
-            name: 'Dyninst has Arch_cuda',
-            dependencies: dyninst_dep),
-          description: 'dyninst supports cuda')
+if host_machine.endian() == 'big'
+  add_project_arguments('-DHOST_BIG_ENDIAN', language: ['c', 'cpp'])
+elif host_machine.endian() == 'little'
+  add_project_arguments('-DHOST_LITTLE_ENDIAN', language: ['c', 'cpp'])
 endif
+
+if cc.has_header_symbol('byteswap.h', 'bswap_64')
+  add_project_arguments('-DUSE_SYSTEM_BYTESWAP', language: ['c', 'cpp'])
+endif
+if cc.has_header_symbol('linux/futex.h', 'SYS_futex', prefix: ['#include <sys/syscall.h>', '#include <unistd.h>'])
+  add_project_arguments('-DHAVE_FUTEX_H', language: ['c', 'cpp'])
+endif
+
+if cc.has_header_symbol('time.h', 'CLOCK_REALTIME') and cc.has_header_symbol('signal.h', 'SIGEV_THREAD_ID')
+  add_project_arguments('-DENABLE_CLOCK_REALTIME', language: ['c', 'cpp'])
+  if cc.has_header_symbol('time.h', 'CLOCK_THREAD_CPUTIME_ID')
+    add_project_arguments('-DENABLE_CLOCK_CPUTIME', language: ['c', 'cpp'])
+  endif
+endif
+
+has_perf_events = cc.has_type('struct perf_event_attr', prefix: ['#include <linux/perf_event.h>', '#include <linux/hw_breakpoint.h>', '#include <sys/syscall.h>', '#include <unistd.h>'])
+if has_perf_events
+  add_project_arguments('-DHPCRUN_SS_LINUX_PERF', language: ['c', 'cpp'])
+endif
+
+
+# Inject some strings into the build
+add_project_arguments(
+  '-DHPCTOOLKIT_INSTALL_PREFIX="@0@"'.format(get_option('prefix').replace('\\', '\\\\').replace('"', '\\"')),
+  '-DHPCTOOLKIT_VERSION="@0@"'.format(meson.project_version().replace('\\', '\\\\').replace('"', '\\"')),
+  '-DHPCTOOLKIT_VERSION_STRING="A member of HPCToolkit, version @0@"'.format(meson.project_version().replace('\\', '\\\\').replace('"', '\\"')),
+  '-DHPCTOOLKIT_SPACK_SPEC="unknown (deprecated)"',
+  language: ['c', 'cpp'])
+
 
 subdir('src')
 subdir('lib')

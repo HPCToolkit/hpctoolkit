@@ -52,7 +52,6 @@
 #include <stdarg.h>
 #include <signal.h>
 
-#include "hpctoolkit-config.h"
 
 // Structure used to represent an active link map entry. Most informational
 // fields are filled by the auditor.

@@ -45,6 +45,8 @@
 // local includes
 //******************************************************************************
 
+#define _GNU_SOURCE
+
 #include <stdatomic.h>
 
 #include "gpu-correlation-id.h"

@@ -45,6 +45,8 @@
 // local includes
 //*****************************************************************************
 
+#define _GNU_SOURCE
+
 #include "level0-fence-map.h"
 #include "level0-handle-map.h"
 #include "../../../../../lib/prof-lean/spinlock.h"

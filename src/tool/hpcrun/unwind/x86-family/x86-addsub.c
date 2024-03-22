@@ -48,6 +48,8 @@
 
 //*************************** User Include Files ****************************
 
+#define _GNU_SOURCE
+
 #include "x86-interval-highwatermark.h"
 #include "x86-decoder.h"
 #include "x86-interval-arg.h"

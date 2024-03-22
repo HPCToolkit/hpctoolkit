@@ -87,8 +87,6 @@
 #include "../../lib/banal/gpu/GPUCFG_Intel.hpp"
 #endif // ENABLE_IGC
 
-#include "hpctoolkit-config.h"
-
 #ifdef ENABLE_OPENMP
 #include <omp.h>
 #endif
