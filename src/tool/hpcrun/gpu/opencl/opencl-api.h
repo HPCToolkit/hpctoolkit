@@ -106,8 +106,9 @@ opencl_activity_completion_callback
 void
 opencl_timing_info_get
 (
- gpu_interval_t *,
- cl_event
+  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
+  gpu_interval_t *,
+  cl_event
 );
 
 
@@ -132,13 +133,6 @@ void
 opencl_api_initialize
 (
  gpu_instrumentation_t *inst_options
-);
-
-
-int
-opencl_bind
-(
- void
 );
 
 

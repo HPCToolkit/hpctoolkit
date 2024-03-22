@@ -189,10 +189,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  if (opencl_bind()) {
-    EEMSG("hpcrun: unable to bind to opencl library %s\n", dlerror());
-    auditor_exports->exit(-1);
-  }
   opencl_api_initialize(&opencl_instrumentation_options);
 
   device_finalizer_flush.fn = opencl_api_thread_finalize;
