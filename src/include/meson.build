@@ -2,6 +2,13 @@
 # and their respective versions.
 features_msg = ''
 
+features_msg += 'PAPI support: @0@\n'.format(papi_dep.found() ? 'yes' : 'no')
+if papi_dep.found()
+  features_msg += '''
+- PAPI: @0@
+'''.strip().format(papi_dep.version()) + '\n'
+endif
+
 features_msg += 'NVIDIA CUDA support: @0@\n'.format(cupti_dep.found() ? 'yes' : 'no')
 if cupti_dep.found()
   features_msg += '''
