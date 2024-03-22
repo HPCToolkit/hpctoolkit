@@ -50,14 +50,18 @@ if python_inst.found()
   add_project_arguments('-DENABLE_LOGICAL_PYTHON', language: ['c', 'cpp'])
 endif
 
+# Find Elfutils. We search for libdw first because if libelf is installed but libdw isn't, the
+# dependency('libdw') call will invoke the Elfutils subproject and call meson.override_dependency()
+# for libelf, if we found libelf first this call causes a Meson setup failure.
+# In all major distros you can't install libdw without libelf, so this shouldn't cause problems.
+libdw_dep = dependency('libdw', version: '>=0.186', default_options: ['thread_safety=true'])
+libelf_dep = dependency('libelf', version: '>=0.186', default_options: ['thread_safety=true'])
 
 # Collect all the dependencies we require for HPCToolkit
 boost_dep = dependency('boost', 'Boost', modules: ['graph'], version: '>=1.66.0')
 bzip_dep = dependency('bzip2', 'BZip2', version: '>=1.0.0')
 tbb_dep = dependency('tbb', 'TBB', components: ['tbb'])
 tbb_malloc_dep = dependency('tbbmalloc', 'TBB', components: ['tbb', 'tbbmalloc'])
-libelf_dep = dependency('libelf', version: '>=0.186', default_options: ['thread_safety=true'])
-libdw_dep = dependency('libdw', version: '>=0.186', default_options: ['thread_safety=true'])
 libunwind_dep = dependency('libunwind', version: ['>=1.6.2', '!=1.21'],
   default_options: ['minidebuginfo=enabled', 'zlibdebuginfo=enabled'])
 _xerces_c_ver = '>=3.2.2'
