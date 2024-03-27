@@ -1,3 +1,77 @@
+## Release Notes 2024.01.0
+
+### Changed
+
+- C compiler with atomics/threads support is now required ([!945](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/945)) (Jonathon Anderson)
+- Diagnostic messages for `hpcstruct` and `hpcprof` etc. now go to stderr instead of stdout ([!994](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/994)) (John Mellor-Crummey)
+- `hpcstruct`, `hpcproftt` and `dotgraph` are now executables instead of wrapper scripts ([!952](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/952)) (Jonathon Anderson)
+
+### Added
+
+- `hpcrun --version` now reports build configuration ([#752](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/752), [!999](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/999)) (Wileam Phan)
+- `objcopy` is no longer a requirement to build ([#708](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/708)) (Jonathon Anderson)
+- Add "instant" from-source builds using Meson and Spack ([!933](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/933), [#806](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/806)) (Jonathon Anderson)
+- `hpcstruct` no longer requires `nvdisasm` to be available on the `PATH` ([#799](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/799)) (Jonathon Anderson)
+
+### Removed
+
+- Remove `hpclink` ([!984](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/984)) (Jonathon Anderson)
+- Remove override in `hpcrun` for `libmemkind` and the `--default-memkind` option ([#810](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/810)) (Jonathon Anderson)
+- Copies of dependency shared libraries are no longer installed ([#780](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/780)) (Jonathon Anderson)
+- Remove generated Autotools files from the repo ([!947](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/947)) (Ben Woodard). `automake`, `autoconf` and `libtool` are now required to build from source.
+
+### Fixed
+
+- Support GCC 13.x ([!915](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/915)) (Jonathon Anderson)
+- Support Dyninst 13.0 ([!942](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/942)) (Mark Krentel)
+- Support Xed 2023.08.21 ([!980](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/980)) (Mark Krentel)
+- Support Python 3.8 ([!958](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/958), [!962](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/962)) (Tao Zhou, Jonathon Anderson)
+- Support Python 3.12 ([!944](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/944)) (Jonathon Anderson)
+- Support CUDA 12.3 ([#826](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/826)) (Wileam Phan)
+- Support ROCm 6.0 ([!1026](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1026)) (Wileam Phan)
+- Support GTPin 3.6 ([!936](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/936)) (John Mellor-Crummey)
+- Support dependencies as installed by Fedora/RHEL packages ([!948](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/948)) (Ben Woodard)
+- Fix support for incomplete implementations of C++17 ([!990](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/990)) (John Mellor-Crummey)
+- Fix build error when assembly calls do not map to PLT by default ([!1018](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1018)) (Wileam Phan)
+- Fix consistency errors in `hpcstruct --gpucfg=yes` analysis ([#797](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/797)) (John Mellor-Crummey)
+- Fix `hpcstruct` errors on very large GPU binaries ([!950](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/950)) (John Mellor-Crummey)
+- Fix crash in `hpcprof` when `hpcstruct` GPU CFG analysis is incomplete ([!918](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/918)) (Jonathon Anderson)
+- Silence inaccurate log warnings with `hpcrun -a python` ([!965](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/965)) (Jonathon Anderson)
+- Avoid crash in `hpcrun` for applications with deep calling context ([!758](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/758)) (Jonathon Anderson)
+- Avoid crash in `hpcrun` when OpenMP runtime has incomplete OMPT support ([!935](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/935)) (John Mellor-Crummey)
+- Fix parent reporting for top-level OpenMP scopes, now under `<program root>` ([!992](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/992)) (John Mellor-Crummey)
+- Work around crash in `hpcprof` when mutual recursion is present in GPU code ([#800](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/800)) (Jonathon Anderson)
+- Warn and continue when `hpcprof --only-exe` cannot match anything ([#756](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/756), [!981](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/981)) (Jonathon Anderson)
+- Fix `hpcrun` crash caused by unintentional self-monitoring ([!987](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/987)) (Wileam Phan)
+- Fix `hpcstruct` crash on unreadable application binaries ([!1043](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1043)) (John Mellor-Crummey)
+- Fix `hpcprof-mpi` compatibility with MPI 3.1 implementations and others ([!1009](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1009), [!1034](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1034)) (Jonathon Anderson)
+- Fixed a number of known compiler warnings in our code ([!973](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/973)) (Jonathon Anderson)
+
+### Internal Changes
+
+- CI pipeline runs now complete consistently under an hour.
+  Exponential parts of our tested configuration matrix have been pruned.
+  Pre-built software dependencies are now cached at multiple levels: individually using Spack's OCI buildcache feature, locally on the CI runner node using GitLab's `cache:` feature, and in batch as full ready-to-use container images.
+  OCI-based caches are backed by GitLab's Container Registry and are publicly visible.
+  The latter image-based cache is a unique feature, to contribute to the FOSS community we have published this as a CI/CD component ([`gitlab.com/blue42u/ci.predeps/build`](https://gitlab.com/blue42u/ci.predeps)) for other projects to reuse.
+  (Jonathon Anderson)
+
+- Symbol interception implementation has been separated from the corresponding logic.
+  Internal symbols are no longer exposed to the application, no known bugs have been fixed by this but some crashes may be avoided.
+  The primary purpose of this change is to pave the way for future enhancements to our library isolation and symbol interception mechanisms.
+  ([!957](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/957)) (Jonathon Anderson)
+
+- The regression test suite (`meson test`) is now available in all Git checkouts.
+  The necessary test data is registered with Git instead of the Git LFS extension, improving the availability of the test suite in minimal software environments.
+  ([#809](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/809)) (Jonathon anderson)
+
+* CI failures now usually indicate real problems (Jonathon Anderson)
+* The `./dev` build helper has been removed in favor of Meson-powered "instant" builds ([#807](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/807)) (Jonathon Anderson)
+* CI scripts used to run `pre-commit` are now separated in a CI/CD component, [`gitlab.com/blue42u/ci.pre-commit/lite`](https://gitlab.com/blue42u/ci.pre-commit). ([!964](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/964)) (Jonathon Anderson)
+* Indentation is now exclusively done using spaces when the language permits ([!911](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/911)) (Jonathon Anderson)
+* All tools may now be run without installation ([#781](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/781), [!991](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/991)) (Jonathon Anderson)
+* Add more tests for itimer and perf events and support testing in VMs ([!977](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/977), [!988](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/988)) (Jonathon Anderson)
+
 ----------------------------------------
 HPCToolkit 2023.08.0
 ----------------------------------------

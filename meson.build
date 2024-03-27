@@ -2,7 +2,7 @@ project(
   'hpctoolkit',
   'c',
   'cpp',
-  version: '2023.08.99-next',
+  version: '2024.01.99-next',
   meson_version: '>=1.1.0',
   license: 'BSD-3-Clause',
   default_options: [
