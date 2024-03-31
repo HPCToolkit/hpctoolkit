@@ -92,6 +92,9 @@ enum hpcrun_placeholder {
   hpcrun_placeholder_ompt_barrier_wait_state = PLACEHOLDER_VALUE('O','M','P','B','a','r','r','W'),
   hpcrun_placeholder_ompt_task_wait_state    = PLACEHOLDER_VALUE('O','M','P','T','a','s','k','W'),
   hpcrun_placeholder_ompt_mutex_wait_state   = PLACEHOLDER_VALUE('O','M','P','M','t','e','x','W'),
+  hpcrun_placeholder_ompt_work               = PLACEHOLDER_VALUE('O','M','P',' ','W','o','r','k'),
+  hpcrun_placeholder_ompt_expl_task          = PLACEHOLDER_VALUE('O','M','P','E','T','a','s','k'),
+  hpcrun_placeholder_ompt_impl_task          = PLACEHOLDER_VALUE('O','M','P','I','T','a','s','k'),
   // OpenMP target abstracted operations
   hpcrun_placeholder_ompt_tgt_alloc   = PLACEHOLDER_VALUE('O','M','T','A','l','l','o','c'),
   hpcrun_placeholder_ompt_tgt_delete  = PLACEHOLDER_VALUE('O','M','T','D','e','l','t','e'),

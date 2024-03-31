@@ -784,6 +784,30 @@ hpcrun_ompt_get_task_frame
 }
 
 
+bool
+hpcrun_ompt_get_task_info
+(
+ int level,
+ hpcrun_task_info_t *fi
+)
+{
+  if (ompt_initialized) {
+    fi->task_type_flags = 0;
+    fi->task_data = NULL;
+    fi->parallel_data = NULL;
+    fi->task_frame = NULL;
+    fi->thread_num = 0;
+
+    ompt_get_task_info_fn(level, &fi->task_type_flags, &fi->task_data, &fi->task_frame,
+                          &fi->parallel_data, &fi->thread_num);
+
+    return true;
+  }
+
+  return false;
+}
+
+
 ompt_data_t*
 hpcrun_ompt_get_task_data
 (

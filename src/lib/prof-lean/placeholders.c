@@ -67,6 +67,9 @@ static const char phname_omp_barrier_wait[]      = "<omp barrier wait>";
 static const char phname_omp_task_wait[]         = "<omp task wait>";
 static const char phname_omp_mutex_wait[]        = "<omp mutex wait>";
 static const char phname_omp_region_unresolved[] = "<omp region unresolved>";
+static const char phname_omp_work[]              = "<omp work>";
+static const char phname_omp_expl_task[]         = "<omp expl task>";
+static const char phname_omp_impl_task[]         = "<omp impl task>";
 
 static const char phname_omp_tgt_copyin[]  = "<omp tgt copyin>";
 static const char phname_omp_tgt_copyout[] = "<omp tgt copyout>";
@@ -111,6 +114,12 @@ get_placeholder_name(uint64_t placeholder) {
     return phname_omp_task_wait;
   case hpcrun_placeholder_ompt_mutex_wait_state:
     return phname_omp_mutex_wait;
+  case hpcrun_placeholder_ompt_work:
+    return phname_omp_work;
+  case hpcrun_placeholder_ompt_expl_task:
+    return phname_omp_expl_task;
+  case hpcrun_placeholder_ompt_impl_task:
+    return phname_omp_impl_task;
   case hpcrun_placeholder_gpu_alloc:
     return phname_gpu_alloc;
   case hpcrun_placeholder_ompt_tgt_alloc:
