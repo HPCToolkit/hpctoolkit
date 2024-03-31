@@ -445,9 +445,13 @@ ompt_elide_runtime_frame(
     frame_t *exit0 = NULL, *reenter1 = NULL;
     ompt_frame_t *frame1;
 
-    frame0 = hpcrun_ompt_get_task_frame(i);
+    hpcrun_task_info_t task_info;
+    hpcrun_ompt_get_task_info(i, &task_info);
+
+    frame0 = task_info.task_frame;
 
     if (!frame0) break;
+
 
     ompt_data_t *task_data = hpcrun_ompt_get_task_data(i);
     cct_node_t *omp_task_context = NULL;
@@ -481,8 +485,18 @@ ompt_elide_runtime_frame(
     }
 
     if (exit0_flag && omp_task_context) {
+      uint64_t ph_type =
+        (task_info.task_type_flags & ompt_task_explicit) ?
+        hpcrun_placeholder_ompt_expl_task:
+        hpcrun_placeholder_ompt_impl_task;
+
       TD_GET(omp_task_context) = omp_task_context;
-      *bt_outer = exit0 - 1;
+      set_frame(exit0, ph_type);
+      if (ph_type == hpcrun_placeholder_ompt_expl_task) {
+        exit0++;
+        set_frame(exit0, hpcrun_placeholder_ompt_impl_task);
+      }
+      *bt_outer = exit0;
       break;
     }
 
@@ -536,10 +550,12 @@ ompt_elide_runtime_frame(
 
       //------------------------------------
       // The prefvous version DON'T DELETE
-      memmove(*bt_inner+(reenter1-exit0+1), *bt_inner,
+      memmove(*bt_inner+(reenter1-exit0), *bt_inner,
               (exit0 - *bt_inner)*sizeof(frame_t));
 
-      *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
+      set_frame(reenter1, hpcrun_placeholder_ompt_impl_task);
+
+      *bt_inner = *bt_inner + (reenter1 - exit0);
 
       exit0 = reenter1 = NULL;
       // --------------------------------
@@ -547,7 +563,8 @@ ompt_elide_runtime_frame(
     } else if (exit0 && !reenter1) {
       // corner case: reenter1 is in the team master's stack, not mine. eliminate all
       // frames below the exit frame.
-      *bt_outer = exit0 - 1;
+      set_frame(exit0, hpcrun_placeholder_ompt_impl_task);
+      *bt_outer = exit0;
       break;
     }
   }

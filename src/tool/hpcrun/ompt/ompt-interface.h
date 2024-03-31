@@ -80,6 +80,20 @@
 // interface functions
 //*****************************************************************************
 
+typedef struct {
+  int task_type_flags;
+  ompt_data_t *task_data;
+  ompt_data_t *parallel_data;
+  ompt_frame_t *task_frame;
+  int thread_num;
+} hpcrun_task_info_t;
+
+
+
+//*****************************************************************************
+// interface functions
+//*****************************************************************************
+
 //------------------------------------------------------------------------------
 // hpcrun wrappers for ompt interfaces
 //------------------------------------------------------------------------------
@@ -140,6 +154,14 @@ ompt_frame_t *
 hpcrun_ompt_get_task_frame
 (
  int level
+);
+
+
+bool
+hpcrun_ompt_get_task_info
+(
+ int level,
+ hpcrun_task_info_t *ti
 );
 
 
