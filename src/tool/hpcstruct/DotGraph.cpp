@@ -79,12 +79,12 @@
 #include "../../lib/binutils/ElfHelper.hpp"
 #include "../../lib/binutils/InputFile.hpp"
 
-#include "../../lib/banal/Struct-Inline.hpp"
+#include "Struct-Inline.hpp"
 
-#include "../../lib/banal/gpu/GPUCFG_Cuda.hpp"
+#include "gpu/GPUCFG_Cuda.hpp"
 
 #ifdef ENABLE_IGC
-#include "../../lib/banal/gpu/GPUCFG_Intel.hpp"
+#include "gpu/GPUCFG_Intel.hpp"
 #endif // ENABLE_IGC
 
 #ifdef ENABLE_OPENMP

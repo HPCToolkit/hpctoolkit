@@ -74,13 +74,13 @@
 #include <ostream>
 #include <string>
 
-#include "../binutils/VMAInterval.hpp"
-#include "../support/FileUtil.hpp"
-#include "../support/StringTable.hpp"
-#include "../support/dictionary.h"
+#include "../../lib/binutils/VMAInterval.hpp"
+#include "../../lib/support/FileUtil.hpp"
+#include "../../lib/support/StringTable.hpp"
+#include "../../lib/support/dictionary.h"
 
-#include "../xml/xml.hpp"
-#include "../xml/static.data.h"
+#include "../../lib/xml/xml.hpp"
+#include "../../lib/xml/static.data.h"
 
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"

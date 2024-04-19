@@ -99,7 +99,7 @@ using std::endl;
 #include "Args.hpp"
 #include "Structure-Cache.hpp"
 
-#include "../../lib/banal/Struct.hpp"
+#include "Struct.hpp"
 #include "../../lib/prof-lean/cpuset_hwthreads.h"
 #include "../../lib/prof-lean/gpu-binary-naming.h"
 #include "../../lib/prof-lean/hpcio.h"

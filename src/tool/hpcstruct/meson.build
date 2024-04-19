@@ -1,37 +1,58 @@
 _srcs = files(
+  'gpu/CudaCFGParser.cpp',
+  'gpu/GPUBlock.cpp',
+  'gpu/GPUCFG.cpp',
+  'gpu/GPUCFGFactory.cpp',
+  'gpu/GPUCodeSource.cpp',
+  'gpu/GPUFunction.cpp',
+  'Struct-Inline.cpp',
+  'Struct-Output.cpp',
+  'Struct.cpp',
+)
+_srcs += xml_srcs
+
+if nvdisasm.found()
+  _srcs += files(
+    'gpu/GPUCFG_Cuda.cpp',
+    'gpu/GraphReader.cpp',
+  )
+endif
+
+if igc_dep.found()
+  _srcs += files('gpu/GPUCFG_Intel.cpp')
+endif
+
+_deps = [
+  boost_dep,
+  dyninst_dep,
+  iga_dep,
+  igc_dep,
+  libdw_dep,
+  libelf_dep,
+  openmp_dep,
+  xed_dep,
+]
+
+hpcstruct = executable('hpcstruct', version_cpp, _srcs,
   'Args.cpp',
   'main.cpp',
   'MeasDir.cpp',
   'SingleBin.cpp',
   'Structure-Cache.cpp',
   'Structure-Version.cpp',
-)
-
-hpcstruct = executable('hpcstruct', version_cpp, _srcs,
   analysis_srcs,
-  banal_srcs,
   binutils_srcs,
   prof_lean_srcs,
   prof_srcs,
   support_srcs,
   xml_srcs,
   dependencies: [
+    _deps,
     analysis_deps,
-    banal_deps,
     binutils_deps,
-    boost_dep,
-    dyninst_dep,
-    iga_dep,
-    igc_dep,
-    libdw_dep,
-    libelf_dep,
-    lzma_dep,
-    openmp_dep,
     prof_deps,
     prof_lean_deps,
     support_deps,
-    xed_dep,
-    xerces_dep,
     xml_deps,
   ],
   install: true)
@@ -49,29 +70,18 @@ foreach k,v : _env
 endforeach
 
 
-dotgraph = executable('dotgraph', 'DotGraph.cpp',
+dotgraph = executable('dotgraph', 'DotGraph.cpp', _srcs,
   analysis_srcs,
-  banal_srcs,
   binutils_srcs,
   prof_lean_srcs,
   prof_srcs,
   support_srcs,
   xml_srcs,
   dependencies: [
+    _deps,
     analysis_deps,
-    banal_deps,
     binutils_deps,
-    boost_dep,
-    dyninst_dep,
-    iga_dep,
-    igc_dep,
-    libdw_dep,
-    libelf_dep,
-    lzma_dep,
-    openmp_dep,
     prof_deps,
     prof_lean_deps,
     support_deps,
-    xed_dep,
-    xerces_dep,
   ])

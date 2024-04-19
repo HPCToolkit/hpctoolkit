@@ -64,8 +64,8 @@
 #include <Symtab.h>
 #include <Function.h>
 
-#include "../isa/ISATypes.hpp"
-#include "../binutils/VMAInterval.hpp"
+#include "../../lib/isa/ISATypes.hpp"
+#include "../../lib/binutils/VMAInterval.hpp"
 #include "Struct-Inline.hpp"
 
 namespace BAnal {

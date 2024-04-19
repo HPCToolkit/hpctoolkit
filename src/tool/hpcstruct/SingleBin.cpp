@@ -68,7 +68,7 @@ using std::endl;
 #include <string.h>
 
 #include "hpcstruct.hpp"
-#include "../../lib/banal/Struct.hpp"
+#include "Struct.hpp"
 #include "../../lib/prof-lean/gpu-binary-naming.h"
 #include "../../lib/prof-lean/hpcio.h"
 #include "../../lib/support/realpath.h"
