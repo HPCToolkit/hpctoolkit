@@ -402,7 +402,7 @@ if gtpin_dep.found()
     'gpu/intel/binaries/zebinSymbols.c',
     gnu_symbol_visibility: 'hidden',
     link_with: [prof_lean_lib],
-    dependencies: [libelf_dep, libunwind_dep, tbb_malloc_dep, gtpin_dep, dl_dep],
+    dependencies: [libelf_dep, libunwind_dep, tbb_malloc_dep, gtpin_dep, threads_dep, dl_dep],
     install: true, install_dir: 'lib' / meson.project_name())
 endif
 

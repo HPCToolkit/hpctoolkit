@@ -1,9 +1,9 @@
 [wrap-file]
-directory = gtpin-3.7
+directory = gtpin-4.0
 patch_directory = gtpin
-source_url = https://downloadmirror.intel.com/793592/external-release-gtpin-3.7-linux.tar.xz
-source_hash = 366edb46369a67bdbaea3c11ad5bf9a9ead5a7234efb780a27dffd70d1150c39
-source_filename = external-release-gtpin-3.7-linux.tar.xz
+source_url = https://downloadmirror.intel.com/816037/external-release-gtpin-4.0-linux.tar.xz
+source_hash = fc12fb3aefdd4ae75b21ef9325e4058439dace52501200900895240c6ef3f0d8
+source_filename = external-release-gtpin-4.0-linux.tar.xz
 lead_directory_missing = true
 
 [provide]
