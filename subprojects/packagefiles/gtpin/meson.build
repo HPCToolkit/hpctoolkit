@@ -1,4 +1,4 @@
-project('gtpin', 'cpp', version: '3.7', meson_version: '>=1.0.0')
+project('gtpin', 'cpp', version: '4.0', meson_version: '>=1.0.0')
 
 if not (host_machine.system() == 'linux' and host_machine.cpu_family() == 'x86_64')
   error('GTPin is only available on Linux x86-64, and will not work for your system')
