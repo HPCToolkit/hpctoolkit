@@ -82,6 +82,7 @@ using std::string;
 #include "Struct-Tree.hpp"
 
 #include "../xml/xml.hpp"
+#include "../xml/static.data.h"
 
 #include "../support/diagnostics.h"
 #include "../support/dictionary.h"
@@ -173,11 +174,8 @@ void
 writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
          bool prettyPrint)
 {
-  static const char* structureDTD =
-#include "../xml/hpc-structure.dtd.h"
-
   os << "<?xml version=\"1.0\"?>\n";
-  os << "<!DOCTYPE HPCToolkitStructure [\n" << structureDTD << "]>\n";
+  os << "<!DOCTYPE HPCToolkitStructure [\n" << HPCSTRUCT_DTD << "]>\n";
   os.flush();
 
   int oFlags = 0;

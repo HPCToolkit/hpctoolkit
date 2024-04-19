@@ -563,7 +563,7 @@ _hpcrun_libs += shared_module('hpcrun_pthread',
 
 
 # Configure and install the hpcrun launcher
-hpcrun = executable('hpcrun', version_h, 'launch.cpp',
+hpcrun = executable('hpcrun', version_cpp, 'launch.cpp',
   install: true)
 
 # Make sure the hpcrun launcher is available in devenv
