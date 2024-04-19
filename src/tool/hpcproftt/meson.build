@@ -4,8 +4,26 @@ _srcs = files(
 )
 
 hpcproftt = executable('hpcproftt', version_cpp, _srcs,
-  link_with: [analysis_lib, prof_lib, binutils_lib, prof_lean_lib, xml_lib, support_lib, support_lean_lib],
-  dependencies: [libelf_dep, libdw_dep, igc_dep, iga_dep, lzma_dep, xerces_dep])
+  analysis_srcs,
+  binutils_srcs,
+  prof_lean_srcs,
+  prof_srcs,
+  support_srcs,
+  xml_srcs,
+  dependencies: [
+    analysis_deps,
+    binutils_deps,
+    iga_dep,
+    igc_dep,
+    libdw_dep,
+    libelf_dep,
+    lzma_dep,
+    prof_deps,
+    prof_lean_deps,
+    support_deps,
+    xerces_dep,
+    xml_deps,
+  ])
 
 _devenv = environment()
 _devenv.prepend('PATH', meson.current_build_dir())

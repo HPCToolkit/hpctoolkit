@@ -1,11 +1,10 @@
-_srcs = files(
+support_lean_srcs = files(
   'timer.c',
   'OSUtil.c',
   'compress_lzma.c',
   'demangle.c',
 )
-
-support_lean_lib = static_library('support-lean', _srcs,
-  pic: true,
-  gnu_symbol_visibility: 'hidden',
-  dependencies: [libiberty_dep, lzma_dep])
+support_lean_deps = [
+  libiberty_dep,
+  lzma_dep,
+]

@@ -1,4 +1,4 @@
-_srcs = files(
+support_srcs = files(
   'CmdLineParser.cpp',
   'CStrUtil.cpp',
   'diagnostics.cpp',
@@ -28,7 +28,7 @@ _srcs = files(
   'Unique.cpp',
   'WordSet.cpp',
 )
-
-support_lib = static_library('support', _srcs,
-  pic: true,
-  gnu_symbol_visibility: 'hidden')
+support_srcs += support_lean_srcs
+support_deps = [
+  support_lean_deps,
+]

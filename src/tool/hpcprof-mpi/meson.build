@@ -10,6 +10,22 @@ _srcs = files(
 )
 
 hpcprof_mpi = executable('hpcprof-mpi', version_cpp, _srcs,
-  link_with: [profile_lib, prof_lean_lib, support_lean_lib],
-  dependencies: [xxhash_dep, mpi_dep, boost_dep, xerces_dep, lzma_dep, yaml_cpp_dep, libelf_dep, libdw_dep, libiberty_dep, openmp_dep],
+  prof_lean_srcs,
+  profile_srcs,
+  support_lean_srcs,
+  dependencies: [
+    boost_dep,
+    libdw_dep,
+    libelf_dep,
+    libiberty_dep,
+    lzma_dep,
+    mpi_dep,
+    openmp_dep,
+    prof_lean_deps,
+    profile_deps,
+    support_lean_deps,
+    xerces_dep,
+    xxhash_dep,
+    yaml_cpp_dep,
+  ],
   install: true)

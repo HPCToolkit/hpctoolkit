@@ -1,4 +1,4 @@
-_srcs = files(
+xml_srcs = files(
   'xml.cpp',
 )
 
@@ -9,12 +9,10 @@ foreach line : _struct_dtd.split('\n')
     break
   endif
 endforeach
-_srcs += [
+xml_srcs += [
   configure_file(output: 'static.data.cpp', input: 'static.data.cpp.in',
     configuration: {'HPCSTRUCT_DTD': _struct_dtd, 'HPCSTRUCT_DTD_VERSION': _struct_dtd_ver}),
-  fs.copyfile('xml.hpp'),  # Needed to compile the above
+  fs.copyfile('static.data.h'),  # Needed to compile the above
 ]
 
-xml_lib = static_library('xml', _srcs,
-  pic: true,
-  gnu_symbol_visibility: 'hidden')
+xml_deps = []

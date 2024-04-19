@@ -79,16 +79,6 @@ main_rawData(const std::vector<string>& profileFiles, bool sm_easyToGrep);
 
 //****************************************************************************
 
-void
-prof_abort
-(
-  int error_code
-)
-{
-  exit(error_code);
-}
-
-
 int
 main(int argc, char* const* argv)
 {
