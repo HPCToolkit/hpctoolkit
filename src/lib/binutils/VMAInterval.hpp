@@ -67,15 +67,35 @@
 
 #include <set>
 #include <map>
+#include <cstdint>
 
 //*************************** User Include Files ****************************
 
 #include "../../include/gcc-attr.h"
 
-#include "../isa/ISATypes.hpp"
 
 //*************************** Forward Declarations **************************
 
+// Architectural datatypes:
+
+// A virtual memory address for an arbitrary target machine.
+typedef uint64_t VMA;
+typedef int64_t VMASigned; // useful for offsets
+
+#define VMA_MAX UINT64_MAX
+
+// MachInsn* can point to (non-)variable length instructions (or
+// instruction words) and should not be dereferenced.  To examine the
+// individual bytes of a MachInsn*, use a 'MachInsnByte'.
+typedef void MachInsn;
+typedef unsigned char MachInsnByte;
+
+// Casting helpers, in case we aren't on a 64-bit machine.
+#define PTR_TO_BFDVMA(x)         ((uint64_t)(uintptr_t)(x))
+#define BFDVMA_TO_PTR(x, totype) ((totype)(uintptr_t)(x))
+
+#define PTR_TO_VMA(x)          PTR_TO_BFDVMA(x)
+#define VMA_TO_PTR(x, totype)  BFDVMA_TO_PTR(x, totype)
 
 //***************************************************************************
 // VMAInterval
