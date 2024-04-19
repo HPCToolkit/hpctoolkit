@@ -9,7 +9,6 @@ subdir('hpcrun')
 subdir('hpcproflm')
 subdir('hpcstruct')
 subdir('hpcprof')
-subdir('hpcprof-mpi')
 
 subdir('hpcproftt')
 subdir('hpctracedump')
