@@ -43,12 +43,12 @@ _srcs += configure_file(output: 'static.data.cpp', input: 'static.data.cpp.in',
     'METRICS_YAML': fs.read(meson.project_source_root() / 'doc/METRICS.yaml'),
   })
 
-profile_lib = static_library('profile', config_h, _srcs,
+profile_lib = static_library('profile', _srcs,
   pic: true,
   gnu_symbol_visibility: 'hidden',
   dependencies: [libelf_dep, lzma_dep, xerces_dep, yaml_cpp_dep, libdw_dep, xxhash_dep, openmp_dep])
 
-profile_standalone_lib = static_library('profile-standalone', config_h, 'mpi/standalone.cpp',
+profile_standalone_lib = static_library('profile-standalone', 'mpi/standalone.cpp',
   pic: true,
   gnu_symbol_visibility: 'hidden',
   link_whole: [profile_lib])

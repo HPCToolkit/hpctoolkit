@@ -90,8 +90,6 @@ using std::string;
 
 //***************************************************************************
 
-static const char* version_info = HPCTOOLKIT_VERSION_STRING;
-
 static const char* usage_summary =
 "<measurement directory>\n";
 
@@ -136,13 +134,6 @@ Args::Args(int argc, const char* const argv[])
 
 Args::~Args()
 {
-}
-
-
-void
-Args::printVersion(std::ostream& os) const
-{
-  os << getCmd() << ": " << version_info << endl;
 }
 
 

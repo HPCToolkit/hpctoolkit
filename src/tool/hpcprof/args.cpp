@@ -69,7 +69,6 @@
 using namespace hpctoolkit;
 namespace fs = stdshim::filesystem;
 
-static const std::string version = HPCTOOLKIT_VERSION;
 static const std::string summary =
 "[options]... <measurement files/directories>...";
 static const std::string header = R"EOF(

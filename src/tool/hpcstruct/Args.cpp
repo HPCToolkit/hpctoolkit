@@ -78,6 +78,8 @@ using std::string;
 
 #include "Args.hpp"
 
+#include "../../include/hpctoolkit-version.h"
+
 #include "../../lib/analysis/Util.hpp"
 #include "../../lib/support/diagnostics.h"
 #include "../../lib/support/FileUtil.hpp"
@@ -96,8 +98,6 @@ using std::string;
 
 // Size in bytes for parallel analysis of binaries
 #define DEFAULT_PSIZE     100000000   // 100MB
-
-static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
   "  hpcstruct [options] <measurement directory>\n"
@@ -324,13 +324,6 @@ Args::~Args()
 
 
 void
-Args::printVersion(std::ostream& os) const
-{
-  os << getCmd() << ": " << version_info << endl;
-}
-
-
-void
 Args::printUsage(std::ostream& os) const
 {
   os << "Usage: " << endl
@@ -388,7 +381,7 @@ Args::parse(int argc, const char* const argv[])
       exit(0);
     }
     if (parser.isOpt("version")) {
-      printVersion(std::cerr);
+      hpctoolkit_print_version(getCmd().c_str());
       exit(1);
     }
     if (parser.isOpt("verbose")) {

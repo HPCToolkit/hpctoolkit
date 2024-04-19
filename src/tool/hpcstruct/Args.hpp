@@ -86,10 +86,6 @@ public:
   void
   parse(int argc, const char* const argv[]);
 
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
   void
   printUsage(std::ostream& os) const;
 

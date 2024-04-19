@@ -69,6 +69,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "../../include/gcc-attr.h"
+#include "../../include/hpctoolkit-version.h"
 
 #include "Args.hpp"
 
@@ -90,8 +91,6 @@ using std::string;
     exit(1); }
 
 //***************************************************************************
-
-static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
 "profile-file [profile-file]*\n";
@@ -173,13 +172,6 @@ Args::~Args()
 
 
 void
-Args::printVersion(std::ostream& os) const
-{
-  os << getCmd() << ": " << version_info << endl;
-}
-
-
-void
 Args::printUsage(std::ostream& os) const
 {
   os << "Usage: \n"
@@ -230,7 +222,7 @@ Args::parse(int argc, const char* const argv[])
       exit(1);
     }
     if (parser.isOpt("version")) {
-      printVersion(std::cerr);
+      hpctoolkit_print_version(getCmd().c_str());
       exit(1);
     }
     if (parser.isOpt("grep")) { //YUMENG

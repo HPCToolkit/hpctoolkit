@@ -2,7 +2,7 @@ _srcs = files(
   'xml.cpp',
 )
 
-xml_lib = static_library('xml', config_h, _srcs,
+xml_lib = static_library('xml', _srcs,
   pic: true,
   gnu_symbol_visibility: 'hidden')
 

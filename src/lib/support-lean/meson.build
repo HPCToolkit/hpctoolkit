@@ -5,7 +5,7 @@ _srcs = files(
   'demangle.c',
 )
 
-support_lean_lib = static_library('support-lean', config_h, _srcs,
+support_lean_lib = static_library('support-lean', _srcs,
   pic: true,
   gnu_symbol_visibility: 'hidden',
   dependencies: [libiberty_dep, lzma_dep])

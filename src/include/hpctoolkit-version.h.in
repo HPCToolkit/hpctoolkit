@@ -7,10 +7,18 @@
 static inline void
 hpctoolkit_print_version(const char * prog_name)
 {
-  printf("%s: %s\n"
+  printf("%s: A member of HPCToolkit, version %s\n"
          "git branch:  %s\n"
-         "spack spec:  %s\n"
          "install dir: %s\n",
-         prog_name, HPCTOOLKIT_VERSION_STRING, "@VCS_TAG@",
-         HPCTOOLKIT_SPACK_SPEC, HPCTOOLKIT_INSTALL_PREFIX);
+         prog_name, "@VERSION@", "@VCS_TAG@",
+         HPCTOOLKIT_INSTALL_PREFIX);
 }
+
+#ifdef __cplusplus
+static inline void
+hpctoolkit_print_version_and_features(const char* prog_name)
+{
+  hpctoolkit_print_version(prog_name);
+  printf("%s", R"====(@FEATURES_MESSAGE@)====");
+}
+#endif  // __cplusplus

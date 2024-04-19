@@ -274,54 +274,6 @@ NOTES:
 )==";
 }
 
-static void print_version() {
-  std::cout.sync_with_stdio();
-  hpctoolkit_print_version("hpcrun");
-  std::fflush(::stdout);
-
-  std::cout << "NVIDIA CUDA support: "
-#ifdef OPT_HAVE_CUDA
-    "yes\n"
-    "- CUDA: " CUDA_VERSION "\n";
-#else
-    "no\n";
-#endif
-
-  std::cout << "AMD ROCm support: "
-#ifdef USE_ROCM
-    "yes\n"
-    "- ROCm: " ROCM_VERSION "\n";
-#else
-    "no\n";
-#endif
-
-  std::cout << "Intel Level Zero support: "
-#ifdef USE_LEVEL0
-    "yes\n"
-    "- Level Zero: " LEVEL0_VERSION "\n"
-#ifdef USE_GTPIN
-    "- GTPin: " GTPIN_VERSION "\n"
-#endif
-    ;
-#else
-    "no\n";
-#endif
-
-  std::cout << "OpenCL support: "
-#ifdef ENABLE_OPENCL
-    "yes\n";
-#else
-    "no\n";
-#endif
-
-  std::cout << "Python support: "
-#ifdef ENABLE_LOGICAL_PYTHON
-    "yes\n";
-#else
-    "no\n";
-#endif
-}
-
 static std::optional<std::string> fetchenv(const std::string& str) {
   const char* env = std::getenv(str.c_str());
   if (env == NULL || env[0] == '\0')
@@ -422,7 +374,7 @@ int main(int argc, char* argv[]) {
 
   // Handle "early" version arguments
   if (argc > 1 && strmatch(argv[1], {"-V", "-version", "--version"})) {
-    print_version();
+    hpctoolkit_print_version_and_features("hpcrun");
     return 0;
   }
 
