@@ -46,7 +46,7 @@
 
 #include "core.hpp"
 
-#include "../../prof-lean/formats/primitive.h"
+#include "../../../lib/prof-lean/formats/primitive.h"
 
 #include <cstdint>
 #include <cassert>

@@ -44,9 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "../../lib/profile/mpi/all.hpp"
+#include "mpi/all.hpp"
 
-#include "../../lib/profile/util/log.hpp"
+#include "util/log.hpp"
 
 #include <limits>
 #include <mpi.h>

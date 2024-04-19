@@ -46,7 +46,7 @@
 
 #include "directclassification.hpp"
 
-#include "../../support-lean/hpctoolkit_demangle.h"
+#include "../../../lib/support-lean/hpctoolkit_demangle.h"
 #include "../pipeline.hpp"
 
 #include <elfutils/libdw.h>

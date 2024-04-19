@@ -61,7 +61,7 @@
 
 #include "Args.hpp"
 
-#include "../../lib/profile/stdshim/filesystem.hpp"
+#include "../hpcprof/stdshim/filesystem.hpp"
 #include "../../lib/prof-lean/hpcrun-fmt.h"
 #include "../../lib/support/diagnostics.h"
 

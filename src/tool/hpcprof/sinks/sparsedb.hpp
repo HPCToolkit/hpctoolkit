@@ -54,7 +54,7 @@
 #include "../util/file.hpp"
 #include "../mpi/all.hpp"
 
-#include "../../prof-lean/formats/profiledb.h"
+#include "../../../lib/prof-lean/formats/profiledb.h"
 
 #include <vector>
 

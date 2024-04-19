@@ -53,7 +53,7 @@
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
 #include "util/streaming_sort.hpp"
-#include "../prof-lean/id-tuple.h"
+#include "../../lib/prof-lean/id-tuple.h"
 
 #include "stdshim/filesystem.hpp"
 #include <functional>

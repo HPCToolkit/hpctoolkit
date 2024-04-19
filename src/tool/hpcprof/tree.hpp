@@ -47,9 +47,9 @@
 #ifndef HPCPROF_MPI_TREE_HPP
 #define HPCPROF_MPI_TREE_HPP
 
-#include "../../lib/profile/sinks/packed.hpp"
-#include "../../lib/profile/sources/packed.hpp"
-#include "../../lib/profile/pipeline.hpp"
+#include "sinks/packed.hpp"
+#include "sources/packed.hpp"
+#include "pipeline.hpp"
 
 #include <vector>
 

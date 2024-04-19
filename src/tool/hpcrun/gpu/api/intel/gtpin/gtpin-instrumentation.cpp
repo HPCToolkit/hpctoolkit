@@ -108,8 +108,8 @@ extern "C"
 #include "../../../../libmonitor/monitor.h"
 };
 
-#include "../../../../../../lib/profile/util/locked_unordered.hpp"
-#include "../../../../../../lib/profile/util/locked_unordered.hpp"
+#include "../../../../../hpcprof/util/locked_unordered.hpp"
+#include "../../../../../hpcprof/util/locked_unordered.hpp"
 
 
 

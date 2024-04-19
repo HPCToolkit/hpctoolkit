@@ -68,7 +68,7 @@
 //*************************** User Include Files ****************************
 
 #include "../../lib/support/CmdLineParser.hpp"
-#include "../../lib/profile/stdshim/filesystem.hpp"
+#include "../hpcprof/stdshim/filesystem.hpp"
 
 //*************************** Forward Declarations **************************
 

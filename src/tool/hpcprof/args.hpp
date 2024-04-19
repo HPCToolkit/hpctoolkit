@@ -47,10 +47,10 @@
 #ifndef HPCTOOLKIT_PROF2_ARGS_H
 #define HPCTOOLKIT_PROF2_ARGS_H
 
-#include "../../lib/profile/source.hpp"
-#include "../../lib/profile/finalizer.hpp"
+#include "source.hpp"
+#include "finalizer.hpp"
 
-#include "../../lib/profile/stdshim/filesystem.hpp"
+#include "stdshim/filesystem.hpp"
 #include <functional>
 
 namespace hpctoolkit {
