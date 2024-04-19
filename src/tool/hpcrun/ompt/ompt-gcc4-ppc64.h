@@ -51,7 +51,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../lib/isa-lean/power/instruction-set.h"
+#include "../utilities/arch/ppc64/instruction-set.h"
 
 
 

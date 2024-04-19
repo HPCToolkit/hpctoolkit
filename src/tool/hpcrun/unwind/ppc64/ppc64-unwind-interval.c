@@ -70,7 +70,7 @@
 #include "../../fnbounds/fnbounds_interface.h"
 #include "../../hpcrun_stats.h"
 #include "../../messages/messages.h"
-#include "../../../../lib/isa-lean/power/instruction-set.h"
+#include "../../utilities/arch/ppc64/instruction-set.h"
 
 
 //*************************** Forward Declarations **************************

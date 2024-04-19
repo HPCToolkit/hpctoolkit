@@ -54,7 +54,7 @@
 #include "x86-decoder.h"
 #include "x86-interval-arg.h"
 
-#include "../../../../lib/isa-lean/x86/instruction-set.h"
+#include "../../utilities/arch/x86-family/instruction-set.h"
 
 //***************************************************************************
 

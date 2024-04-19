@@ -2,7 +2,7 @@
 #define SPECIFIC_UCONTEXT_MANIP
 
 #include <ucontext.h>
-#include "../../../../../lib/isa-lean/power/instruction-set.h"
+#include "instruction-set.h"
 
 #if __WORDSIZE == 32
 #  define UC_REGS(uc, reg) (uc.uc_mcontext.uc_regs->gregs[reg])

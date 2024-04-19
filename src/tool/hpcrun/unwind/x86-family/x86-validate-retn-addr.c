@@ -75,7 +75,7 @@
 #include "../common/unw-datatypes.h"
 #include "../../messages/messages.h"
 
-#include "../../../../lib/isa-lean/x86/instruction-set.h"
+#include "../../utilities/arch/x86-family/instruction-set.h"
 
 
 //****************************************************************************

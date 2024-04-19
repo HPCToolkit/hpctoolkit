@@ -83,7 +83,7 @@
 #include "../../utilities/ip-normalized.h"
 #include "../../utilities/arch/mcontext.h"
 
-#include "../../../../lib/isa-lean/power/instruction-set.h"
+#include "../../utilities/arch/ppc64/instruction-set.h"
 #include "../common/fence_enum.h"
 
 
