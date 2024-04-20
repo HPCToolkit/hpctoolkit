@@ -8,8 +8,21 @@ _srcs = files(
   'Struct-Inline.cpp',
   'Struct-Output.cpp',
   'Struct.cpp',
+  'xml.cpp',
 )
-_srcs += xml_srcs
+
+_struct_dtd = fs.read(meson.project_source_root() / 'lib/dtd/hpc-structure.dtd')
+foreach line : _struct_dtd.split('\n')
+  if line.contains('Version')
+    _struct_dtd_ver = line.strip().split()[2]
+    break
+  endif
+endforeach
+_srcs += [
+  configure_file(output: 'static.data.cpp', input: 'static.data.cpp.in',
+    configuration: {'HPCSTRUCT_DTD': _struct_dtd, 'HPCSTRUCT_DTD_VERSION': _struct_dtd_ver}),
+  fs.copyfile('static.data.h'),  # Needed to compile the above
+]
 
 if nvdisasm.found()
   _srcs += files(
@@ -45,7 +58,6 @@ hpcstruct = executable('hpcstruct', version_cpp, _srcs,
   prof_lean_srcs,
   prof_srcs,
   support_srcs,
-  xml_srcs,
   dependencies: [
     _deps,
     analysis_deps,
@@ -53,7 +65,6 @@ hpcstruct = executable('hpcstruct', version_cpp, _srcs,
     prof_deps,
     prof_lean_deps,
     support_deps,
-    xml_deps,
   ],
   install: true)
 
@@ -76,7 +87,6 @@ dotgraph = executable('dotgraph', 'DotGraph.cpp', _srcs,
   prof_lean_srcs,
   prof_srcs,
   support_srcs,
-  xml_srcs,
   dependencies: [
     _deps,
     analysis_deps,

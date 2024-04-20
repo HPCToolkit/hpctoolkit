@@ -70,7 +70,7 @@ using std::string;
 
 #include "xml.hpp"
 
-#include "../support/diagnostics.h"
+#include "../../lib/support/diagnostics.h"
 
 //*************************** Forward Declarations ***************************
 

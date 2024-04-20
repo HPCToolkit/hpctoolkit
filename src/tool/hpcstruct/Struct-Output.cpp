@@ -79,8 +79,8 @@
 #include "../../lib/support/StringTable.hpp"
 #include "../../lib/support/dictionary.h"
 
-#include "../../lib/xml/xml.hpp"
-#include "../../lib/xml/static.data.h"
+#include "xml.hpp"
+#include "static.data.h"
 
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"

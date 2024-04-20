@@ -63,8 +63,8 @@
 #include <fstream>
 #include <regex>
 
-#include "../../lib/xml/xml.hpp"
-#include "../../lib/xml/static.data.h"
+#include "xml.hpp"
+#include "static.data.h"
 
 
 //***************************************************************************

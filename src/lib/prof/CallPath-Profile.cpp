@@ -93,10 +93,6 @@ using std::string;
 
 #include "CallPath-Profile.hpp"
 
-#include "../xml/xml.hpp"
-#include "../xml/static.data.h"
-using namespace xml;
-
 #include "../analysis/Util.hpp"
 
 #include "../prof-lean/hpcfmt.h"

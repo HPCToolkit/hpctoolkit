@@ -9,7 +9,6 @@ hpcproftt = executable('hpcproftt', version_cpp, _srcs,
   prof_lean_srcs,
   prof_srcs,
   support_srcs,
-  xml_srcs,
   implicit_include_directories: false,
   dependencies: [
     analysis_deps,
@@ -23,7 +22,6 @@ hpcproftt = executable('hpcproftt', version_cpp, _srcs,
     prof_lean_deps,
     support_deps,
     xerces_dep,
-    xml_deps,
   ])
 
 _devenv = environment()
