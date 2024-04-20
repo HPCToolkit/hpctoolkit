@@ -49,7 +49,7 @@
 #include "audit-api.h"
 
 #include <dlfcn.h>
-#include "../../../lib/binutils/intel/elf.h"
+#include <elf.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stddef.h>

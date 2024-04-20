@@ -27,7 +27,8 @@
 
 #include <vector>
 
-#include "elf.h"
+#include <elf.h>
+
 #include "dwarf_parser.h"
 
 class ElfParser {
@@ -35,20 +36,17 @@ class ElfParser {
   ElfParser(const uint8_t* data, uint32_t size) : data_(data), size_(size) {}
 
   bool IsValid() const {
-    if (data_ == nullptr || size_ < sizeof(Elf64Header)) {
+    if (data_ == nullptr || size_ < sizeof(Elf64_Ehdr)) {
       return false;
     }
 
-    const Elf64Header* header = reinterpret_cast<const Elf64Header*>(data_);
-    if (header->ident[0] != ELF_MAGIC_NUMBER ||
-        header->ident[1] != 'E' ||
-        header->ident[2] != 'L' ||
-        header->ident[3] != 'F') {
+    const Elf64_Ehdr* header = reinterpret_cast<const Elf64_Ehdr*>(data_);
+    if (memcmp(header->e_ident, ELFMAG, SELFMAG) != 0) {
       return false;
     }
 
 
-    if (header->ident[4] != 2) { // 64-bit format
+    if (header->e_ident[4] != ELFCLASS64) {
       return false;
     }
 
@@ -119,17 +117,17 @@ class ElfParser {
     if (section == nullptr || section_size == nullptr)
       std::abort();
 
-    const Elf64Header* header = reinterpret_cast<const Elf64Header*>(data_);
-    const Elf64SectionHeader* section_header =
-      reinterpret_cast<const Elf64SectionHeader*>(data_ + header->shoff);
+    const Elf64_Ehdr* header = reinterpret_cast<const Elf64_Ehdr*>(data_);
+    const Elf64_Shdr* section_header =
+      reinterpret_cast<const Elf64_Shdr*>(data_ + header->e_shoff);
     const char* name_section = reinterpret_cast<const char*>(
-        data_ + section_header[header->shstrndx].offset);
+        data_ + section_header[header->e_shstrndx].sh_offset);
 
-    for (uint32_t i = 1; i < header->shnum; ++i) {
-      const char* section_name = name_section + section_header[i].name;
+    for (uint32_t i = 1; i < header->e_shnum; ++i) {
+      const char* section_name = name_section + section_header[i].sh_name;
       if (strcmp(section_name, name) == 0) {
-        *section = data_ + section_header[i].offset;
-        *section_size = section_header[i].size;
+        *section = data_ + section_header[i].sh_offset;
+        *section_size = section_header[i].sh_size;
         return;
       }
     }

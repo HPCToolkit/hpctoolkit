@@ -57,7 +57,7 @@
 #include        <string.h>
 #include        <sys/errno.h>
 #include        <sys/mman.h>
-#include        "../../lib/binutils/intel/elf.h"
+#include        <elf.h>
 #include        <libelf.h>
 #include        <gelf.h>
 #include        <dwarf.h>

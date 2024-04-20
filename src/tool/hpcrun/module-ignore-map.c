@@ -74,7 +74,7 @@
 //#include <stdlib.h>
 //#include <unistd.h>
 
-#include        "../../lib/binutils/intel/elf.h"
+#include        <elf.h>
 #include        <libelf.h>
 #include        <gelf.h>
 
