@@ -67,7 +67,7 @@
 // local includes
 //******************************************************************************
 
-#include "../support/StrUtil.hpp"
+#include "../../lib/support/StrUtil.hpp"
 
 #include <Elf_X.h>
 

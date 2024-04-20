@@ -5,14 +5,12 @@ _srcs = files(
 
 hpcproftt = executable('hpcproftt', version_cpp, _srcs,
   analysis_srcs,
-  binutils_srcs,
   prof_lean_srcs,
   prof_srcs,
   support_srcs,
   implicit_include_directories: false,
   dependencies: [
     analysis_deps,
-    binutils_deps,
     iga_dep,
     igc_dep,
     libdw_dep,

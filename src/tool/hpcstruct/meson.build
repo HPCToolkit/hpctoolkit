@@ -9,6 +9,13 @@ _srcs = files(
   'Struct-Output.cpp',
   'Struct.cpp',
   'xml.cpp',
+  'BinUtils.cpp',
+  'ElfHelper.cpp',
+  'Fatbin.cpp',
+  'InputFile.cpp',
+  'intel/IntelGPUBinutils.cpp',
+  'RelocateCubin.cpp',
+  'VMAInterval.cpp',
 )
 
 _struct_dtd = fs.read(meson.project_source_root() / 'lib/dtd/hpc-structure.dtd')
@@ -54,14 +61,12 @@ hpcstruct = executable('hpcstruct', version_cpp, _srcs,
   'Structure-Cache.cpp',
   'Structure-Version.cpp',
   analysis_srcs,
-  binutils_srcs,
   prof_lean_srcs,
   prof_srcs,
   support_srcs,
   dependencies: [
     _deps,
     analysis_deps,
-    binutils_deps,
     prof_deps,
     prof_lean_deps,
     support_deps,
@@ -83,14 +88,12 @@ endforeach
 
 dotgraph = executable('dotgraph', 'DotGraph.cpp', _srcs,
   analysis_srcs,
-  binutils_srcs,
   prof_lean_srcs,
   prof_srcs,
   support_srcs,
   dependencies: [
     _deps,
     analysis_deps,
-    binutils_deps,
     prof_deps,
     prof_lean_deps,
     support_deps,

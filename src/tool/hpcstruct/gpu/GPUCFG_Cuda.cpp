@@ -79,7 +79,7 @@
 // HPCToolkit includes
 //***************************************************************************
 
-#include "../../../lib/binutils/VMAInterval.hpp"
+#include "../VMAInterval.hpp"
 #include "../../../lib/support/FileUtil.hpp"
 
 #include "GPUCFGFactory.hpp"

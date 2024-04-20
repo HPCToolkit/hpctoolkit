@@ -64,7 +64,7 @@
 #include <Symtab.h>
 #include <Function.h>
 
-#include "../../lib/binutils/VMAInterval.hpp"
+#include "VMAInterval.hpp"
 #include "Struct-Inline.hpp"
 
 namespace BAnal {

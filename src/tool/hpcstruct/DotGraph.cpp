@@ -76,8 +76,8 @@
 #include <Symtab.h>
 #include <Instruction.h>
 
-#include "../../lib/binutils/ElfHelper.hpp"
-#include "../../lib/binutils/InputFile.hpp"
+#include "ElfHelper.hpp"
+#include "InputFile.hpp"
 
 #include "Struct-Inline.hpp"
 

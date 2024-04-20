@@ -67,7 +67,7 @@
 // local includes
 //******************************************************************************
 
-// #include "../support/diagnostics.h"
+// #include "../../lib/support/diagnostics.h"
 
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"

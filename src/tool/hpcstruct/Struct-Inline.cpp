@@ -84,8 +84,8 @@
 #include <utility>
 #include <vector>
 
-#include "../../lib/binutils/BinUtils.hpp"
-#include "../../lib/binutils/ElfHelper.hpp"
+#include "BinUtils.hpp"
+#include "ElfHelper.hpp"
 #include "../../lib/support/diagnostics.h"
 #include "../../lib/support/FileNameMap.hpp"
 #include "../../lib/support/FileUtil.hpp"

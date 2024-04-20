@@ -67,8 +67,8 @@
 // HPCToolkit includes
 //***************************************************************************
 
-#include "../../../lib/binutils/VMAInterval.hpp"
-#include "../../../lib/binutils/ElfHelper.hpp"
+#include "../VMAInterval.hpp"
+#include "../ElfHelper.hpp"
 
 
 

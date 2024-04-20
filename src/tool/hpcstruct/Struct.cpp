@@ -82,10 +82,10 @@
 #include <ostream>
 #include <sstream>
 
-#include "../../lib/binutils/BinUtils.hpp"
-#include "../../lib/binutils/VMAInterval.hpp"
-#include "../../lib/binutils/ElfHelper.hpp"
-#include "../../lib/binutils/InputFile.hpp"
+#include "BinUtils.hpp"
+#include "VMAInterval.hpp"
+#include "ElfHelper.hpp"
+#include "InputFile.hpp"
 #include "../../lib/support/FileNameMap.hpp"
 #include "../../lib/support/FileUtil.hpp"
 #include "../../lib/support/RealPathMgr.hpp"

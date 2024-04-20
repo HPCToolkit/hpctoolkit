@@ -74,7 +74,7 @@
 #include <ostream>
 #include <string>
 
-#include "../../lib/binutils/VMAInterval.hpp"
+#include "VMAInterval.hpp"
 #include "../../lib/support/FileUtil.hpp"
 #include "../../lib/support/StringTable.hpp"
 #include "../../lib/support/dictionary.h"

@@ -79,7 +79,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../lib/binutils/ElfHelper.hpp"
+#include "../ElfHelper.hpp"
 #include "../../../lib/support/diagnostics.h"
 
 #include "GPUCFG.hpp"

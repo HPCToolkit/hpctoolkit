@@ -70,7 +70,7 @@
 #include <list>
 #include <map>
 
-#include "../../lib/binutils/VMAInterval.hpp"
+#include "VMAInterval.hpp"
 #include "../../lib/support/FileUtil.hpp"
 #include "../../lib/support/RealPathMgr.hpp"
 #include "../../lib/support/SrcFile.hpp"

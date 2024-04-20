@@ -67,7 +67,7 @@
 // HPCToolkit includes
 //***************************************************************************
 
-#include "../../../lib/binutils/ElfHelper.hpp"
+#include "../ElfHelper.hpp"
 #include "GPUCFG.hpp"
 
 

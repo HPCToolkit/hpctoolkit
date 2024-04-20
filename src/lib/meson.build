@@ -1,6 +1,5 @@
 subdir('prof-lean')
 subdir('support-lean')
 subdir('analysis')
-subdir('binutils')
 subdir('prof')
 subdir('support')
