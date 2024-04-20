@@ -10,6 +10,7 @@ hpcproftt = executable('hpcproftt', version_cpp, _srcs,
   prof_srcs,
   support_srcs,
   xml_srcs,
+  implicit_include_directories: false,
   dependencies: [
     analysis_deps,
     binutils_deps,

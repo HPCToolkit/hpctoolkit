@@ -7,6 +7,7 @@ hpcprof = executable('hpcprof', version_cpp, _srcs,
   prof_lean_srcs,
   profile_standalone_srcs,
   support_lean_srcs,
+  implicit_include_directories: false,
   dependencies: [
     boost_dep,
     libdw_dep,

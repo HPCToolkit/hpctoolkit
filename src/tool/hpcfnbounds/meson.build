@@ -6,6 +6,7 @@ _srcs = files(
 )
 
 hpcfnbounds = executable('hpcfnbounds', version_cpp, _srcs,
+  implicit_include_directories: false,
   dependencies: [
     libdw_dep,
     libelf_dep,
