@@ -57,7 +57,7 @@
 
 #define _GNU_SOURCE
 
-#include "control-knob.h"
+#include "../../control-knob.h"
 
 #include <sys/stat.h>
 #include <dlfcn.h>

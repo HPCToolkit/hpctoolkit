@@ -38,4 +38,5 @@ prof_lean_srcs = files(
 )
 prof_lean_deps = [
   libelf_dep,
+  threads_dep,
 ]
