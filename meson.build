@@ -102,74 +102,6 @@ if papi_dep.found()
 endif
 
 
-# Dyninst ships config files, but up through 12.3 they aren't actually usable. We have a Find*
-# script that fiddles with the exposed targets until it works, so if we can't get what we want
-# directly use the find script to do so.
-_dyninst_opts = ['openmp=enabled', 'debuginfod=disabled']
-dyninst_dep = dependency('Dyninst',
-  components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
-  modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
-  version: '>=12.3', required: false, default_options: _dyninst_opts)
-if not dyninst_dep.found()
-  dyninst_dep = dependency('Dyninst', method: 'cmake',
-    cmake_module_path: 'cmake',
-    components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
-    modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
-    version: '>=12.3', default_options: _dyninst_opts)
-endif
-
-# Set flags for features available in Dyninst
-if dyninst_dep.type_name() == 'internal'
-  assert(dyninst_dep.version() != 'undefined')
-  if dyninst_dep.version().version_compare('>=13.0.0')
-    add_project_arguments('-DUSE_XED_FOR_GAPS', '-DUSE_GET_CONTAINING_MODULE', language: ['c', 'cpp'])
-  endif
-  if dyninst_dep.version().version_compare('>=11.0.0')
-    add_project_arguments('-DDYNINST_SUPPORTS_INTEL_GPU', language: ['c', 'cpp'])
-  endif
-  if dyninst_dep.version().version_compare('>=10.0.0')
-    add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
-  endif
-else
-  if cpp.compiles('''
-#include <InstructionDecoder.h>
-void test() {
-  (void)Dyninst::InstructionAPI::InstructionDecoder::unknown_instruction::register_callback;
-}
-''',
-      name: 'Dyninst::InstructionAPI::InstructionDecoder has unknown_instruction::register_callback',
-      dependencies: dyninst_dep)
-    add_project_arguments('-DUSE_XED_FOR_GAPS', language: ['c', 'cpp'])
-  endif
-  if cpp.compiles('''
-#include <Symtab.h>
-void test() {
-  Dyninst::SymtabAPI::Symtab sym;
-  sym.getContainingModule(42);
-}
-''',
-      name: 'Dyninst::SymtabAPI::Symtab uses getContainingModule()',
-      dependencies: dyninst_dep)
-    add_project_arguments('-DUSE_GET_CONTAINING_MODULE', language: ['c', 'cpp'])
-  endif
-  if cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general', dependencies: dyninst_dep)
-    add_project_arguments('-DDYNINST_SUPPORTS_INTEL_GPU', language: ['c', 'cpp'])
-  endif
-  if cpp.compiles('''
-#include <Symtab.h>
-void test() {
-  (void)Dyninst::Arch_cuda;
-}
-''',
-      name: 'Dyninst has Arch_cuda',
-      dependencies: dyninst_dep)
-    add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
-  endif
-endif
-add_project_arguments('-DENABLE_OPENMP', '-DENABLE_OPENMP_SYMTAB', language: ['c', 'cpp'])
-
-
-
 # These dependencies don't ship any dependency files, so we use CMake by default and fall back to
 # compiler checks as a robustness case. The final fallback to dependency() in each stanza is to
 # provide a better error message and enable wrap fallbacks.
@@ -237,6 +169,76 @@ endif
 if not perfmon_dep.found()
   perfmon_dep = dependency('libpfm', method: 'system', version: '>=4.0')
 endif
+
+
+# Dyninst ships config files, but up through 12.3 they aren't actually usable. We have a Find*
+# script that fiddles with the exposed targets until it works, so if we can't get what we want
+# directly use the find script to do so.
+_dyninst_opts = ['openmp=enabled', 'debuginfod=disabled']
+dyninst_dep = dependency('Dyninst',
+  components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
+  modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
+  version: '>=12.3', required: false, default_options: _dyninst_opts)
+if not dyninst_dep.found()
+  dyninst_dep = dependency('Dyninst', method: 'cmake',
+    cmake_module_path: 'cmake',
+    components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
+    modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
+    version: '>=12.3', default_options: _dyninst_opts)
+endif
+
+# Set flags for features available in Dyninst
+if dyninst_dep.type_name() == 'internal'
+  assert(dyninst_dep.version() != 'undefined')
+  if dyninst_dep.version().version_compare('>=13.0.0')
+    add_project_arguments('-DUSE_GET_CONTAINING_MODULE', language: ['c', 'cpp'])
+    if xed_dep.found()
+      add_project_arguments('-DUSE_XED_FOR_GAPS', language: ['c', 'cpp'])
+    endif
+  endif
+  if dyninst_dep.version().version_compare('>=11.0.0')
+    add_project_arguments('-DDYNINST_SUPPORTS_INTEL_GPU', language: ['c', 'cpp'])
+  endif
+  if dyninst_dep.version().version_compare('>=10.0.0')
+    add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
+  endif
+else
+  if xed_dep.found() and cpp.compiles('''
+#include <InstructionDecoder.h>
+void test() {
+  (void)Dyninst::InstructionAPI::InstructionDecoder::unknown_instruction::register_callback;
+}
+''',
+      name: 'Dyninst::InstructionAPI::InstructionDecoder has unknown_instruction::register_callback',
+      dependencies: dyninst_dep)
+    add_project_arguments('-DUSE_XED_FOR_GAPS', language: ['c', 'cpp'])
+  endif
+  if cpp.compiles('''
+#include <Symtab.h>
+void test() {
+  Dyninst::SymtabAPI::Symtab sym;
+  sym.getContainingModule(42);
+}
+''',
+      name: 'Dyninst::SymtabAPI::Symtab uses getContainingModule()',
+      dependencies: dyninst_dep)
+    add_project_arguments('-DUSE_GET_CONTAINING_MODULE', language: ['c', 'cpp'])
+  endif
+  if cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general', dependencies: dyninst_dep)
+    add_project_arguments('-DDYNINST_SUPPORTS_INTEL_GPU', language: ['c', 'cpp'])
+  endif
+  if cpp.compiles('''
+#include <Symtab.h>
+void test() {
+  (void)Dyninst::Arch_cuda;
+}
+''',
+      name: 'Dyninst has Arch_cuda',
+      dependencies: dyninst_dep)
+    add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
+  endif
+endif
+add_project_arguments('-DENABLE_OPENMP', '-DENABLE_OPENMP_SYMTAB', language: ['c', 'cpp'])
 
 
 # Find rst2man, which is used to generate the man pages from source
