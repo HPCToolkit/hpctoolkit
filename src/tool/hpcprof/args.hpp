@@ -145,9 +145,6 @@ public:
   /// Path for the root database directory, or output file
   stdshim::filesystem::path output;
 
-  /// Whether to (not) search the current filesystem for binaries and source files
-  bool foreign;
-
   /// Whether to copy sources into the output database
   bool include_sources;
 
@@ -172,10 +169,12 @@ public:
   bool valgrindUnclean;
 
 private:
+  bool foreign;
   std::once_flag onceMissingGPUCFGs;
   std::unordered_set<stdshim::filesystem::path, stdshim::hash_path> structpaths;
   std::unordered_map<stdshim::filesystem::path, std::vector<stdshim::filesystem::path>,
                      stdshim::hash_path> structheads;
+  std::unordered_set<stdshim::filesystem::path, stdshim::hash_path> allowedForeignDirs;
 };
 
 }

@@ -425,9 +425,6 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   valgrindUnclean = arg_valgrindUnclean;
   foreign = arg_foreign;
 
-  if(foreign)
-    include_sources = false;
-
   {
     util::log::Settings logSettings = util::log::Settings::none;
     logSettings.error() = verbosity >= -1;  // -q and higher
@@ -521,6 +518,9 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   for(int idx = optind; idx < argc; idx++) {
     fs::path p(argv[idx]);
     if(fs::is_directory(p)) {
+      // Measurement directories are permitted for --foreign analysis
+      allowedForeignDirs.emplace(fs::canonical(p));
+
       // Check for a kernel_symbols/ directory for ksymsfiles.
       fs::path sp = p / "kernel_symbols";
       if(fs::is_directory(sp))
@@ -739,22 +739,6 @@ static std::pair<bool, fs::path> remove_prefix(const fs::path& path, const fs::p
   return {true, rem};
 }
 
-static std::optional<fs::path> search(const std::unordered_map<fs::path, fs::path, stdshim::hash_path>& prefixes,
-                                      const fs::path& p) noexcept {
-  if(p.is_relative())
-    return std::nullopt;  // Can't do anything with a relative path
-  std::error_code ec;
-  for(const auto& ft: prefixes) {
-    auto xp = remove_prefix(p, ft.first);
-    if(xp.first) {
-      fs::path rp = ft.second / xp.second;
-      if(fs::is_regular_file(rp, ec)) return rp;
-    }
-  }
-  if(fs::is_regular_file(p, ec)) return p;  // If all else fails;
-  return std::nullopt;
-}
-
 void ProfArgs::StatisticsExtender::appendStatistics(const Metric& m, Metric::StatsAccess mas) noexcept {
   if(m.visibility() == Metric::Settings::visibility_t::invisible) return;
   Metric::Statistics s;
@@ -767,12 +751,51 @@ void ProfArgs::StatisticsExtender::appendStatistics(const Metric& m, Metric::Sta
   mas.requestStatistics(std::move(s));
 }
 
+static bool is_subpath(const fs::path& p, const fs::path& base) {
+  auto rel = p.lexically_relative(base);
+  assert(!rel.has_root_path());
+  return !rel.empty() && rel.native()[0] != '.';
+}
+
+static std::optional<fs::path> search(const std::unordered_map<fs::path, fs::path, stdshim::hash_path>& prefixes,
+                                      const fs::path& p) noexcept {
+  assert(!p.is_relative());
+  std::error_code ec;
+  for(const auto& ft: prefixes) {
+    auto xp = remove_prefix(p, ft.first);
+    if(xp.first) {
+      fs::path rp = ft.second / xp.second;
+      if(fs::is_regular_file(rp, ec)) return rp;
+    }
+  }
+  if(fs::is_regular_file(p, ec)) return p;  // If all else fails;
+  return std::nullopt;
+}
+
 std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const File& f) noexcept {
-  return args.foreign ? std::nullopt : search(args.prefixes, f.path());
+  if(f.path().is_relative())
+    return std::nullopt;  // Do not resolve relative paths
+  auto result = search(args.prefixes, f.path());
+  if(args.foreign && std::none_of(args.allowedForeignDirs.begin(), args.allowedForeignDirs.end(),
+      [&](const auto& base){ return is_subpath(result.value_or(f.path()), base); })) {
+    // The path is not part of an allowed subtree in the foreign case.
+    // Return an empty path, meaning the path does not exist on the current filesystem.
+    return fs::path();
+  }
+  return result;
 }
 
 std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const Module& m) noexcept {
-  return args.foreign ? std::nullopt : search(args.prefixes, m.path());
+  if(m.path().is_relative())
+    return std::nullopt;  // Do not resolve relative paths
+  auto result = search(args.prefixes, m.path());
+  if(args.foreign && std::none_of(args.allowedForeignDirs.begin(), args.allowedForeignDirs.end(),
+      [&](const auto& base){ return is_subpath(result.value_or(m.path()), base); })) {
+    // The path is not part of an allowed subtree in the foreign case.
+    // Return an empty path, meaning the path does not exist on the current filesystem.
+    return fs::path();
+  }
+  return result;
 }
 
 std::optional<std::pair<util::optional_ref<Context>, Context&>>

@@ -110,10 +110,11 @@ LogicalFile::classify(Context& parent, NestedScope& ns) noexcept {
 }
 
 void LogicalFile::load(const Module& m, udModule& data) noexcept {
-  const auto& rpath = m.userdata[sink.resolvedPath()];
-  const auto& mpath = rpath.empty() ? m.path() : rpath;
+  // Try to open the binary on the current filesystem. If we fail, give up.
+  const auto& mpath = m.userdata[sink.resolvedPath()];
+  if(mpath.empty()) return;
   FILE* f = fopen(mpath.c_str(), "rb");
-  if(f == nullptr) return;  // Can't do anything if we can't open it
+  if(f == nullptr) return;
 
   char buf[11] = {0};
   if(std::fread(buf, 10, 1, f) < 1 || std::strcmp(buf, "HPCLOGICAL") != 0) {

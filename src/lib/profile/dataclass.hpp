@@ -215,7 +215,9 @@ public:
   static constexpr classification_c    classification    = {};
   /// Extends most data with unique numerical identifiers.
   static constexpr identifier_c        identifier        = {};
-  /// Extends Files and Modules with the real path in the current filesystem.
+  /// Extends Files and Modules with an approximation of the corresponding file
+  /// on the current filesystem. May be empty if the file is certainly not
+  /// present. If non-empty, this is always an absolute path but may not exist.
   static constexpr resolvedPath_c      resolvedPath      = {};
   /// Extends Metrics with additional Statistics for better summary analysis.
   static constexpr statistics_c        statistics        = {};
