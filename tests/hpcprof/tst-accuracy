@@ -7,5 +7,5 @@ shift 2  # Remaining arguments are the hpcprof command line
 trap 'rm -rf "$tmpdir"' EXIT
 tmpdir=$(mktemp --directory --tmpdir=.)
 
-"$@" --foreign -o "$tmpdir"/d
+"$@" -o "$tmpdir"/d
 "$hpctesttool" test db-compare "$tmpdir"/d "$canonical"

@@ -132,6 +132,9 @@ Processing options:
                               data from. Units are K,M,G,T (powers of 1024)
                               If limit is "unlimited," always parses DWARF.
                               Default limit is 100M.
+      --ignore-structs
+                              Ignore hpcstruct files in measurement directories
+                              (the structs/ subdirectory). Used for testing.
       --foreign
                               Process the measurements as if they came from a
                               "foreign" system with a different filesystem than
@@ -168,6 +171,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   int arg_overwriteOutput = 0;
   int arg_valgrindUnclean = valgrindUnclean;
   int arg_foreign = 0;
+  int arg_ignore_structs = 0;
   struct option longopts[] = {
     // These first ones are more special and must be in this order.
     {"metric-db", required_argument, NULL, 0},
@@ -189,6 +193,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     {"force", no_argument, &arg_overwriteOutput, 1},
     {"valgrind-unclean", no_argument, &arg_valgrindUnclean, 1},
     {"foreign", no_argument, &arg_foreign, 1},
+    {"ignore-structs", no_argument, &arg_ignore_structs, 1},
     {0, 0, 0, 0}
   };
 
@@ -531,31 +536,33 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         structargs = ss.str();
       }
 
-      // Check for a structs/ directory for extra structfiles.
-      sp = p / "structs";
-      if(fs::is_directory(sp)) {
-        std::shared_ptr<finalizers::StructFile::RecommendationStore> recstore;
-        if(mpi::World::rank() == 0)
-          recstore = std::make_shared<finalizers::StructFile::RecommendationStore>(true, std::move(structargs));
+      if(!arg_ignore_structs) {
+        // Check for a structs/ directory for extra structfiles.
+        sp = p / "structs";
+        if(fs::is_directory(sp)) {
+          std::shared_ptr<finalizers::StructFile::RecommendationStore> recstore;
+          if(mpi::World::rank() == 0)
+            recstore = std::make_shared<finalizers::StructFile::RecommendationStore>(true, std::move(structargs));
 
-        for(const auto& de: fs::directory_iterator(sp)) {
-          std::unique_ptr<ProfileFinalizer> c;
-          if(de.path().extension() != ".hpcstruct") continue;
-          try {
-            c.reset(new finalizers::StructFile(de, recstore));
-          } catch(...) { continue; }
-          ProfArgs::structs.emplace_back(std::move(c), de);
-        }
-      } else {
-        util::call_once(onceMissingGPUCFGs, [&]{
-          // WARN that the user should run hpcstruct on the measurements dir first
-          if(mpi::World::rank() == 0) {
-            util::log::warning() <<
-              "Program structure data is missing from the measurements directory, performance attribution will be degraded\n"
-              "  Consider running hpcstruct first:\n"
-              "    $ hpcstruct" << structargs;
+          for(const auto& de: fs::directory_iterator(sp)) {
+            std::unique_ptr<ProfileFinalizer> c;
+            if(de.path().extension() != ".hpcstruct") continue;
+            try {
+              c.reset(new finalizers::StructFile(de, recstore));
+            } catch(...) { continue; }
+            ProfArgs::structs.emplace_back(std::move(c), de);
           }
-        });
+        } else {
+          util::call_once(onceMissingGPUCFGs, [&]{
+            // WARN that the user should run hpcstruct on the measurements dir first
+            if(mpi::World::rank() == 0) {
+              util::log::warning() <<
+                "Program structure data is missing from the measurements directory, performance attribution will be degraded\n"
+                "  Consider running hpcstruct first:\n"
+                "    $ hpcstruct" << structargs;
+            }
+          });
+        }
       }
     }
   }
