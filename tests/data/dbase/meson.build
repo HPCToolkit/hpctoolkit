@@ -13,6 +13,8 @@ _databases = {
   'loops-cuda-nvidiapc-t.nostruct': {'args': ['--ignore-structs']},
   'recursion-cuda-nvidiapc-t': {},
   'recursion-cuda-nvidiapc-t.nostruct': {'args': ['--ignore-structs']},
+  'loops-hip-amd-t': {},
+  'loops-hip-amd-t.nostruct': {'args': ['--ignore-structs']},
 }
 
 _prof = [find_program(files('prof')), hpcprof]
