@@ -182,6 +182,12 @@ include:
     name: rocm6.0-amd64
     containerfile: .ci.predeps/Containerfile.rocm
     build_args: ROCM_VERSION=6.0.2
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: rocm6.1-amd64
+    containerfile: .ci.predeps/Containerfile.rocm
+    build_args: ROCM_VERSION=6.1
 
 # Image(s) based on (containing) Intel's Level Zero, IGC, GTPin, etc.
 - component: *ci_predeps
@@ -425,6 +431,10 @@ rocm6.0 amd64:
   extends: .individual test job rocm
   needs: ['predeps: [rocm6.0-amd64]']
   image: $PREDEPS_IMAGE_ROCM6_0_AMD64
+rocm6.1 amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [rocm6.1-amd64]']
+  image: $PREDEPS_IMAGE_ROCM6_1_AMD64
 
 intel amd64:
   extends: .individual test job std
@@ -619,8 +629,8 @@ compiler icx:
       TEST_ARGS: --suite none
 'option: [rocm amd64]':
   extends: .option test job
-  needs: ['predeps: [rocm6.0-amd64]']
-  image: $PREDEPS_IMAGE_ROCM6_0_AMD64
+  needs: ['predeps: [rocm6.1-amd64]']
+  image: $PREDEPS_IMAGE_ROCM6_1_AMD64
   parallel:
     matrix:
     - SETUP_ARGS:
