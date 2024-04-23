@@ -63,16 +63,8 @@
 #include <fstream>
 #include <regex>
 
-
-
-//***************************************************************************
-// macros
-//***************************************************************************
-
-const char *HPCSTRUCT_VERSION_STRING =
-#include "../../lib/xml/hpc-structure.dtd.version.h"
-  ;
-
+#include "../../lib/xml/xml.hpp"
+#include "../../lib/xml/static.data.h"
 
 
 //***************************************************************************
@@ -126,5 +118,5 @@ getVersion(const char *structFileName)
 bool StructureFileCheckVersion(const char *structureFileName)
 {
   std::string version = getVersion(structureFileName);
-  return (version.compare(HPCSTRUCT_VERSION_STRING) == 0);
+  return (version.compare(HPCSTRUCT_DTD_VERSION) == 0);
 }

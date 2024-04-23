@@ -1,25 +1,34 @@
-_srcs = files(
+banal_srcs = files(
   'gpu/CudaCFGParser.cpp',
   'gpu/GPUBlock.cpp',
   'gpu/GPUCFG.cpp',
   'gpu/GPUCFGFactory.cpp',
   'gpu/GPUCodeSource.cpp',
   'gpu/GPUFunction.cpp',
-  'gpu/GraphReader.cpp',
   'Struct-Inline.cpp',
   'Struct-Output.cpp',
   'Struct.cpp',
 )
+banal_srcs += xml_srcs
 
 if nvdisasm.found()
-  _srcs += files('gpu/GPUCFG_Cuda.cpp')
+  banal_srcs += files(
+    'gpu/GPUCFG_Cuda.cpp',
+    'gpu/GraphReader.cpp',
+  )
 endif
 
 if igc_dep.found()
-  _srcs += files('gpu/GPUCFG_Intel.cpp')
+  banal_srcs += files('gpu/GPUCFG_Intel.cpp')
 endif
 
-banal_lib = static_library('banal', _srcs,
-  pic: true,
-  gnu_symbol_visibility: 'hidden',
-  dependencies: [xed_dep, boost_dep, libdw_dep, libelf_dep, dyninst_dep, igc_dep, iga_dep, openmp_dep])
+banal_deps = [
+  boost_dep,
+  dyninst_dep,
+  iga_dep,
+  igc_dep,
+  libdw_dep,
+  libelf_dep,
+  openmp_dep,
+  xed_dep,
+]

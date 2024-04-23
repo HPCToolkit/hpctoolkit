@@ -1,10 +1,8 @@
-//
-//  Display hpctoolkit version, from -V option.
-//
+#include "hpctoolkit-version.h"
 
 #include <stdio.h>
 
-static inline void
+void
 hpctoolkit_print_version(const char * prog_name)
 {
   printf("%s: A member of HPCToolkit, version %s\n"
@@ -14,11 +12,9 @@ hpctoolkit_print_version(const char * prog_name)
          HPCTOOLKIT_INSTALL_PREFIX);
 }
 
-#ifdef __cplusplus
-static inline void
+void
 hpctoolkit_print_version_and_features(const char* prog_name)
 {
   hpctoolkit_print_version(prog_name);
   printf("%s", R"====(@FEATURES_MESSAGE@)====");
 }
-#endif  // __cplusplus

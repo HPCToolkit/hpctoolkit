@@ -5,7 +5,11 @@ _srcs = files(
   'server.c',
 )
 
-hpcfnbounds = executable('hpcfnbounds', version_h, _srcs,
-  dependencies: [libelf_dep, libdw_dep],
+hpcfnbounds = executable('hpcfnbounds', version_cpp, _srcs,
+  implicit_include_directories: false,
+  dependencies: [
+    libdw_dep,
+    libelf_dep,
+  ],
   install: true,
   install_dir: get_option('libexecdir') / meson.project_name())

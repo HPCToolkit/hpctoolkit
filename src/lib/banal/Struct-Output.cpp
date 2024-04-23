@@ -80,6 +80,7 @@
 #include "../support/dictionary.h"
 
 #include "../xml/xml.hpp"
+#include "../xml/static.data.h"
 
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
@@ -94,10 +95,6 @@ using namespace std;
 static long next_index;
 static long gaps_line;
 static bool pretty_print_output;
-
-static const char * hpcstruct_xml_head =
-#include "../xml/hpc-structure.dtd.h"
-  ;
 
 // temp options for call <C> tags, target (t) field, and device (d) field
 
@@ -231,7 +228,7 @@ printStructFileBegin(ostream * os, ostream * gaps, string filenm)
 
   *os << "<?xml version=\"1.0\"?>\n"
       << "<!DOCTYPE HPCToolkitStructure [\n"
-      << hpcstruct_xml_head
+      << HPCSTRUCT_DTD
       << "]>\n"
       << "<HPCToolkitStructure i=\"0\" version=\"4.9\" n=\"\">\n";
 

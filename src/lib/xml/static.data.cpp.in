@@ -1,0 +1,4 @@
+#include "static.data.h"
+
+const char HPCSTRUCT_DTD[] = R"=============(@HPCSTRUCT_DTD@)=============";
+const char HPCSTRUCT_DTD_VERSION[] = R"=============(@HPCSTRUCT_DTD_VERSION@)=============";

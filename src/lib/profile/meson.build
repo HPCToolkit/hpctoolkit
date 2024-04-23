@@ -1,4 +1,4 @@
-_srcs = files(
+profile_srcs = files(
   'accumulators.cpp',
   'attributes.cpp',
   'context.cpp',
@@ -37,18 +37,23 @@ _srcs = files(
   'util/stable_hash.cpp',
   'util/xml.cpp',
 )
-_srcs += configure_file(output: 'static.data.cpp', input: 'static.data.cpp.in',
+profile_srcs += configure_file(output: 'static.data.cpp', input: 'static.data.cpp.in',
   configuration: {
     'FORMATS_MD': fs.read(meson.project_source_root() / 'doc/FORMATS.md'),
     'METRICS_YAML': fs.read(meson.project_source_root() / 'doc/METRICS.yaml'),
   })
 
-profile_lib = static_library('profile', _srcs,
-  pic: true,
-  gnu_symbol_visibility: 'hidden',
-  dependencies: [libelf_dep, lzma_dep, xerces_dep, yaml_cpp_dep, libdw_dep, xxhash_dep, openmp_dep])
+profile_deps = [
+  libdw_dep,
+  libelf_dep,
+  lzma_dep,
+  openmp_dep,
+  xerces_dep,
+  xxhash_dep,
+  yaml_cpp_dep,
+]
 
-profile_standalone_lib = static_library('profile-standalone', 'mpi/standalone.cpp',
-  pic: true,
-  gnu_symbol_visibility: 'hidden',
-  link_whole: [profile_lib])
+profile_standalone_srcs = files(
+  'mpi/standalone.cpp',
+)
+profile_standalone_srcs += profile_srcs

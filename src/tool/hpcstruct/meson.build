@@ -7,9 +7,33 @@ _srcs = files(
   'Structure-Version.cpp',
 )
 
-hpcstruct = executable('hpcstruct', _srcs,
-  link_with: [analysis_lib, banal_lib, prof_lib, binutils_lib, prof_lean_lib, xml_lib, support_lib, support_lean_lib],
-  dependencies: [xed_dep, dyninst_dep, boost_dep, libelf_dep, libdw_dep, igc_dep, iga_dep, lzma_dep, xerces_dep, openmp_dep],
+hpcstruct = executable('hpcstruct', version_cpp, _srcs,
+  analysis_srcs,
+  banal_srcs,
+  binutils_srcs,
+  prof_lean_srcs,
+  prof_srcs,
+  support_srcs,
+  xml_srcs,
+  dependencies: [
+    analysis_deps,
+    banal_deps,
+    binutils_deps,
+    boost_dep,
+    dyninst_dep,
+    iga_dep,
+    igc_dep,
+    libdw_dep,
+    libelf_dep,
+    lzma_dep,
+    openmp_dep,
+    prof_deps,
+    prof_lean_deps,
+    support_deps,
+    xed_dep,
+    xerces_dep,
+    xml_deps,
+  ],
   install: true)
 
 hpcstruct_test_depends = [hpcproflm]
@@ -26,5 +50,28 @@ endforeach
 
 
 dotgraph = executable('dotgraph', 'DotGraph.cpp',
-  link_with: [analysis_lib, banal_lib, prof_lib, binutils_lib, prof_lean_lib, xml_lib, support_lib, support_lean_lib],
-  dependencies: [xed_dep, dyninst_dep, boost_dep, libelf_dep, libdw_dep, igc_dep, iga_dep, lzma_dep, xerces_dep, openmp_dep])
+  analysis_srcs,
+  banal_srcs,
+  binutils_srcs,
+  prof_lean_srcs,
+  prof_srcs,
+  support_srcs,
+  xml_srcs,
+  dependencies: [
+    analysis_deps,
+    banal_deps,
+    binutils_deps,
+    boost_dep,
+    dyninst_dep,
+    iga_dep,
+    igc_dep,
+    libdw_dep,
+    libelf_dep,
+    lzma_dep,
+    openmp_dep,
+    prof_deps,
+    prof_lean_deps,
+    support_deps,
+    xed_dep,
+    xerces_dep,
+  ])

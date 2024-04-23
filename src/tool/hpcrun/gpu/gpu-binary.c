@@ -48,7 +48,7 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
-#include "../../../lib/binutils/intel/elf.h"
+#include <libelf.h>
 #include <gelf.h>
 #include <errno.h>     // errno
 #include <fcntl.h>     // open

@@ -38,7 +38,11 @@ endif
 features_msg += 'OpenCL support: @0@\n'.format(opencl_dep.found() ? 'yes' : 'no')
 features_msg += 'Python support: @0@\n'.format(python_inst.found() ? 'yes' : 'no')
 
-# Generate the final version information header
-version_h = configure_file(output: 'hpctoolkit-version.h.vcs.in', input: 'hpctoolkit-version.h.in',
+# Generate the final version information source file. The header also needs to be copied beside
+# it for it to compile properly.
+version_cpp = configure_file(output: 'hpctoolkit-version.cpp.vcs.in', input: 'hpctoolkit-version.cpp.in',
   configuration: {'FEATURES_MESSAGE': features_msg, 'VERSION': meson.project_version(), 'VCS_TAG': '@VCS_TAG@'})
-version_h = vcs_tag(output: 'hpctoolkit-version.h', input: version_h)
+version_cpp = [
+  vcs_tag(output: 'hpctoolkit-version.cpp', input: version_cpp),
+  fs.copyfile('hpctoolkit-version.h'),
+]

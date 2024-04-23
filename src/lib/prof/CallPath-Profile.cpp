@@ -94,6 +94,7 @@ using std::string;
 #include "CallPath-Profile.hpp"
 
 #include "../xml/xml.hpp"
+#include "../xml/static.data.h"
 using namespace xml;
 
 #include "../analysis/Util.hpp"
@@ -111,15 +112,15 @@ using namespace xml;
 
 //*************************** Forward Declarations **************************
 
-// implementations of prof_abort will be separately defined for MPI and
-// non-MPI contexts
-extern void
+// Old deadweight function that used to be defined elsewhere
+static void
 prof_abort
 (
   int error_code
-);
-
-
+)
+{
+  exit(error_code);
+}
 
 //***************************************************************************
 // macros

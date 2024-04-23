@@ -1,4 +1,4 @@
-_srcs = files(
+prof_lean_srcs = files(
   'BalancedTree.c',
   'bichannel.c',
   'binarytree.c',
@@ -36,8 +36,7 @@ _srcs = files(
   'usec_time.c',
   'vdso.c',
 )
-
-prof_lean_lib = static_library('prof-lean', _srcs,
-  pic: true,
-  gnu_symbol_visibility: 'hidden',
-  dependencies: [libelf_dep])
+prof_lean_deps = [
+  libelf_dep,
+  threads_dep,
+]

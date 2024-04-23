@@ -4,7 +4,15 @@ _srcs = files(
 )
 
 hpcproflm = executable('hpcproflm', _srcs,
-  link_with: [prof_lean_lib, support_lib],
-  dependencies: [openmp_dep],
+  prof_lean_srcs,
+  support_srcs,
+  implicit_include_directories: false,
+  dependencies: [
+    libiberty_dep,
+    lzma_dep,
+    openmp_dep,
+    prof_lean_deps,
+    support_deps,
+  ],
   install: true,
   install_dir: get_option('libexecdir') / meson.project_name())
