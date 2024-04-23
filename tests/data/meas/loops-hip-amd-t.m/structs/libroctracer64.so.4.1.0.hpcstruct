@@ -71,247 +71,247 @@
 <HPCToolkitStructure i="0" version="4.9" n="">
 <LM i="2" n="/opt/rocm-5.7.1/lib/libroctracer64.so.4.1.0" has-calls="0" v="{}">
 <F i="3" n="[libroctracer64.so.4.1.0]">
-<P i="4" n="_Unwind_Backtrace [libroctracer64.so.4.1.0]" ln="_Unwind_Backtrace" l="0" v="{[0x69d0-0x69d1)}">
-<S i="5" l="0" v="{[0x69d0-0x6a00)}"/>
+<P i="4" n="_Unwind_Backtrace [libroctracer64.so.4.1.0]" ln="_Unwind_Backtrace" l="0" v="{[0x69c0-0x69c1)}">
+<S i="5" l="0" v="{[0x69c0-0x69f0)}"/>
 </P>
-<P i="6" n="__errno_location@plt [libroctracer64.so.4.1.0]" ln="__errno_location@plt" l="0" v="{[0x6a00-0x6a01)}">
-<S i="7" l="0" v="{[0x6a00-0x6a10)}"/>
+<P i="6" n="__errno_location@plt [libroctracer64.so.4.1.0]" ln="__errno_location@plt" l="0" v="{[0x69f0-0x69f1)}">
+<S i="7" l="0" v="{[0x69f0-0x6a00)}"/>
 </P>
-<P i="8" n="syscall@plt [libroctracer64.so.4.1.0]" ln="syscall@plt" l="0" v="{[0x6a10-0x6a11)}">
-<S i="9" l="0" v="{[0x6a10-0x6a20)}"/>
+<P i="8" n="syscall@plt [libroctracer64.so.4.1.0]" ln="syscall@plt" l="0" v="{[0x6a00-0x6a01)}">
+<S i="9" l="0" v="{[0x6a00-0x6a10)}"/>
 </P>
-<P i="10" n="std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_node_base&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZSt29_Rb_tree_insert_and_rebalancebPSt18_Rb_tree_node_baseS0_RS_@plt" l="0" v="{[0x6a20-0x6a21)}">
-<S i="11" l="0" v="{[0x6a20-0x6a40)}"/>
+<P i="10" n="std::_Rb_tree_insert_and_rebalance(bool, std::_Rb_tree_node_base*, std::_Rb_tree_node_base*, std::_Rb_tree_node_base&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZSt29_Rb_tree_insert_and_rebalancebPSt18_Rb_tree_node_baseS0_RS_@plt" l="0" v="{[0x6a10-0x6a11)}">
+<S i="11" l="0" v="{[0x6a10-0x6a30)}"/>
 </P>
-<P i="12" n="roctracer_disable_domain_activity@plt [libroctracer64.so.4.1.0]" ln="roctracer_disable_domain_activity@plt" l="0" v="{[0x6a40-0x6a41)}">
-<S i="13" l="0" v="{[0x6a40-0x6a60)}"/>
+<P i="12" n="roctracer_disable_domain_activity@plt [libroctracer64.so.4.1.0]" ln="roctracer_disable_domain_activity@plt" l="0" v="{[0x6a30-0x6a31)}">
+<S i="13" l="0" v="{[0x6a30-0x6a50)}"/>
 </P>
-<P i="14" n="std::__throw_future_error(int)@plt [libroctracer64.so.4.1.0]" ln="_ZSt20__throw_future_errori@plt" l="0" v="{[0x6a60-0x6a61)}">
-<S i="15" l="0" v="{[0x6a60-0x6a70)}"/>
+<P i="14" n="std::__throw_future_error(int)@plt [libroctracer64.so.4.1.0]" ln="_ZSt20__throw_future_errori@plt" l="0" v="{[0x6a50-0x6a51)}">
+<S i="15" l="0" v="{[0x6a50-0x6a60)}"/>
 </P>
-<P i="16" n="std::__cxx11::basic_ostringstream&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::~basic_ostringstream()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1119basic_ostringstreamIcSt11char_traitsIcESaIcEED1Ev@plt" l="0" v="{[0x6a70-0x6a71)}">
-<S i="17" l="0" v="{[0x6a70-0x6a80)}"/>
+<P i="16" n="std::__cxx11::basic_ostringstream&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::~basic_ostringstream()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1119basic_ostringstreamIcSt11char_traitsIcESaIcEED1Ev@plt" l="0" v="{[0x6a60-0x6a61)}">
+<S i="17" l="0" v="{[0x6a60-0x6a70)}"/>
 </P>
-<P i="18" n="std::terminate()@plt [libroctracer64.so.4.1.0]" ln="_ZSt9terminatev@plt" l="0" v="{[0x6a80-0x6a81)}">
-<S i="19" l="0" v="{[0x6a80-0x6a90)}"/>
+<P i="18" n="std::terminate()@plt [libroctracer64.so.4.1.0]" ln="_ZSt9terminatev@plt" l="0" v="{[0x6a70-0x6a71)}">
+<S i="19" l="0" v="{[0x6a70-0x6a80)}"/>
 </P>
-<P i="20" n="dl_iterate_phdr@plt [libroctracer64.so.4.1.0]" ln="dl_iterate_phdr@plt" l="0" v="{[0x6a90-0x6a91)}">
-<S i="21" l="0" v="{[0x6a90-0x6aa0)}"/>
+<P i="20" n="dl_iterate_phdr@plt [libroctracer64.so.4.1.0]" ln="dl_iterate_phdr@plt" l="0" v="{[0x6a80-0x6a81)}">
+<S i="21" l="0" v="{[0x6a80-0x6a90)}"/>
 </P>
-<P i="22" n="std::ios_base::ios_base()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt8ios_baseC2Ev@plt" l="0" v="{[0x6aa0-0x6aa1)}">
-<S i="23" l="0" v="{[0x6aa0-0x6ac0)}"/>
+<P i="22" n="std::condition_variable::wait(std::unique_lock&lt;std::mutex&gt;&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt18condition_variable4waitERSt11unique_lockISt5mutexE@plt" l="0" v="{[0x6a90-0x6a91)}">
+<S i="23" l="0" v="{[0x6a90-0x6aa0)}"/>
 </P>
-<P i="24" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_append(char const*, unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_appendEPKcm@plt" l="0" v="{[0x6ac0-0x6ac1)}">
-<S i="25" l="0" v="{[0x6ac0-0x6ad0)}"/>
+<P i="24" n="std::ios_base::ios_base()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt8ios_baseC2Ev@plt" l="0" v="{[0x6aa0-0x6aa1)}">
+<S i="25" l="0" v="{[0x6aa0-0x6ac0)}"/>
 </P>
-<P i="26" n="std::__exception_ptr::exception_ptr::swap(std::__exception_ptr::exception_ptr&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt15__exception_ptr13exception_ptr4swapERS0_@plt" l="0" v="{[0x6ad0-0x6ad1)}">
-<S i="27" l="0" v="{[0x6ad0-0x6ae0)}"/>
+<P i="26" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_append(char const*, unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_appendEPKcm@plt" l="0" v="{[0x6ac0-0x6ac1)}">
+<S i="27" l="0" v="{[0x6ac0-0x6ad0)}"/>
 </P>
-<P i="28" n="std::ios_base::~ios_base()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt8ios_baseD2Ev@plt" l="0" v="{[0x6ae0-0x6ae1)}">
-<S i="29" l="0" v="{[0x6ae0-0x6b00)}"/>
+<P i="28" n="std::ios_base::~ios_base()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt8ios_baseD2Ev@plt" l="0" v="{[0x6ad0-0x6ad1)}">
+<S i="29" l="0" v="{[0x6ad0-0x6af0)}"/>
 </P>
-<P i="30" n="std::__throw_bad_function_call()@plt [libroctracer64.so.4.1.0]" ln="_ZSt25__throw_bad_function_callv@plt" l="0" v="{[0x6b00-0x6b01)}">
-<S i="31" l="0" v="{[0x6b00-0x6b10)}"/>
+<P i="30" n="std::__throw_bad_function_call()@plt [libroctracer64.so.4.1.0]" ln="_ZSt25__throw_bad_function_callv@plt" l="0" v="{[0x6af0-0x6af1)}">
+<S i="31" l="0" v="{[0x6af0-0x6b00)}"/>
 </P>
-<P i="32" n="__cxa_begin_catch@plt [libroctracer64.so.4.1.0]" ln="__cxa_begin_catch@plt" l="0" v="{[0x6b10-0x6b11)}">
-<S i="33" l="0" v="{[0x6b10-0x6b20)}"/>
+<P i="32" n="__cxa_begin_catch@plt [libroctracer64.so.4.1.0]" ln="__cxa_begin_catch@plt" l="0" v="{[0x6b00-0x6b01)}">
+<S i="33" l="0" v="{[0x6b00-0x6b10)}"/>
 </P>
-<P i="34" n="strlen [libroctracer64.so.4.1.0]" ln="strlen" l="0" v="{[0x6b20-0x6b21)}">
-<S i="35" l="0" v="{[0x6b20-0x6b50)}"/>
+<P i="34" n="strlen [libroctracer64.so.4.1.0]" ln="strlen" l="0" v="{[0x6b10-0x6b11)}">
+<S i="35" l="0" v="{[0x6b10-0x6b40)}"/>
 </P>
-<P i="36" n="std::endl&lt;char, std::char_traits&lt;char&gt; &gt;(std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_@plt" l="0" v="{[0x6b50-0x6b51)}">
-<S i="37" l="0" v="{[0x6b50-0x6b60)}"/>
+<P i="36" n="std::endl&lt;char, std::char_traits&lt;char&gt; &gt;(std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZSt4endlIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_@plt" l="0" v="{[0x6b40-0x6b41)}">
+<S i="37" l="0" v="{[0x6b40-0x6b50)}"/>
 </P>
-<P i="38" n="__cxa_allocate_exception@plt [libroctracer64.so.4.1.0]" ln="__cxa_allocate_exception@plt" l="0" v="{[0x6b60-0x6b61)}">
-<S i="39" l="0" v="{[0x6b60-0x6b80)}"/>
+<P i="38" n="__cxa_allocate_exception@plt [libroctracer64.so.4.1.0]" ln="__cxa_allocate_exception@plt" l="0" v="{[0x6b50-0x6b51)}">
+<S i="39" l="0" v="{[0x6b50-0x6b70)}"/>
 </P>
-<P i="40" n="localtime_r@plt [libroctracer64.so.4.1.0]" ln="localtime_r@plt" l="0" v="{[0x6b80-0x6b81)}">
-<S i="41" l="0" v="{[0x6b80-0x6b90)}"/>
+<P i="40" n="localtime_r@plt [libroctracer64.so.4.1.0]" ln="localtime_r@plt" l="0" v="{[0x6b70-0x6b71)}">
+<S i="41" l="0" v="{[0x6b70-0x6b80)}"/>
 </P>
-<P i="42" n="std::__throw_length_error(char const*)@plt [libroctracer64.so.4.1.0]" ln="_ZSt20__throw_length_errorPKc@plt" l="0" v="{[0x6b90-0x6b91)}">
-<S i="43" l="0" v="{[0x6b90-0x6ba0)}"/>
+<P i="42" n="std::__throw_length_error(char const*)@plt [libroctracer64.so.4.1.0]" ln="_ZSt20__throw_length_errorPKc@plt" l="0" v="{[0x6b80-0x6b81)}">
+<S i="43" l="0" v="{[0x6b80-0x6b90)}"/>
 </P>
-<P i="44" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_assign(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt" l="0" v="{[0x6ba0-0x6ba1)}">
-<S i="45" l="0" v="{[0x6ba0-0x6bc0)}"/>
+<P i="44" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_assign(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_assignERKS4_@plt" l="0" v="{[0x6b90-0x6b91)}">
+<S i="45" l="0" v="{[0x6b90-0x6bb0)}"/>
 </P>
-<P i="46" n="abort@plt [libroctracer64.so.4.1.0]" ln="abort@plt" l="0" v="{[0x6bc0-0x6bc1)}">
-<S i="47" l="0" v="{[0x6bc0-0x6bd0)}"/>
+<P i="46" n="abort@plt [libroctracer64.so.4.1.0]" ln="abort@plt" l="0" v="{[0x6bb0-0x6bb1)}">
+<S i="47" l="0" v="{[0x6bb0-0x6bc0)}"/>
 </P>
-<P i="48" n="dlerror@plt [libroctracer64.so.4.1.0]" ln="dlerror@plt" l="0" v="{[0x6bd0-0x6bd1)}">
-<S i="49" l="0" v="{[0x6bd0-0x6be0)}"/>
+<P i="48" n="munmap@plt [libroctracer64.so.4.1.0]" ln="munmap@plt" l="0" v="{[0x6bc0-0x6bc1)}">
+<S i="49" l="0" v="{[0x6bc0-0x6bd0)}"/>
 </P>
-<P i="50" n="munmap@plt [libroctracer64.so.4.1.0]" ln="munmap@plt" l="0" v="{[0x6be0-0x6be1)}">
-<S i="51" l="0" v="{[0x6be0-0x6bf0)}"/>
+<P i="50" n="std::future_category()@plt [libroctracer64.so.4.1.0]" ln="_ZSt15future_categoryv@plt" l="0" v="{[0x6bd0-0x6bd1)}">
+<S i="51" l="0" v="{[0x6bd0-0x6bf0)}"/>
 </P>
-<P i="52" n="std::future_category()@plt [libroctracer64.so.4.1.0]" ln="_ZSt15future_categoryv@plt" l="0" v="{[0x6bf0-0x6bf1)}">
+<P i="52" n="std::__future_base::_Result_base::_Result_base()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt13__future_base12_Result_baseC2Ev@plt" l="0" v="{[0x6bf0-0x6bf1)}">
 <S i="53" l="0" v="{[0x6bf0-0x6c10)}"/>
 </P>
-<P i="54" n="std::__future_base::_Result_base::_Result_base() [libroctracer64.so.4.1.0]" ln="_ZNSt13__future_base12_Result_baseC2Ev" l="0" v="{[0x6c10-0x6c11)}">
-<S i="55" l="0" v="{[0x6c10-0x6c40)}"/>
+<P i="54" n="__cxa_guard_abort@plt [libroctracer64.so.4.1.0]" ln="__cxa_guard_abort@plt" l="0" v="{[0x6c10-0x6c11)}">
+<S i="55" l="0" v="{[0x6c10-0x6c20)}"/>
 </P>
-<P i="56" n="__cxa_guard_abort@plt [libroctracer64.so.4.1.0]" ln="__cxa_guard_abort@plt" l="0" v="{[0x6c40-0x6c41)}">
-<S i="57" l="0" v="{[0x6c40-0x6c50)}"/>
+<P i="56" n="__cxa_guard_release@plt [libroctracer64.so.4.1.0]" ln="__cxa_guard_release@plt" l="0" v="{[0x6c20-0x6c21)}">
+<S i="57" l="0" v="{[0x6c20-0x6c30)}"/>
 </P>
-<P i="58" n="__cxa_guard_release@plt [libroctracer64.so.4.1.0]" ln="__cxa_guard_release@plt" l="0" v="{[0x6c50-0x6c51)}">
-<S i="59" l="0" v="{[0x6c50-0x6c60)}"/>
+<P i="58" n="std::__throw_system_error(int)@plt [libroctracer64.so.4.1.0]" ln="_ZSt20__throw_system_errori@plt" l="0" v="{[0x6c30-0x6c31)}">
+<S i="59" l="0" v="{[0x6c30-0x6c40)}"/>
 </P>
-<P i="60" n="std::__throw_system_error(int)@plt [libroctracer64.so.4.1.0]" ln="_ZSt20__throw_system_errori@plt" l="0" v="{[0x6c60-0x6c61)}">
-<S i="61" l="0" v="{[0x6c60-0x6c70)}"/>
+<P i="60" n="std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;::_M_insert&lt;unsigned long&gt;(unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZNSo9_M_insertImEERSoT_@plt" l="0" v="{[0x6c40-0x6c41)}">
+<S i="61" l="0" v="{[0x6c40-0x6c60)}"/>
 </P>
-<P i="62" n="std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;::_M_insert&lt;unsigned long&gt;(unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZNSo9_M_insertImEERSoT_@plt" l="0" v="{[0x6c70-0x6c71)}">
-<S i="63" l="0" v="{[0x6c70-0x6c90)}"/>
+<P i="62" n="std::_Rb_tree_increment(std::_Rb_tree_node_base*)@plt [libroctracer64.so.4.1.0]" ln="_ZSt18_Rb_tree_incrementPSt18_Rb_tree_node_base@plt" l="0" v="{[0x6c60-0x6c61)}">
+<S i="63" l="0" v="{[0x6c60-0x6c70)}"/>
 </P>
-<P i="64" n="std::_Rb_tree_increment(std::_Rb_tree_node_base*)@plt [libroctracer64.so.4.1.0]" ln="_ZSt18_Rb_tree_incrementPSt18_Rb_tree_node_base@plt" l="0" v="{[0x6c90-0x6c91)}">
-<S i="65" l="0" v="{[0x6c90-0x6ca0)}"/>
+<P i="64" n="std::__cxx11::basic_stringstream&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::basic_stringstream()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1118basic_stringstreamIcSt11char_traitsIcESaIcEEC1Ev@plt" l="0" v="{[0x6c70-0x6c71)}">
+<S i="65" l="0" v="{[0x6c70-0x6c80)}"/>
 </P>
-<P i="66" n="std::__cxx11::basic_stringstream&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::basic_stringstream()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1118basic_stringstreamIcSt11char_traitsIcESaIcEEC1Ev@plt" l="0" v="{[0x6ca0-0x6ca1)}">
-<S i="67" l="0" v="{[0x6ca0-0x6cb0)}"/>
+<P i="66" n="std::__throw_logic_error(char const*)@plt [libroctracer64.so.4.1.0]" ln="_ZSt19__throw_logic_errorPKc@plt" l="0" v="{[0x6c80-0x6c81)}">
+<S i="67" l="0" v="{[0x6c80-0x6c90)}"/>
 </P>
-<P i="68" n="std::__throw_logic_error(char const*)@plt [libroctracer64.so.4.1.0]" ln="_ZSt19__throw_logic_errorPKc@plt" l="0" v="{[0x6cb0-0x6cb1)}">
-<S i="69" l="0" v="{[0x6cb0-0x6cc0)}"/>
+<P i="68" n="__cxa_free_exception [libroctracer64.so.4.1.0]" ln="__cxa_free_exception" l="0" v="{[0x6c90-0x6c91)}">
+<S i="69" l="0" v="{[0x6c90-0x6cc0)}"/>
 </P>
-<P i="70" n="__cxa_free_exception [libroctracer64.so.4.1.0]" ln="__cxa_free_exception" l="0" v="{[0x6cc0-0x6cc1)}">
-<S i="71" l="0" v="{[0x6cc0-0x6d00)}"/>
+<P i="70" n="std::__cxx11::basic_stringstream&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::~basic_stringstream()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1118basic_stringstreamIcSt11char_traitsIcESaIcEED1Ev@plt" l="0" v="{[0x6cc0-0x6cc1)}">
+<S i="71" l="0" v="{[0x6cc0-0x6cd0)}"/>
 </P>
-<P i="72" n="std::__cxx11::basic_stringstream&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::~basic_stringstream()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1118basic_stringstreamIcSt11char_traitsIcESaIcEED1Ev@plt" l="0" v="{[0x6d00-0x6d01)}">
-<S i="73" l="0" v="{[0x6d00-0x6d10)}"/>
+<P i="72" n="pthread_mutex_unlock [libroctracer64.so.4.1.0]" ln="pthread_mutex_unlock" l="0" v="{[0x6cd0-0x6cd1)}">
+<S i="73" l="0" v="{[0x6cd0-0x6d00)}"/>
 </P>
-<P i="74" n="pthread_mutex_unlock@plt [libroctracer64.so.4.1.0]" ln="pthread_mutex_unlock@plt" l="0" v="{[0x6d10-0x6d11)}">
-<S i="75" l="0" v="{[0x6d10-0x6d20)}"/>
+<P i="74" n="strftime@plt [libroctracer64.so.4.1.0]" ln="strftime@plt" l="0" v="{[0x6d00-0x6d01)}">
+<S i="75" l="0" v="{[0x6d00-0x6d10)}"/>
 </P>
-<P i="76" n="pthread_rwlock_wrlock@plt [libroctracer64.so.4.1.0]" ln="pthread_rwlock_wrlock@plt" l="0" v="{[0x6d20-0x6d21)}">
-<S i="77" l="0" v="{[0x6d20-0x6d30)}"/>
+<P i="76" n="__vsnprintf_chk@plt [libroctracer64.so.4.1.0]" ln="__vsnprintf_chk@plt" l="0" v="{[0x6d10-0x6d11)}">
+<S i="77" l="0" v="{[0x6d10-0x6d20)}"/>
 </P>
-<P i="78" n="strftime@plt [libroctracer64.so.4.1.0]" ln="strftime@plt" l="0" v="{[0x6d30-0x6d31)}">
-<S i="79" l="0" v="{[0x6d30-0x6d40)}"/>
+<P i="78" n="memcpy@plt [libroctracer64.so.4.1.0]" ln="memcpy@plt" l="0" v="{[0x6d20-0x6d21)}">
+<S i="79" l="0" v="{[0x6d20-0x6d40)}"/>
 </P>
-<P i="80" n="__vsnprintf_chk@plt [libroctracer64.so.4.1.0]" ln="__vsnprintf_chk@plt" l="0" v="{[0x6d40-0x6d41)}">
-<S i="81" l="0" v="{[0x6d40-0x6d50)}"/>
+<P i="80" n="std::__exception_ptr::exception_ptr::_M_release() [libroctracer64.so.4.1.0]" ln="_ZNSt15__exception_ptr13exception_ptr10_M_releaseEv" l="0" v="{[0x6d40-0x6d41)}">
+<S i="81" l="0" v="{[0x6d40-0x6d80)}"/>
 </P>
-<P i="82" n="memcpy [libroctracer64.so.4.1.0]" ln="memcpy" l="0" v="{[0x6d50-0x6d51)}">
-<S i="83" l="0" v="{[0x6d50-0x6d90)}"/>
+<P i="82" n="__cxa_atexit@plt [libroctracer64.so.4.1.0]" ln="__cxa_atexit@plt" l="0" v="{[0x6d80-0x6d81)}">
+<S i="83" l="0" v="{[0x6d80-0x6d90)}"/>
 </P>
-<P i="84" n="__cxa_atexit@plt [libroctracer64.so.4.1.0]" ln="__cxa_atexit@plt" l="0" v="{[0x6d90-0x6d91)}">
+<P i="84" n="std::thread::_M_start_thread(std::unique_ptr&lt;std::thread::_State, std::default_delete&lt;std::thread::_State&gt; &gt;, void (*)())@plt [libroctracer64.so.4.1.0]" ln="_ZNSt6thread15_M_start_threadESt10unique_ptrINS_6_StateESt14default_deleteIS1_EEPFvvE@plt" l="0" v="{[0x6d90-0x6d91)}">
 <S i="85" l="0" v="{[0x6d90-0x6da0)}"/>
 </P>
-<P i="86" n="std::thread::_M_start_thread(std::unique_ptr&lt;std::thread::_State, std::default_delete&lt;std::thread::_State&gt; &gt;, void (*)())@plt [libroctracer64.so.4.1.0]" ln="_ZNSt6thread15_M_start_threadESt10unique_ptrINS_6_StateESt14default_deleteIS1_EEPFvvE@plt" l="0" v="{[0x6da0-0x6da1)}">
-<S i="87" l="0" v="{[0x6da0-0x6db0)}"/>
+<P i="86" n="__cxa_init_primary_exception@plt [libroctracer64.so.4.1.0]" ln="__cxa_init_primary_exception@plt" l="0" v="{[0x6da0-0x6da1)}">
+<S i="87" l="0" v="{[0x6da0-0x6dc0)}"/>
 </P>
-<P i="88" n="__cxa_init_primary_exception@plt [libroctracer64.so.4.1.0]" ln="__cxa_init_primary_exception@plt" l="0" v="{[0x6db0-0x6db1)}">
-<S i="89" l="0" v="{[0x6db0-0x6dc0)}"/>
+<P i="88" n="std::__atomic_futex_unsigned_base::_M_futex_notify_all(unsigned int*)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt28__atomic_futex_unsigned_base19_M_futex_notify_allEPj@plt" l="0" v="{[0x6dc0-0x6dc1)}">
+<S i="89" l="0" v="{[0x6dc0-0x6dd0)}"/>
 </P>
-<P i="90" n="std::__atomic_futex_unsigned_base::_M_futex_notify_all(unsigned int*)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt28__atomic_futex_unsigned_base19_M_futex_notify_allEPj@plt" l="0" v="{[0x6dc0-0x6dc1)}">
-<S i="91" l="0" v="{[0x6dc0-0x6dd0)}"/>
+<P i="90" n="time@plt [libroctracer64.so.4.1.0]" ln="time@plt" l="0" v="{[0x6dd0-0x6dd1)}">
+<S i="91" l="0" v="{[0x6dd0-0x6df0)}"/>
 </P>
-<P i="92" n="time@plt [libroctracer64.so.4.1.0]" ln="time@plt" l="0" v="{[0x6dd0-0x6dd1)}">
-<S i="93" l="0" v="{[0x6dd0-0x6de0)}"/>
+<P i="92" n="dlsym@plt [libroctracer64.so.4.1.0]" ln="dlsym@plt" l="0" v="{[0x6df0-0x6df1)}">
+<S i="93" l="0" v="{[0x6df0-0x6e00)}"/>
 </P>
-<P i="94" n="operator delete(void*)@plt [libroctracer64.so.4.1.0]" ln="_ZdlPv@plt" l="0" v="{[0x6de0-0x6de1)}">
-<S i="95" l="0" v="{[0x6de0-0x6df0)}"/>
+<P i="94" n="dlerror@plt [libroctracer64.so.4.1.0]" ln="dlerror@plt" l="0" v="{[0x6e00-0x6e01)}">
+<S i="95" l="0" v="{[0x6e00-0x6e10)}"/>
 </P>
-<P i="96" n="roctracer_default_pool@plt [libroctracer64.so.4.1.0]" ln="roctracer_default_pool@plt" l="0" v="{[0x6df0-0x6df1)}">
-<S i="97" l="0" v="{[0x6df0-0x6e00)}"/>
+<P i="96" n="roctracer_default_pool@plt [libroctracer64.so.4.1.0]" ln="roctracer_default_pool@plt" l="0" v="{[0x6e10-0x6e11)}">
+<S i="97" l="0" v="{[0x6e10-0x6e20)}"/>
 </P>
-<P i="98" n="std::operator&lt;&lt; &lt;std::char_traits&lt;char&gt; &gt;(std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;&amp;, char const*)@plt [libroctracer64.so.4.1.0]" ln="_ZStlsISt11char_traitsIcEERSt13basic_ostreamIcT_ES5_PKc@plt" l="0" v="{[0x6e00-0x6e01)}">
-<S i="99" l="0" v="{[0x6e00-0x6e20)}"/>
+<P i="98" n="std::operator&lt;&lt; &lt;std::char_traits&lt;char&gt; &gt;(std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;&amp;, char const*)@plt [libroctracer64.so.4.1.0]" ln="_ZStlsISt11char_traitsIcEERSt13basic_ostreamIcT_ES5_PKc@plt" l="0" v="{[0x6e20-0x6e21)}">
+<S i="99" l="0" v="{[0x6e20-0x6e40)}"/>
 </P>
-<P i="100" n="operator new(unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_Znwm@plt" l="0" v="{[0x6e20-0x6e21)}">
-<S i="101" l="0" v="{[0x6e20-0x6e30)}"/>
+<P i="100" n="operator new(unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_Znwm@plt" l="0" v="{[0x6e40-0x6e41)}">
+<S i="101" l="0" v="{[0x6e40-0x6e50)}"/>
 </P>
-<P i="102" n="operator delete(void*, unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZdlPvm@plt" l="0" v="{[0x6e30-0x6e31)}">
-<S i="103" l="0" v="{[0x6e30-0x6e40)}"/>
+<P i="102" n="operator delete(void*, unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZdlPvm@plt" l="0" v="{[0x6e50-0x6e51)}">
+<S i="103" l="0" v="{[0x6e50-0x6e60)}"/>
 </P>
-<P i="104" n="std::_Rb_tree_decrement(std::_Rb_tree_node_base*)@plt [libroctracer64.so.4.1.0]" ln="_ZSt18_Rb_tree_decrementPSt18_Rb_tree_node_base@plt" l="0" v="{[0x6e40-0x6e41)}">
-<S i="105" l="0" v="{[0x6e40-0x6e50)}"/>
+<P i="104" n="std::_Rb_tree_decrement(std::_Rb_tree_node_base*)@plt [libroctracer64.so.4.1.0]" ln="_ZSt18_Rb_tree_decrementPSt18_Rb_tree_node_base@plt" l="0" v="{[0x6e60-0x6e61)}">
+<S i="105" l="0" v="{[0x6e60-0x6e70)}"/>
 </P>
-<P i="106" n="fileno [libroctracer64.so.4.1.0]" ln="fileno" l="0" v="{[0x6e50-0x6e51)}">
-<S i="107" l="0" v="{[0x6e50-0x6ea0)}"/>
+<P i="106" n="fileno [libroctracer64.so.4.1.0]" ln="fileno" l="0" v="{[0x6e70-0x6e71)}">
+<S i="107" l="0" v="{[0x6e70-0x6eb0)}"/>
 </P>
-<P i="108" n="__stack_chk_fail@plt [libroctracer64.so.4.1.0]" ln="__stack_chk_fail@plt" l="0" v="{[0x6ea0-0x6ea1)}">
-<S i="109" l="0" v="{[0x6ea0-0x6eb0)}"/>
+<P i="108" n="__stack_chk_fail@plt [libroctracer64.so.4.1.0]" ln="__stack_chk_fail@plt" l="0" v="{[0x6eb0-0x6eb1)}">
+<S i="109" l="0" v="{[0x6eb0-0x6ec0)}"/>
 </P>
-<P i="110" n="fputs@plt [libroctracer64.so.4.1.0]" ln="fputs@plt" l="0" v="{[0x6eb0-0x6eb1)}">
-<S i="111" l="0" v="{[0x6eb0-0x6ec0)}"/>
+<P i="110" n="fputs@plt [libroctracer64.so.4.1.0]" ln="fputs@plt" l="0" v="{[0x6ec0-0x6ec1)}">
+<S i="111" l="0" v="{[0x6ec0-0x6ed0)}"/>
 </P>
-<P i="112" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::replace(unsigned long, unsigned long, char const*, unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE7replaceEmmPKcm@plt" l="0" v="{[0x6ec0-0x6ec1)}">
-<S i="113" l="0" v="{[0x6ec0-0x6ed0)}"/>
+<P i="112" n="__dynamic_cast@plt [libroctracer64.so.4.1.0]" ln="__dynamic_cast@plt" l="0" v="{[0x6ed0-0x6ed1)}">
+<S i="113" l="0" v="{[0x6ed0-0x6ee0)}"/>
 </P>
-<P i="114" n="__dynamic_cast@plt [libroctracer64.so.4.1.0]" ln="__dynamic_cast@plt" l="0" v="{[0x6ed0-0x6ed1)}">
-<S i="115" l="0" v="{[0x6ed0-0x6ee0)}"/>
+<P i="114" n="std::__ostream_insert&lt;char, std::char_traits&lt;char&gt; &gt;(std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;&amp;, char const*, long)@plt [libroctracer64.so.4.1.0]" ln="_ZSt16__ostream_insertIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_PKS3_l@plt" l="0" v="{[0x6ee0-0x6ee1)}">
+<S i="115" l="0" v="{[0x6ee0-0x6f00)}"/>
 </P>
-<P i="116" n="std::__ostream_insert&lt;char, std::char_traits&lt;char&gt; &gt;(std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;&amp;, char const*, long)@plt [libroctracer64.so.4.1.0]" ln="_ZSt16__ostream_insertIcSt11char_traitsIcEERSt13basic_ostreamIT_T0_ES6_PKS3_l@plt" l="0" v="{[0x6ee0-0x6ee1)}">
-<S i="117" l="0" v="{[0x6ee0-0x6f00)}"/>
+<P i="116" n="roctracer_enable_domain_activity@plt [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_activity@plt" l="0" v="{[0x6f00-0x6f01)}">
+<S i="117" l="0" v="{[0x6f00-0x6f10)}"/>
 </P>
-<P i="118" n="roctracer_enable_domain_activity@plt [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_activity@plt" l="0" v="{[0x6f00-0x6f01)}">
-<S i="119" l="0" v="{[0x6f00-0x6f10)}"/>
+<P i="118" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_construct(unsigned long, char)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructEmc@plt" l="0" v="{[0x6f10-0x6f11)}">
+<S i="119" l="0" v="{[0x6f10-0x6f20)}"/>
 </P>
-<P i="120" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_construct(unsigned long, char)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE12_M_constructEmc@plt" l="0" v="{[0x6f10-0x6f11)}">
-<S i="121" l="0" v="{[0x6f10-0x6f20)}"/>
+<P i="120" n="fflush@plt [libroctracer64.so.4.1.0]" ln="fflush@plt" l="0" v="{[0x6f20-0x6f21)}">
+<S i="121" l="0" v="{[0x6f20-0x6f30)}"/>
 </P>
-<P i="122" n="fflush@plt [libroctracer64.so.4.1.0]" ln="fflush@plt" l="0" v="{[0x6f20-0x6f21)}">
-<S i="123" l="0" v="{[0x6f20-0x6f30)}"/>
+<P i="122" n="fopen@plt [libroctracer64.so.4.1.0]" ln="fopen@plt" l="0" v="{[0x6f30-0x6f31)}">
+<S i="123" l="0" v="{[0x6f30-0x6f40)}"/>
 </P>
-<P i="124" n="fopen@plt [libroctracer64.so.4.1.0]" ln="fopen@plt" l="0" v="{[0x6f30-0x6f31)}">
-<S i="125" l="0" v="{[0x6f30-0x6f40)}"/>
+<P i="124" n="free@plt [libroctracer64.so.4.1.0]" ln="free@plt" l="0" v="{[0x6f40-0x6f41)}">
+<S i="125" l="0" v="{[0x6f40-0x6f50)}"/>
 </P>
-<P i="126" n="free@plt [libroctracer64.so.4.1.0]" ln="free@plt" l="0" v="{[0x6f40-0x6f41)}">
-<S i="127" l="0" v="{[0x6f40-0x6f50)}"/>
+<P i="126" n="roctracer_enable_domain_activity_expl@plt [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_activity_expl@plt" l="0" v="{[0x6f50-0x6f51)}">
+<S i="127" l="0" v="{[0x6f50-0x6f70)}"/>
 </P>
-<P i="128" n="roctracer_enable_domain_activity_expl@plt [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_activity_expl@plt" l="0" v="{[0x6f50-0x6f51)}">
-<S i="129" l="0" v="{[0x6f50-0x6f70)}"/>
+<P i="128" n="getenv@plt [libroctracer64.so.4.1.0]" ln="getenv@plt" l="0" v="{[0x6f70-0x6f71)}">
+<S i="129" l="0" v="{[0x6f70-0x6f80)}"/>
 </P>
-<P i="130" n="getenv@plt [libroctracer64.so.4.1.0]" ln="getenv@plt" l="0" v="{[0x6f70-0x6f71)}">
-<S i="131" l="0" v="{[0x6f70-0x6f80)}"/>
+<P i="130" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_dispose()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_disposeEv@plt" l="0" v="{[0x6f80-0x6f81)}">
+<S i="131" l="0" v="{[0x6f80-0x6f90)}"/>
 </P>
-<P i="132" n="std::runtime_error::runtime_error(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt13runtime_errorC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE@plt" l="0" v="{[0x6f80-0x6f81)}">
-<S i="133" l="0" v="{[0x6f80-0x6fa0)}"/>
+<P i="132" n="std::runtime_error::runtime_error(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt13runtime_errorC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE@plt" l="0" v="{[0x6f90-0x6f91)}">
+<S i="133" l="0" v="{[0x6f90-0x6fb0)}"/>
 </P>
-<P i="134" n="std::__exception_ptr::exception_ptr::exception_ptr(void*) [libroctracer64.so.4.1.0]" ln="_ZNSt15__exception_ptr13exception_ptrC1EPv" l="0" v="{[0x6fa0-0x6fa1)}">
-<S i="135" l="0" v="{[0x6fa0-0x6fd0)}"/>
+<P i="134" n="std::__exception_ptr::exception_ptr::exception_ptr(void*)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt15__exception_ptr13exception_ptrC1EPv@plt" l="0" v="{[0x6fb0-0x6fb1)}">
+<S i="135" l="0" v="{[0x6fb0-0x6fc0)}"/>
 </P>
-<P i="136" n="malloc@plt [libroctracer64.so.4.1.0]" ln="malloc@plt" l="0" v="{[0x6fd0-0x6fd1)}">
-<S i="137" l="0" v="{[0x6fd0-0x6fe0)}"/>
+<P i="136" n="pthread_rwlock_unlock@plt [libroctracer64.so.4.1.0]" ln="pthread_rwlock_unlock@plt" l="0" v="{[0x6fc0-0x6fc1)}">
+<S i="137" l="0" v="{[0x6fc0-0x6fe0)}"/>
 </P>
-<P i="138" n="std::basic_ios&lt;char, std::char_traits&lt;char&gt; &gt;::init(std::basic_streambuf&lt;char, std::char_traits&lt;char&gt; &gt;*)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt9basic_iosIcSt11char_traitsIcEE4initEPSt15basic_streambufIcS1_E@plt" l="0" v="{[0x6fe0-0x6fe1)}">
+<P i="138" n="malloc@plt [libroctracer64.so.4.1.0]" ln="malloc@plt" l="0" v="{[0x6fe0-0x6fe1)}">
 <S i="139" l="0" v="{[0x6fe0-0x6ff0)}"/>
 </P>
-<P i="140" n="std::__cxx11::basic_ostringstream&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::basic_ostringstream() [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1119basic_ostringstreamIcSt11char_traitsIcESaIcEEC1Ev" l="0" v="{[0x6ff0-0x6ff1)}">
-<S i="141" l="0" v="{[0x6ff0-0x7020)}"/>
+<P i="140" n="std::basic_ios&lt;char, std::char_traits&lt;char&gt; &gt;::init(std::basic_streambuf&lt;char, std::char_traits&lt;char&gt; &gt;*)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt9basic_iosIcSt11char_traitsIcEE4initEPSt15basic_streambufIcS1_E@plt" l="0" v="{[0x6ff0-0x6ff1)}">
+<S i="141" l="0" v="{[0x6ff0-0x7000)}"/>
 </P>
-<P i="142" n="__vsprintf_chk@plt [libroctracer64.so.4.1.0]" ln="__vsprintf_chk@plt" l="0" v="{[0x7020-0x7021)}">
-<S i="143" l="0" v="{[0x7020-0x7030)}"/>
+<P i="142" n="std::__cxx11::basic_ostringstream&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::basic_ostringstream() [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1119basic_ostringstreamIcSt11char_traitsIcESaIcEEC1Ev" l="0" v="{[0x7000-0x7001)}">
+<S i="143" l="0" v="{[0x7000-0x7040)}"/>
 </P>
-<P i="144" n="strcmp@plt [libroctracer64.so.4.1.0]" ln="strcmp@plt" l="0" v="{[0x7030-0x7031)}">
-<S i="145" l="0" v="{[0x7030-0x7040)}"/>
+<P i="144" n="__vsprintf_chk@plt [libroctracer64.so.4.1.0]" ln="__vsprintf_chk@plt" l="0" v="{[0x7040-0x7041)}">
+<S i="145" l="0" v="{[0x7040-0x7050)}"/>
 </P>
-<P i="146" n="std::condition_variable::condition_variable()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt18condition_variableC1Ev@plt" l="0" v="{[0x7040-0x7041)}">
-<S i="147" l="0" v="{[0x7040-0x7050)}"/>
+<P i="146" n="strcmp@plt [libroctracer64.so.4.1.0]" ln="strcmp@plt" l="0" v="{[0x7050-0x7051)}">
+<S i="147" l="0" v="{[0x7050-0x7060)}"/>
 </P>
-<P i="148" n="std::locale::~locale() [libroctracer64.so.4.1.0]" ln="_ZNSt6localeD1Ev" l="0" v="{[0x7050-0x7051)}">
-<S i="149" l="0" v="{[0x7050-0x7080)}"/>
+<P i="148" n="std::condition_variable::condition_variable()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt18condition_variableC1Ev@plt" l="0" v="{[0x7060-0x7061)}">
+<S i="149" l="0" v="{[0x7060-0x7070)}"/>
 </P>
-<P i="150" n="__cxa_rethrow [libroctracer64.so.4.1.0]" ln="__cxa_rethrow" l="0" v="{[0x7080-0x7081)}">
-<S i="151" l="0" v="{[0x7080-0x70c0)}"/>
+<P i="150" n="std::locale::~locale() [libroctracer64.so.4.1.0]" ln="_ZNSt6localeD1Ev" l="0" v="{[0x7070-0x7071)}">
+<S i="151" l="0" v="{[0x7070-0x70a0)}"/>
 </P>
-<P i="152" n="pthread_mutex_lock@plt [libroctracer64.so.4.1.0]" ln="pthread_mutex_lock@plt" l="0" v="{[0x70c0-0x70c1)}">
-<S i="153" l="0" v="{[0x70c0-0x70d0)}"/>
+<P i="152" n="__cxa_rethrow [libroctracer64.so.4.1.0]" ln="__cxa_rethrow" l="0" v="{[0x70a0-0x70a1)}">
+<S i="153" l="0" v="{[0x70a0-0x70d0)}"/>
 </P>
-<P i="154" n="roctracer_disable_domain_callback [libroctracer64.so.4.1.0]" ln="roctracer_disable_domain_callback" l="0" v="{[0x70d0-0x70d1)}">
-<S i="155" l="0" v="{[0x70d0-0x7100)}"/>
+<P i="154" n="pthread_mutex_lock@plt [libroctracer64.so.4.1.0]" ln="pthread_mutex_lock@plt" l="0" v="{[0x70d0-0x70d1)}">
+<S i="155" l="0" v="{[0x70d0-0x70e0)}"/>
 </P>
-<P i="156" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_replace(unsigned long, unsigned long, char const*, unsigned long) [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_replaceEmmPKcm" l="0" v="{[0x7100-0x7101)}">
-<S i="157" l="0" v="{[0x7100-0x7130)}"/>
+<P i="156" n="roctracer_disable_domain_callback@plt [libroctracer64.so.4.1.0]" ln="roctracer_disable_domain_callback@plt" l="0" v="{[0x70e0-0x70e1)}">
+<S i="157" l="0" v="{[0x70e0-0x70f0)}"/>
 </P>
-<P i="158" n="std::__cxx11::basic_stringbuf&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::str() const@plt [libroctracer64.so.4.1.0]" ln="_ZNKSt7__cxx1115basic_stringbufIcSt11char_traitsIcESaIcEE3strEv@plt" l="0" v="{[0x7130-0x7131)}">
-<S i="159" l="0" v="{[0x7130-0x7140)}"/>
+<P i="158" n="pthread_rwlock_wrlock [libroctracer64.so.4.1.0]" ln="pthread_rwlock_wrlock" l="0" v="{[0x70f0-0x70f1)}">
+<S i="159" l="0" v="{[0x70f0-0x7120)}"/>
 </P>
-<P i="160" n="std::condition_variable::wait(std::unique_lock&lt;std::mutex&gt;&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt18condition_variable4waitERSt11unique_lockISt5mutexE@plt" l="0" v="{[0x7140-0x7141)}">
-<S i="161" l="0" v="{[0x7140-0x7160)}"/>
+<P i="160" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_replace(unsigned long, unsigned long, char const*, unsigned long) [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE10_M_replaceEmmPKcm" l="0" v="{[0x7120-0x7121)}">
+<S i="161" l="0" v="{[0x7120-0x7150)}"/>
 </P>
-<P i="162" n="memmove@plt [libroctracer64.so.4.1.0]" ln="memmove@plt" l="0" v="{[0x7160-0x7161)}">
-<S i="163" l="0" v="{[0x7160-0x7170)}"/>
+<P i="162" n="std::__cxx11::basic_stringbuf&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::str() const@plt [libroctracer64.so.4.1.0]" ln="_ZNKSt7__cxx1115basic_stringbufIcSt11char_traitsIcESaIcEE3strEv@plt" l="0" v="{[0x7150-0x7151)}">
+<S i="163" l="0" v="{[0x7150-0x7170)}"/>
 </P>
-<P i="164" n="pthread_rwlock_unlock@plt [libroctracer64.so.4.1.0]" ln="pthread_rwlock_unlock@plt" l="0" v="{[0x7170-0x7171)}">
+<P i="164" n="memmove@plt [libroctracer64.so.4.1.0]" ln="memmove@plt" l="0" v="{[0x7170-0x7171)}">
 <S i="165" l="0" v="{[0x7170-0x7180)}"/>
 </P>
 <P i="166" n="__cxa_end_catch@plt [libroctracer64.so.4.1.0]" ln="__cxa_end_catch@plt" l="0" v="{[0x7180-0x7181)}">
@@ -324,438 +324,453 @@
 <S i="171" l="0" v="{[0x71b0-0x71c0)}"/>
 </P>
 <P i="172" n="std::__atomic_futex_unsigned_base::_M_futex_wait_until(unsigned int*, unsigned int, bool, std::chrono::duration&lt;long, std::ratio&lt;1l, 1l&gt; &gt;, std::chrono::duration&lt;long, std::ratio&lt;1l, 1000000000l&gt; &gt;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt28__atomic_futex_unsigned_base19_M_futex_wait_untilEPjjbNSt6chrono8durationIlSt5ratioILl1ELl1EEEENS2_IlS3_ILl1ELl1000000000EEEE@plt" l="0" v="{[0x71c0-0x71c1)}">
-<S i="173" l="0" v="{[0x71c0-0x71d0)}"/>
+<S i="173" l="0" v="{[0x71c0-0x71e0)}"/>
 </P>
-<P i="174" n="std::basic_ios&lt;char, std::char_traits&lt;char&gt; &gt;::clear(std::_Ios_Iostate)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt9basic_iosIcSt11char_traitsIcEE5clearESt12_Ios_Iostate@plt" l="0" v="{[0x71d0-0x71d1)}">
-<S i="175" l="0" v="{[0x71d0-0x71e0)}"/>
+<P i="174" n="std::condition_variable::notify_all()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt18condition_variable10notify_allEv@plt" l="0" v="{[0x71e0-0x71e1)}">
+<S i="175" l="0" v="{[0x71e0-0x71f0)}"/>
 </P>
-<P i="176" n="std::condition_variable::notify_all()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt18condition_variable10notify_allEv@plt" l="0" v="{[0x71e0-0x71e1)}">
-<S i="177" l="0" v="{[0x71e0-0x71f0)}"/>
+<P i="176" n="std::thread::join()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt6thread4joinEv@plt" l="0" v="{[0x71f0-0x71f1)}">
+<S i="177" l="0" v="{[0x71f0-0x7200)}"/>
 </P>
-<P i="178" n="std::thread::join()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt6thread4joinEv@plt" l="0" v="{[0x71f0-0x71f1)}">
-<S i="179" l="0" v="{[0x71f0-0x7200)}"/>
+<P i="178" n="__cxa_throw@plt [libroctracer64.so.4.1.0]" ln="__cxa_throw@plt" l="0" v="{[0x7200-0x7201)}">
+<S i="179" l="0" v="{[0x7200-0x7210)}"/>
 </P>
-<P i="180" n="__cxa_throw@plt [libroctracer64.so.4.1.0]" ln="__cxa_throw@plt" l="0" v="{[0x7200-0x7201)}">
-<S i="181" l="0" v="{[0x7200-0x7210)}"/>
+<P i="180" n="roctracer_enable_domain_callback@plt [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_callback@plt" l="0" v="{[0x7210-0x7211)}">
+<S i="181" l="0" v="{[0x7210-0x7220)}"/>
 </P>
-<P i="182" n="roctracer_enable_domain_callback@plt [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_callback@plt" l="0" v="{[0x7210-0x7211)}">
-<S i="183" l="0" v="{[0x7210-0x7220)}"/>
+<P i="182" n="std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;::operator&lt;&lt;(int)@plt [libroctracer64.so.4.1.0]" ln="_ZNSolsEi@plt" l="0" v="{[0x7220-0x7221)}">
+<S i="183" l="0" v="{[0x7220-0x7230)}"/>
 </P>
-<P i="184" n="std::basic_ostream&lt;char, std::char_traits&lt;char&gt; &gt;::operator&lt;&lt;(int)@plt [libroctracer64.so.4.1.0]" ln="_ZNSolsEi@plt" l="0" v="{[0x7220-0x7221)}">
-<S i="185" l="0" v="{[0x7220-0x7230)}"/>
+<P i="184" n="__cxa_thread_atexit@plt [libroctracer64.so.4.1.0]" ln="__cxa_thread_atexit@plt" l="0" v="{[0x7230-0x7231)}">
+<S i="185" l="0" v="{[0x7230-0x7240)}"/>
 </P>
-<P i="186" n="__cxa_thread_atexit@plt [libroctracer64.so.4.1.0]" ln="__cxa_thread_atexit@plt" l="0" v="{[0x7230-0x7231)}">
-<S i="187" l="0" v="{[0x7230-0x7240)}"/>
+<P i="186" n="_Unwind_Resume@plt [libroctracer64.so.4.1.0]" ln="_Unwind_Resume@plt" l="0" v="{[0x7240-0x7241)}">
+<S i="187" l="0" v="{[0x7240-0x7250)}"/>
 </P>
-<P i="188" n="_Unwind_Resume@plt [libroctracer64.so.4.1.0]" ln="_Unwind_Resume@plt" l="0" v="{[0x7240-0x7241)}">
-<S i="189" l="0" v="{[0x7240-0x7250)}"/>
+<P i="188" n="mmap@plt [libroctracer64.so.4.1.0]" ln="mmap@plt" l="0" v="{[0x7250-0x7251)}">
+<S i="189" l="0" v="{[0x7250-0x7260)}"/>
 </P>
-<P i="190" n="mmap@plt [libroctracer64.so.4.1.0]" ln="mmap@plt" l="0" v="{[0x7250-0x7251)}">
-<S i="191" l="0" v="{[0x7250-0x7260)}"/>
+<P i="190" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_create(unsigned long&amp;, unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_createERmm@plt" l="0" v="{[0x7260-0x7261)}">
+<S i="191" l="0" v="{[0x7260-0x7270)}"/>
 </P>
-<P i="192" n="std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt;::_M_create(unsigned long&amp;, unsigned long)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE9_M_createERmm@plt" l="0" v="{[0x7260-0x7261)}">
-<S i="193" l="0" v="{[0x7260-0x7270)}"/>
+<P i="192" n="getpagesize@plt [libroctracer64.so.4.1.0]" ln="getpagesize@plt" l="0" v="{[0x7270-0x7271)}">
+<S i="193" l="0" v="{[0x7270-0x7290)}"/>
 </P>
-<P i="194" n="getpagesize@plt [libroctracer64.so.4.1.0]" ln="getpagesize@plt" l="0" v="{[0x7270-0x7271)}">
-<S i="195" l="0" v="{[0x7270-0x7290)}"/>
+<P i="194" n="__cxa_guard_acquire@plt [libroctracer64.so.4.1.0]" ln="__cxa_guard_acquire@plt" l="0" v="{[0x7290-0x7291)}">
+<S i="195" l="0" v="{[0x7290-0x72a0)}"/>
 </P>
-<P i="196" n="__cxa_guard_acquire@plt [libroctracer64.so.4.1.0]" ln="__cxa_guard_acquire@plt" l="0" v="{[0x7290-0x7291)}">
-<S i="197" l="0" v="{[0x7290-0x72a0)}"/>
+<P i="196" n="std::condition_variable::~condition_variable()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt18condition_variableD1Ev@plt" l="0" v="{[0x72a0-0x72a1)}">
+<S i="197" l="0" v="{[0x72a0-0x72b0)}"/>
 </P>
-<P i="198" n="std::condition_variable::~condition_variable()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt18condition_variableD1Ev@plt" l="0" v="{[0x72a0-0x72a1)}">
-<S i="199" l="0" v="{[0x72a0-0x72b0)}"/>
+<P i="198" n="strdup@plt [libroctracer64.so.4.1.0]" ln="strdup@plt" l="0" v="{[0x72b0-0x72b1)}">
+<S i="199" l="0" v="{[0x72b0-0x72d0)}"/>
 </P>
-<P i="200" n="strdup@plt [libroctracer64.so.4.1.0]" ln="strdup@plt" l="0" v="{[0x72b0-0x72b1)}">
-<S i="201" l="0" v="{[0x72b0-0x72c0)}"/>
+<P i="200" n="flock@plt [libroctracer64.so.4.1.0]" ln="flock@plt" l="0" v="{[0x72d0-0x72d1)}">
+<S i="201" l="0" v="{[0x72d0-0x72e0)}"/>
 </P>
-<P i="202" n="dlsym@plt [libroctracer64.so.4.1.0]" ln="dlsym@plt" l="0" v="{[0x72c0-0x72c1)}">
-<S i="203" l="0" v="{[0x72c0-0x72d0)}"/>
+<P i="202" n="std::future_error::~future_error() [libroctracer64.so.4.1.0]" ln="_ZNSt12future_errorD1Ev" l="0" v="{[0x72e0-0x72e1)}">
+<S i="203" l="0" v="{[0x72e0-0x7320)}"/>
 </P>
-<P i="204" n="std::__exception_ptr::exception_ptr::~exception_ptr() [libroctracer64.so.4.1.0]" ln="_ZNSt15__exception_ptr13exception_ptrD1Ev" l="0" v="{[0x72d0-0x72d1)}">
-<S i="205" l="0" v="{[0x72d0-0x7300)}"/>
+<P i="204" n="std::locale::locale()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt6localeC1Ev@plt" l="0" v="{[0x7320-0x7321)}">
+<S i="205" l="0" v="{[0x7320-0x7330)}"/>
 </P>
-<P i="206" n="flock@plt [libroctracer64.so.4.1.0]" ln="flock@plt" l="0" v="{[0x7300-0x7301)}">
-<S i="207" l="0" v="{[0x7300-0x7310)}"/>
+<P i="206" n="std::logic_error::logic_error(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt11logic_errorC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE@plt" l="0" v="{[0x7330-0x7331)}">
+<S i="207" l="0" v="{[0x7330-0x7340)}"/>
 </P>
-<P i="208" n="std::future_error::~future_error() [libroctracer64.so.4.1.0]" ln="_ZNSt12future_errorD1Ev" l="0" v="{[0x7310-0x7311)}">
-<S i="209" l="0" v="{[0x7310-0x7340)}"/>
+<P i="208" n="targ74ba [libroctracer64.so.4.1.0]" ln="targ74ba" l="0" v="{[0x74ba-0x74bb)}">
+<S i="209" l="0" v="{[0x74ba-0x7cca)}"/>
 </P>
-<P i="210" n="std::locale::locale()@plt [libroctracer64.so.4.1.0]" ln="_ZNSt6localeC1Ev@plt" l="0" v="{[0x7340-0x7341)}">
-<S i="211" l="0" v="{[0x7340-0x7350)}"/>
+<P i="210" n="targ7cca [libroctracer64.so.4.1.0]" ln="targ7cca" l="0" v="{[0x7cca-0x7ccb)}">
+<S i="211" l="0" v="{[0x7cca-0x9ba0)}"/>
 </P>
-<P i="212" n="std::logic_error::logic_error(std::__cxx11::basic_string&lt;char, std::char_traits&lt;char&gt;, std::allocator&lt;char&gt; &gt; const&amp;)@plt [libroctracer64.so.4.1.0]" ln="_ZNSt11logic_errorC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE@plt" l="0" v="{[0x7350-0x7351)}">
-<S i="213" l="0" v="{[0x7350-0x7360)}"/>
+<P i="212" n="roctracer_load [libroctracer64.so.4.1.0]" ln="roctracer_load" l="0" v="{[0x9ba0-0x9ba1)}">
+<S i="213" l="0" v="{[0x9ba0-0x9baa)}"/>
 </P>
-<P i="214" n="roctracer_load [libroctracer64.so.4.1.0]" ln="roctracer_load" l="0" v="{[0x9dc0-0x9dc1)}">
-<S i="215" l="0" v="{[0x9dc0-0x9dca)}"/>
+<P i="214" n="roctracer_unload [libroctracer64.so.4.1.0]" ln="roctracer_unload" l="0" v="{[0x9bb0-0x9bb1)}">
+<S i="215" l="0" v="{[0x9bb0-0x9bb5)}"/>
 </P>
-<P i="216" n="roctracer_unload [libroctracer64.so.4.1.0]" ln="roctracer_unload" l="0" v="{[0x9dd0-0x9dd1)}">
-<S i="217" l="0" v="{[0x9dd0-0x9dd5)}"/>
+<P i="216" n="roctracer_flush_buf [libroctracer64.so.4.1.0]" ln="roctracer_flush_buf" l="0" v="{[0x9bc0-0x9bc1)}">
+<S i="217" l="0" v="{[0x9bc0-0x9bc5)}"/>
 </P>
-<P i="218" n="roctracer_flush_buf [libroctracer64.so.4.1.0]" ln="roctracer_flush_buf" l="0" v="{[0x9de0-0x9de1)}">
-<S i="219" l="0" v="{[0x9de0-0x9de5)}"/>
+<P i="218" n="roctracer_mark [libroctracer64.so.4.1.0]" ln="roctracer_mark" l="0" v="{[0x9bd0-0x9bd1)}">
+<S i="219" l="0" v="{[0x9bd0-0x9bd5)}"/>
 </P>
-<P i="220" n="roctracer_mark [libroctracer64.so.4.1.0]" ln="roctracer_mark" l="0" v="{[0x9df0-0x9df1)}">
-<S i="221" l="0" v="{[0x9df0-0x9df5)}"/>
-</P>
-<P i="222" n="roctracer_enable_callback [libroctracer64.so.4.1.0]" ln="roctracer_enable_callback" l="0" v="{[0x9e00-0x9e01)}">
-<S i="223" l="0" v="{[0x9e00-0x9e10) [0x9e29-0x9e2e)}"/>
-<L i="224" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9e10-0x9e11)}">
-<S i="225" l="0" v="{[0x9e10-0x9e29)}"/>
+<P i="220" n="roctracer_enable_callback [libroctracer64.so.4.1.0]" ln="roctracer_enable_callback" l="0" v="{[0x9be0-0x9be1)}">
+<S i="221" l="0" v="{[0x9be0-0x9bf0) [0x9c09-0x9c0e)}"/>
+<L i="222" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9bf0-0x9bf1)}">
+<S i="223" l="0" v="{[0x9bf0-0x9c09)}"/>
 </L>
 </P>
-<P i="226" n="roctracer_disable_callback [libroctracer64.so.4.1.0]" ln="roctracer_disable_callback" l="0" v="{[0x9e30-0x9e31)}">
-<S i="227" l="0" v="{[0x9e30-0x9e40) [0x9e53-0x9e55)}"/>
-<L i="228" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9e40-0x9e41)}">
-<S i="229" l="0" v="{[0x9e40-0x9e53)}"/>
+<P i="224" n="roctracer_disable_callback [libroctracer64.so.4.1.0]" ln="roctracer_disable_callback" l="0" v="{[0x9c10-0x9c11)}">
+<S i="225" l="0" v="{[0x9c10-0x9c20) [0x9c33-0x9c35)}"/>
+<L i="226" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9c20-0x9c21)}">
+<S i="227" l="0" v="{[0x9c20-0x9c33)}"/>
 </L>
 </P>
-<P i="230" n="roctracer_enable_activity_expl [libroctracer64.so.4.1.0]" ln="roctracer_enable_activity_expl" l="0" v="{[0x9e60-0x9e61)}">
-<S i="231" l="0" v="{[0x9e60-0x9e70) [0x9e86-0x9e8d)}"/>
-<L i="232" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9e70-0x9e71)}">
-<S i="233" l="0" v="{[0x9e70-0x9e86)}"/>
+<P i="228" n="roctracer_enable_activity_expl [libroctracer64.so.4.1.0]" ln="roctracer_enable_activity_expl" l="0" v="{[0x9c40-0x9c41)}">
+<S i="229" l="0" v="{[0x9c40-0x9c50) [0x9c66-0x9c6d)}"/>
+<L i="230" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9c50-0x9c51)}">
+<S i="231" l="0" v="{[0x9c50-0x9c66)}"/>
 </L>
 </P>
-<P i="234" n="roctracer_enable_activity [libroctracer64.so.4.1.0]" ln="roctracer_enable_activity" l="0" v="{[0x9e90-0x9e91)}">
-<S i="235" l="0" v="{[0x9e90-0x9ea0) [0x9eb3-0x9eb5)}"/>
-<L i="236" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9ea0-0x9ea1)}">
-<S i="237" l="0" v="{[0x9ea0-0x9eb3)}"/>
+<P i="232" n="roctracer_enable_activity [libroctracer64.so.4.1.0]" ln="roctracer_enable_activity" l="0" v="{[0x9c70-0x9c71)}">
+<S i="233" l="0" v="{[0x9c70-0x9c80) [0x9c93-0x9c95)}"/>
+<L i="234" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9c80-0x9c81)}">
+<S i="235" l="0" v="{[0x9c80-0x9c93)}"/>
 </L>
 </P>
-<P i="238" n="roctracer_disable_activity [libroctracer64.so.4.1.0]" ln="roctracer_disable_activity" l="0" v="{[0x9ec0-0x9ec1)}">
-<S i="239" l="0" v="{[0x9ec0-0x9ed0) [0x9ee3-0x9ee5)}"/>
-<L i="240" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9ed0-0x9ed1)}">
-<S i="241" l="0" v="{[0x9ed0-0x9ee3)}"/>
+<P i="236" n="roctracer_disable_activity [libroctracer64.so.4.1.0]" ln="roctracer_disable_activity" l="0" v="{[0x9ca0-0x9ca1)}">
+<S i="237" l="0" v="{[0x9ca0-0x9cb0) [0x9cc3-0x9cc5)}"/>
+<L i="238" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x9cb0-0x9cb1)}">
+<S i="239" l="0" v="{[0x9cb0-0x9cc3)}"/>
 </L>
 </P>
-<P i="242" n="&lt;unknown procedure&gt; 0x9f10 [libroctracer64.so.4.1.0]" ln="targ9f10" l="0" v="{[0x9f10-0x9f11)}">
-<S i="243" l="0" v="{[0x9f10-0x9faa)}"/>
+<P i="240" n="&lt;unknown procedure&gt; 0x9d00 [libroctracer64.so.4.1.0]" ln="targ9d00" l="0" v="{[0x9d00-0x9d01)}">
+<S i="241" l="0" v="{[0x9d00-0x9da1)}"/>
 </P>
-<P i="244" n="&lt;unknown procedure&gt; 0xa0b0 [libroctracer64.so.4.1.0]" ln="targa0b0" l="0" v="{[0xa0b0-0xa0b1)}">
-<S i="245" l="0" v="{[0xa0b0-0xa186) [0xa190-0xa1a5) [0xa1a8-0xa1b2) [0xa1b8-0xa1c5) [0xa1c8-0xa1cf) [0xa1d0-0xa1da)}"/>
+<P i="242" n="&lt;unknown procedure&gt; 0x9eb0 [libroctracer64.so.4.1.0]" ln="targ9eb0" l="0" v="{[0x9eb0-0x9eb1)}">
+<S i="243" l="0" v="{[0x9eb0-0x9f86) [0x9f90-0x9f9a) [0x9fa0-0x9faa) [0x9fb0-0x9fba) [0x9fc0-0x9fc4) [0x9fc8-0x9fd2)}"/>
 </P>
-<P i="246" n="&lt;unknown procedure&gt; 0xa390 [libroctracer64.so.4.1.0]" ln="targa390" l="0" v="{[0xa390-0xa391)}">
-<S i="247" l="0" v="{[0xa390-0xa3cf) [0xa3d0-0xa3d7) [0xa3e0-0xa40f)}"/>
+<P i="244" n="&lt;unknown procedure&gt; 0xa190 [libroctracer64.so.4.1.0]" ln="targa190" l="0" v="{[0xa190-0xa191)}">
+<S i="245" l="0" v="{[0xa190-0xa1cf) [0xa1d0-0xa1d7) [0xa1e0-0xa20f)}"/>
 </P>
-<P i="248" n="&lt;unknown procedure&gt; 0xa570 [libroctracer64.so.4.1.0]" ln="targa570" l="0" v="{[0xa570-0xa571)}">
-<S i="249" l="0" v="{[0xa570-0xa632) [0xa638-0xa664) [0xa668-0xa674) [0xa678-0xa695) [0xa698-0xa6c2)}"/>
+<P i="246" n="&lt;unknown procedure&gt; 0xa380 [libroctracer64.so.4.1.0]" ln="targa380" l="0" v="{[0xa380-0xa381)}">
+<S i="247" l="0" v="{[0xa380-0xa432) [0xa438-0xa46b) [0xa470-0xa485) [0xa488-0xa4b7) [0xa4c0-0xa4e7)}"/>
 </P>
-<P i="250" n="&lt;unknown procedure&gt; 0x16ec0 [libroctracer64.so.4.1.0]" ln="targ16ec0" l="0" v="{[0x16ec0-0x16ec1)}">
-<S i="251" l="0" v="{[0x73d1-0x73e5) [0x16ec0-0x16f34) [0x16f38-0x16f41) [0x16f48-0x16f95) [0x16f98-0x16fc9)}"/>
+<P i="248" n="&lt;unknown procedure&gt; 0x190d0 [libroctracer64.so.4.1.0]" ln="targ190d0" l="0" v="{[0x190d0-0x190d1)}">
+<S i="249" l="0" v="{[0x7393-0x73a3) [0x190d0-0x19148) [0x19150-0x19159) [0x19160-0x191ac) [0x191b0-0x191e4)}"/>
 </P>
-<P i="252" n="&lt;unknown procedure&gt; 0x16fd0 [libroctracer64.so.4.1.0]" ln="targ16fd0" l="0" v="{[0x16fd0-0x16fd1)}">
-<S i="253" l="0" v="{[0x16fd0-0x17b93)}"/>
+<P i="250" n="&lt;unknown procedure&gt; 0x191f0 [libroctracer64.so.4.1.0]" ln="targ191f0" l="0" v="{[0x191f0-0x191f1)}">
+<S i="251" l="0" v="{[0x191f0-0x19db3)}"/>
 </P>
-<P i="254" n="&lt;unknown procedure&gt; 0x17c00 [libroctracer64.so.4.1.0]" ln="targ17c00" l="0" v="{[0x17c00-0x17c01)}">
-<S i="255" l="0" v="{[0x17c00-0x18233)}"/>
+<P i="252" n="&lt;unknown procedure&gt; 0x19e20 [libroctracer64.so.4.1.0]" ln="targ19e20" l="0" v="{[0x19e20-0x19e21)}">
+<S i="253" l="0" v="{[0x19e20-0x1a453)}"/>
 </P>
-<P i="256" n="&lt;unknown procedure&gt; 0x18240 [libroctracer64.so.4.1.0]" ln="targ18240" l="0" v="{[0x18240-0x18241)}">
-<S i="257" l="0" v="{[0x18240-0x1997a)}"/>
+<P i="254" n="&lt;unknown procedure&gt; 0x1a460 [libroctracer64.so.4.1.0]" ln="targ1a460" l="0" v="{[0x1a460-0x1a461)}">
+<S i="255" l="0" v="{[0x1a460-0x1bb31)}"/>
 </P>
-<P i="258" n="&lt;unknown procedure&gt; 0x19990 [libroctracer64.so.4.1.0]" ln="targ19990" l="0" v="{[0x19990-0x19991)}">
-<S i="259" l="0" v="{[0x73e5-0x7488) [0x19990-0x199c7) [0x199d0-0x199f8) [0x19a00-0x19a09) [0x19a10-0x19a19) [0x19a20-0x19a29) [0x19a30-0x19a39) [0x19a40-0x19a4e)}"/>
+<P i="256" n="&lt;unknown procedure&gt; 0x1bb50 [libroctracer64.so.4.1.0]" ln="targ1bb50" l="0" v="{[0x1bb50-0x1bb51)}">
+<S i="257" l="0" v="{[0x73a3-0x742e) [0x1bb50-0x1bb89) [0x1bb90-0x1bbba) [0x1bbc0-0x1bbc9) [0x1bbd0-0x1bbd9) [0x1bbe0-0x1bbe9) [0x1bbf0-0x1bbf9) [0x1bc00-0x1bc0e)}"/>
 </P>
-<P i="260" n="&lt;unknown procedure&gt; 0x19a50 [libroctracer64.so.4.1.0]" ln="targ19a50" l="0" v="{[0x19a50-0x19a51)}">
-<S i="261" l="0" v="{[0x7488-0x752b) [0x19a50-0x19a9e) [0x19aa0-0x19ab2) [0x19ab8-0x19ac6)}"/>
+<P i="258" n="&lt;unknown procedure&gt; 0x1bc10 [libroctracer64.so.4.1.0]" ln="targ1bc10" l="0" v="{[0x1bc10-0x1bc11)}">
+<S i="259" l="0" v="{[0x742e-0x74b9) [0x1bc10-0x1bc62) [0x1bc68-0x1bc7a) [0x1bc80-0x1bc8e)}"/>
 </P>
-<P i="262" n="&lt;unknown procedure&gt; 0x19b20 [libroctracer64.so.4.1.0]" ln="targ19b20" l="0" v="{[0x19b20-0x19b21)}">
-<S i="263" l="0" v="{[0x19b20-0x19b9b) [0x19ba0-0x19ba7) [0x19bb0-0x19be2) [0x19be8-0x19bf9)}"/>
+<P i="260" n="&lt;unknown procedure&gt; 0x1bce0 [libroctracer64.so.4.1.0]" ln="targ1bce0" l="0" v="{[0x1bce0-0x1bce1)}">
+<S i="261" l="0" v="{[0x1bce0-0x1bd5a) [0x1bd60-0x1bd67) [0x1bd70-0x1bdb3)}"/>
 </P>
-<P i="264" n="&lt;unknown procedure&gt; 0x19e20 [libroctracer64.so.4.1.0]" ln="targ19e20" l="0" v="{[0x19e20-0x19e21)}">
-<S i="265" l="0" v="{[0x19e20-0x19e2b) [0x19e30-0x19e4a)}"/>
+<P i="262" n="&lt;unknown procedure&gt; 0x1bf20 [libroctracer64.so.4.1.0]" ln="targ1bf20" l="0" v="{[0x1bf20-0x1bf21)}">
+<S i="263" l="0" v="{[0x1bf20-0x1bf3d)}"/>
 </P>
-<P i="266" n="&lt;unknown procedure&gt; 0x1a370 [libroctracer64.so.4.1.0]" ln="targ1a370" l="0" v="{[0x1a370-0x1a371)}">
-<S i="267" l="0" v="{[0x757b-0x7588) [0x1a370-0x1a440) [0x1a455-0x1a4f0) [0x1a505-0x1a550) [0x1a565-0x1a60e) [0x1a610-0x1a62c) [0x1a630-0x1a63c) [0x1a640-0x1a661) [0x1a668-0x1a67e) [0x1a680-0x1a693) [0x1a698-0x1a6b9) [0x1a6c0-0x1a6c9) [0x1a6d0-0x1a6f1) [0x1a6f8-0x1a72e)}"/>
-<L i="268" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1a440-0x1a441)}">
-<S i="269" l="0" v="{[0x1a440-0x1a455)}"/>
+<P i="264" n="&lt;unknown procedure&gt; 0x1bf60 [libroctracer64.so.4.1.0]" ln="targ1bf60" l="0" v="{[0x1bf60-0x1bf61)}">
+<S i="265" l="0" v="{[0x1bf60-0x1bf74)}"/>
+</P>
+<P i="266" n="&lt;unknown procedure&gt; 0x1c620 [libroctracer64.so.4.1.0]" ln="targ1c620" l="0" v="{[0x1c620-0x1c621)}">
+<S i="267" l="0" v="{[0x1c620-0x1c63c) [0x1c8b9-0x1c8c8)}"/>
+<L i="268" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c63c-0x1c63d)}">
+<S i="269" l="0" v="{[0x1c63c-0x1c653) [0x1c8c8-0x1c90d)}"/>
+<L i="270" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c653-0x1c654)}">
+<S i="271" l="0" v="{[0x1c653-0x1c665) [0x1c874-0x1c8b9)}"/>
+<L i="272" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c665-0x1c666)}">
+<S i="273" l="0" v="{[0x1c665-0x1c672) [0x1c83c-0x1c874)}"/>
+<L i="274" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c672-0x1c673)}">
+<S i="275" l="0" v="{[0x1c672-0x1c67f) [0x1c7c4-0x1c7fc)}"/>
+<L i="276" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c67f-0x1c680)}">
+<S i="277" l="0" v="{[0x1c67f-0x1c68c) [0x1c74d-0x1c785)}"/>
+<L i="278" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c68c-0x1c68d)}">
+<S i="279" l="0" v="{[0x1c68c-0x1c69a) [0x1c788-0x1c7c4)}"/>
+<L i="280" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c69a-0x1c69b)}">
+<S i="281" l="0" v="{[0x1c69a-0x1c6a7) [0x1c800-0x1c83c)}"/>
+<L i="282" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c6a7-0x1c6a8)}">
+<S i="283" l="0" v="{[0x1c6a7-0x1c6b0) [0x1c70a-0x1c74d)}"/>
+<L i="284" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1c6b0-0x1c6b1)}">
+<S i="285" l="0" v="{[0x1c6b0-0x1c70a)}"/>
 </L>
-<L i="270" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1a4f0-0x1a4f1)}">
-<S i="271" l="0" v="{[0x1a4f0-0x1a505)}"/>
 </L>
-<L i="272" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1a550-0x1a551)}">
-<S i="273" l="0" v="{[0x1a550-0x1a565)}"/>
 </L>
-</P>
-<P i="274" n="roctracer_version_major [libroctracer64.so.4.1.0]" ln="roctracer_version_major" l="0" v="{[0x1a9d0-0x1a9d1)}">
-<S i="275" l="0" v="{[0x1a9d0-0x1a9da)}"/>
-</P>
-<P i="276" n="roctracer_version_minor [libroctracer64.so.4.1.0]" ln="roctracer_version_minor" l="0" v="{[0x1a9e0-0x1a9e1)}">
-<S i="277" l="0" v="{[0x1a9e0-0x1a9ea)}"/>
-</P>
-<P i="278" n="roctracer_default_pool_expl [libroctracer64.so.4.1.0]" ln="roctracer_default_pool_expl" l="0" v="{[0x1a9f0-0x1a9f1)}">
-<S i="279" l="0" v="{[0x1a9f0-0x1aa4a)}"/>
-</P>
-<P i="280" n="roctracer_default_pool [libroctracer64.so.4.1.0]" ln="roctracer_default_pool" l="0" v="{[0x1aa50-0x1aa51)}">
-<S i="281" l="0" v="{[0x1aa50-0x1aaa1)}"/>
-</P>
-<P i="282" n="roctracer_next_record [libroctracer64.so.4.1.0]" ln="roctracer_next_record" l="0" v="{[0x1aab0-0x1aab1)}">
-<S i="283" l="0" v="{[0x1aab0-0x1aabe)}"/>
-</P>
-<P i="284" n="roctracer_start [libroctracer64.so.4.1.0]" ln="roctracer_start" l="0" v="{[0x1aac0-0x1aac1)}">
-<S i="285" l="0" v="{[0x1aac0-0x1aae1)}"/>
-</P>
-<P i="286" n="roctracer_stop [libroctracer64.so.4.1.0]" ln="roctracer_stop" l="0" v="{[0x1aaf0-0x1aaf1)}">
-<S i="287" l="0" v="{[0x1aaf0-0x1ab19)}"/>
-</P>
-<P i="288" n="OnLoad [libroctracer64.so.4.1.0]" ln="OnLoad" l="0" v="{[0x1ab20-0x1ab21)}">
-<S i="289" l="0" v="{[0x1ab20-0x1ab37)}"/>
-</P>
-<P i="290" n="OnUnload [libroctracer64.so.4.1.0]" ln="OnUnload" l="0" v="{[0x1ab40-0x1ab41)}">
-<S i="291" l="0" v="{[0x17ba0-0x17bff) [0x1ab40-0x1ab49)}"/>
-</P>
-<P i="292" n="&lt;unknown procedure&gt; 0x1ab50 [libroctracer64.so.4.1.0]" ln="targ1ab50" l="0" v="{[0x1ab50-0x1ab51)}">
-<S i="293" l="0" v="{[0x75d8-0x767b) [0x1ab50-0x1ab83) [0x1ab88-0x1aba8) [0x1abb0-0x1abb7) [0x1abc0-0x1abc7) [0x1abd0-0x1abd4) [0x1abd8-0x1abdf) [0x1abe0-0x1abe7) [0x1abf0-0x1abfc)}"/>
-</P>
-<P i="294" n="&lt;unknown procedure&gt; 0x1ac00 [libroctracer64.so.4.1.0]" ln="targ1ac00" l="0" v="{[0x1ac00-0x1ac01)}">
-<S i="295" l="0" v="{[0x767b-0x77ee) [0x1ac00-0x1af52) [0x1af58-0x1aff8) [0x1b000-0x1b044) [0x1b048-0x1b056) [0x1b060-0x1b0fa)}"/>
-</P>
-<P i="296" n="&lt;unknown procedure&gt; 0x1b100 [libroctracer64.so.4.1.0]" ln="targ1b100" l="0" v="{[0x1b100-0x1b101)}">
-<S i="297" l="0" v="{[0x77ee-0x795f) [0x1b100-0x1b4af) [0x1b4b0-0x1b515) [0x1b518-0x1b526) [0x1b530-0x1b53e) [0x1b540-0x1b54e) [0x1b550-0x1b5bf)}"/>
-</P>
-<P i="298" n="&lt;unknown procedure&gt; 0x1b5c0 [libroctracer64.so.4.1.0]" ln="targ1b5c0" l="0" v="{[0x1b5c0-0x1b5c1)}">
-<S i="299" l="0" v="{[0x795f-0x7b3c) [0x1b5c0-0x1b967) [0x1b970-0x1b9a8) [0x1b9b0-0x1b9e4) [0x1b9e8-0x1ba59)}"/>
-</P>
-<P i="300" n="&lt;unknown procedure&gt; 0x1ba60 [libroctracer64.so.4.1.0]" ln="targ1ba60" l="0" v="{[0x1ba60-0x1ba61)}">
-<S i="301" l="0" v="{[0x7b3c-0x7c18) [0x1ba60-0x1baa0) [0x1bab4-0x1bacf) [0x1bad0-0x1baf6)}"/>
-<L i="302" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1baa0-0x1baa1)}">
-<S i="303" l="0" v="{[0x1baa0-0x1bab4)}"/>
+</L>
+</L>
+</L>
+</L>
+</L>
 </L>
 </P>
-<P i="304" n="&lt;unknown procedure&gt; 0x1bb00 [libroctracer64.so.4.1.0]" ln="targ1bb00" l="0" v="{[0x1bb00-0x1bb01)}">
-<S i="305" l="0" v="{[0x7c18-0x7d7b) [0x1bb00-0x1beba) [0x1bec0-0x1bece) [0x1bed0-0x1bede) [0x1bee0-0x1beee) [0x1bef0-0x1bf4e)}"/>
-</P>
-<P i="306" n="&lt;unknown procedure&gt; 0x1d490 [libroctracer64.so.4.1.0]" ln="targ1d490" l="0" v="{[0x1d490-0x1d491)}">
-<S i="307" l="0" v="{[0x7dee-0x7eb7) [0x1d490-0x1d535) [0x1d538-0x1d5c9)}"/>
-</P>
-<P i="308" n="roctracer_error_string [libroctracer64.so.4.1.0]" ln="roctracer_error_string" l="0" v="{[0x1d5d0-0x1d5d1)}">
-<S i="309" l="0" v="{[0x7eb7-0x7ef7) [0x1d5d0-0x1d648) [0x1d662-0x1d7f3)}"/>
-<L i="310" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1d654-0x1d655)}">
-<S i="311" l="0" v="{[0x1d648-0x1d662)}"/>
+<P i="286" n="&lt;unknown procedure&gt; 0x1cb90 [libroctracer64.so.4.1.0]" ln="targ1cb90" l="0" v="{[0x1cb90-0x1cb91)}">
+<S i="287" l="0" v="{[0x7562-0x756f) [0x1cb90-0x1cc50) [0x1cc64-0x1ccf8) [0x1cd0c-0x1cd50) [0x1cd64-0x1ce02) [0x1ce08-0x1ce24) [0x1ce28-0x1ce59) [0x1ce60-0x1ce78) [0x1ce80-0x1ce9c) [0x1cea0-0x1ceb8) [0x1cec0-0x1cf03)}"/>
+<L i="288" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1cc50-0x1cc51)}">
+<S i="289" l="0" v="{[0x1cc50-0x1cc64)}"/>
+</L>
+<L i="290" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1ccf8-0x1ccf9)}">
+<S i="291" l="0" v="{[0x1ccf8-0x1cd0c)}"/>
+</L>
+<L i="292" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1cd50-0x1cd51)}">
+<S i="293" l="0" v="{[0x1cd50-0x1cd64)}"/>
 </L>
 </P>
-<P i="312" n="roctracer_op_string [libroctracer64.so.4.1.0]" ln="roctracer_op_string" l="0" v="{[0x1d800-0x1d801)}">
-<S i="313" l="0" v="{[0x7ef7-0x806f) [0x1d800-0x1d9c3)}"/>
+<P i="294" n="roctracer_version_major [libroctracer64.so.4.1.0]" ln="roctracer_version_major" l="0" v="{[0x1cf10-0x1cf11)}">
+<S i="295" l="0" v="{[0x1cf10-0x1cf1a)}"/>
 </P>
-<P i="314" n="roctracer_op_code [libroctracer64.so.4.1.0]" ln="roctracer_op_code" l="0" v="{[0x1d9d0-0x1d9d1)}">
-<S i="315" l="0" v="{[0x806f-0x8361) [0x1d9d0-0x20b55)}"/>
+<P i="296" n="roctracer_version_minor [libroctracer64.so.4.1.0]" ln="roctracer_version_minor" l="0" v="{[0x1cf20-0x1cf21)}">
+<S i="297" l="0" v="{[0x1cf20-0x1cf2a)}"/>
 </P>
-<P i="316" n="roctracer_enable_op_callback [libroctracer64.so.4.1.0]" ln="roctracer_enable_op_callback" l="0" v="{[0x20b60-0x20b61)}">
-<S i="317" l="0" v="{[0x8361-0x8421) [0x20b60-0x20bae)}"/>
+<P i="298" n="roctracer_default_pool_expl [libroctracer64.so.4.1.0]" ln="roctracer_default_pool_expl" l="0" v="{[0x1cf30-0x1cf31)}">
+<S i="299" l="0" v="{[0x1cf30-0x1cf78)}"/>
 </P>
-<P i="318" n="roctracer_enable_domain_callback [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_callback" l="0" v="{[0x20bb0-0x20bb1)}">
-<S i="319" l="0" v="{[0x8421-0x8594) [0x20bb0-0x20bf0) [0x20c07-0x20c50)}"/>
-<L i="320" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x20bf0-0x20bf1)}">
-<S i="321" l="0" v="{[0x20bf0-0x20c07)}"/>
+<P i="300" n="roctracer_default_pool [libroctracer64.so.4.1.0]" ln="roctracer_default_pool" l="0" v="{[0x1cf80-0x1cf81)}">
+<S i="301" l="0" v="{[0x1cf80-0x1cfbf)}"/>
+</P>
+<P i="302" n="roctracer_next_record [libroctracer64.so.4.1.0]" ln="roctracer_next_record" l="0" v="{[0x1cfc0-0x1cfc1)}">
+<S i="303" l="0" v="{[0x1cfc0-0x1cfce)}"/>
+</P>
+<P i="304" n="roctracer_start [libroctracer64.so.4.1.0]" ln="roctracer_start" l="0" v="{[0x1cfd0-0x1cfd1)}">
+<S i="305" l="0" v="{[0x1cfd0-0x1cff1)}"/>
+</P>
+<P i="306" n="roctracer_stop [libroctracer64.so.4.1.0]" ln="roctracer_stop" l="0" v="{[0x1d000-0x1d001)}">
+<S i="307" l="0" v="{[0x1d000-0x1d029)}"/>
+</P>
+<P i="308" n="OnLoad [libroctracer64.so.4.1.0]" ln="OnLoad" l="0" v="{[0x1d030-0x1d031)}">
+<S i="309" l="0" v="{[0x1d030-0x1d047)}"/>
+</P>
+<P i="310" n="OnUnload [libroctracer64.so.4.1.0]" ln="OnUnload" l="0" v="{[0x1d050-0x1d051)}">
+<S i="311" l="0" v="{[0x19dc0-0x19e1f) [0x1d050-0x1d059)}"/>
+</P>
+<P i="312" n="&lt;unknown procedure&gt; 0x1d060 [libroctracer64.so.4.1.0]" ln="targ1d060" l="0" v="{[0x1d060-0x1d061)}">
+<S i="313" l="0" v="{[0x756f-0x75fa) [0x1d060-0x1d095) [0x1d098-0x1d0ba) [0x1d0c0-0x1d0c7) [0x1d0d0-0x1d0d7) [0x1d0e0-0x1d0e7) [0x1d0f0-0x1d0f4) [0x1d0f8-0x1d0ff) [0x1d100-0x1d10c)}"/>
+</P>
+<P i="314" n="&lt;unknown procedure&gt; 0x1d110 [libroctracer64.so.4.1.0]" ln="targ1d110" l="0" v="{[0x1d110-0x1d111)}">
+<S i="315" l="0" v="{[0x75fa-0x7730) [0x1d110-0x1d189) [0x1d190-0x1d245) [0x1d248-0x1d31a) [0x1d320-0x1d3a2) [0x1d3a8-0x1d42a) [0x1d430-0x1d474) [0x1d478-0x1d4db) [0x1d4e0-0x1d524) [0x1d528-0x1d536) [0x1d540-0x1d55c) [0x1d560-0x1d5fa)}"/>
+</P>
+<P i="316" n="&lt;unknown procedure&gt; 0x1d600 [libroctracer64.so.4.1.0]" ln="targ1d600" l="0" v="{[0x1d600-0x1d601)}">
+<S i="317" l="0" v="{[0x7730-0x7868) [0x1d600-0x1d66a) [0x1d670-0x1d741) [0x1d748-0x1d849) [0x1d850-0x1d8e1) [0x1d8e8-0x1d988) [0x1d990-0x1d9fe) [0x1da00-0x1da0e) [0x1da10-0x1da1e) [0x1da20-0x1da8f)}"/>
+</P>
+<P i="318" n="&lt;unknown procedure&gt; 0x1da90 [libroctracer64.so.4.1.0]" ln="targ1da90" l="0" v="{[0x1da90-0x1da91)}">
+<S i="319" l="0" v="{[0x7868-0x7a0a) [0x1da90-0x1db06) [0x1db10-0x1dbb5) [0x1dbb8-0x1dc11) [0x1dc18-0x1dc92) [0x1dc98-0x1dd6a) [0x1dd70-0x1dde2) [0x1dde8-0x1de58) [0x1de60-0x1dea4) [0x1dea8-0x1dee8) [0x1def0-0x1df61)}"/>
+</P>
+<P i="320" n="&lt;unknown procedure&gt; 0x1df70 [libroctracer64.so.4.1.0]" ln="targ1df70" l="0" v="{[0x1df70-0x1df71)}">
+<S i="321" l="0" v="{[0x7a0a-0x7ace) [0x1df70-0x1dfab) [0x1dfb0-0x1dfc0) [0x1dfd4-0x1dfef) [0x1dff0-0x1dff8) [0x1e000-0x1e008) [0x1e010-0x1e018) [0x1e020-0x1e02d) [0x1e030-0x1e04f)}"/>
+<L i="322" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1dfc0-0x1dfc1)}">
+<S i="323" l="0" v="{[0x1dfc0-0x1dfd4)}"/>
 </L>
 </P>
-<P i="322" n="roctracer_disable_op_callback [libroctracer64.so.4.1.0]" ln="roctracer_disable_op_callback" l="0" v="{[0x20c50-0x20c51)}">
-<S i="323" l="0" v="{[0x8594-0x8654) [0x20c50-0x20c9e)}"/>
+<P i="324" n="&lt;unknown procedure&gt; 0x1e050 [libroctracer64.so.4.1.0]" ln="targ1e050" l="0" v="{[0x1e050-0x1e051)}">
+<S i="325" l="0" v="{[0x7ace-0x7bfe) [0x1e050-0x1e0ba) [0x1e0c0-0x1e228) [0x1e230-0x1e288) [0x1e290-0x1e3d9) [0x1e3e0-0x1e3ee) [0x1e3f0-0x1e3fe) [0x1e400-0x1e40e) [0x1e410-0x1e46e)}"/>
 </P>
-<P i="324" n="roctracer_disable_domain_callback [libroctracer64.so.4.1.0]" ln="roctracer_disable_domain_callback" l="0" v="{[0x20ca0-0x20ca1)}">
-<S i="325" l="0" v="{[0x8654-0x87c7) [0x20ca0-0x20cd8) [0x20ce9-0x20d28)}"/>
-<L i="326" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x20cd8-0x20cd9)}">
-<S i="327" l="0" v="{[0x20cd8-0x20ce9)}"/>
+<P i="326" n="&lt;unknown procedure&gt; 0x1e470 [libroctracer64.so.4.1.0]" ln="targ1e470" l="0" v="{[0x1e470-0x1e471)}">
+<S i="327" l="0" v="{[0x7bfe-0x7ca8) [0x1e470-0x1e506) [0x1e510-0x1e568) [0x1e570-0x1e5a9)}"/>
+</P>
+<P i="328" n="&lt;unknown procedure&gt; 0x1ed40 [libroctracer64.so.4.1.0]" ln="targ1ed40" l="0" v="{[0x1ed40-0x1ed41)}">
+<S i="329" l="0" v="{[0x1ed40-0x1edc6) [0x1edd0-0x1edee) [0x1edf0-0x1ee01)}"/>
+</P>
+<P i="330" n="roctracer_error_string [libroctracer64.so.4.1.0]" ln="roctracer_error_string" l="0" v="{[0x1ee10-0x1ee11)}">
+<S i="331" l="0" v="{[0x7da2-0x7dce) [0x1ee10-0x1ee80) [0x1eea0-0x1f028)}"/>
+<L i="332" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x1ee88-0x1ee89)}">
+<S i="333" l="0" v="{[0x1ee80-0x1eea0)}"/>
 </L>
 </P>
-<P i="328" n="roctracer_enable_op_activity_expl [libroctracer64.so.4.1.0]" ln="roctracer_enable_op_activity_expl" l="0" v="{[0x20d30-0x20d31)}">
-<S i="329" l="0" v="{[0x87c7-0x8887) [0x20d30-0x20d7e)}"/>
+<P i="334" n="roctracer_op_string [libroctracer64.so.4.1.0]" ln="roctracer_op_string" l="0" v="{[0x1f030-0x1f031)}">
+<S i="335" l="0" v="{[0x7dce-0x7f13) [0x1f030-0x1f1cb)}"/>
 </P>
-<P i="330" n="roctracer_enable_op_activity [libroctracer64.so.4.1.0]" ln="roctracer_enable_op_activity" l="0" v="{[0x20d80-0x20d81)}">
-<S i="331" l="0" v="{[0x8887-0x8947) [0x20d80-0x20dd0)}"/>
+<P i="336" n="roctracer_op_code [libroctracer64.so.4.1.0]" ln="roctracer_op_code" l="0" v="{[0x1f1d0-0x1f1d1)}">
+<S i="337" l="0" v="{[0x7f13-0x82ed) [0x1f1d0-0x2226f)}"/>
 </P>
-<P i="332" n="roctracer_enable_domain_activity_expl [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_activity_expl" l="0" v="{[0x20dd0-0x20dd1)}">
-<S i="333" l="0" v="{[0x8947-0x8a07) [0x20dd0-0x20e1e)}"/>
+<P i="338" n="roctracer_enable_op_callback [libroctracer64.so.4.1.0]" ln="roctracer_enable_op_callback" l="0" v="{[0x22270-0x22271)}">
+<S i="339" l="0" v="{[0x82ed-0x8390) [0x22270-0x222be)}"/>
 </P>
-<P i="334" n="roctracer_enable_domain_activity [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_activity" l="0" v="{[0x20e20-0x20e21)}">
-<S i="335" l="0" v="{[0x8a07-0x8ac7) [0x20e20-0x20e70)}"/>
-</P>
-<P i="336" n="roctracer_disable_op_activity [libroctracer64.so.4.1.0]" ln="roctracer_disable_op_activity" l="0" v="{[0x20e70-0x20e71)}">
-<S i="337" l="0" v="{[0x8ac7-0x8b87) [0x20e70-0x20ebe)}"/>
-</P>
-<P i="338" n="roctracer_disable_domain_activity [libroctracer64.so.4.1.0]" ln="roctracer_disable_domain_activity" l="0" v="{[0x20ec0-0x20ec1)}">
-<S i="339" l="0" v="{[0x8b87-0x8d3b) [0x20ec0-0x20ef8) [0x20f09-0x20f57)}"/>
-<L i="340" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x20ef8-0x20ef9)}">
-<S i="341" l="0" v="{[0x20ef8-0x20f09)}"/>
+<P i="340" n="roctracer_enable_domain_callback [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_callback" l="0" v="{[0x222c0-0x222c1)}">
+<S i="341" l="0" v="{[0x8390-0x84ce) [0x222c0-0x22300) [0x22317-0x22360)}"/>
+<L i="342" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x22300-0x22301)}">
+<S i="343" l="0" v="{[0x22300-0x22317)}"/>
 </L>
 </P>
-<P i="342" n="roctracer_close_pool_expl [libroctracer64.so.4.1.0]" ln="roctracer_close_pool_expl" l="0" v="{[0x20f60-0x20f61)}">
-<S i="343" l="0" v="{[0x8d3b-0x8dfb) [0x20f60-0x20fae)}"/>
+<P i="344" n="roctracer_disable_op_callback [libroctracer64.so.4.1.0]" ln="roctracer_disable_op_callback" l="0" v="{[0x22360-0x22361)}">
+<S i="345" l="0" v="{[0x84ce-0x8571) [0x22360-0x223ae)}"/>
 </P>
-<P i="344" n="roctracer_close_pool [libroctracer64.so.4.1.0]" ln="roctracer_close_pool" l="0" v="{[0x20fb0-0x20fb1)}">
-<S i="345" l="0" v="{[0x8dfb-0x8ebb) [0x20fb0-0x21000)}"/>
-</P>
-<P i="346" n="roctracer_flush_activity_expl [libroctracer64.so.4.1.0]" ln="roctracer_flush_activity_expl" l="0" v="{[0x21000-0x21001)}">
-<S i="347" l="0" v="{[0x8ebb-0x8f87) [0x21000-0x210b0) [0x210c5-0x21160) [0x21175-0x21261)}"/>
-<L i="348" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x210b0-0x210b1)}">
-<S i="349" l="0" v="{[0x210b0-0x210c5)}"/>
-</L>
-<L i="350" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x21160-0x21161)}">
-<S i="351" l="0" v="{[0x21160-0x21175)}"/>
+<P i="346" n="roctracer_disable_domain_callback [libroctracer64.so.4.1.0]" ln="roctracer_disable_domain_callback" l="0" v="{[0x223b0-0x223b1)}">
+<S i="347" l="0" v="{[0x8571-0x86af) [0x223b0-0x223f0) [0x22401-0x22440)}"/>
+<L i="348" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x223f0-0x223f1)}">
+<S i="349" l="0" v="{[0x223f0-0x22401)}"/>
 </L>
 </P>
-<P i="352" n="roctracer_flush_activity [libroctracer64.so.4.1.0]" ln="roctracer_flush_activity" l="0" v="{[0x21270-0x21271)}">
-<S i="353" l="0" v="{[0x8f87-0x9053) [0x21270-0x21320) [0x21335-0x213d0) [0x213e5-0x214b9)}"/>
-<L i="354" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x21320-0x21321)}">
-<S i="355" l="0" v="{[0x21320-0x21335)}"/>
-</L>
-<L i="356" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x213d0-0x213d1)}">
-<S i="357" l="0" v="{[0x213d0-0x213e5)}"/>
-</L>
+<P i="350" n="roctracer_enable_op_activity_expl [libroctracer64.so.4.1.0]" ln="roctracer_enable_op_activity_expl" l="0" v="{[0x22440-0x22441)}">
+<S i="351" l="0" v="{[0x86af-0x8752) [0x22440-0x2248e)}"/>
 </P>
-<P i="358" n="roctracer_activity_push_external_correlation_id [libroctracer64.so.4.1.0]" ln="roctracer_activity_push_external_correlation_id" l="0" v="{[0x214c0-0x214c1)}">
-<S i="359" l="0" v="{[0x9053-0x9113) [0x214c0-0x2150e)}"/>
+<P i="352" n="roctracer_enable_op_activity [libroctracer64.so.4.1.0]" ln="roctracer_enable_op_activity" l="0" v="{[0x22490-0x22491)}">
+<S i="353" l="0" v="{[0x8752-0x87f5) [0x22490-0x224e0)}"/>
 </P>
-<P i="360" n="roctracer_activity_pop_external_correlation_id [libroctracer64.so.4.1.0]" ln="roctracer_activity_pop_external_correlation_id" l="0" v="{[0x21510-0x21511)}">
-<S i="361" l="0" v="{[0x9113-0x9286) [0x21510-0x215fd)}"/>
+<P i="354" n="roctracer_enable_domain_activity_expl [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_activity_expl" l="0" v="{[0x224e0-0x224e1)}">
+<S i="355" l="0" v="{[0x87f5-0x8898) [0x224e0-0x2252e)}"/>
 </P>
-<P i="362" n="roctracer_get_timestamp [libroctracer64.so.4.1.0]" ln="roctracer_get_timestamp" l="0" v="{[0x21600-0x21601)}">
-<S i="363" l="0" v="{[0x9286-0x9346) [0x21600-0x21656)}"/>
+<P i="356" n="roctracer_enable_domain_activity [libroctracer64.so.4.1.0]" ln="roctracer_enable_domain_activity" l="0" v="{[0x22530-0x22531)}">
+<S i="357" l="0" v="{[0x8898-0x893b) [0x22530-0x22580)}"/>
 </P>
-<P i="364" n="roctracer_set_properties [libroctracer64.so.4.1.0]" ln="roctracer_set_properties" l="0" v="{[0x21660-0x21661)}">
-<S i="365" l="0" v="{[0x9346-0x94b9) [0x21660-0x2177e)}"/>
+<P i="358" n="roctracer_disable_op_activity [libroctracer64.so.4.1.0]" ln="roctracer_disable_op_activity" l="0" v="{[0x22580-0x22581)}">
+<S i="359" l="0" v="{[0x893b-0x89de) [0x22580-0x225ce)}"/>
 </P>
-<P i="366" n="roctracer_open_pool_expl [libroctracer64.so.4.1.0]" ln="roctracer_open_pool_expl" l="0" v="{[0x21780-0x21781)}">
-<S i="367" l="0" v="{[0x94b9-0x9579) [0x21780-0x217ce)}"/>
-</P>
-<P i="368" n="roctracer_open_pool [libroctracer64.so.4.1.0]" ln="roctracer_open_pool" l="0" v="{[0x217d0-0x217d1)}">
-<S i="369" l="0" v="{[0x9579-0x9639) [0x217d0-0x21820)}"/>
-</P>
-<P i="370" n="&lt;unknown procedure&gt; 0x22070 [libroctracer64.so.4.1.0]" ln="targ22070" l="0" v="{[0x22070-0x22071)}">
-<S i="371" l="0" v="{[0x22070-0x22259) [0x22260-0x222d6) [0x222e0-0x22318) [0x22320-0x22327) [0x22330-0x2233f) [0x22340-0x2234b) [0x22350-0x22391)}"/>
-</P>
-<P i="372" n="&lt;unknown procedure&gt; 0x225c0 [libroctracer64.so.4.1.0]" ln="targ225c0" l="0" v="{[0x225c0-0x225c1)}">
-<S i="373" l="0" v="{[0x225c0-0x22600)}"/>
-</P>
-<P i="374" n="&lt;unknown procedure&gt; 0x226f0 [libroctracer64.so.4.1.0]" ln="targ226f0" l="0" v="{[0x226f0-0x226f1)}">
-<S i="375" l="0" v="{[0x226f0-0x22731) [0x22738-0x227b9)}"/>
-</P>
-<P i="376" n="&lt;unknown procedure&gt; 0x229e0 [libroctracer64.so.4.1.0]" ln="targ229e0" l="0" v="{[0x229e0-0x229e1)}">
-<S i="377" l="0" v="{[0x229e0-0x22a0f) [0x22a10-0x22a4f) [0x22a50-0x22a5b)}"/>
-</P>
-<P i="378" n="&lt;unknown procedure&gt; 0x22a60 [libroctracer64.so.4.1.0]" ln="targ22a60" l="0" v="{[0x22a60-0x22a61)}">
-<S i="379" l="0" v="{[0x22a60-0x22d4b) [0x22d85-0x22ddb) [0x22de0-0x22deb) [0x22df0-0x22e2e) [0x22e30-0x22e41) [0x22e48-0x22f23)}"/>
-<L i="380" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x22d54-0x22d55)}">
-<S i="381" l="0" v="{[0x22d50-0x22d85)}"/>
+<P i="360" n="roctracer_disable_domain_activity [libroctracer64.so.4.1.0]" ln="roctracer_disable_domain_activity" l="0" v="{[0x225d0-0x225d1)}">
+<S i="361" l="0" v="{[0x89de-0x8b5d) [0x225d0-0x22610) [0x22621-0x2266f)}"/>
+<L i="362" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x22610-0x22611)}">
+<S i="363" l="0" v="{[0x22610-0x22621)}"/>
 </L>
 </P>
-<P i="382" n="&lt;unknown procedure&gt; 0x22f30 [libroctracer64.so.4.1.0]" ln="targ22f30" l="0" v="{[0x22f30-0x22f31)}">
-<S i="383" l="0" v="{[0x22f30-0x22f43) [0x22f75-0x22f7a) [0x22f80-0x22f81)}"/>
-<L i="384" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x22f43-0x22f44)}">
-<S i="385" l="0" v="{[0x22f43-0x22f75)}"/>
+<P i="364" n="roctracer_close_pool_expl [libroctracer64.so.4.1.0]" ln="roctracer_close_pool_expl" l="0" v="{[0x22670-0x22671)}">
+<S i="365" l="0" v="{[0x8b5d-0x8c00) [0x22670-0x226be)}"/>
+</P>
+<P i="366" n="roctracer_close_pool [libroctracer64.so.4.1.0]" ln="roctracer_close_pool" l="0" v="{[0x226c0-0x226c1)}">
+<S i="367" l="0" v="{[0x8c00-0x8ca3) [0x226c0-0x22710)}"/>
+</P>
+<P i="368" n="roctracer_flush_activity_expl [libroctracer64.so.4.1.0]" ln="roctracer_flush_activity_expl" l="0" v="{[0x22710-0x22711)}">
+<S i="369" l="0" v="{[0x8ca3-0x8d4b) [0x22710-0x227b0) [0x227c4-0x22858) [0x2286c-0x22939)}"/>
+<L i="370" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x227b0-0x227b1)}">
+<S i="371" l="0" v="{[0x227b0-0x227c4)}"/>
+</L>
+<L i="372" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x22858-0x22859)}">
+<S i="373" l="0" v="{[0x22858-0x2286c)}"/>
 </L>
 </P>
-<P i="386" n="&lt;unknown procedure&gt; 0x23020 [libroctracer64.so.4.1.0]" ln="targ23020" l="0" v="{[0x23020-0x23021)}">
-<S i="387" l="0" v="{[0x22f90-0x22fab) [0x22fd6-0x22ff5) [0x22ff8-0x2301e) [0x23020-0x2308b) [0x23090-0x230c7) [0x230d0-0x230f7) [0x23100-0x23113) [0x23118-0x2312c)}"/>
-<L i="388" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x22fc2-0x22fc3)}">
-<S i="389" l="0" v="{[0x22fb0-0x22fd6)}"/>
+<P i="374" n="roctracer_flush_activity [libroctracer64.so.4.1.0]" ln="roctracer_flush_activity" l="0" v="{[0x22940-0x22941)}">
+<S i="375" l="0" v="{[0x8d4b-0x8df3) [0x22940-0x229e0) [0x229f4-0x22a80) [0x22a94-0x22b51)}"/>
+<L i="376" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x229e0-0x229e1)}">
+<S i="377" l="0" v="{[0x229e0-0x229f4)}"/>
+</L>
+<L i="378" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x22a80-0x22a81)}">
+<S i="379" l="0" v="{[0x22a80-0x22a94)}"/>
 </L>
 </P>
-<P i="390" n="&lt;unknown procedure&gt; 0x23130 [libroctracer64.so.4.1.0]" ln="targ23130" l="0" v="{[0x23130-0x23131)}">
-<S i="391" l="0" v="{[0x23130-0x231b1) [0x231b8-0x231cb) [0x231d0-0x231f4)}"/>
+<P i="380" n="roctracer_activity_push_external_correlation_id [libroctracer64.so.4.1.0]" ln="roctracer_activity_push_external_correlation_id" l="0" v="{[0x22b60-0x22b61)}">
+<S i="381" l="0" v="{[0x8df3-0x8e96) [0x22b60-0x22bae)}"/>
 </P>
-<P i="392" n="&lt;unknown procedure&gt; 0x23200 [libroctracer64.so.4.1.0]" ln="targ23200" l="0" v="{[0x23200-0x23201)}">
-<S i="393" l="0" v="{[0x23200-0x232bb) [0x232c0-0x232e4) [0x23302-0x23371)}"/>
-<L i="394" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x232f4-0x232f5)}">
-<S i="395" l="0" v="{[0x232e8-0x23302)}"/>
+<P i="382" n="roctracer_activity_pop_external_correlation_id [libroctracer64.so.4.1.0]" ln="roctracer_activity_pop_external_correlation_id" l="0" v="{[0x22bb0-0x22bb1)}">
+<S i="383" l="0" v="{[0x8e96-0x912a) [0x22bb0-0x22c9f)}"/>
+</P>
+<P i="384" n="roctracer_get_timestamp [libroctracer64.so.4.1.0]" ln="roctracer_get_timestamp" l="0" v="{[0x22ca0-0x22ca1)}">
+<S i="385" l="0" v="{[0x912a-0x91cd) [0x22ca0-0x22cf6)}"/>
+</P>
+<P i="386" n="roctracer_set_properties [libroctracer64.so.4.1.0]" ln="roctracer_set_properties" l="0" v="{[0x22d00-0x22d01)}">
+<S i="387" l="0" v="{[0x91cd-0x9310) [0x22d00-0x22e1e)}"/>
+</P>
+<P i="388" n="roctracer_open_pool_expl [libroctracer64.so.4.1.0]" ln="roctracer_open_pool_expl" l="0" v="{[0x22e20-0x22e21)}">
+<S i="389" l="0" v="{[0x9310-0x93b3) [0x22e20-0x22e6e)}"/>
+</P>
+<P i="390" n="roctracer_open_pool [libroctracer64.so.4.1.0]" ln="roctracer_open_pool" l="0" v="{[0x22e70-0x22e71)}">
+<S i="391" l="0" v="{[0x93b3-0x9456) [0x22e70-0x22ec0)}"/>
+</P>
+<P i="392" n="&lt;unknown procedure&gt; 0x23d20 [libroctracer64.so.4.1.0]" ln="targ23d20" l="0" v="{[0x23d20-0x23d21)}">
+<S i="393" l="0" v="{[0x23d20-0x23f13) [0x23f18-0x23f27) [0x23f30-0x23f88)}"/>
+</P>
+<P i="394" n="&lt;unknown procedure&gt; 0x24280 [libroctracer64.so.4.1.0]" ln="targ24280" l="0" v="{[0x24280-0x24281)}">
+<S i="395" l="0" v="{[0x24280-0x24317) [0x24320-0x243a4) [0x243a8-0x243b7) [0x243c0-0x243c7) [0x243d0-0x243dc) [0x243e0-0x243ec)}"/>
+</P>
+<P i="396" n="&lt;unknown procedure&gt; 0x245c0 [libroctracer64.so.4.1.0]" ln="targ245c0" l="0" v="{[0x245c0-0x245c1)}">
+<S i="397" l="0" v="{[0x245c0-0x24608)}"/>
+</P>
+<P i="398" n="&lt;unknown procedure&gt; 0x252d0 [libroctracer64.so.4.1.0]" ln="targ252d0" l="0" v="{[0x252d0-0x252d1)}">
+<S i="399" l="0" v="{[0x252d0-0x25318) [0x25320-0x25395)}"/>
+</P>
+<P i="400" n="&lt;unknown procedure&gt; 0x253a0 [libroctracer64.so.4.1.0]" ln="targ253a0" l="0" v="{[0x253a0-0x253a1)}">
+<S i="401" l="0" v="{[0x253a0-0x253ce) [0x253d0-0x2540c) [0x25410-0x2541c)}"/>
+</P>
+<P i="402" n="&lt;unknown procedure&gt; 0x25420 [libroctracer64.so.4.1.0]" ln="targ25420" l="0" v="{[0x25420-0x25421)}">
+<S i="403" l="0" v="{[0x25420-0x256b9) [0x256f3-0x2579e) [0x257a0-0x257b1) [0x257b8-0x257f2) [0x257f8-0x2584e) [0x25850-0x25886) [0x25890-0x2589c) [0x258a0-0x258af) [0x258b0-0x258c3) [0x258c8-0x2598c)}"/>
+<L i="404" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x256c4-0x256c5)}">
+<S i="405" l="0" v="{[0x256c0-0x256f3)}"/>
 </L>
 </P>
-<P i="396" n="&lt;unknown procedure&gt; 0x23420 [libroctracer64.so.4.1.0]" ln="targ23420" l="0" v="{[0x23420-0x23421)}">
-<S i="397" l="0" v="{[0x23420-0x23631) [0x23648-0x23845) [0x23848-0x2385f) [0x23860-0x23908)}"/>
-<L i="398" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x23631-0x23632)}">
-<S i="399" l="0" v="{[0x23631-0x23648)}"/>
+<P i="406" n="&lt;unknown procedure&gt; 0x25e30 [libroctracer64.so.4.1.0]" ln="targ25e30" l="0" v="{[0x25e30-0x25e31)}">
+<S i="407" l="0" v="{[0x25d90-0x25dab) [0x25dce-0x25e0f) [0x25e10-0x25e24) [0x25e30-0x25e98) [0x25ea0-0x25ece) [0x25ed0-0x25eec) [0x25ef0-0x25f03) [0x25f08-0x25f26)}"/>
+<L i="408" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x25db3-0x25db4)}">
+<S i="409" l="0" v="{[0x25db0-0x25dce)}"/>
 </L>
 </P>
-<P i="400" n="&lt;unknown procedure&gt; 0x23910 [libroctracer64.so.4.1.0]" ln="targ23910" l="0" v="{[0x23910-0x23911)}">
-<S i="401" l="0" v="{[0x23910-0x23bba) [0x23bc0-0x23c21) [0x23c28-0x23c39) [0x23c40-0x23cfa)}"/>
-</P>
-<P i="402" n="&lt;unknown procedure&gt; 0x23d00 [libroctracer64.so.4.1.0]" ln="targ23d00" l="0" v="{[0x23d00-0x23d01)}">
-<S i="403" l="0" v="{[0x23d00-0x23faa) [0x23fb0-0x24011) [0x24018-0x24029) [0x24030-0x240ea)}"/>
-</P>
-<P i="404" n="&lt;unknown procedure&gt; 0x240f0 [libroctracer64.so.4.1.0]" ln="targ240f0" l="0" v="{[0x240f0-0x240f1)}">
-<S i="405" l="0" v="{[0x240f0-0x24305) [0x24308-0x2440b) [0x24410-0x24424) [0x24428-0x2443c) [0x24440-0x24455) [0x24458-0x24507)}"/>
-</P>
-<P i="406" n="&lt;unknown procedure&gt; 0x24510 [libroctracer64.so.4.1.0]" ln="targ24510" l="0" v="{[0x24510-0x24511)}">
-<S i="407" l="0" v="{[0x24510-0x247c2) [0x247c8-0x247e8) [0x247f0-0x248a1)}"/>
-</P>
-<P i="408" n="&lt;unknown procedure&gt; 0x248b0 [libroctracer64.so.4.1.0]" ln="targ248b0" l="0" v="{[0x248b0-0x248b1)}">
-<S i="409" l="0" v="{[0x248b0-0x24ac5) [0x24ac8-0x24bcb) [0x24bd0-0x24be4) [0x24be8-0x24bfc) [0x24c00-0x24c15) [0x24c18-0x24cc7)}"/>
-</P>
-<P i="410" n="&lt;unknown procedure&gt; 0x24cd0 [libroctracer64.so.4.1.0]" ln="targ24cd0" l="0" v="{[0x24cd0-0x24cd1)}">
-<S i="411" l="0" v="{[0x24cd0-0x24ee5) [0x24ee8-0x24feb) [0x24ff0-0x25004) [0x25008-0x2501c) [0x25020-0x25035) [0x25038-0x250e7)}"/>
-</P>
-<P i="412" n="&lt;unknown procedure&gt; 0x250f0 [libroctracer64.so.4.1.0]" ln="targ250f0" l="0" v="{[0x250f0-0x250f1)}">
-<S i="413" l="0" v="{[0x250f0-0x2539a) [0x253a0-0x25401) [0x25408-0x25419) [0x25420-0x254da)}"/>
-</P>
-<P i="414" n="&lt;unknown procedure&gt; 0x254e0 [libroctracer64.so.4.1.0]" ln="targ254e0" l="0" v="{[0x254e0-0x254e1)}">
-<S i="415" l="0" v="{[0x254e0-0x25786) [0x25790-0x25838)}"/>
-</P>
-<P i="416" n="&lt;unknown procedure&gt; 0x25840 [libroctracer64.so.4.1.0]" ln="targ25840" l="0" v="{[0x25840-0x25841)}">
-<S i="417" l="0" v="{[0x25840-0x25ae6) [0x25af0-0x25b98)}"/>
-</P>
-<P i="418" n="&lt;unknown procedure&gt; 0x25ba0 [libroctracer64.so.4.1.0]" ln="targ25ba0" l="0" v="{[0x25ba0-0x25ba1)}">
-<S i="419" l="0" v="{[0x25ba0-0x25db5) [0x25db8-0x25ebb) [0x25ec0-0x25ed4) [0x25ed8-0x25eec) [0x25ef0-0x25f05) [0x25f08-0x25fb7)}"/>
-</P>
-<P i="420" n="&lt;unknown procedure&gt; 0x25fc0 [libroctracer64.so.4.1.0]" ln="targ25fc0" l="0" v="{[0x25fc0-0x25fc1)}">
-<S i="421" l="0" v="{[0x25fc0-0x26266) [0x26270-0x26318)}"/>
-</P>
-<P i="422" n="&lt;unknown procedure&gt; 0x26320 [libroctracer64.so.4.1.0]" ln="targ26320" l="0" v="{[0x26320-0x26321)}">
-<S i="423" l="0" v="{[0x26320-0x265c6) [0x265d0-0x26678)}"/>
-</P>
-<P i="424" n="&lt;unknown procedure&gt; 0x26680 [libroctracer64.so.4.1.0]" ln="targ26680" l="0" v="{[0x26680-0x26681)}">
-<S i="425" l="0" v="{[0x26680-0x26926) [0x26930-0x269d8)}"/>
-</P>
-<P i="426" n="&lt;unknown procedure&gt; 0x269e0 [libroctracer64.so.4.1.0]" ln="targ269e0" l="0" v="{[0x269e0-0x269e1)}">
-<S i="427" l="0" v="{[0x269e0-0x26c86) [0x26c90-0x26d38)}"/>
-</P>
-<P i="428" n="&lt;unknown procedure&gt; 0x26d40 [libroctracer64.so.4.1.0]" ln="targ26d40" l="0" v="{[0x26d40-0x26d41)}">
-<S i="429" l="0" v="{[0x26d40-0x26fea) [0x26ff0-0x27051) [0x27058-0x27069) [0x27070-0x2712a)}"/>
-</P>
-<P i="430" n="&lt;unknown procedure&gt; 0x27130 [libroctracer64.so.4.1.0]" ln="targ27130" l="0" v="{[0x27130-0x27131)}">
-<S i="431" l="0" v="{[0x27130-0x273d6) [0x273e0-0x27488)}"/>
-</P>
-<P i="432" n="&lt;unknown procedure&gt; 0x27490 [libroctracer64.so.4.1.0]" ln="targ27490" l="0" v="{[0x27490-0x27491)}">
-<S i="433" l="0" v="{[0x27490-0x2751a) [0x27520-0x2755f) [0x27560-0x27584) [0x275a2-0x27633)}"/>
-<L i="434" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x27594-0x27595)}">
-<S i="435" l="0" v="{[0x27588-0x275a2)}"/>
+<P i="410" n="&lt;unknown procedure&gt; 0x25f30 [libroctracer64.so.4.1.0]" ln="targ25f30" l="0" v="{[0x25f30-0x25f31)}">
+<S i="411" l="0" v="{[0x25f30-0x25fd5) [0x25fd8-0x25ffc) [0x26020-0x2607e)}"/>
+<L i="412" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x26008-0x26009)}">
+<S i="413" l="0" v="{[0x26000-0x26020)}"/>
 </L>
 </P>
-<P i="436" n="&lt;unknown procedure&gt; 0x27640 [libroctracer64.so.4.1.0]" ln="targ27640" l="0" v="{[0x27640-0x27641)}">
-<S i="437" l="0" v="{[0x27640-0x27657) [0x27660-0x2767a) [0x27680-0x2778d)}"/>
+<P i="414" n="&lt;unknown procedure&gt; 0x26160 [libroctracer64.so.4.1.0]" ln="targ26160" l="0" v="{[0x26160-0x26161)}">
+<S i="415" l="0" v="{[0x26160-0x26577) [0x26580-0x26588) [0x26590-0x26631)}"/>
 </P>
-<P i="438" n="&lt;unknown procedure&gt; 0x27790 [libroctracer64.so.4.1.0]" ln="targ27790" l="0" v="{[0x27790-0x27791)}">
-<S i="439" l="0" v="{[0x27790-0x2781b) [0x27820-0x2790b) [0x27910-0x279c1)}"/>
+<P i="416" n="&lt;unknown procedure&gt; 0x26640 [libroctracer64.so.4.1.0]" ln="targ26640" l="0" v="{[0x26640-0x26641)}">
+<S i="417" l="0" v="{[0x26640-0x2685b) [0x26860-0x26977) [0x26980-0x26988) [0x26990-0x26998) [0x269a0-0x269b5) [0x269b8-0x26a60)}"/>
 </P>
-<P i="440" n="&lt;unknown procedure&gt; 0x279d0 [libroctracer64.so.4.1.0]" ln="targ279d0" l="0" v="{[0x279d0-0x279d1)}">
-<S i="441" l="0" v="{[0x279d0-0x27a47) [0x27a6a-0x27ac5) [0x27ac8-0x27aff) [0x27b00-0x27c4d)}"/>
-<L i="442" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x27a5c-0x27a5d)}">
-<S i="443" l="0" v="{[0x27a50-0x27a6a)}"/>
+<P i="418" n="&lt;unknown procedure&gt; 0x26a60 [libroctracer64.so.4.1.0]" ln="targ26a60" l="0" v="{[0x26a60-0x26a61)}">
+<S i="419" l="0" v="{[0x26a60-0x26c7b) [0x26c80-0x26d9e) [0x26da0-0x26da8) [0x26db0-0x26db8) [0x26dc0-0x26dd5) [0x26dd8-0x26e80)}"/>
+</P>
+<P i="420" n="&lt;unknown procedure&gt; 0x26e80 [libroctracer64.so.4.1.0]" ln="targ26e80" l="0" v="{[0x26e80-0x26e81)}">
+<S i="421" l="0" v="{[0x26e80-0x2717c) [0x27180-0x271ae) [0x271b0-0x271b8) [0x271c0-0x27262)}"/>
+</P>
+<P i="422" n="&lt;unknown procedure&gt; 0x27270 [libroctracer64.so.4.1.0]" ln="targ27270" l="0" v="{[0x27270-0x27271)}">
+<S i="423" l="0" v="{[0x27270-0x2748b) [0x27490-0x275a7) [0x275b0-0x275b8) [0x275c0-0x275c8) [0x275d0-0x275e5) [0x275e8-0x27690)}"/>
+</P>
+<P i="424" n="&lt;unknown procedure&gt; 0x27690 [libroctracer64.so.4.1.0]" ln="targ27690" l="0" v="{[0x27690-0x27691)}">
+<S i="425" l="0" v="{[0x27690-0x278ab) [0x278b0-0x279ce) [0x279d0-0x279d8) [0x279e0-0x279e8) [0x279f0-0x27a05) [0x27a08-0x27ab0)}"/>
+</P>
+<P i="426" n="&lt;unknown procedure&gt; 0x27ab0 [libroctracer64.so.4.1.0]" ln="targ27ab0" l="0" v="{[0x27ab0-0x27ab1)}">
+<S i="427" l="0" v="{[0x27ab0-0x27dac) [0x27db0-0x27dde) [0x27de0-0x27de8) [0x27df0-0x27e92)}"/>
+</P>
+<P i="428" n="&lt;unknown procedure&gt; 0x27ea0 [libroctracer64.so.4.1.0]" ln="targ27ea0" l="0" v="{[0x27ea0-0x27ea1)}">
+<S i="429" l="0" v="{[0x27ea0-0x280bb) [0x280c0-0x281de) [0x281e0-0x281e8) [0x281f0-0x281f8) [0x28200-0x28215) [0x28218-0x282c0)}"/>
+</P>
+<P i="430" n="&lt;unknown procedure&gt; 0x282c0 [libroctracer64.so.4.1.0]" ln="targ282c0" l="0" v="{[0x282c0-0x282c1)}">
+<S i="431" l="0" v="{[0x282c0-0x284db) [0x284e0-0x285fe) [0x28600-0x28608) [0x28610-0x28618) [0x28620-0x28635) [0x28638-0x286e0)}"/>
+</P>
+<P i="432" n="&lt;unknown procedure&gt; 0x286e0 [libroctracer64.so.4.1.0]" ln="targ286e0" l="0" v="{[0x286e0-0x286e1)}">
+<S i="433" l="0" v="{[0x286e0-0x288fb) [0x28900-0x28a1e) [0x28a20-0x28a28) [0x28a30-0x28a38) [0x28a40-0x28a55) [0x28a58-0x28b00)}"/>
+</P>
+<P i="434" n="&lt;unknown procedure&gt; 0x28b00 [libroctracer64.so.4.1.0]" ln="targ28b00" l="0" v="{[0x28b00-0x28b01)}">
+<S i="435" l="0" v="{[0x28b00-0x28d1b) [0x28d20-0x28e3e) [0x28e40-0x28e48) [0x28e50-0x28e58) [0x28e60-0x28e75) [0x28e78-0x28f20)}"/>
+</P>
+<P i="436" n="&lt;unknown procedure&gt; 0x28f20 [libroctracer64.so.4.1.0]" ln="targ28f20" l="0" v="{[0x28f20-0x28f21)}">
+<S i="437" l="0" v="{[0x28f20-0x291df) [0x291e0-0x29243) [0x29248-0x2924d) [0x29250-0x292f2)}"/>
+</P>
+<P i="438" n="&lt;unknown procedure&gt; 0x29300 [libroctracer64.so.4.1.0]" ln="targ29300" l="0" v="{[0x29300-0x29301)}">
+<S i="439" l="0" v="{[0x29300-0x2951b) [0x29520-0x2963e) [0x29640-0x29648) [0x29650-0x29658) [0x29660-0x29675) [0x29678-0x29720)}"/>
+</P>
+<P i="440" n="&lt;unknown procedure&gt; 0x29720 [libroctracer64.so.4.1.0]" ln="targ29720" l="0" v="{[0x29720-0x29721)}">
+<S i="441" l="0" v="{[0x29720-0x2993b) [0x29940-0x29a5e) [0x29a60-0x29a68) [0x29a70-0x29a78) [0x29a80-0x29a95) [0x29a98-0x29b40)}"/>
+</P>
+<P i="442" n="&lt;unknown procedure&gt; 0x29b40 [libroctracer64.so.4.1.0]" ln="targ29b40" l="0" v="{[0x29b40-0x29b41)}">
+<S i="443" l="0" v="{[0x29b40-0x29bb8) [0x29bc0-0x29c0e) [0x29c10-0x29c35) [0x29c59-0x29cd0)}"/>
+<L i="444" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x29c40-0x29c41)}">
+<S i="445" l="0" v="{[0x29c38-0x29c59)}"/>
 </L>
 </P>
-<P i="444" n="&lt;unknown procedure&gt; 0x29030 [libroctracer64.so.4.1.0]" ln="targ29030" l="0" v="{[0x29030-0x29031)}">
-<S i="445" l="0" v="{[0x9671-0x96b1) [0x29030-0x29211)}"/>
+<P i="446" n="&lt;unknown procedure&gt; 0x29cd0 [libroctracer64.so.4.1.0]" ln="targ29cd0" l="0" v="{[0x29cd0-0x29cd1)}">
+<S i="447" l="0" v="{[0x29cd0-0x29cf8) [0x29d00-0x29e1c)}"/>
 </P>
-<P i="446" n="&lt;unknown procedure&gt; 0x29230 [libroctracer64.so.4.1.0]" ln="targ29230" l="0" v="{[0x29230-0x29231)}">
-<S i="447" l="0" v="{[0x29230-0x292d5)}"/>
-</P>
-<P i="448" n="&lt;unknown procedure&gt; 0x2d640 [libroctracer64.so.4.1.0]" ln="targ2d640" l="0" v="{[0x2d640-0x2d641)}">
-<S i="449" l="0" v="{[0x2d640-0x2d6d6)}"/>
-</P>
-<P i="450" n="&lt;unknown procedure&gt; 0x2d790 [libroctracer64.so.4.1.0]" ln="targ2d790" l="0" v="{[0x2d790-0x2d791)}">
-<S i="451" l="0" v="{[0x2d790-0x2d836)}"/>
-</P>
-<P i="452" n="&lt;unknown procedure&gt; 0x31090 [libroctracer64.so.4.1.0]" ln="targ31090" l="0" v="{[0x31090-0x31091)}">
-<S i="453" l="0" v="{[0x31090-0x310a5) [0x310c6-0x310eb)}"/>
-<L i="454" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x310b7-0x310b8)}">
-<S i="455" l="0" v="{[0x310a8-0x310c6)}"/>
+<P i="448" n="&lt;unknown procedure&gt; 0x29e20 [libroctracer64.so.4.1.0]" ln="targ29e20" l="0" v="{[0x29e20-0x29e21)}">
+<S i="449" l="0" v="{[0x29e20-0x29e7d) [0x29ea1-0x29eed) [0x29ef0-0x29f30)}"/>
+<L i="450" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x29e88-0x29e89)}">
+<S i="451" l="0" v="{[0x29e80-0x29ea1)}"/>
 </L>
 </P>
-<P i="456" n="&lt;unknown procedure&gt; 0x310f0 [libroctracer64.so.4.1.0]" ln="targ310f0" l="0" v="{[0x310f0-0x310f1)}">
-<S i="457" l="0" v="{[0x310f0-0x3111c) [0x31120-0x31134) [0x31138-0x31176) [0x31180-0x31191)}"/>
+<P i="452" n="&lt;unknown procedure&gt; 0x29f30 [libroctracer64.so.4.1.0]" ln="targ29f30" l="0" v="{[0x29f30-0x29f31)}">
+<S i="453" l="0" v="{[0x29f30-0x29f94) [0x29f98-0x2a00a)}"/>
 </P>
-<P i="458" n="&lt;unknown procedure&gt; 0x311a0 [libroctracer64.so.4.1.0]" ln="targ311a0" l="0" v="{[0x311a0-0x311a1)}">
-<S i="459" l="0" v="{[0x311a0-0x311d7) [0x311f7-0x31231) [0x31238-0x312cc) [0x312d0-0x312e1) [0x312e8-0x3130d) [0x31310-0x3131c)}"/>
-<L i="460" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x311e8-0x311e9)}">
-<S i="461" l="0" v="{[0x311e0-0x311f7)}"/>
+<P i="454" n="&lt;unknown procedure&gt; 0x2ac30 [libroctracer64.so.4.1.0]" ln="targ2ac30" l="0" v="{[0x2ac30-0x2ac31)}">
+<S i="455" l="0" v="{[0x9496-0x94be) [0x2ac30-0x2ae01)}"/>
+</P>
+<P i="456" n="&lt;unknown procedure&gt; 0x2ae20 [libroctracer64.so.4.1.0]" ln="targ2ae20" l="0" v="{[0x2ae20-0x2ae21)}">
+<S i="457" l="0" v="{[0x2ae20-0x2aec5)}"/>
+</P>
+<P i="458" n="&lt;unknown procedure&gt; 0x2f740 [libroctracer64.so.4.1.0]" ln="targ2f740" l="0" v="{[0x2f740-0x2f741)}">
+<S i="459" l="0" v="{[0x2f740-0x2f7d6)}"/>
+</P>
+<P i="460" n="&lt;unknown procedure&gt; 0x2f890 [libroctracer64.so.4.1.0]" ln="targ2f890" l="0" v="{[0x2f890-0x2f891)}">
+<S i="461" l="0" v="{[0x2f890-0x2f931)}"/>
+</P>
+<P i="462" n="&lt;unknown procedure&gt; 0x35290 [libroctracer64.so.4.1.0]" ln="targ35290" l="0" v="{[0x35290-0x35291)}">
+<S i="463" l="0" v="{[0x35290-0x352a5) [0x352c6-0x352eb)}"/>
+<L i="464" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x352b7-0x352b8)}">
+<S i="465" l="0" v="{[0x352a8-0x352c6)}"/>
+</L>
+</P>
+<P i="466" n="&lt;unknown procedure&gt; 0x352f0 [libroctracer64.so.4.1.0]" ln="targ352f0" l="0" v="{[0x352f0-0x352f1)}">
+<S i="467" l="0" v="{[0x352f0-0x3531c) [0x35320-0x35334) [0x35338-0x35376) [0x35380-0x35391)}"/>
+</P>
+<P i="468" n="&lt;unknown procedure&gt; 0x353a0 [libroctracer64.so.4.1.0]" ln="targ353a0" l="0" v="{[0x353a0-0x353a1)}">
+<S i="469" l="0" v="{[0x353a0-0x353d7) [0x353f7-0x35431) [0x35438-0x354c5) [0x354c8-0x354d1) [0x354d8-0x354e9) [0x354f0-0x35515) [0x35518-0x35524)}"/>
+<L i="470" l="0" f="[libroctracer64.so.4.1.0]" v="{[0x353e8-0x353e9)}">
+<S i="471" l="0" v="{[0x353e0-0x353f7)}"/>
 </L>
 </P>
 </F>

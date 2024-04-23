@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/builddir/tests/data/meas/loops-cuda-nvidiapc-t.m/gpubins/1165a3eeddeea5ea3616d1cdbc6faa59.gpubin" has-calls="1" v="{}">
+<F i="3" n="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu">
+<P i="4" n="kernmain()" ln="_Z8kernmainv" l="16" v="{[0x2e00-0x2e01)}">
+<S i="5" l="19" v="{[0x2e00-0x2e10)}"/>
+<S i="6" l="20" v="{[0x2e10-0x2e60)}"/>
+<S i="7" l="33" v="{[0x3620-0x3700)}"/>
+<L i="8" l="21" f="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu" v="{[0x2e60-0x2e61)}">
+<S i="9" l="20" v="{[0x2e60-0x2e70)}"/>
+<S i="10" l="21" v="{[0x2e70-0x2f80) [0x3610-0x3620)}"/>
+<A i="11" l="31" f="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu" n="" v="{}">
+<A i="12" l="16" f="/builds/hpctoolkit/hpctoolkit/tests/data/meas/loops.cu" n="_INTERNAL_9b5d3bdb_8_loops_cu_main::func2(double volatile*)" v="{}">
+<S i="13" l="16" v="{[0x2f80-0x3610)}"/>
+</A>
+</A>
+</L>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

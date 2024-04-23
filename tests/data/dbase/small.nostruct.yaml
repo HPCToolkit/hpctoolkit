@@ -1,0 +1,428 @@
+!db/v4
+meta: !meta.db/v4
+  general: !meta.db/v4/GeneralProperties
+    title: testmeas-small
+    description: TODO database description
+  id_names: !meta.db/v4/IdentifierNames
+    names:
+    - SUMMARY
+    - NODE
+    - RANK
+    - THREAD
+    - GPUDEVICE
+    - GPUCONTEXT
+    - GPUSTREAM
+    - CORE
+  metrics: !meta.db/v4/PerformanceMetrics
+    scopes:
+    - &id001 !meta.db/v4/PropagationScope  # point [point]
+      scope_name: point
+      type: !meta.db/v4/PropagationScope.Type point
+      propagation_index: 255
+    - &id002 !meta.db/v4/PropagationScope  # function [transitive] bit/0
+      scope_name: function
+      type: !meta.db/v4/PropagationScope.Type transitive
+      propagation_index: 0
+    - &id003 !meta.db/v4/PropagationScope  # lex_aware [custom]
+      scope_name: lex_aware
+      type: !meta.db/v4/PropagationScope.Type custom
+      propagation_index: 255
+    - &id004 !meta.db/v4/PropagationScope  # execution [execution]
+      scope_name: execution
+      type: !meta.db/v4/PropagationScope.Type execution
+      propagation_index: 255
+    metrics:
+    - !meta.db/v4/Metric
+      name: CPUTIME (sec)
+      scope_insts:
+      - !meta.db/v4/PropagationScopeInstance  # point  #0
+        scope: *id001
+        prop_metric_id: 0
+      - !meta.db/v4/PropagationScopeInstance # function  #1
+        scope: *id002
+        prop_metric_id: 1
+      - !meta.db/v4/PropagationScopeInstance # lex_aware  #2
+        scope: *id003
+        prop_metric_id: 2
+      - !meta.db/v4/PropagationScopeInstance # execution  #3
+        scope: *id004
+        prop_metric_id: 3
+      summaries:
+      - !meta.db/v4/SummaryStatistic  # sum / '$$' / point  #0
+        scope: *id001
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        stat_metric_id: 0
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / function  #1
+        scope: *id002
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        stat_metric_id: 1
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / lex_aware  #2
+        scope: *id003
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        stat_metric_id: 2
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / execution  #3
+        scope: *id004
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        stat_metric_id: 3
+  modules: !meta.db/v4/LoadModules
+    modules:
+    - &id005 !meta.db/v4/Module  # /testmeas-small []
+      flags: !meta.db/v4/Module.Flags []
+      path: /builds/hpctoolkit/hpctoolkit/builddir/tests/data/meas/testmeas-small
+  files: !meta.db/v4/SourceFiles
+    files: []
+  functions: !meta.db/v4/Functions
+    functions: []
+  context: !meta.db/v4/ContextTree
+    entry_points:
+    - !meta.db/v4/EntryPoint  # main thread (= main_thread)  #3
+      ctx_id: 3
+      entry_point: !meta.db/v4/EntryPoint.EntryPoint main_thread
+      pretty_name: main thread
+      children:
+      - !meta.db/v4/Context  # -call> [instruction] /testmeas-small+0x11a6  #4
+        ctx_id: 4
+        flags: !meta.db/v4/Context.Flags [has_point]
+        relation: !meta.db/v4/Context.Relation call
+        lexical_type: !meta.db/v4/Context.LexicalType instruction
+        propagation: 0
+        function:
+        file:
+        line:
+        module: *id005
+        offset: 4518
+        children:
+        - !meta.db/v4/Context  # -call> [instruction] /testmeas-small+0x1187  #5
+          ctx_id: 5
+          flags: !meta.db/v4/Context.Flags [has_point]
+          relation: !meta.db/v4/Context.Relation call
+          lexical_type: !meta.db/v4/Context.LexicalType instruction
+          propagation: 0
+          function:
+          file:
+          line:
+          module: *id005
+          offset: 4487
+          children:
+          - !meta.db/v4/Context  # -call> [instruction] /testmeas-small+0x1129  #2
+            ctx_id: 2
+            flags: !meta.db/v4/Context.Flags [has_point]
+            relation: !meta.db/v4/Context.Relation call
+            lexical_type: !meta.db/v4/Context.LexicalType instruction
+            propagation: 0
+            function:
+            file:
+            line:
+            module: *id005
+            offset: 4393
+            children: []
+          - !meta.db/v4/Context # -call> [instruction] /testmeas-small+0x114c  #6
+            ctx_id: 6
+            flags: !meta.db/v4/Context.Flags [has_point]
+            relation: !meta.db/v4/Context.Relation call
+            lexical_type: !meta.db/v4/Context.LexicalType instruction
+            propagation: 0
+            function:
+            file:
+            line:
+            module: *id005
+            offset: 4428
+            children: []
+          - !meta.db/v4/Context # -call> [instruction] /testmeas-small+0x1160  #7
+            ctx_id: 7
+            flags: !meta.db/v4/Context.Flags [has_point]
+            relation: !meta.db/v4/Context.Relation call
+            lexical_type: !meta.db/v4/Context.LexicalType instruction
+            propagation: 0
+            function:
+            file:
+            line:
+            module: *id005
+            offset: 4448
+            children: []
+          - !meta.db/v4/Context # -call> [instruction] /testmeas-small+0x1154  #8
+            ctx_id: 8
+            flags: !meta.db/v4/Context.Flags [has_point]
+            relation: !meta.db/v4/Context.Relation call
+            lexical_type: !meta.db/v4/Context.LexicalType instruction
+            propagation: 0
+            function:
+            file:
+            line:
+            module: *id005
+            offset: 4436
+            children: []
+      - !meta.db/v4/Context # -call> [instruction] /testmeas-small+0x119c  #9
+        ctx_id: 9
+        flags: !meta.db/v4/Context.Flags [has_point]
+        relation: !meta.db/v4/Context.Relation call
+        lexical_type: !meta.db/v4/Context.LexicalType instruction
+        propagation: 0
+        function:
+        file:
+        line:
+        module: *id005
+        offset: 4508
+        children:
+        - !meta.db/v4/Context  # -call> [instruction] /testmeas-small+0x1129  #1
+          ctx_id: 1
+          flags: !meta.db/v4/Context.Flags [has_point]
+          relation: !meta.db/v4/Context.Relation call
+          lexical_type: !meta.db/v4/Context.LexicalType instruction
+          propagation: 0
+          function:
+          file:
+          line:
+          module: *id005
+          offset: 4393
+          children: []
+        - !meta.db/v4/Context # -call> [instruction] /testmeas-small+0x114c  #10
+          ctx_id: 10
+          flags: !meta.db/v4/Context.Flags [has_point]
+          relation: !meta.db/v4/Context.Relation call
+          lexical_type: !meta.db/v4/Context.LexicalType instruction
+          propagation: 0
+          function:
+          file:
+          line:
+          module: *id005
+          offset: 4428
+          children: []
+        - !meta.db/v4/Context # -call> [instruction] /testmeas-small+0x1154  #11
+          ctx_id: 11
+          flags: !meta.db/v4/Context.Flags [has_point]
+          relation: !meta.db/v4/Context.Relation call
+          lexical_type: !meta.db/v4/Context.LexicalType instruction
+          propagation: 0
+          function:
+          file:
+          line:
+          module: *id005
+          offset: 4436
+          children: []
+profile: !profile.db/v4
+  profile_infos: !profile.db/v4/ProfileInfos
+    profiles:
+    - !profile.db/v4/Profile  # {/} [is_summary]
+      id_tuple:
+      flags: !profile.db/v4/Profile.Flags [is_summary]
+      values:
+        0:  # for <root>
+          3: 1.210259  # for sum / '$$' / execution  #3
+        3: # for main thread (= main_thread)  #3
+          3: 1.210259  # for sum / '$$' / execution  #3
+        4: # for -call> [instruction] /testmeas-small+0x11a6  #4
+          3: 0.605316  # for sum / '$$' / execution  #3
+        5: # for -call> [instruction] /testmeas-small+0x1187  #5
+          3: 0.605316  # for sum / '$$' / execution  #3
+        6: # for -call> [instruction] /testmeas-small+0x114c  #6
+          0: 0.302391  # for sum / '$$' / point  #0
+          1: 0.302391 # for sum / '$$' / function  #1
+          2: 0.302391 # for sum / '$$' / lex_aware  #2
+          3: 0.302391 # for sum / '$$' / execution  #3
+        7: # for -call> [instruction] /testmeas-small+0x1160  #7
+          0: 0.201947  # for sum / '$$' / point  #0
+          1: 0.201947 # for sum / '$$' / function  #1
+          2: 0.201947 # for sum / '$$' / lex_aware  #2
+          3: 0.201947 # for sum / '$$' / execution  #3
+        8: # for -call> [instruction] /testmeas-small+0x1154  #8
+          0: 0.100978  # for sum / '$$' / point  #0
+          1: 0.100978 # for sum / '$$' / function  #1
+          2: 0.100978 # for sum / '$$' / lex_aware  #2
+          3: 0.100978 # for sum / '$$' / execution  #3
+        9: # for -call> [instruction] /testmeas-small+0x119c  #9
+          3: 0.604943  # for sum / '$$' / execution  #3
+        10: # for -call> [instruction] /testmeas-small+0x114c  #10
+          0: 0.403829  # for sum / '$$' / point  #0
+          1: 0.403829 # for sum / '$$' / function  #1
+          2: 0.403829 # for sum / '$$' / lex_aware  #2
+          3: 0.403829 # for sum / '$$' / execution  #3
+        11: # for -call> [instruction] /testmeas-small+0x1154  #11
+          0: 0.20111400000000001  # for sum / '$$' / point  #0
+          1: 0.20111400000000001 # for sum / '$$' / function  #1
+          2: 0.20111400000000001 # for sum / '$$' / lex_aware  #2
+          3: 0.20111400000000001 # for sum / '$$' / execution  #3
+    - !profile.db/v4/Profile # {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0} []
+      id_tuple: !profile.db/v4/IdentifierTuple  # NODE 0 [0x11ac0300] / CORE 0 / THREAD 0
+        ids:
+        - !profile.db/v4/Identifier  # NODE 0 [0x11ac0300]
+          kind: 1
+          flags: !profile.db/v4/Identifier.Flags [is_physical]
+          logical_id: 0
+          physical_id: 296485632
+        - !profile.db/v4/Identifier # CORE 0
+          kind: 7
+          flags: !profile.db/v4/Identifier.Flags []
+          logical_id: 0
+          physical_id: 0
+        - !profile.db/v4/Identifier # THREAD 0
+          kind: 3
+          flags: !profile.db/v4/Identifier.Flags []
+          logical_id: 0
+          physical_id: 0
+      flags: !profile.db/v4/Profile.Flags []
+      values:
+        0:  # for <root>
+          3: 1.210259  # for execution  #3
+        3: # for main thread (= main_thread)  #3
+          3: 1.210259  # for execution  #3
+        4: # for -call> [instruction] /testmeas-small+0x11a6  #4
+          3: 0.605316  # for execution  #3
+        5: # for -call> [instruction] /testmeas-small+0x1187  #5
+          3: 0.605316  # for execution  #3
+        6: # for -call> [instruction] /testmeas-small+0x114c  #6
+          0: 0.302391  # for point  #0
+          1: 0.302391 # for function  #1
+          2: 0.302391 # for lex_aware  #2
+          3: 0.302391 # for execution  #3
+        7: # for -call> [instruction] /testmeas-small+0x1160  #7
+          0: 0.201947  # for point  #0
+          1: 0.201947 # for function  #1
+          2: 0.201947 # for lex_aware  #2
+          3: 0.201947 # for execution  #3
+        8: # for -call> [instruction] /testmeas-small+0x1154  #8
+          0: 0.100978  # for point  #0
+          1: 0.100978 # for function  #1
+          2: 0.100978 # for lex_aware  #2
+          3: 0.100978 # for execution  #3
+        9: # for -call> [instruction] /testmeas-small+0x119c  #9
+          3: 0.604943  # for execution  #3
+        10: # for -call> [instruction] /testmeas-small+0x114c  #10
+          0: 0.403829  # for point  #0
+          1: 0.403829 # for function  #1
+          2: 0.403829 # for lex_aware  #2
+          3: 0.403829 # for execution  #3
+        11: # for -call> [instruction] /testmeas-small+0x1154  #11
+          0: 0.20111400000000001  # for point  #0
+          1: 0.20111400000000001 # for function  #1
+          2: 0.20111400000000001 # for lex_aware  #2
+          3: 0.20111400000000001 # for execution  #3
+context: !cct.db/v4
+  ctx_infos: !cct.db/v4/ContextInfos
+    contexts:
+    - !cct.db/v4/PerContext  # for <root>
+      values:
+        3:  # for execution  #3
+          1: 1.210259  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x1129  #1
+      values: {}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x1129  #2
+      values: {}
+    - !cct.db/v4/PerContext # for main thread (= main_thread)  #3
+      values:
+        3:  # for execution  #3
+          1: 1.210259  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x11a6  #4
+      values:
+        3:  # for execution  #3
+          1: 0.605316  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x1187  #5
+      values:
+        3:  # for execution  #3
+          1: 0.605316  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x114c  #6
+      values:
+        0:  # for point  #0
+          1: 0.302391  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        1: # for function  #1
+          1: 0.302391  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        2: # for lex_aware  #2
+          1: 0.302391  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        3: # for execution  #3
+          1: 0.302391  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x1160  #7
+      values:
+        0:  # for point  #0
+          1: 0.201947  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        1: # for function  #1
+          1: 0.201947  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        2: # for lex_aware  #2
+          1: 0.201947  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        3: # for execution  #3
+          1: 0.201947  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x1154  #8
+      values:
+        0:  # for point  #0
+          1: 0.100978  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        1: # for function  #1
+          1: 0.100978  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        2: # for lex_aware  #2
+          1: 0.100978  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        3: # for execution  #3
+          1: 0.100978  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x119c  #9
+      values:
+        3:  # for execution  #3
+          1: 0.604943  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x114c  #10
+      values:
+        0:  # for point  #0
+          1: 0.403829  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        1: # for function  #1
+          1: 0.403829  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        2: # for lex_aware  #2
+          1: 0.403829  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        3: # for execution  #3
+          1: 0.403829  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [instruction] /testmeas-small+0x1154  #11
+      values:
+        0:  # for point  #0
+          1: 0.20111400000000001  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        1: # for function  #1
+          1: 0.20111400000000001  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        2: # for lex_aware  #2
+          1: 0.20111400000000001  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+        3: # for execution  #3
+          1: 0.20111400000000001  # for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+trace: !trace.db/v4
+  ctx_traces: !trace.db/v4/ContextTraceHeaders
+    timestamp_range:
+      min: 1714021984008891000
+      max: 1714021985220628000
+    traces:
+    - !trace.db/v4/ContextTrace  # 1.211737000s (1714021984.008891106-1714021985.220628023) for {NODE 0 [0x11ac0300] / CORE 0 / THREAD 0}
+      prof_index: 1
+      line:
+      - !trace.db/v4/ContextTraceElement  # +0.000000000s at <root>
+        timestamp: 1714021984008891000
+        ctx_id: 0
+      - !trace.db/v4/ContextTraceElement # +0.100844000s at -call> [instruction] /testmeas-small+0x1129  #1
+        timestamp: 1714021984109735000
+        ctx_id: 1
+      - !trace.db/v4/ContextTraceElement # +0.201754000s at -call> [instruction] /testmeas-small+0x1129  #1
+        timestamp: 1714021984210645000
+        ctx_id: 1
+      - !trace.db/v4/ContextTraceElement # +0.302742000s at -call> [instruction] /testmeas-small+0x1129  #1
+        timestamp: 1714021984311633000
+        ctx_id: 1
+      - !trace.db/v4/ContextTraceElement # +0.403740000s at -call> [instruction] /testmeas-small+0x1129  #1
+        timestamp: 1714021984412631000
+        ctx_id: 1
+      - !trace.db/v4/ContextTraceElement # +0.504737000s at -call> [instruction] /testmeas-small+0x1129  #1
+        timestamp: 1714021984513628000
+        ctx_id: 1
+      - !trace.db/v4/ContextTraceElement # +0.605746000s at -call> [instruction] /testmeas-small+0x1129  #1
+        timestamp: 1714021984614637000
+        ctx_id: 1
+      - !trace.db/v4/ContextTraceElement # +0.706815000s at -call> [instruction] /testmeas-small+0x1129  #2
+        timestamp: 1714021984715706000
+        ctx_id: 2
+      - !trace.db/v4/ContextTraceElement # +0.807748000s at -call> [instruction] /testmeas-small+0x1129  #2
+        timestamp: 1714021984816639000
+        ctx_id: 2
+      - !trace.db/v4/ContextTraceElement # +0.908744000s at -call> [instruction] /testmeas-small+0x1129  #2
+        timestamp: 1714021984917635000
+        ctx_id: 2
+      - !trace.db/v4/ContextTraceElement # +1.009743000s at -call> [instruction] /testmeas-small+0x1129  #2
+        timestamp: 1714021985018634000
+        ctx_id: 2
+      - !trace.db/v4/ContextTraceElement # +1.110754000s at -call> [instruction] /testmeas-small+0x1129  #2
+        timestamp: 1714021985119645000
+        ctx_id: 2
+      - !trace.db/v4/ContextTraceElement # +1.211737000s at -call> [instruction] /testmeas-small+0x1129  #2
+        timestamp: 1714021985220628000
+        ctx_id: 2

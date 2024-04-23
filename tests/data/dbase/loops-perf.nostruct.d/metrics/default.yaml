@@ -1,0 +1,55 @@
+version: 0
+inputs:
+  - &perfx3a_x3a_task-clock-sum-x5b_0x0x5d_-execution
+    metric: perf::task-clock
+    scope: execution
+    formula: $$
+    combine: sum
+  - &perfx3a_x3a_task-clock-sum-x5b_0x0x5d_-lex_aware
+    metric: perf::task-clock
+    scope: lex_aware
+    formula: $$
+    combine: sum
+  - &perfx3a_x3a_task-clock-sum-x5b_0x0x5d_-function
+    metric: perf::task-clock
+    scope: function
+    formula: $$
+    combine: sum
+  - &perfx3a_x3a_cpu-clock-sum-x5b_0x0x5d_-execution
+    metric: perf::cpu-clock
+    scope: execution
+    formula: $$
+    combine: sum
+  - &perfx3a_x3a_cpu-clock-sum-x5b_0x0x5d_-lex_aware
+    metric: perf::cpu-clock
+    scope: lex_aware
+    formula: $$
+    combine: sum
+  - &perfx3a_x3a_cpu-clock-sum-x5b_0x0x5d_-function
+    metric: perf::cpu-clock
+    scope: function
+    formula: $$
+    combine: sum
+roots:
+  - name: perf::cpu-clock
+    description: PERF_COUNT_SW_CPU_CLOCK
+    variants:
+      Sum:
+        render: [number, percent]
+        formula:
+          inclusive:
+            standard: *perfx3a_x3a_cpu-clock-sum-x5b_0x0x5d_-execution
+          exclusive:
+            custom: *perfx3a_x3a_cpu-clock-sum-x5b_0x0x5d_-lex_aware
+            standard: *perfx3a_x3a_cpu-clock-sum-x5b_0x0x5d_-function
+  - name: perf::task-clock
+    description: PERF_COUNT_SW_TASK_CLOCK
+    variants:
+      Sum:
+        render: [number, percent]
+        formula:
+          inclusive:
+            standard: *perfx3a_x3a_task-clock-sum-x5b_0x0x5d_-execution
+          exclusive:
+            custom: *perfx3a_x3a_task-clock-sum-x5b_0x0x5d_-lex_aware
+            standard: *perfx3a_x3a_task-clock-sum-x5b_0x0x5d_-function
