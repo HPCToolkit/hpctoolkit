@@ -57,13 +57,19 @@ foreach name, struct : testdata_struct
       _tst,
       args: _args + [f'-j@threads@'],
       suite: 'hpcstruct',
-      should_fail: (
+      should_fail: ((
         # FIXME: As of Elfutils 0.191, the handling for Nvidia binaries (without nvdisasm) is
         # no longer functional. Mark these cases as XFAIL until a fix comes about.
         # https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/831
         struct['binary'].get('cuda', false) and not struct['gpucfg']
         and libdw_dep.version().version_compare('>=0.191')
-      ),
+      ) or (
+        # FIXME: Dyninst 12.3 has a bug that makes it unable to parse certain inline sequences
+        # from LLVM binaries, see https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/754.
+        # This is fixed in 13.0, but mark as XFAIL to support older Dyninst.
+        name in ['inlines+loops-x86_64-llvm15-0', 'inlines+loops-x86_64-llvm15-d', 'inlines+loops-x86_64-llvm15-dr']
+        and dyninst_dep.version().version_compare('<13.0.0')
+      )),
     )
   endforeach
 endforeach

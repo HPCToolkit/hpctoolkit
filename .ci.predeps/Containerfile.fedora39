@@ -74,6 +74,3 @@ RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
   && echo "[zstd:project options]" >> "$t" \
   && echo "lz4 = 'disabled'" >> "$t" \
   && : # EOF
-
-# Set CMAKE_PREFIX_PATH to the paths for all the bits
-ENV CMAKE_PREFIX_PATH=/opt/libmonitor${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}

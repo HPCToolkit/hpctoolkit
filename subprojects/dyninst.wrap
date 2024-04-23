@@ -1,15 +1,13 @@
 [wrap-file]
-directory = dyninst-12.3.0
-source_url = https://github.com/dyninst/dyninst/archive/refs/tags/v12.3.0.tar.gz
-source_filename = dyninst-12.3.0.tar.gz
-source_hash = 956b0378d2badb765a7e677c0b66c0b8b8cacca7631222bfe7a27b369abf7dd4
-patch_filename = dyninst-12.3.0-1-beta.7_patch.zip
-patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/12.3.0-1-beta.7/dyninst-12.3.0-1-beta.7_patch.zip
-patch_hash = c74f0d568c3af0128018b6e43714900f5dd353f5b0f6292a3e549ac661aee804
-source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/12.3.0-1-beta.7/dyninst-12.3.0.tar.gz
-wrapdb_version = 12.3.0-1-beta.7
-
-diff_files = dyninst/f89cc72-fix-clang-error.patch
+directory = dyninst-13.0.0
+source_url = https://github.com/dyninst/dyninst/archive/refs/tags/v13.0.0.tar.gz
+source_filename = dyninst-13.0.0.tar.gz
+source_hash = 1bc48d26478b677a6c090c25586a447507bd1b4cf88d369bd61820005ce1be39
+patch_filename = dyninst-13.0.0-1-rc.1_patch.zip
+patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/13.0.0-1-rc.1/dyninst-13.0.0-1-rc.1_patch.zip
+patch_hash = f2471ab242b96b1f56fb307091d0771fea4dfd3ebb86ff5d7155265a283588e5
+source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/13.0.0-1-rc.1/dyninst-13.0.0.tar.gz
+wrapdb_version = 13.0.0-1-rc.1
 
 [provide]
 dependency_names = dyninst
