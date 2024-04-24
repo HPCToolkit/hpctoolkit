@@ -67,9 +67,9 @@ FROM os-install as src-install
 # goes wrong. See https://github.com/boostorg/boost_install/issues/14 for discussion.
 # We only need to do this because we need a visibility=global Boost installation.
 # Tracking issue: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/815.
-ADD https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 /tmp/boost.tar.bz2
-RUN \
-  tar xjf /tmp/boost.tar.bz2 -C /tmp \
+ADD https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 /usr/src/boost.tar.bz2
+RUN --mount=type=bind,target=/tmp,from=scratch,rw \
+  tar xjf /usr/src/boost.tar.bz2 -C /tmp \
   && cd /tmp/boost_1_84_0 \
   && ./bootstrap.sh --prefix=/dest/opt/boost --with-libraries=atomic,chrono,date_time,filesystem,graph,system,thread,timer \
   && ./b2 install visibility=global

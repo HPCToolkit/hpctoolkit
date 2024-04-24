@@ -57,9 +57,9 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
 
 # FIXME: Boost doesn't support DESTDIR, so we install to a prefix under /dest and hope nothing
 # goes wrong. See https://github.com/boostorg/boost_install/issues/14 for discussion.
-ADD https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 /tmp/boost.tar.bz2
-RUN \
-  tar xjf /tmp/boost.tar.bz2 -C /tmp \
+ADD https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 /usr/src/boost.tar.bz2
+RUN --mount=type=bind,target=/tmp,from=scratch,rw \
+  tar xjf /usr/src/boost.tar.bz2 -C /tmp \
   && cd /tmp/boost_1_84_0 \
   && ./bootstrap.sh --prefix=/dest/opt/boost --with-libraries=atomic,chrono,date_time,filesystem,graph,system,thread,timer \
   && ./b2 install
