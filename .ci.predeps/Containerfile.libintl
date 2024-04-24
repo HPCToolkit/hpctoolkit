@@ -1,0 +1,91 @@
+# OS installation stage: Install build tools from the OS
+FROM docker.io/ubuntu:22.04 as os-install
+
+# Install the required OS packages
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  rm -f /etc/apt/apt.conf.d/docker-clean \
+  && apt-get update -yqq \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ccache \
+    cmake \
+    g++ \
+    gcc \
+    libboost-atomic-dev \
+    libboost-chrono-dev \
+    libboost-date-time-dev \
+    libboost-filesystem-dev \
+    libboost-graph-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
+    libboost-timer-dev \
+    libomp-dev \
+    make  `# FIXME: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    mawk  `# FIXME: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    ninja-build \
+    patch \
+    pkg-config \
+    python3 \
+    python3-pip \
+    python3-venv \
+    sed  `# FIXME: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+  && : # END
+
+# Install a up-to-date versions of Meson, using a suitable Python
+RUN \
+  python3 -m pip install \
+    'meson>=1.1.0,<2' \
+  && : # END
+
+
+# From-source installation side-stage: Install (some) software from source
+FROM os-install as src-install
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  rm -f /etc/apt/apt.conf.d/docker-clean \
+  && apt-get update -yqq \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    tar \
+    gzip \
+    make \
+  && : # END
+
+# libintl is usually provided by Glibc, however it can also be provided as a separate library.
+# We include an external gettext in this image to cover this specific use case.
+# FIXME: The tmpfs mount here works around a bug in fuse-overlayfs. The gettext configure script
+# does some live tests with very long filenames and leaves behind nested directories that cannot be
+# read, removed or otherwise accessed. Using a tmpfs mount removes this issue.
+ADD https://ftp.gnu.org/pub/gnu/gettext/gettext-0.22.5.tar.gz /usr/src/gettext.tar.gz
+RUN --mount=type=bind,target=/tmp,from=scratch,rw \
+    --mount=type=tmpfs,target=/tmp/build/confdir3 \
+  tar xzf /usr/src/gettext.tar.gz -C /tmp \
+  && cd /tmp/build \
+  && /tmp/gettext-0.22.5/configure --prefix=/usr --with-included-gettext \
+  && make -j$(nproc) V=0 \
+  && DESTDIR=/dest make V=0 install
+
+
+# Composition stage: Produce what will become the final image
+FROM os-install
+COPY --from=src-install /dest /
+COPY \
+  ci/native/src/gcc.ini \
+  /usr/share/meson/native/
+
+RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
+  && echo "[built-in options]" >> "$t" \
+  && echo "wrap_mode = 'default'" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[project options]" >> "$t" \
+  && echo "auto_features = 'enabled'" >> "$t" \
+  && echo "extended_tests = 'disabled'" >> "$t" \
+  && echo "manpages = 'disabled'" >> "$t" \
+  && echo "python = 'disabled'" >> "$t" \
+  && echo "hpcprof_mpi = 'disabled'" >> "$t" \
+  && echo "papi = 'disabled'" >> "$t" \
+  && echo "cuda = 'disabled'" >> "$t" \
+  && echo "rocm = 'disabled'" >> "$t" \
+  && echo "level0 = 'disabled'" >> "$t" \
+  && echo "gtpin = 'disabled'" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[zstd:project options]" >> "$t" \
+  && echo "lz4 = 'disabled'" >> "$t" \
+  && : # EOF
