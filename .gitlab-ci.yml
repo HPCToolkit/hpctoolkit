@@ -515,11 +515,11 @@ validate:
       build $buildtype-nogtpin -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS -Dgtpin=disabled || exit $?
     done
 
-'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
+'buildmany: [amd64, lvlz, gtpin]':
   extends: .buildmany amd64 lvlz
   image: $PREDEPS_IMAGE_INTEL_AMD64
 
-'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
+'buildmany min: [amd64, lvlz, gtpin]':
   extends: [.buildmany amd64 lvlz, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_INTEL_AMD64
 

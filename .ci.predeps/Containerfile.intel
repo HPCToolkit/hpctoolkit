@@ -2,12 +2,12 @@
 FROM docker.io/alpine:3 as tarball-install
 
 # Download a copy of GTPin, which is only available via binary tarball
-ADD https://downloadmirror.intel.com/777295/external-release-gtpin-3.4-linux.tar.xz /tmp/gtpin-3.4.tar.xz
+ADD https://downloadmirror.intel.com/793592/external-release-gtpin-3.7-linux.tar.xz /tmp/gtpin-3.7.tar.xz
 RUN \
-  echo 'c96d08a2729c255e3bc67372fc1271ba60ca8d7bd913f92c2bd951d7d348f553 /tmp/gtpin-3.4.tar.xz' \
+  echo '366edb46369a67bdbaea3c11ad5bf9a9ead5a7234efb780a27dffd70d1150c39 /tmp/gtpin-3.7.tar.xz' \
     | sha256sum -c - \
-  && mkdir -p /opt/gtpin-3.4 \
-  && tar -C /opt/gtpin-3.4 -xJf /tmp/gtpin-3.4.tar.xz
+  && mkdir -p /opt/gtpin-3.7 \
+  && tar -C /opt/gtpin-3.7 -xJf /tmp/gtpin-3.7.tar.xz
 
 
 # OS installation stage: Install build tools from the OS
@@ -63,7 +63,7 @@ RUN \
   && cp -rsTn /usr/include/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/ /usr/include/
 
 # Copy files unpacked from the tarballs
-COPY --from=tarball-install /opt/gtpin-3.4/ /opt/gtpin-3.4/
+COPY --from=tarball-install /opt/gtpin-3.7/ /opt/gtpin-3.7/
 
 
 # OS native-file side-stage: Collect and compose a native file for the OS software
