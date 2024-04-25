@@ -197,6 +197,13 @@ include:
     containerfile: .ci.predeps/Containerfile.intel
     build_args: ONEAPI_VERSION=2024.0.1
 
+# Image(s) containing system software in uncommon arrangements
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: libintl-amd64
+    containerfile: .ci.predeps/Containerfile.libintl
+
 # Image(s) containing Spack-installed software for Spack-based verification
 - component: *ci_predeps
   inputs:
@@ -655,8 +662,8 @@ compiler icx:
       TEST_ARGS: --suite none
 
 
-# Check that meson setup passes under specific off-configurations.
-'setup: [no libdw]':
+# Check that (parts of) the build pass under specific off-configurations.
+'setup: [no libdw]':  # Libelf but not libdw
   extends: .test job
   stage: configuration tests
   needs: ['predeps: [ubuntu22.04-amd64]']
@@ -666,6 +673,15 @@ compiler icx:
   before_script:
   - apt-get purge -yqq libdw-dev libdw1
   script: *test_job_setup
+'setup: [libintl]':  # gettext from libintl instead of glibc
+  extends: .test job
+  stage: configuration tests
+  needs: ['predeps: [libintl-amd64]']
+  image: $PREDEPS_IMAGE_LIBINTL_AMD64
+  variables:
+    SETUP_ARGS: >-
+      --native-file hpctoolkit-ci.ini
+      --wrap-mode=forcefallback
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.

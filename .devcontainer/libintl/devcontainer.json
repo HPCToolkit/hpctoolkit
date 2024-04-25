@@ -1,0 +1,55 @@
+{
+  "name": "ci.predeps-libintl",
+  "build": {
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.libintl"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mesonbuild.mesonbuild"
+      ],
+      "settings": {
+        "clangd.arguments": [
+          "--compile-commands-dir=${config:mesonbuild.buildFolder}"
+        ],
+        "mesonbuild.buildFolder": ".devcontainer/libintl/builddir-${devcontainerId}",
+        "mesonbuild.configureOnOpen": true,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/bash"
+          },
+          "zsh": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/zsh"
+          }
+        }
+      }
+    }
+  },
+  "features": {
+    "../bash-completion-feature": {},
+    "ghcr.io/devcontainers-contrib/features/poetry:2": {},
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/git:1": {
+      "ppa": true,
+      "version": "latest"
+    }
+  },
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/libintl/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/libintl/builddir-${devcontainerId}"
+  }
+}
