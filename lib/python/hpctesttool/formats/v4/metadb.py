@@ -336,9 +336,9 @@ class SummaryStatistic(StructureBase):
     @yaml_object(yaml_tag="!meta.db/v4/SummaryStatistic.Combine")
     class Combine(Enumeration):
         # Added in v4.0
-        sum = EnumEntry(0, min_version=0)  # noqa: A003
-        min = EnumEntry(1, min_version=0)  # noqa: A003
-        max = EnumEntry(2, min_version=0)  # noqa: A003
+        sum = EnumEntry(0, min_version=0)
+        min = EnumEntry(1, min_version=0)
+        max = EnumEntry(2, min_version=0)
 
     scope: "PropagationScope"
     formula: str
@@ -390,7 +390,7 @@ class PropagationScope(StructureBase):
         transitive = EnumEntry(3, min_version=0)
 
     scope_name: str
-    type: typing.Optional[Type]  # noqa: A003
+    type: typing.Optional[Type]
     propagation_index: int
 
     __struct = VersionedStructure(
