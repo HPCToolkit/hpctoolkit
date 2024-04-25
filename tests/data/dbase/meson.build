@@ -33,7 +33,6 @@ foreach _name, _features : _databases
   _stamp = custom_target(
     output: f'@_name@.d.fresh',
     build_by_default: false,
-    build_always_stale: true, # This can be removed once we can actually track when hpcprof changes
     console: true,
     command: [_prof, _meas['freshstamp'], '@OUTPUT@', _args],
   )
