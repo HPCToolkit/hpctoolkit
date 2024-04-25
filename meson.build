@@ -105,6 +105,18 @@ has_cuda = cuda_exdep.found()
 if has_cuda
   add_languages('cuda', native: false, required: true)
   nvdisasm = find_program('nvdisasm', dirs: [cuda_exdep.get_variable(internal: 'prefix') / 'bin'])
+
+  if has_cuda
+    # When we compile a CUDA kernel, we want to compile code for every available architecture the
+    # compiler can support, plus PTX.
+    cuda_cc = meson.get_compiler('cuda')
+    if cuda_cc.get_id() == 'nvcc'
+      _arches = 'All'
+      unstable_cuda = import('unstable-cuda')
+      message('Building for CUDA architectures: ' + ' '.join(unstable_cuda.nvcc_arch_readable(cuda_cc.version(), _arches)))
+      add_project_arguments(unstable_cuda.nvcc_arch_flags(cuda_cc.version(), _arches), language: 'cuda')
+    endif
+  endif
 endif
 
 # Find HIP language support.

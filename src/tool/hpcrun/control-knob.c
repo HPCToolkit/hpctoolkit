@@ -17,7 +17,7 @@ static control_knob_t *control_knobs = NULL;
 
 
 static control_knob_t *
-control_knob_name_lookup(char *in)
+control_knob_name_lookup(const char *in)
 {
   control_knob_t *iter = control_knobs;
 
@@ -29,20 +29,27 @@ control_knob_name_lookup(char *in)
   return NULL;
 }
 
-
-void
-control_knob_register(char *name, char *value, control_knob_type type)
+static control_knob_t *
+control_knob_name_ensure(const char *name, control_knob_type type)
 {
   control_knob_t *iter = control_knob_name_lookup(name);
-
   if (iter == NULL) {
     iter = (control_knob_t*) malloc(sizeof(control_knob_t));
     iter->name = strdup(name);
+    iter->value = NULL;
     iter->type = type;
     iter->next = control_knobs;
     control_knobs = iter;
   }
-  iter->value = strdup(value);
+  return iter;
+}
+
+void
+control_knob_register(char *name, char *value, control_knob_type type)
+{
+  control_knob_t *iter = control_knob_name_ensure(name, type);
+  if (iter->value == NULL)
+    iter->value = strdup(value);
 }
 
 
@@ -69,7 +76,7 @@ control_knob_init()
     char *value = strtok_r(NULL, "=", &save);
 
     if (name != NULL && value != NULL) {
-      control_knob_register(name, value, ck_int);
+      control_knob_name_ensure(name, ck_int)->value = strdup(value);
     } else {
       fprintf(stderr, "\tcontrol token %s not recognized\n\n", f);
     }
