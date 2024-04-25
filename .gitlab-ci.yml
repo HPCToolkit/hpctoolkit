@@ -166,7 +166,7 @@ include:
     name: cuda12.3-amd64
     containerfile: .ci.predeps/Containerfile.cuda
     build_args: |
-      CUDA_VERSION=12.3.1
+      CUDA_VERSION=12.3.2
 
 - component: *ci_predeps
   inputs:
@@ -241,7 +241,7 @@ include:
     name: rocm6.0-amd64
     containerfile: .ci.predeps/Containerfile.rocm
     build_args: |
-      ROCM_VERSION=6.0
+      ROCM_VERSION=6.0.2
 
 - component: *ci_predeps
   inputs:
