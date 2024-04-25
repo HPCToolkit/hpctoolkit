@@ -66,10 +66,11 @@ include:
 - component: gitlab.com/blue42u/ci.pre-commit/lite@0.2.0
 
 # These images are based on classic distrobutions and contain no vendor software
-- component: &ci_predeps gitlab.com/blue42u/ci.predeps/build@0.3.0
+- component: &ci_predeps gitlab.com/blue42u/ci.predeps/buildah@0.4.1
   inputs:
     <<: &ci_predeps_shared
       fallback_registry: registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
+      buildah_image: quay.io/buildah/stable:v1.32.0
     name: rhel8-amd64
     containerfile: .ci.predeps/Containerfile.rhel8
 - component: *ci_predeps
@@ -102,11 +103,15 @@ include:
     <<: *ci_predeps_shared
     name: min-rhel8-amd64
     containerfile: .ci.predeps/Containerfile.rhel8
+    build_args: |
+      VERMODE=minimum
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: min-ubuntu20.04-amd64
     containerfile: .ci.predeps/Containerfile.ubuntu20.04
+    build_args: |
+      VERMODE=minimum
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -114,6 +119,8 @@ include:
     containerfile: .ci.predeps/Containerfile.ubuntu20.04
     platform: linux/arm64
     job_tag: rice-linux-medium-arm64
+    build_args: |
+      VERMODE=minimum
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -121,11 +128,15 @@ include:
     containerfile: .ci.predeps/Containerfile.ubuntu20.04
     platform: linux/ppc64le
     job_tag: rice-linux-medium-ppc64le
+    build_args: |
+      VERMODE=minimum
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: min-fedora38-amd64
     containerfile: .ci.predeps/Containerfile.fedora38
+    build_args: |
+      VERMODE=minimum
 
 # Images based on (containing) Nvidia's CUDA Toolkit
 - component: *ci_predeps
@@ -133,32 +144,46 @@ include:
     <<: *ci_predeps_shared
     name: cuda11.6-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: |
+      CUDA_VERSION=11.6.2
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: cuda11.8-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: |
+      CUDA_VERSION=11.8.0
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: cuda12.0-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: |
+      CUDA_VERSION=12.0.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: cuda12.3-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: |
+      CUDA_VERSION=12.3.1
 
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: min-cuda11.8-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: |
+      CUDA_VERSION=11.8.0
+      VERMODE=minimum
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: min-cuda12.0-amd64
     containerfile: .ci.predeps/Containerfile.cuda
+    build_args: |
+      CUDA_VERSION=12.0.1
+      VERMODE=minimum
 
 # Images based on (containing) AMD's ROCm
 - component: *ci_predeps
@@ -166,52 +191,74 @@ include:
     <<: *ci_predeps_shared
     name: rocm5.1-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.1.3
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.2-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.2.3
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.3-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.3.3
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.4-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.4.3
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.5-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.5.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.6-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.6.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm5.7-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.7.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rocm6.0-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=6.0
 
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: min-rocm5.1-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.1.3
+      VERMODE=minimum
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: min-rocm5.7-amd64
     containerfile: .ci.predeps/Containerfile.rocm
+    build_args: |
+      ROCM_VERSION=5.7.1
+      VERMODE=minimum
 
 # Image(s) based on (containing) Intel's Level Zero, IGC, GTPin, etc.
 - component: *ci_predeps
@@ -224,6 +271,8 @@ include:
     <<: *ci_predeps_shared
     name: min-intel-amd64
     containerfile: .ci.predeps/Containerfile.intel
+    build_args: |
+      VERMODE=minimum
 
 'predeps: [rhel8-amd64]':
   before_script: &predeps_before_script
@@ -243,103 +292,55 @@ include:
   before_script: *predeps_before_script
 
 'predeps: [min-rhel8-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 'predeps: [min-ubuntu20.04-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 'predeps: [min-ubuntu20.04-arm64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 'predeps: [min-ubuntu20.04-ppc64le]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 'predeps: [min-fedora38-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 
 'predeps: [cuda11.6-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '11.6.2'
   before_script: *predeps_before_script
 'predeps: [cuda11.8-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '11.8.0'
   before_script: *predeps_before_script
 'predeps: [cuda12.0-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '12.0.1'
   before_script: *predeps_before_script
 'predeps: [cuda12.3-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '12.3.1'
   before_script: *predeps_before_script
 
 'predeps: [min-cuda11.8-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '11.8.0'
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 'predeps: [min-cuda12.0-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_CUDA_VERSION: '12.0.1'
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 
 'predeps: [rocm5.1-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.1.3'
   before_script: *predeps_before_script
 'predeps: [rocm5.2-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.2.3'
   before_script: *predeps_before_script
 'predeps: [rocm5.3-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.3.3'
   before_script: *predeps_before_script
 'predeps: [rocm5.4-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.4.3'
   before_script: *predeps_before_script
 'predeps: [rocm5.5-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.5.1'
   before_script: *predeps_before_script
 'predeps: [rocm5.6-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.6.1'
   before_script: *predeps_before_script
 'predeps: [rocm5.7-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.7.1'
   before_script: *predeps_before_script
 'predeps: [rocm6.0-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '6.0'
   before_script: *predeps_before_script
 
 'predeps: [min-rocm5.1-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.1.3'
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 'predeps: [min-rocm5.7-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_ROCM_VERSION: '5.7.1'
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 
 'predeps: [intel-amd64]':
   before_script: *predeps_before_script
 'predeps: [min-intel-amd64]':
-  variables:
-    PREDEPS_BUILD_ARG_VERMODE: minimum
   before_script: *predeps_before_script
 
 #-----------------------------------
