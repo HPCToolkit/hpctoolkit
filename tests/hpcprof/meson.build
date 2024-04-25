@@ -14,7 +14,7 @@ foreach name, dbase : testdata_dbase
     test(
       f'Database from @name@ is accurate (-j@threads@)',
       _tst,
-      args: [hpctesttool, dbase['dir'], hpcprof, f'-j@threads@', dbase['measurements']['dir']],
+      args: [hpctesttool, dbase['dir'], hpcprof, f'-j@threads@', dbase['args'], dbase['measurements']['dir']],
       suite: 'hpcprof',
     )
   endforeach
@@ -33,6 +33,7 @@ foreach name, dbase : testdata_dbase
           f'@ranks@',
           hpcprof_mpi,
           f'-j@threads@',
+          dbase['args'],
           dbase['measurements']['dir'],
         ],
         suite: ['hpcprof', 'mpi'],

@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/builddir/tests/data/meas/loops-cputime-t.m/vdso/7efc21c89566f551ba9bac284645e9d6.vdso" has-calls="0" v="{}">
+<F i="3" n="[7efc21c89566f551ba9bac284645e9d6.vdso]">
+<P i="4" n="__vdso_gettimeofday [7efc21c89566f551ba9bac284645e9d6.vdso]" ln="__vdso_gettimeofday" l="0" v="{[0x6d0-0x6d1)}">
+<S i="5" l="0" v="{[0x6d0-0x759)}"/>
+</P>
+<P i="6" n="__vdso_time [7efc21c89566f551ba9bac284645e9d6.vdso]" ln="__vdso_time" l="0" v="{[0x760-0x761)}">
+<S i="7" l="0" v="{[0x760-0x775)}"/>
+</P>
+<P i="8" n="__vdso_clock_gettime [7efc21c89566f551ba9bac284645e9d6.vdso]" ln="__vdso_clock_gettime" l="0" v="{[0x780-0x781)}">
+<S i="9" l="0" v="{[0x780-0x7d9) [0x802-0x81d)}"/>
+<L i="10" l="0" f="[7efc21c89566f551ba9bac284645e9d6.vdso]" v="{[0x7db-0x7dc)}">
+<S i="11" l="0" v="{[0x7d9-0x802)}"/>
+</L>
+</P>
+<P i="12" n="__vdso_clock_getres [7efc21c89566f551ba9bac284645e9d6.vdso]" ln="__vdso_clock_getres" l="0" v="{[0x820-0x821)}">
+<S i="13" l="0" v="{[0x820-0x874)}"/>
+</P>
+<P i="14" n="&lt;unknown procedure&gt; 0x880 [7efc21c89566f551ba9bac284645e9d6.vdso]" ln="targ880" l="0" v="{[0x880-0x881)}">
+<S i="15" l="0" v="{[0x880-0x8a0) [0x8d5-0x8da) [0x96d-0x9a0) [0x9b7-0x9d5)}"/>
+<L i="16" l="0" f="[7efc21c89566f551ba9bac284645e9d6.vdso]" v="{[0x8a0-0x8a1)}">
+<S i="17" l="0" v="{[0x8a0-0x8d5) [0x8da-0x8e0) [0x949-0x96d)}"/>
+<L i="18" l="0" f="[7efc21c89566f551ba9bac284645e9d6.vdso]" v="{[0x8e0-0x8e1)}">
+<S i="19" l="0" v="{[0x8e0-0x949)}"/>
+</L>
+</L>
+<L i="20" l="0" f="[7efc21c89566f551ba9bac284645e9d6.vdso]" v="{[0x9a0-0x9a1)}">
+<S i="21" l="0" v="{[0x9a0-0x9b7)}"/>
+</L>
+</P>
+<P i="22" n="__vdso_getcpu [7efc21c89566f551ba9bac284645e9d6.vdso]" ln="__vdso_getcpu" l="0" v="{[0xa00-0xa01)}">
+<S i="23" l="0" v="{[0xa00-0xa2a)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>

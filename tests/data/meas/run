@@ -55,5 +55,8 @@ rm -f \
   "$output"/structs/Makefile \
   # END
 
+# Write a marker for the output directory, so we can do remapping later
+realpath "$output" > "$output"/original-path
+
 # Create/update the stampfile
 date > "$output_stamp"

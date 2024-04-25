@@ -132,6 +132,9 @@ Processing options:
                               data from. Units are K,M,G,T (powers of 1024)
                               If limit is "unlimited," always parses DWARF.
                               Default limit is 100M.
+      --ignore-structs
+                              Ignore hpcstruct files in measurement directories
+                              (the structs/ subdirectory). Used for testing.
       --foreign
                               Process the measurements as if they came from a
                               "foreign" system with a different filesystem than
@@ -168,6 +171,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   int arg_overwriteOutput = 0;
   int arg_valgrindUnclean = valgrindUnclean;
   int arg_foreign = 0;
+  int arg_ignore_structs = 0;
   struct option longopts[] = {
     // These first ones are more special and must be in this order.
     {"metric-db", required_argument, NULL, 0},
@@ -189,6 +193,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     {"force", no_argument, &arg_overwriteOutput, 1},
     {"valgrind-unclean", no_argument, &arg_valgrindUnclean, 1},
     {"foreign", no_argument, &arg_foreign, 1},
+    {"ignore-structs", no_argument, &arg_ignore_structs, 1},
     {0, 0, 0, 0}
   };
 
@@ -420,9 +425,6 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   valgrindUnclean = arg_valgrindUnclean;
   foreign = arg_foreign;
 
-  if(foreign)
-    include_sources = false;
-
   {
     util::log::Settings logSettings = util::log::Settings::none;
     logSettings.error() = verbosity >= -1;  // -q and higher
@@ -516,6 +518,9 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   for(int idx = optind; idx < argc; idx++) {
     fs::path p(argv[idx]);
     if(fs::is_directory(p)) {
+      // Measurement directories are permitted for --foreign analysis
+      allowedForeignDirs.emplace(fs::canonical(p));
+
       // Check for a kernel_symbols/ directory for ksymsfiles.
       fs::path sp = p / "kernel_symbols";
       if(fs::is_directory(sp))
@@ -531,31 +536,33 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         structargs = ss.str();
       }
 
-      // Check for a structs/ directory for extra structfiles.
-      sp = p / "structs";
-      if(fs::is_directory(sp)) {
-        std::shared_ptr<finalizers::StructFile::RecommendationStore> recstore;
-        if(mpi::World::rank() == 0)
-          recstore = std::make_shared<finalizers::StructFile::RecommendationStore>(true, std::move(structargs));
+      if(!arg_ignore_structs) {
+        // Check for a structs/ directory for extra structfiles.
+        sp = p / "structs";
+        if(fs::is_directory(sp)) {
+          std::shared_ptr<finalizers::StructFile::RecommendationStore> recstore;
+          if(mpi::World::rank() == 0)
+            recstore = std::make_shared<finalizers::StructFile::RecommendationStore>(true, std::move(structargs));
 
-        for(const auto& de: fs::directory_iterator(sp)) {
-          std::unique_ptr<ProfileFinalizer> c;
-          if(de.path().extension() != ".hpcstruct") continue;
-          try {
-            c.reset(new finalizers::StructFile(de, recstore));
-          } catch(...) { continue; }
-          ProfArgs::structs.emplace_back(std::move(c), de);
-        }
-      } else {
-        util::call_once(onceMissingGPUCFGs, [&]{
-          // WARN that the user should run hpcstruct on the measurements dir first
-          if(mpi::World::rank() == 0) {
-            util::log::warning() <<
-              "Program structure data is missing from the measurements directory, performance attribution will be degraded\n"
-              "  Consider running hpcstruct first:\n"
-              "    $ hpcstruct" << structargs;
+          for(const auto& de: fs::directory_iterator(sp)) {
+            std::unique_ptr<ProfileFinalizer> c;
+            if(de.path().extension() != ".hpcstruct") continue;
+            try {
+              c.reset(new finalizers::StructFile(de, recstore));
+            } catch(...) { continue; }
+            ProfArgs::structs.emplace_back(std::move(c), de);
           }
-        });
+        } else {
+          util::call_once(onceMissingGPUCFGs, [&]{
+            // WARN that the user should run hpcstruct on the measurements dir first
+            if(mpi::World::rank() == 0) {
+              util::log::warning() <<
+                "Program structure data is missing from the measurements directory, performance attribution will be degraded\n"
+                "  Consider running hpcstruct first:\n"
+                "    $ hpcstruct" << structargs;
+            }
+          });
+        }
       }
     }
   }
@@ -732,22 +739,6 @@ static std::pair<bool, fs::path> remove_prefix(const fs::path& path, const fs::p
   return {true, rem};
 }
 
-static std::optional<fs::path> search(const std::unordered_map<fs::path, fs::path, stdshim::hash_path>& prefixes,
-                                      const fs::path& p) noexcept {
-  if(p.is_relative())
-    return std::nullopt;  // Can't do anything with a relative path
-  std::error_code ec;
-  for(const auto& ft: prefixes) {
-    auto xp = remove_prefix(p, ft.first);
-    if(xp.first) {
-      fs::path rp = ft.second / xp.second;
-      if(fs::is_regular_file(rp, ec)) return rp;
-    }
-  }
-  if(fs::is_regular_file(p, ec)) return p;  // If all else fails;
-  return std::nullopt;
-}
-
 void ProfArgs::StatisticsExtender::appendStatistics(const Metric& m, Metric::StatsAccess mas) noexcept {
   if(m.visibility() == Metric::Settings::visibility_t::invisible) return;
   Metric::Statistics s;
@@ -760,12 +751,51 @@ void ProfArgs::StatisticsExtender::appendStatistics(const Metric& m, Metric::Sta
   mas.requestStatistics(std::move(s));
 }
 
+static bool is_subpath(const fs::path& p, const fs::path& base) {
+  auto rel = p.lexically_relative(base);
+  assert(!rel.has_root_path());
+  return !rel.empty() && rel.native()[0] != '.';
+}
+
+static std::optional<fs::path> search(const std::unordered_map<fs::path, fs::path, stdshim::hash_path>& prefixes,
+                                      const fs::path& p) noexcept {
+  assert(!p.is_relative());
+  std::error_code ec;
+  for(const auto& ft: prefixes) {
+    auto xp = remove_prefix(p, ft.first);
+    if(xp.first) {
+      fs::path rp = ft.second / xp.second;
+      if(fs::is_regular_file(rp, ec)) return rp;
+    }
+  }
+  if(fs::is_regular_file(p, ec)) return p;  // If all else fails;
+  return std::nullopt;
+}
+
 std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const File& f) noexcept {
-  return args.foreign ? std::nullopt : search(args.prefixes, f.path());
+  if(f.path().is_relative())
+    return std::nullopt;  // Do not resolve relative paths
+  auto result = search(args.prefixes, f.path());
+  if(args.foreign && std::none_of(args.allowedForeignDirs.begin(), args.allowedForeignDirs.end(),
+      [&](const auto& base){ return is_subpath(result.value_or(f.path()), base); })) {
+    // The path is not part of an allowed subtree in the foreign case.
+    // Return an empty path, meaning the path does not exist on the current filesystem.
+    return fs::path();
+  }
+  return result;
 }
 
 std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const Module& m) noexcept {
-  return args.foreign ? std::nullopt : search(args.prefixes, m.path());
+  if(m.path().is_relative())
+    return std::nullopt;  // Do not resolve relative paths
+  auto result = search(args.prefixes, m.path());
+  if(args.foreign && std::none_of(args.allowedForeignDirs.begin(), args.allowedForeignDirs.end(),
+      [&](const auto& base){ return is_subpath(result.value_or(m.path()), base); })) {
+    // The path is not part of an allowed subtree in the foreign case.
+    // Return an empty path, meaning the path does not exist on the current filesystem.
+    return fs::path();
+  }
+  return result;
 }
 
 std::optional<std::pair<util::optional_ref<Context>, Context&>>

@@ -78,7 +78,6 @@ foreach name, variants : _structfiles
     _gen = custom_target(
       output: f'@name@@suffix@.hpcstruct',
       input: _bin['file'],
-      build_always_stale: true, # This can be removed once we can actually track when hpstruct changes
       console: true,
       command: [
         hpcstruct,

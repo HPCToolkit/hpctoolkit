@@ -319,9 +319,17 @@ void StructFile::load(const Module& m, udModule& ud) noexcept {
   std::unique_ptr<StructFileParser> parser;
   {
     std::unique_lock<std::mutex> l(lms_lock);
+
+    // Structfiles are (usually) generated on the system where the measurement
+    // took place, so try to match against the path seen during measurement
+    // first.
     auto it = lms.find(m.path());
+    // It might have been generated on the current system instead. In that case,
+    // we want the path to the file on the current filesystem (resolvedPath).
     if(it == lms.end()) it = lms.find(m.userdata[sink.resolvedPath()]);
+    // Otherwise, give up. This Structfile doesn't match the Module.
     if(it == lms.end()) return;  // We got nothing
+
     std::tie(lm, parser) = std::move(it->second);
     lms.erase(it);
   }

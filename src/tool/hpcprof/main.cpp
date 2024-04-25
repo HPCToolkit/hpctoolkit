@@ -92,11 +92,9 @@ int main(int argc, char* const argv[]) {
   ProfArgs::StructPartialMatch spm(args);
   pipelineB << spm;
 
-  if(!args.foreign) {
-    // Insert the proper Finalizer for drawing data directly from the Modules.
-    // This is used as a fallback if the Structfiles aren't available.
-    pipelineB << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
-  }
+  // Insert the proper Finalizer for drawing data directly from the Modules.
+  // This is used as a fallback if the Structfiles aren't available.
+  pipelineB << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
 
   switch(args.format) {
   case ProfArgs::Format::metadb: {

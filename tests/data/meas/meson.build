@@ -77,7 +77,6 @@ foreach name, spec : _measurements
   _stamp = custom_target(
     output: f'@name@.m.fresh',
     build_by_default: false,
-    build_always_stale: true, # This can be removed once we can actually track when hpcrun changes
     console: true,
     command: [_run, spec.get('minsamples', 100).to_string(), '@OUTPUT@'] + spec['tail'],
     env: test_env,
@@ -88,6 +87,7 @@ foreach name, spec : _measurements
       'dir': meson.current_source_dir() / f'@name@.m',
       'tag': spec['tag'],
       'freshstamp': _stamp,
+      'orig_measdir': fs.read(f'@name@.m' / 'original-path', encoding: 'utf-8').strip(),
     },
   }
   testdata_files += {

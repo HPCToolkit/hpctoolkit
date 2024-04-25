@@ -3,13 +3,14 @@
 hpcprof="$1"
 meas_stamp="$2"
 output_stamp="$3"
+shift 3  # Remaining arguments are passed to hpcprof
 
 meas="$(dirname "$meas_stamp")/$(basename "$meas_stamp" .fresh)"
 output="$(dirname "$output_stamp")/$(basename "$output_stamp" .fresh)"
 
 # Produce the database
 rm -rf "$output"
-"$hpcprof" -j4 --foreign "$meas" -o "$output"
+"$hpcprof" -j4 "$@" "$meas" -o "$output"
 
 # Clean up all non-essential files
 rm \

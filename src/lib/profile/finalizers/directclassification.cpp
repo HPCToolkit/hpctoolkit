@@ -183,14 +183,12 @@ static stdshim::filesystem::path altfile(const stdshim::filesystem::path& path, 
 #endif
 
 void DirectClassification::load(const Module& m, udModule& ud) noexcept {
+  // Try to open the binary on the current filesystem. If we fail, give up.
   int fd = -1;
-  const auto& rpath = m.userdata[sink.resolvedPath()];
-  const auto& mpath = rpath.empty() ? m.path() : rpath;
+  const auto& mpath = m.userdata[sink.resolvedPath()];
+  if(mpath.empty()) return;
   fd = open(mpath.c_str(), O_RDONLY);
-  if(fd == -1) {  // Can't do anything if we can't open it.
-    // TODO: ERROR or something in this case?
-    return;
-  }
+  if(fd == -1) return;
 
   Elf* elf = elf_begin(fd, HPC_ELF_C_READ, nullptr);
   if(elf == nullptr) {
@@ -519,10 +517,9 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, udModule& ud
   ud.lines.make_consistent();
   return true;
 } catch(std::exception& e) {
-  const auto& rpath = m.userdata[sink.resolvedPath()];
   util::log::info{} << "Exception caught during DWARF parsing for "
-    << m.path().filename().string() << "\n"
+    << m.userdata[sink.resolvedPath()].filename().string() << "\n"
        "  what(): " << e.what() << "\n"
-       "  Full path: " << (rpath.empty() ? m.path() : rpath).string();
+       "  Full path: " << m.userdata[sink.resolvedPath()].string();
   return false;
 }

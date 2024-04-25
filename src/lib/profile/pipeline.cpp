@@ -202,21 +202,25 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
       [this](stdshim::filesystem::path& sp, const File& f){
         for(ProfileFinalizer& fp: finalizers.resolvedPath) {
           if(auto v = fp.resolvePath(f)) {
-            assert(!v->empty() && v->is_absolute());
+            assert(v->empty() || v->is_absolute());
             sp = *v;
-            break;
+            return;
           }
         }
+        if(!f.path().empty() && f.path().is_absolute())
+          sp = f.path();
       });
     uds.resolvedPath.module = structs.module.add_default<stdshim::filesystem::path>(
       [this](stdshim::filesystem::path& sp, const Module& m){
         for(ProfileFinalizer& fp: finalizers.resolvedPath) {
           if(auto v = fp.resolvePath(m)) {
-            assert(!v->empty() && v->is_absolute());
+            assert(v->empty() || v->is_absolute());
             sp = *v;
-            break;
+            return;
           }
         }
+        if(!m.path().empty() && m.path().is_absolute())
+          sp = m.path();
       });
   }
 
