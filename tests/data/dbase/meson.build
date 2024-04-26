@@ -21,7 +21,8 @@ _prof = [find_program(files('prof')), hpcprof]
 
 foreach _name, _features : _databases
   _meas = testdata_meas[_name.split('.')[0]]
-  _args = ['--foreign'] + _features.get('args', [])
+  _common_args = ['--foreign'] + _features.get('args', [])
+  _args = _common_args
   if _features.get('remap_measdir', false) and 'orig_measdir' in _meas and _meas['orig_measdir'] != _meas['dir']
     # FIXME: This should really be handled automatically by hpcrun/hpcprof, but until the support
     # for renaming measurement directories becomes a reality we do a remapping ourselves.
@@ -34,7 +35,7 @@ foreach _name, _features : _databases
     output: f'@_name@.d.fresh',
     build_by_default: false,
     console: true,
-    command: [_prof, _meas['freshstamp'], '@OUTPUT@', _args],
+    command: [_prof, _meas['freshstamp'], '@OUTPUT@', _common_args],
   )
   _dbase = {
     'measurements': _meas,
