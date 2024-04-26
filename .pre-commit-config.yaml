@@ -12,14 +12,14 @@ repos:
 # ------------------------------------------------------------------------------------
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.15.1
+  rev: v3.15.2
   hooks:
   # Automatically elide older Python syntax and replace with newer ones
   - id: pyupgrade
     args: [--py38-plus]
 
 - repo: https://github.com/charliermarsh/ruff-pre-commit
-  rev: 'v0.3.3'
+  rev: 'v0.4.2'
   hooks:
   # Run a number of Python linters in Rust. Not completely feature-parity with Python-based linters,
   # but can autofix a number of issues before they run. Also wicked fast.
@@ -32,7 +32,7 @@ repos:
 # ------------------------------------------------------------------------------------
 
 - repo: https://github.com/psf/black
-  rev: '24.3.0'
+  rev: '24.4.2'
   hooks:
   # Blacken all Python code, except allow slightly longer line lengths
   - id: black
@@ -54,7 +54,7 @@ repos:
     files: ^README\.md$
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.5.0
+  rev: v4.6.0
   hooks:
   # Format JSON files to have a consistent style.
   - id: pretty-format-json
@@ -90,7 +90,7 @@ repos:
   - id: check-useless-excludes
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.5.0
+  rev: v4.6.0
   hooks:
   # Ensure all executable scripts have a shebang
   - id: check-executables-have-shebangs
@@ -137,7 +137,7 @@ repos:
     args: ['lib/python']
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.9.0
+  rev: v1.10.0
   hooks:
  # Run static checks on the Python code
   - id: mypy
@@ -168,7 +168,7 @@ repos:
     args: ['--exclude=SC2154']
 
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: '0.28.0'
+  rev: '0.28.2'
   hooks:
   # Validate the GitLab CI scripts against the schema. Doesn't catch everything but helps
   - id: check-gitlab-ci
