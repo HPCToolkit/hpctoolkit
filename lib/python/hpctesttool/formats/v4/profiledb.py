@@ -156,9 +156,11 @@ class Profile(StructureBase):
             )
         ]
         return cls(
-            id_tuple=IdentifierTuple.from_file(version, file, data["pIdTuple"])
-            if data["pIdTuple"] != 0
-            else None,
+            id_tuple=(
+                IdentifierTuple.from_file(version, file, data["pIdTuple"])
+                if data["pIdTuple"] != 0
+                else None
+            ),
             flags=cls.Flags.versioned_decode(version, data["flags"]),
             values={
                 idx["ctxId"]: {

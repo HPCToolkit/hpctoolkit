@@ -1,3 +1,4 @@
+[lint]
 select = [
   "F",  # Pyflakes
   "E", "W",  # pycodestyle

@@ -84,7 +84,7 @@ COPY \
 
 
 # Spack installation side-stage: Install (some) software from Spack to /opt/software
-FROM ghcr.io/spack/ubuntu-focal:0.21.0 as spack-install
+FROM ghcr.io/spack/ubuntu-focal:0.21.2 as spack-install
 
 # Install the venv support for Python, which is a separate package on Ubuntu
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
