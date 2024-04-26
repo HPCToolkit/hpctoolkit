@@ -191,14 +191,15 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
         fmt_tracedb_ctxSample_write(prebuffer_cursor, &datum);
         prebuffer_cursor += FMT_TRACEDB_SZ_CtxSample;
       } else {
-        if(ud.cursor == ud.buffer.data())
+        if(ud.buffer_cursor == 0)
           ud.off = ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample;
         assert(ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample < ud.hdr.end);
-        fmt_tracedb_ctxSample_write(ud.cursor, &datum);
-        ud.cursor += FMT_TRACEDB_SZ_CtxSample;
-        if(ud.cursor == &ud.buffer[ud.buffer.size()]) {
+        fmt_tracedb_ctxSample_write(&ud.buffer[ud.buffer_cursor], &datum);
+        ud.buffer_cursor += FMT_TRACEDB_SZ_CtxSample;
+        assert(ud.buffer_cursor <= ud.buffer.size());
+        if(ud.buffer_cursor == ud.buffer.size()) {
           ud.inst->writeat(ud.off, ud.buffer);
-          ud.cursor = ud.buffer.data();
+          ud.buffer_cursor = 0;
         }
       }
       ud.tmcntr++;
@@ -212,7 +213,7 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
 
 void HPCTraceDB2::notifyCtxTimepointRewindStart(const Thread& t) {
   auto& ud = t.userdata[uds.thread];
-  ud.cursor = ud.buffer.data();
+  ud.buffer_cursor = 0;
   ud.off = -1;
   ud.tmcntr = 0;
 
@@ -234,8 +235,8 @@ void HPCTraceDB2::notifyThreadFinal(std::shared_ptr<const PerThreadTemporary> tt
   //
   // NB: If the timepoints were prebuffered, they are in prebuffer instead of
   // buffer, so this condition evaluates false.
-  if(ud.cursor != ud.buffer.data())
-    inst.writeat(ud.off, ud.cursor - ud.buffer.data(), ud.buffer.data());
+  if(ud.buffer_cursor > 0)
+    inst.writeat(ud.off, ud.buffer_cursor, ud.buffer.data());
 
   // Check if the prebuffer is done. If it isn't, defer the header write until then
   {
