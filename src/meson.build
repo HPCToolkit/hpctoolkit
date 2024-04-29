@@ -6,9 +6,7 @@ test_depends = []
 
 subdir('common')
 
-subdir('hpcfnbounds')
 subdir('hpcrun')
-subdir('hpcproflm')
 subdir('hpcstruct')
 subdir('hpcprof')
 

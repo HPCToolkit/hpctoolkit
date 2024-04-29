@@ -61,9 +61,9 @@
 
 #include "Args.hpp"
 
-#include "../hpcprof/stdshim/filesystem.hpp"
-#include "../common/lean/hpcrun-fmt.h"
-#include "../common/diagnostics.h"
+#include "../../hpcprof/stdshim/filesystem.hpp"
+#include "../../common/lean/hpcrun-fmt.h"
+#include "../../common/diagnostics.h"
 
 
 namespace fs = hpctoolkit::stdshim::filesystem;

@@ -1,3 +1,5 @@
+subdir('fnbounds-server')
+
 _hpcrun_libs = []
 
 _unw_common_files = files(

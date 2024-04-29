@@ -67,15 +67,15 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "../common/lean/gcc-attr.h"
+#include "../../common/lean/gcc-attr.h"
 
 #include "Args.hpp"
 
-#include "../common/Util.hpp"
+#include "../../common/Util.hpp"
 
-#include "../common/diagnostics.h"
-#include "../common/Trace.hpp"
-#include "../common/StrUtil.hpp"
+#include "../../common/diagnostics.h"
+#include "../../common/Trace.hpp"
+#include "../../common/StrUtil.hpp"
 
 //*************************** Forward Declarations **************************
 

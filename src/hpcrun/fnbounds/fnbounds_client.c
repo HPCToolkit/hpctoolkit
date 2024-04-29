@@ -100,7 +100,7 @@
 #include <unistd.h>
 
 #if !defined(STAND_ALONE_CLIENT)
-#include "../../hpcfnbounds/syserv-mesg.h"
+#include "../fnbounds-server/syserv-mesg.h"
 #include "client.h"
 #include "../disabled.h"
 #include "fnbounds_file_header.h"
@@ -110,7 +110,7 @@
 #include "../libmonitor/monitor.h"
 #include "../audit/audit-api.h"
 #else
-#include "../../hpcfnbounds/syserv-mesg.h"
+#include "../fnbounds-server/syserv-mesg.h"
 #include "fnbounds_file_header.h"
 #endif
 

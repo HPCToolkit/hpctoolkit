@@ -50,7 +50,7 @@
 #include  "server.h"
 #include  "scan.h"
 
-#include "../common/hpctoolkit-version.h"
+#include "../../common/hpctoolkit-version.h"
 
 int verbose = 0;
 int scan_code = 1;

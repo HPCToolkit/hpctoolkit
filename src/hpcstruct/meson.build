@@ -1,3 +1,5 @@
+subdir('hpcproflm')
+
 _srcs = files(
   'gpu/CudaCFGParser.cpp',
   'gpu/GPUBlock.cpp',
