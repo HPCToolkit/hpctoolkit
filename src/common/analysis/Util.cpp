@@ -1,0 +1,158 @@
+// -*-Mode: C++;-*-
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2024, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
+//************************* System Include Files ****************************
+
+#include <iostream>
+
+#include <string>
+using std::string;
+
+#include <algorithm>
+#include <typeinfo>
+
+#include <cstring> // strlen()
+
+#include <dirent.h> // scandir()
+
+//*************************** User Include Files ****************************
+
+#include "../include/gcc-attr.h"
+
+#include "Util.hpp"
+
+#include "../prof-lean/hpcio.h"
+#include "../prof-lean/hpcfmt.h"
+#include "../prof-lean/hpcrun-fmt.h"
+#include "../prof-lean/hpcrunflat-fmt.h"
+#include "../prof-lean/formats/cctdb.h"
+#include "../prof-lean/formats/metadb.h"
+#include "../prof-lean/formats/profiledb.h"
+#include "../prof-lean/formats/tracedb.h"
+
+#include "../support/PathFindMgr.hpp"
+#include "../support/PathReplacementMgr.hpp"
+#include "../support/diagnostics.h"
+#include "../support/dictionary.h"
+#include "../support/realpath.h"
+#include "../support/IOUtil.hpp"
+
+#define DEBUG_DEMAND_STRUCT  0
+#define TMP_BUFFER_LEN 1024
+
+//***************************************************************************
+//
+//***************************************************************************
+
+namespace Analysis {
+namespace Util {
+
+Analysis::Util::ProfType_t
+getProfileType(const std::string& filenm)
+{
+  static const int bufSZ = 32;
+  char buf[bufSZ] = { '\0' };
+
+  std::istream* is = IOUtil::OpenIStream(filenm.c_str());
+  is->read(buf, bufSZ);
+  IOUtil::CloseStream(is);
+
+  ProfType_t ty = ProfType_NULL;
+  if (strncmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) == 0) {
+    ty = ProfType_Callpath;
+  }
+  else if (strncmp(buf, HPCMETRICDB_FMT_Magic, HPCMETRICDB_FMT_MagicLen) == 0) {
+    ty = ProfType_CallpathMetricDB;
+  }
+  else if (strncmp(buf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen) == 0) {
+    ty = ProfType_CallpathTrace;
+  }
+  else if (strncmp(buf, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) == 0) {
+    ty = ProfType_Flat;
+  }else if(fmt_profiledb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_ProfileDB;
+  }else if(fmt_cctdb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_CctDB;
+  }else if(fmt_tracedb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_TraceDB;
+  }else if(fmt_metadb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_MetaDB;
+  }
+
+
+  return ty;
+}
+
+} // end of Util namespace
+} // end of Analysis namespace
+
+//***************************************************************************
+//
+//***************************************************************************
+
+namespace Analysis {
+namespace Util {
+
+OutputOption_t option = Print_All;
+
+} // end of Util namespace
+} // end of Analysis namespace
+
+
+//****************************************************************************
