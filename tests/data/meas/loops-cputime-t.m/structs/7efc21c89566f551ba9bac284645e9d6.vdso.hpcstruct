@@ -69,7 +69,7 @@
         d CDATA #IMPLIED>
 ]>
 <HPCToolkitStructure i="0" version="4.9" n="">
-<LM i="2" n="/builds/hpctoolkit/hpctoolkit/builddir/tests/data/meas/loops-cputime-t.m/vdso/7efc21c89566f551ba9bac284645e9d6.vdso" has-calls="0" v="{}">
+<LM i="2" n="vdso/7efc21c89566f551ba9bac284645e9d6.vdso" has-calls="0" v="{}">
 <F i="3" n="[7efc21c89566f551ba9bac284645e9d6.vdso]">
 <P i="4" n="__vdso_gettimeofday [7efc21c89566f551ba9bac284645e9d6.vdso]" ln="__vdso_gettimeofday" l="0" v="{[0x6d0-0x6d1)}">
 <S i="5" l="0" v="{[0x6d0-0x759)}"/>

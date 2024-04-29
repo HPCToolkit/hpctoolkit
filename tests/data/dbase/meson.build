@@ -23,13 +23,6 @@ foreach _name, _features : _databases
   _meas = testdata_meas[_name.split('.')[0]]
   _common_args = ['--foreign'] + _features.get('args', [])
   _args = _common_args
-  if _features.get('remap_measdir', false) and 'orig_measdir' in _meas and _meas['orig_measdir'] != _meas['dir']
-    # FIXME: This should really be handled automatically by hpcrun/hpcprof, but until the support
-    # for renaming measurement directories becomes a reality we do a remapping ourselves.
-    # See also https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/411
-    # and https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/269
-    _args += ['-R@0@=@1@'.format(_meas['orig_measdir'].replace('\\', '\\\\').replace('=', '\\='), _meas['dir'].replace('\\', '\\\\').replace('=', '\\='))]
-  endif
 
   _stamp = custom_target(
     output: f'@_name@.d.fresh',
