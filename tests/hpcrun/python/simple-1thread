@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 
+# pylint: disable=invalid-name,missing-module-docstring
+
 import time
 
 
-# Functions that "do work" that we will be detecting later
 def func_hi() -> None:
+    "Top-of-stack function"
     func_mid()
 
 
 def func_mid() -> None:
+    "Middle-of-stack function"
     func_lo()
 
 
 def func_lo() -> None:
+    "Leaf function"
     time.sleep(0.01)
 
 

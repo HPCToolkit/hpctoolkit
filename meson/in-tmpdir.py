@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name,missing-module-docstring
+
 import os
 import subprocess
 import sys
