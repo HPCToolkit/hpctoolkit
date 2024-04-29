@@ -812,9 +812,8 @@ add_project_arguments(
   language: ['c', 'cpp'])
 
 
-subdir('src')
-subdir('lib')
 subdir('doc')
+subdir('src')
 subdir('tests')
 
 

@@ -14,3 +14,5 @@ subdir('hpcprof')
 
 subdir('hpcproftt')
 subdir('hpctracedump')
+
+subdir('hpctesttool')

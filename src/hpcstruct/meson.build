@@ -18,7 +18,7 @@ _srcs = files(
   'VMAInterval.cpp',
 )
 
-_struct_dtd = fs.read(meson.project_source_root() / 'lib/dtd/hpc-structure.dtd')
+_struct_dtd = fs.read(dtd_hpc_structure)
 foreach line : _struct_dtd.split('\n')
   if line.contains('Version')
     _struct_dtd_ver = line.strip().split()[2]

@@ -120,7 +120,7 @@ repos:
   hooks:
   # Ensure the pyproject.toml files are valid for Poetry
   - id: poetry-check
-    args: [-C, lib/python/, --lock]
+    args: [-C, src/hpctesttool/, --lock]
 
 - repo: https://github.com/netromdk/vermin
   rev: v1.6.0
@@ -134,7 +134,7 @@ repos:
   hooks:
   # Check that there isn't any dead Python code lying around
   - id: vulture
-    args: ['lib/python']
+    args: ['src/hpctesttool']
 
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.10.0
@@ -187,8 +187,7 @@ repos:
     args: ['--config', '.codespellrc']
     exclude: |
       (?x)^(
-        lib/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
-        tools/latex2man/.* |    # External code
+        doc/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
         src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
       )$
 
