@@ -65,6 +65,9 @@ public:
   /// Sources and corresponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileSource>, stdshim::filesystem::path>> sources;
 
+  /// Index of the argument group the source belongs to.
+  std::vector<std::size_t> source_args;
+
   /// KernelSymbols Finalizers from properly named measurements directories
   std::vector<std::pair<std::unique_ptr<ProfileFinalizer>, stdshim::filesystem::path>> ksyms;
 

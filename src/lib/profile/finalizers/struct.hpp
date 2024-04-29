@@ -83,7 +83,7 @@ public:
     std::once_flag once;
   };
 
-  StructFile(stdshim::filesystem::path path, std::shared_ptr<RecommendationStore> store);
+  StructFile(stdshim::filesystem::path path, stdshim::filesystem::path meas, std::shared_ptr<RecommendationStore> store);
   ~StructFile();
 
   void notifyPipeline() noexcept override;
@@ -131,6 +131,7 @@ private:
   friend class hpctoolkit::finalizers::detail::StructFileParser;
 
   stdshim::filesystem::path path;
+  stdshim::filesystem::path measDirPath;
   Module::ud_t::typed_member_t<udModule> ud;
   void load(const Module&, udModule&) noexcept;
 

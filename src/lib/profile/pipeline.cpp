@@ -570,6 +570,18 @@ Module& Source::module(const stdshim::filesystem::path& p) {
   return *r;
 }
 
+Module& Source::module(const stdshim::filesystem::path& p, const stdshim::filesystem::path& rp) {
+  SRC_ASSERT_LIMITS(references);
+  auto x = pipe->mods.emplace(pipe->structs.module, p, rp);
+  auto r = &x.first();
+  if(x.second) {
+    for(auto& s: pipe->sinks) {
+      if(s.dataLimit.hasReferences()) s().notifyModule(*r);
+    }
+  }
+  return *r;
+}
+
 File& Source::file(const stdshim::filesystem::path& p) {
   SRC_ASSERT_LIMITS(references);
   auto x = pipe->files.emplace(pipe->structs.file, p);

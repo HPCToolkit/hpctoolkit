@@ -185,7 +185,11 @@ void MetaDB::instance(const File& f) {
 void MetaDB::instance(const Module& m) {
   auto& udm = m.userdata[ud];
   util::call_once(udm.once, [&]{
-    udm.pathSIdx = stringsTableLookup(m.path().string());
+    if(m.relative_path().empty()){
+      udm.pathSIdx = stringsTableLookup(m.path().string());
+    }else{
+      udm.pathSIdx = stringsTableLookup(m.relative_path().string());
+    }
   });
 }
 

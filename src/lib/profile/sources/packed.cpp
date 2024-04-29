@@ -193,12 +193,17 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
 }
 
 std::vector<uint8_t>::const_iterator Packed::unpackReferences(iter_t it) noexcept {
-  // Format: [cnt] ([module path]...)
+  // Format: [cnt] (([module path] [module relative path])...)
   modules.clear();
   auto cnt = unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
     auto name = unpack<std::string>(it);
-    modules.emplace_back(sink.module(name));
+    auto relative_name = unpack<std::string>(it);
+    if(!relative_name.empty()){
+      modules.emplace_back(sink.module(name, relative_name));
+    }else{
+      modules.emplace_back(sink.module(name));
+    }
   }
   return it;
 }
