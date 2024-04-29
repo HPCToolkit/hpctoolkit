@@ -64,7 +64,7 @@ repos:
     exclude: &vendored |
       (?x)^(
         .*/[^/]+\.patch |    # Patches
-        src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
+        src/vendor/valgrind/[^/]+\.h |    # External Valgrind headers
         tests/data/dbase/[^/]+\.d/.* |    # Generated test data
         tests/data/meas/[^/]+\.m/.* |    # Generated test data
         tests/data/struct/[^/]+\.hpcstruct |    # Generated test data
@@ -213,7 +213,7 @@ repos:
     exclude: |
       (?x)^(
         doc/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
-        src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
+        src/vendor/valgrind/[^/]+\.h |    # External Valgrind headers
       )$
 
 - repo: https://github.com/Yelp/detect-secrets

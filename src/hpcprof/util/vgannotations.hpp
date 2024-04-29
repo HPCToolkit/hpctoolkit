@@ -47,8 +47,8 @@
 #ifndef HPCTOOLKIT_PROFILE_UTIL_VGANNOTATIONS_H
 #define HPCTOOLKIT_PROFILE_UTIL_VGANNOTATIONS_H
 
-#include "../../extern/valgrind/helgrind.h"
-#include "../../extern/valgrind/drd.h"
+#include "../../vendor/valgrind/helgrind.h"
+#include "../../vendor/valgrind/drd.h"
 
 #define _GLIBCXX_SYNCHRONIZATION_HAPPENS_BEFORE(addr) ANNOTATE_HAPPENS_BEFORE(addr)
 #define _GLIBCXX_SYNCHRONIZATION_HAPPENS_AFTER(addr)  ANNOTATE_HAPPENS_AFTER(addr)

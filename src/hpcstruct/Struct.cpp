@@ -70,8 +70,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../extern/valgrind/helgrind.h"
-#include "../extern/valgrind/drd.h"
+#include "../vendor/valgrind/helgrind.h"
+#include "../vendor/valgrind/drd.h"
 
 #include <algorithm>
 #include <map>
