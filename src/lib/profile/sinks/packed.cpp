@@ -179,12 +179,13 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
 }
 
 void Packed::packReferences(std::vector<std::uint8_t>& out) noexcept {
-  // Format: [cnt] ([module path]...)
+  // Format: [cnt] (([module path] [module relative path])...)
   moduleIDs.clear();
   pack(out, src.modules().size());
   for(const Module& m: src.modules().citerate()) {
     moduleIDs.emplace(&m, moduleIDs.size());
     pack(out, m.path().string());
+    pack(out, m.relative_path().string());
   }
 }
 

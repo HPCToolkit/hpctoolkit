@@ -114,7 +114,7 @@ char *
 hpcstruct_cache_path_directory
 (
  const char *cache_dir,
- const char *binary_abspath,
+ const char *binary_path, // absolute for cpubin, relative for gpubin
  const char *hash, // hash for elf file
  const char *suffix  // appended to the hpcstruct file for runs with --gpucfg yes
 );
@@ -123,7 +123,7 @@ hpcstruct_cache_path_directory
 char *
 hpcstruct_cache_path_link
 (
- const char *binary_abspath,
+ const char *binary_path, // absolute for cpubin, relative for gpubin
  const char *hash // hash for elf file
 );
 

@@ -163,16 +163,17 @@ realmain(int argc, char* argv[])
   Args args(argc, argv);
   global_args = &args;
 
+  // full_filenm is used to access files
+  // in_filenm is used to record the path, which is relative for gpubin, vdso
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
-  RealPathMgr::singleton().realpath(args.in_filenm);
 
   // ------------------------------------------------------------
-  // If in_filenm is a directory, then analyze entire directory
+  // If full_filenm is a directory, then analyze entire directory
   // ------------------------------------------------------------
   struct stat sb;
 
-  if ( stat(args.in_filenm.c_str(), &sb) != 0 ) {
-    cerr << "ERROR: input argument " << args.in_filenm.c_str() << " is not a file or HPCToolkit measurement directory." << endl;
+  if ( stat(args.full_filenm.c_str(), &sb) != 0 ) {
+    cerr << "ERROR: input argument " << args.in_filenm.c_str() << "(" << args.full_filenm.c_str() << ") is not a file or HPCToolkit measurement directory." << endl;
     exit(1);
   }
 

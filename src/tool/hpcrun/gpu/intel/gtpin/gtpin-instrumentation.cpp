@@ -648,11 +648,13 @@ static ip_normalized_t find_or_add_loadmap_module
 
   if (!binary_processed) {
     char path[PATH_MAX];
+    char fullpath[PATH_MAX];
     *path = 0;
+    *fullpath = 0;
 
-    gtpin_hpcrun_api->gpu_binary_path_generate(file_name, path);
+    gtpin_hpcrun_api->gpu_binary_path_generate(file_name, path, fullpath);
 
-    gtpin_hpcrun_api->gpu_binary_store(path, kernel_elf, kernel_elf_size);
+    gtpin_hpcrun_api->gpu_binary_store(fullpath, kernel_elf, kernel_elf_size);
 
     if (bkind == gpu_binary_kind_elf) {
       // Intel zeBinary

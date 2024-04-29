@@ -212,6 +212,11 @@ Options: Specify output file when analyzing a single binary
                        Note: this option may only be used when analyzing
                        a single binary.
 
+Options: Control input files
+  -M <measurement-dir> Indicates that the input argument is a relative path
+                       and it is relative to <measurement-dir>, instead of
+                       the default current working directory.
+
 Options: Developers only
   --pretty-print       Add indenting for more readable XML output
   --jobs-struct <num>  Use <num> threads for the MakeStructure() phase only.
@@ -220,12 +225,6 @@ Options: Developers only
   --show-gaps          Feature to show unclaimed vma ranges (gaps)
                        in the control-flow graph.
   --time               Display stats on hpcstruct's time and space usage.
-
-Options: Internal use only
-  -M <measurement-dir> Indicates that hpcstruct was invoked by a
-                       script used to process measurement directory
-                       <measurement-dir>. This information is used to
-                       control messages.
 )EOF";
 
 
@@ -511,13 +510,28 @@ Args::parse(int argc, const char* const argv[])
       ARG_ERROR("Incorrect number of arguments!");
     }
     in_filenm = parser.getArg(0);
-
+    full_filenm = in_filenm;
     struct stat sb;
-    if (stat(in_filenm.c_str(), &sb) == 0 && !S_ISDIR(sb.st_mode)) {
-      if (out_filenm.empty()) {
-        string base_filenm = FileUtil::basename(in_filenm);
-        out_filenm = base_filenm + ".hpcstruct";
+
+    // If the input is an absolute path: directly use it, error out if it's invalid
+    // If the input is a relative path:
+    //      without -M, relative to the current working directory;
+    //      with -M, relative to the argument of -M;
+    //      error out if it's invalid based on choice above
+    if (!full_filenm.has_root_path()) {
+      if(meas_dir.empty()){
+        full_filenm = hpctoolkit::stdshim::filesystem::absolute(in_filenm);
+        in_filenm = full_filenm; // make sure we record absolute path for these binaries
+      }else{
+        full_filenm = hpctoolkit::stdshim::filesystem::absolute(meas_dir) / in_filenm;
       }
+    }
+
+    if (stat(full_filenm.c_str(), &sb) != 0){
+      ARG_ERROR("Invalid input path: " <<  full_filenm);
+    }else if(!S_ISDIR(sb.st_mode) && out_filenm.empty()){
+      string base_filenm = FileUtil::basename(full_filenm);
+      out_filenm = base_filenm + ".hpcstruct";
     }
   }
   catch (const CmdLineParser::ParseError& x) {

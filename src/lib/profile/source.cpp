@@ -53,10 +53,10 @@
 
 using namespace hpctoolkit;
 
-std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path& p) {
+std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path& p, const stdshim::filesystem::path& meas) {
   // All we do is go down the list and try every file-based source.
   std::unique_ptr<ProfileSource> r;
-  r.reset(new sources::Hpcrun4(p));
+  r.reset(new sources::Hpcrun4(p, meas));
   if(r->valid()) return r;
 
   // Unrecognized or unsupported format

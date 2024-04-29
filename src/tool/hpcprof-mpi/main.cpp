@@ -143,8 +143,15 @@ int main(int argc, char* const argv[]) {
     ANNOTATE_HAPPENS_AFTER(&start_arc);
     std::vector<std::unique_ptr<ProfileSource>> my_sources;
     #pragma omp for schedule(dynamic) nowait
-    for(std::size_t i = 0; i < args.sources.size(); i++)
-      my_sources.emplace_back(ProfileSource::create_for(args.sources[i].second));
+    for(std::size_t i = 0; i < args.sources.size(); i++) {
+      auto arg = args.source_args[i];
+      assert(arg > 0);
+      stdshim::filesystem::path meas = argv[arg];
+      if(!stdshim::filesystem::is_directory(meas)) {
+        meas = "";
+      }
+      my_sources.emplace_back(ProfileSource::create_for(args.sources[i].second, meas));
+    }
     #pragma omp critical
     for(auto& s: my_sources) pipelineB1 << std::move(s);
     ANNOTATE_HAPPENS_BEFORE(&end_arc);
@@ -250,9 +257,12 @@ int main(int argc, char* const argv[]) {
     finalizers::LogicalFile lf;
     pipelineB2 << lf;
     for(auto& sp: args.ksyms)
-      pipelineB2 << std::make_unique<finalizers::KernelSymbols>(sp.second);
-    for(auto& sp: args.structs)
-      pipelineB2 << std::make_unique<finalizers::StructFile>(sp.second, nullptr);
+      pipelineB2 << std::make_unique<finalizers::KernelSymbols>();
+    for(auto& sp: args.structs){
+      assert(sp.second.parent_path().filename() == "structs");
+      // FIXME: the hacky ugly measurement directory
+      pipelineB2 << std::make_unique<finalizers::StructFile>(sp.second, sp.second.parent_path().parent_path(), nullptr);
+    }
 
     // Insert the proper Finalizer for drawing data directly from the Modules.
     // This is used as a fallback if the Structfiles aren't available.

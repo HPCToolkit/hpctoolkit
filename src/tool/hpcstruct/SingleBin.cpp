@@ -60,6 +60,7 @@ using std::endl;
 #include <streambuf>
 #include <new>
 #include <vector>
+#include <filesystem>
 
 #include <string.h>
 #include <unistd.h>
@@ -73,7 +74,7 @@ using std::endl;
 #include "../../lib/support/realpath.h"
 #include "../../lib/support/FileUtil.hpp"
 #include "../../lib/support/IOUtil.hpp"
-
+#include "../../lib/prof-lean/vdso.h"
 
 #include "fileout.hpp"
 
@@ -187,15 +188,13 @@ doSingleBinary
 
   bool gpu_binary = args.in_filenm.find(GPU_BINARY_SUFFIX) != string::npos;
 
-  string binary_abspath = RealPath(args.in_filenm.c_str());
-
   string cache_path_directory;
   string cache_flat_entry;
   string cache_directory;
 
   // Make sure the file is readable
-  if ( access(binary_abspath.c_str(), R_OK) != 0 ) {
-    cerr << "WARNING: input file " << args.in_filenm.c_str() << " is not readable" << endl;
+  if ( access(args.full_filenm.c_str(), R_OK) != 0 ) {
+    cerr << "WARNING: input file " << args.in_filenm.c_str() << "(" << args.full_filenm.c_str() << ") is not readable" << endl;
     if ( args.is_from_makefile == true ) {
       cerr << "CACHESTAT (Input file is not readable) " << endl;
     }
@@ -216,8 +215,8 @@ doSingleBinary
       cache_directory = path;
       args.cache_stat = CACHE_ENABLED;
 
-      // Compute a hash of the binary at the input absolute path
-      char *hash = hpcstruct_cache_hash(binary_abspath.c_str());
+      // Compute a hash of the binary
+      char *hash = hpcstruct_cache_hash(args.full_filenm.c_str());
 
       //  If it's a gpu binary and the user requested the cfg, set a suffix
       string suffix = "";
@@ -227,12 +226,12 @@ doSingleBinary
 
       // Compute the path in the cache for that binary
       cache_path_directory = hpcstruct_cache_path_directory(cache_directory.c_str(),
-           binary_abspath.c_str(), hash, suffix.c_str() );
+           args.in_filenm.c_str(), hash, suffix.c_str() );
 
       // Compute the path for the entry in the FLAT subdirectory of the cache
       cache_flat_entry = hpcstruct_cache_flat_entry(cache_directory.c_str(), hash );
 
-      string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
+      string cache_path_link = hpcstruct_cache_path_link(args.in_filenm.c_str(), hash);
       symlink(cache_path_link.c_str(), cache_flat_entry.c_str());
     } else {
       //
@@ -296,7 +295,7 @@ doSingleBinary
     hpcstruct.open();
     gaps.open();
     try {
-      BAnal::Struct::makeStructure(args.in_filenm, hpcstruct.getStream(),
+      BAnal::Struct::makeStructure(args.full_filenm, args.in_filenm, hpcstruct.getStream(),
                                    gaps.getStream(), gaps.getName(),
                                    args.searchPathStr, opts);
     } catch (int n) {

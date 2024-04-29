@@ -202,15 +202,21 @@ void
 gpu_binary_path_generate
 (
   const char *file_name,
-  char *path
+  char *path,
+  char *fullpath
 )
 {
+  // Full path
   size_t used = 0;
-  used += sprintf(&path[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
-  mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&path[used], "%s", file_name);
-  used += sprintf(&path[used], "%s", GPU_BINARY_SUFFIX);
+  used += snprintf(&fullpath[used], PATH_MAX - used, "%s/%s/", hpcrun_files_output_directory(), GPU_BINARY_DIRECTORY);
+  if (used >= PATH_MAX) hpcrun_terminate();  // Path too long
+  mkdir(fullpath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  used += snprintf(&fullpath[used], PATH_MAX - used, "%s%s", file_name, GPU_BINARY_SUFFIX);
+  if (used >= PATH_MAX) hpcrun_terminate();  // Path too long
+
+  // Relative path
+  used = snprintf(path, PATH_MAX, "%s/%s%s", GPU_BINARY_DIRECTORY, file_name, GPU_BINARY_SUFFIX);
+  if (used >= PATH_MAX) hpcrun_terminate();  // Path too long
 }
 
 
@@ -256,12 +262,14 @@ gpu_binary_save
   crypto_compute_hash_string(mem_ptr, mem_size, hash_buf,
     CRYPTO_HASH_STRING_LENGTH);
 
-  // Prepare to a file path to write down the binary
+  // Prepare to a relative file path for loadmap
+  // and a full file path to write down the binary
   char device_file[PATH_MAX];
-  gpu_binary_path_generate(hash_buf, device_file);
+  char device_file_full[PATH_MAX];
+  gpu_binary_path_generate(hash_buf, device_file, device_file_full);
 
   // Write down the binary and free the space
-  bool written = gpu_binary_store(device_file, mem_ptr, mem_size);
+  bool written = gpu_binary_store(device_file_full, mem_ptr, mem_size);
 
   if (written) {
     *loadmap_module_id = gpu_binary_loadmap_insert(device_file, mark_used);

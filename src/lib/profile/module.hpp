@@ -74,6 +74,7 @@ public:
   Module(ud_t::struct_t& rs);
   Module(Module&& m);
   Module(ud_t::struct_t& rs, stdshim::filesystem::path p);
+  Module(ud_t::struct_t& rs, stdshim::filesystem::path p, stdshim::filesystem::path rp);
   ~Module() = default;
 
   mutable ud_t userdata;
@@ -81,8 +82,12 @@ public:
   // Absolute path to the module in question
   const stdshim::filesystem::path& path() const { return u_path; }
 
+  // Relative path to the module in question
+  const stdshim::filesystem::path& relative_path() const { return u_relative_path; }
+
 private:
   util::uniqable_key<stdshim::filesystem::path> u_path;
+  const stdshim::filesystem::path u_relative_path;
 
   friend class util::uniqued<Module>;
   util::uniqable_key<stdshim::filesystem::path>& uniqable_key() {

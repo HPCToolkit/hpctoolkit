@@ -50,6 +50,8 @@
 #include "../../prof-lean/hpcrun-fmt.h"
 #include "../../prof-lean/placeholders.h"
 
+namespace fs = hpctoolkit::stdshim::filesystem;
+
 // TODO: Remove and change this once new-cupti is finalized
 #define HPCRUN_GPU_ROOT_NODE 65533
 #define HPCRUN_GPU_RANGE_NODE 65532
@@ -79,9 +81,9 @@ scope_exit<std::decay_t<F>> make_scope_exit(F&& f) {
 }
 }
 
-Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
+Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, const stdshim::filesystem::path& meas)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
-    thread(nullptr), path(fn), tracepath(fn) {
+    thread(nullptr), path(fn), measDirPath(fs::canonical(meas)), tracepath(fn) {
   tracepath.replace_extension(".hpctrace");
   // Try to open up the file. Errors handled inside somewhere.
   file = hpcrun_sparse_open(path.c_str(), 0, 0);
@@ -89,6 +91,7 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
     fileValid = false;
     return;
   }
+
   // We still need to check the header before we know for certain whether
   // this is the right version. A hassle, I know.
   hpcrun_fmt_hdr_t hdr;
@@ -328,7 +331,18 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     int id;
     loadmap_entry_t lm;
     while((id = hpcrun_sparse_next_lm(file, &lm)) > 0) {
-      modules.emplace(id, sink.module(lm.name));
+      stdshim::filesystem::path lm_path = lm.name;
+      if(!lm_path.has_root_path()) { // gpubin and vdso
+        if(measDirPath.empty()){
+          util::log::warning() << "No measurement directory path provided for a relative load module path: " << lm_path;
+          hpcrun_fmt_loadmapEntry_free(&lm, std::free);
+          continue;
+        }
+        lm_path = measDirPath / lm_path;
+        modules.emplace(id, sink.module(lm_path, lm.name));
+      }else{
+        modules.emplace(id, sink.module(lm_path));
+      }
       hpcrun_fmt_loadmapEntry_free(&lm, std::free);
     }
     if(id < 0) {

@@ -219,7 +219,7 @@ OSUtil_setCustomKernelName(char *buffer, size_t max_chars)
 int
 OSUtil_setCustomKernelNameWrap(char *buffer, size_t max_chars)
 {
-  int n = snprintf(buffer, max_chars, "<" KERNEL_NAME_FORMAT ">",
+  int n = snprintf(buffer, max_chars, KERNEL_SYMBOLS_DIRECTORY "/" KERNEL_NAME_FORMAT,
            LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
 
   return n;

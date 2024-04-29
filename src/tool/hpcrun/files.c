@@ -561,7 +561,7 @@ hpcrun_rename_trace_file(int rank, int thread)
 void
 hpcrun_save_vdso()
 {
-  char name[PATH_MAX + 1];
+  char name[PATH_MAX];
   int fd;
   int error = 0;
 
@@ -590,11 +590,11 @@ hpcrun_save_vdso()
     hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
     return;
   }
-  strcpy(name, output_directory);
-  strcat(name, "/vdso/");
+
+  size_t used = snprintf(name, PATH_MAX, "%s/vdso/", output_directory);
   mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  strcat(name, vdso_hash_str);
-  strcat(name, ".vdso");
+  used += snprintf(&name[used], PATH_MAX - used, "%s.vdso", vdso_hash_str);
+  if(used >= PATH_MAX) hpcrun_terminate();  // Path too long
 
   // loop enables us to use break for unstructured control flow
   for(;;) {

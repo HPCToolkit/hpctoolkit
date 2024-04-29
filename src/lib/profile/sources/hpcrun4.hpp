@@ -100,6 +100,7 @@ private:
   // The actual file. Details for reading handled in prof-lean.
   hpcrun_sparse_file_t* file;
   stdshim::filesystem::path path;
+  stdshim::filesystem::path measDirPath;
 
   struct metric_t {
     metric_t(Metric& metric) : metric(metric) {};
@@ -172,8 +173,8 @@ private:
   bool trace_sort;
 
   // We're all friends here.
-  friend std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path&);
-  Hpcrun4(const stdshim::filesystem::path&);
+  friend std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path&, const stdshim::filesystem::path&);
+  Hpcrun4(const stdshim::filesystem::path&, const stdshim::filesystem::path&);
 };
 
 }

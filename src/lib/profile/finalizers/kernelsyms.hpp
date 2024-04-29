@@ -60,8 +60,7 @@ namespace hpctoolkit::finalizers {
 // ELF format, instead they need to be pulled from an nm-like dump saved in the measurements.
 class KernelSymbols final : public ProfileFinalizer {
 public:
-  // `path` is the path to the directory containing symbol listings
-  KernelSymbols(stdshim::filesystem::path path);
+  KernelSymbols();
 
   void notifyPipeline() noexcept override;
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
@@ -79,7 +78,6 @@ private:
     util::range_map<uint64_t, Function, first> symbols;
   };
 
-  stdshim::filesystem::path root;
   Module::ud_t::typed_member_t<udModule> ud;
   void load(const Module&, udModule&) noexcept;
 };

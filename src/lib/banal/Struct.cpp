@@ -712,7 +712,8 @@ printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
 // lib/banal.
 //
 void
-makeStructure(string filename,
+makeStructure(string absfilepath,
+              string filename,
               ostream * outFile,
               ostream * gapsFile,
               string gaps_filenm,
@@ -735,10 +736,8 @@ makeStructure(string filename,
   InputFile inputFile;
 
   // failure throws an error up the call chain
-  inputFile.openFile(filename, InputFileError_Error);
+  inputFile.openFile(absfilepath, InputFileError_Error);
   ElfFileVector * elfFileVector = inputFile.fileVector();
-  string & sfilename = inputFile.fileName();
-  const char * cfilename = inputFile.CfileName();
 
   if (elfFileVector == NULL || elfFileVector->empty()) {
     DIAG_EMsg("Input file " << inputFile.fileName() << " is not an ELF file");
@@ -747,7 +746,7 @@ makeStructure(string filename,
 
   Output::setPrettyPrint(structOpts.pretty_print_output);
 
-  Output::printStructFileBegin(outFile, gapsFile, sfilename);
+  Output::printStructFileBegin(outFile, gapsFile, filename);
 
   for (unsigned int i = 0; i < elfFileVector->size(); i++) {
     bool parsable = true;
@@ -866,7 +865,7 @@ makeStructure(string filename,
     omp_set_num_threads(opts.jobs_struct);
 #endif
 
-    string basename = FileUtil::basename(cfilename);
+    string basename = FileUtil::basename(absfilepath.c_str());
     FileMap * fileMap = makeSkeleton(code_obj, basename);
 
     //
@@ -884,7 +883,7 @@ makeStructure(string filename,
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
 
-    Output::printLoadModuleBegin(outFile, elfFile->getFileName(), has_calls);
+    Output::printLoadModuleBegin(outFile, filename, has_calls);
 
 #pragma omp parallel  default(none)                             \
     shared(wlPrint, wlLaunch, num_done, output_mtx)             \

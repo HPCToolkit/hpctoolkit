@@ -268,6 +268,7 @@ public:
     /// DataClass: `references`
     // MT: Externally Synchronized (this), Internally Synchronized
     Module& module(const stdshim::filesystem::path&);
+    Module& module(const stdshim::filesystem::path&, const stdshim::filesystem::path&);
 
     /// Emit a new File into the Pipeline, returning the canonical copy.
     /// DataClass: `references`
