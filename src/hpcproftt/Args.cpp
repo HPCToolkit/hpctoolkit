@@ -68,16 +68,16 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "../common/include/gcc-attr.h"
-#include "../common/include/hpctoolkit-version.h"
+#include "../common/lean/gcc-attr.h"
+#include "../common/hpctoolkit-version.h"
 
 #include "Args.hpp"
 
-#include "../common/analysis/Util.hpp"
+#include "../common/Util.hpp"
 
-#include "../common/support/diagnostics.h"
-#include "../common/support/Trace.hpp"
-#include "../common/support/StrUtil.hpp"
+#include "../common/diagnostics.h"
+#include "../common/Trace.hpp"
+#include "../common/StrUtil.hpp"
 
 //*************************** Forward Declarations **************************
 

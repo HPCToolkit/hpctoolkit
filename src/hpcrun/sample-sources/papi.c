@@ -95,7 +95,7 @@
 #include "../utilities/tokenize.h"
 #include "../messages/messages.h"
 #include "../lush/lush-backtrace.h"
-#include "../../common/prof-lean/hpcrun-fmt.h"
+#include "../../common/lean/hpcrun-fmt.h"
 
 
 /******************************************************************************

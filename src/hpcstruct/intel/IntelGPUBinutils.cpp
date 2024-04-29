@@ -69,10 +69,10 @@
 // local includes
 //******************************************************************************
 
-#include "../../common/prof-lean/crypto-hash.h"
+#include "../../common/lean/crypto-hash.h"
 #include "../ElfHelper.hpp"
-#include "../../common/support/diagnostics.h"
-#include "../../common/support/RealPathMgr.hpp"
+#include "../../common/diagnostics.h"
+#include "../../common/RealPathMgr.hpp"
 #include "IntelGPUBinutils.hpp"
 
 

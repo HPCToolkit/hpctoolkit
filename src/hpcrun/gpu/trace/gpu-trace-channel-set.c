@@ -58,7 +58,7 @@
 
 #define _GNU_SOURCE
 
-#include "../../../common/prof-lean/collections/concurrent-stack-entry-data.h"
+#include "../../../common/lean/collections/concurrent-stack-entry-data.h"
 
 #include "../../thread_data.h"
 #include "../../memory/hpcrun-malloc.h"
@@ -85,7 +85,7 @@ typedef struct channel_stack_entry_t {
 
 #define CONCURRENT_STACK_PREFIX         channel_stack
 #define CONCURRENT_STACK_ENTRY_TYPE     channel_stack_entry_t
-#include "../../../common/prof-lean/collections/concurrent-stack.h"
+#include "../../../common/lean/collections/concurrent-stack.h"
 
 
 

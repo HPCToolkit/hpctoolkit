@@ -55,7 +55,7 @@
 
 
 #include "level0-command-list-map.h"
-#include "../../../../../common/prof-lean/spinlock.h"
+#include "../../../../../common/lean/spinlock.h"
 
 #include "../../../activity/gpu-activity-channel.h"
 

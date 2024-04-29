@@ -57,7 +57,7 @@
 // local includes
 //*****************************************************************************
 
-#include "../../../../../../common/prof-lean/hpcrun-opencl.h"  // cl_mem
+#include "../../../../../../common/lean/hpcrun-opencl.h"  // cl_mem
 
 
 

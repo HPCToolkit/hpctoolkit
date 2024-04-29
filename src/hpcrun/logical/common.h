@@ -55,7 +55,7 @@
 #include "python.h"
 #endif
 
-#include "../../common/prof-lean/spinlock.h"
+#include "../../common/lean/spinlock.h"
 
 #include <stdint.h>
 #include <stdbool.h>

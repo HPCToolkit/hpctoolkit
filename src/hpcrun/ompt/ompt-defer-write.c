@@ -66,7 +66,7 @@
 // local includes
 //*****************************************************************************
 
-#include "../../common/prof-lean/spinlock.h"
+#include "../../common/lean/spinlock.h"
 
 #include "../trace.h"
 #include "../write_data.h"

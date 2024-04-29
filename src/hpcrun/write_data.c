@@ -76,12 +76,12 @@
 
 #include "lush/lush-backtrace.h"
 
-#include "../common/prof-lean/hpcio.h"
-#include "../common/prof-lean/hpcfmt.h"
-#include "../common/prof-lean/hpcrun-fmt.h"
-#include "../common/prof-lean/crypto-hash.h"
+#include "../common/lean/hpcio.h"
+#include "../common/lean/hpcfmt.h"
+#include "../common/lean/hpcrun-fmt.h"
+#include "../common/lean/crypto-hash.h"
 
-#include "../common/support-lean/OSUtil.h"
+#include "../common/lean/OSUtil.h"
 
 #ifdef ENABLE_GTPIN
 #include "gpu/api/intel/gtpin/gtpin-instrumentation.h"

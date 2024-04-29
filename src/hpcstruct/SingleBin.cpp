@@ -69,16 +69,16 @@ using std::endl;
 
 #include "hpcstruct.hpp"
 #include "Struct.hpp"
-#include "../common/prof-lean/gpu-binary-naming.h"
-#include "../common/prof-lean/hpcio.h"
-#include "../common/support/realpath.h"
-#include "../common/support/FileUtil.hpp"
-#include "../common/support/IOUtil.hpp"
-#include "../common/prof-lean/vdso.h"
+#include "../common/lean/gpu-binary-naming.h"
+#include "../common/lean/hpcio.h"
+#include "../common/realpath.h"
+#include "../common/FileUtil.hpp"
+#include "../common/IOUtil.hpp"
+#include "../common/lean/vdso.h"
 
 #include "fileout.hpp"
 
-#include "../common/support/RealPathMgr.hpp"
+#include "../common/RealPathMgr.hpp"
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>

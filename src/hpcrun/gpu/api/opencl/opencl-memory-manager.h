@@ -50,7 +50,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../../common/prof-lean/bistack.h"
+#include "../../../../common/lean/bistack.h"
 #include "../../activity/gpu-activity.h"
 
 #ifndef __cplusplus

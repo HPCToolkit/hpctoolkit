@@ -69,8 +69,8 @@
  * local includes
  *****************************************************************************/
 
-#include "../../common/prof-lean/spinlock.h"
-#include "../../common/prof-lean/splay-macros.h"
+#include "../../common/lean/spinlock.h"
+#include "../../common/lean/splay-macros.h"
 #include "../messages/messages.h"
 #include "../memory/hpcrun-malloc.h"
 

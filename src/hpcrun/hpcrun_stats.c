@@ -57,7 +57,7 @@
 #include "messages/messages.h"
 
 #include <stdatomic.h>
-#include "../common/prof-lean/hpcrun-fmt.h"
+#include "../common/lean/hpcrun-fmt.h"
 #include "unwind/common/validate_return_addr.h"
 
 

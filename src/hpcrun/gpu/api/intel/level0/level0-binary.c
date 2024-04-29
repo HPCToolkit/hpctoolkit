@@ -56,8 +56,8 @@
 
 #include "../../../../messages/messages.h"
 
-#include "../../../../../common/prof-lean/crypto-hash.h"
-#include "../../../../../common/prof-lean/spinlock.h"
+#include "../../../../../common/lean/crypto-hash.h"
+#include "../../../../../common/lean/spinlock.h"
 
 #include "level0-binary.h"
 #include "level0-handle-map.h"

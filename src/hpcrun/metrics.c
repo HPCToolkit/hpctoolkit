@@ -64,10 +64,10 @@
 
 #include "cct/cct.h"
 
-#include "../common/prof-lean/hpcio.h"
-#include "../common/prof-lean/hpcfmt.h"
-#include "../common/prof-lean/hpcrun-fmt.h"
-#include "../common/prof-lean/spinlock.h"
+#include "../common/lean/hpcio.h"
+#include "../common/lean/hpcfmt.h"
+#include "../common/lean/hpcrun-fmt.h"
+#include "../common/lean/spinlock.h"
 
 //*************************** Concrete Data Types ***************************
 

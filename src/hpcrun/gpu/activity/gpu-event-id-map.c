@@ -55,8 +55,8 @@
 // local includes
 //******************************************************************************
 
-#include "../../../common/prof-lean/collections/splay-tree-entry-data.h"
-#include "../../../common/prof-lean/collections/freelist-entry-data.h"
+#include "../../../common/lean/collections/splay-tree-entry-data.h"
+#include "../../../common/lean/collections/freelist-entry-data.h"
 
 #include "../../messages/messages.h"
 #include "../../memory/hpcrun-malloc.h"
@@ -87,11 +87,11 @@ typedef struct gpu_event_id_map_entry_t {
 #define SPLAY_TREE_KEY_TYPE       uint64_t
 #define SPLAY_TREE_KEY_FIELD      event_id
 #define SPLAY_TREE_ENTRY_TYPE     gpu_event_id_map_entry_t
-#include "../../../common/prof-lean/collections/splay-tree.h"
+#include "../../../common/lean/collections/splay-tree.h"
 
 
 #define FREELIST_ENTRY_TYPE       gpu_event_id_map_entry_t
-#include "../../../common/prof-lean/collections/freelist.h"
+#include "../../../common/lean/collections/freelist.h"
 
 
 

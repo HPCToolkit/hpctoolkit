@@ -72,8 +72,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "../../common/include/gcc-attr.h"
-#include "../../common/include/min-max.h"
+#include "../../common/lean/gcc-attr.h"
+#include "../../common/lean/min-max.h"
 
 #include "lush-pthread-internal.h"
 #include "lush-backtrace.h" // for 'lush_agents'
@@ -84,9 +84,9 @@
 
 #include "../metrics.h"
 
-#include "../../common/prof-lean/BalancedTree.h"
+#include "../../common/lean/BalancedTree.h"
 
-#include "../../common/support-lean/timer.h"
+#include "../../common/lean/timer.h"
 
 #ifdef __cplusplus
 extern "C" {

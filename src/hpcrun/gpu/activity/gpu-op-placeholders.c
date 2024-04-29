@@ -61,7 +61,7 @@
 
 #include "../../messages/errors.h"
 
-#include "../../../common/prof-lean/placeholders.h"
+#include "../../../common/lean/placeholders.h"
 #include "gpu-op-placeholders.h"
 
 

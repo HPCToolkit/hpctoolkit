@@ -50,7 +50,7 @@
 
 #include <strings.h>       //  strcasecmp
 
-#include "../../../common/include/queue.h" // Singly-linkled list macros
+#include "../../../common/lean/queue.h" // Singly-linkled list macros
 
 #include "../display.h"
 

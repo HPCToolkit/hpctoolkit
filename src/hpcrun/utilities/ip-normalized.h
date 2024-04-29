@@ -53,7 +53,7 @@
 
 #include "../loadmap.h"
 
-#include "../../common/prof-lean/hpcrun-fmt.h"
+#include "../../common/lean/hpcrun-fmt.h"
 
 
 

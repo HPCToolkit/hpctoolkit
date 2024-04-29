@@ -56,7 +56,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "../../common/prof-lean/placeholders.h"
+#include "../../common/lean/placeholders.h"
 
 #include "ip-normalized.h"
 #include "../messages/messages.h"

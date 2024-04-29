@@ -55,7 +55,7 @@
 // local includes
 //*****************************************************************************
 
-#include "../../../common/prof-lean/splay-uint64.h"
+#include "../../../common/lean/splay-uint64.h"
 
 #include "../../memory/hpcrun-malloc.h"
 

@@ -74,9 +74,9 @@
 #include "../../../../safe-sampling.h"
 #include "../../../../logical/common.h"
 #include "../../../../utilities/hpcrun-nanotime.h"
-#include "../../../../../common/prof-lean/crypto-hash.h"
+#include "../../../../../common/lean/crypto-hash.h"
 #include <stdatomic.h>
-#include "../../../../../common/prof-lean/usec_time.h"
+#include "../../../../../common/lean/usec_time.h"
 
 #include "../../../../libmonitor/monitor.h"
 

@@ -75,7 +75,7 @@
 //*************************** User Include Files ****************************
 
 #include "OSUtil.h"
-#include "../include/linux_info.h"
+#include "linux_info.h"
 #include <stdatomic.h>
 
 //*************************** macros **************************

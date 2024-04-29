@@ -55,7 +55,7 @@
 
 #include "level0-handle-map.h"
 #include "level0-event-map.h"
-#include "../../../../../common/prof-lean/spinlock.h"
+#include "../../../../../common/lean/spinlock.h"
 
 //*****************************************************************************
 // macros

@@ -53,6 +53,9 @@ _deps = [
   xed_dep,
 ]
 
+_srcs += common_srcs
+_deps += common_deps
+
 hpcstruct = executable('hpcstruct', version_cpp, _srcs,
   'Args.cpp',
   'main.cpp',
@@ -60,17 +63,7 @@ hpcstruct = executable('hpcstruct', version_cpp, _srcs,
   'SingleBin.cpp',
   'Structure-Cache.cpp',
   'Structure-Version.cpp',
-  analysis_srcs,
-  prof_lean_srcs,
-  prof_srcs,
-  support_srcs,
-  dependencies: [
-    _deps,
-    analysis_deps,
-    prof_deps,
-    prof_lean_deps,
-    support_deps,
-  ],
+  dependencies: _deps,
   install: true)
 
 hpcstruct_test_depends = [hpcproflm]
@@ -87,14 +80,4 @@ endforeach
 
 
 dotgraph = executable('dotgraph', 'DotGraph.cpp', _srcs,
-  analysis_srcs,
-  prof_lean_srcs,
-  prof_srcs,
-  support_srcs,
-  dependencies: [
-    _deps,
-    analysis_deps,
-    prof_deps,
-    prof_lean_deps,
-    support_deps,
-  ])
+  dependencies: _deps)

@@ -74,7 +74,7 @@ using std::string;
 #include "StrUtil.hpp"
 #include "Trace.hpp"
 
-#include "../support-lean/OSUtil.h"
+#include "lean/OSUtil.h"
 
 //*************************** Forward Declarations **************************
 

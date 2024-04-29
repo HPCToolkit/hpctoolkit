@@ -87,7 +87,7 @@
 
 #include "../messages/messages.h"
 
-#include "../../common/prof-lean/hpcrun-metric.h"
+#include "../../common/lean/hpcrun-metric.h"
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 

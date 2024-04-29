@@ -54,7 +54,7 @@
 #include "../util/cache.hpp"
 #include "../mpi/all.hpp"
 
-#include "../../common/prof-lean/formats/tracedb.h"
+#include "../../common/lean/formats/tracedb.h"
 
 #include <iomanip>
 #include <sstream>

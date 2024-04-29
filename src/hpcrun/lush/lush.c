@@ -77,7 +77,7 @@
 
 #include "lush.h"
 
-#include "../../common/prof-lean/lush/lush-support.h"
+#include "../../common/lean/lush/lush-support.h"
 
 #include "../unwind/common/unwind.h" // hpcrun_unw_step()
 

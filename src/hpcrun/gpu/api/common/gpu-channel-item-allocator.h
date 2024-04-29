@@ -50,8 +50,8 @@
 // local includes
 //******************************************************************************
 
-#include "../../../../common/prof-lean/bichannel.h"
-#include "../../../../common/prof-lean/stacks.h"
+#include "../../../../common/lean/bichannel.h"
+#include "../../../../common/lean/stacks.h"
 
 //*****************************************************************************
 // system includes

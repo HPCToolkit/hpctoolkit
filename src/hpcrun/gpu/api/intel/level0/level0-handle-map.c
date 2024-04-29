@@ -55,8 +55,8 @@
 
 #include "level0-handle-map.h"
 
-#include "../../../../../common/prof-lean/splay-uint64.h"
-#include "../../../../../common/prof-lean/spinlock.h"
+#include "../../../../../common/lean/splay-uint64.h"
+#include "../../../../../common/lean/spinlock.h"
 #include "../../../../memory/hpcrun-malloc.h"
 #include "../../../gpu-splay-allocator.h"
 

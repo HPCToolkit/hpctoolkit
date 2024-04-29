@@ -60,7 +60,7 @@
 // macros types
 //*****************************************************************************
 
-#include "../../common/prof-lean/queues.h"
+#include "../../common/lean/queues.h"
 
 #include "ompt-types.h"
 

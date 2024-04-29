@@ -61,7 +61,7 @@
 // local includes
 //*****************************************************************************
 
-#include "../../common/prof-lean/placeholders.h"
+#include "../../common/lean/placeholders.h"
 
 #include "../safe-sampling.h"
 #include "../thread_data.h"

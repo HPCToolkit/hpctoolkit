@@ -44,7 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "../common/include/hpctoolkit-version.h"
+#include "../common/hpctoolkit-version.h"
 
 #include <cstdlib>
 #include <deque>

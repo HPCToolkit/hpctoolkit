@@ -130,10 +130,10 @@
 #include "loadmap.h"
 #include "sample_prob.h"
 
-#include "../common/prof-lean/spinlock.h"
-#include "../common/prof-lean/vdso.h"
-#include "../common/prof-lean/crypto-hash.h" // Calculate a hash for vdso
-#include "../common/support-lean/OSUtil.h"
+#include "../common/lean/spinlock.h"
+#include "../common/lean/vdso.h"
+#include "../common/lean/crypto-hash.h" // Calculate a hash for vdso
+#include "../common/lean/OSUtil.h"
 
 
 //***************************************************************

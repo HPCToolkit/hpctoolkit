@@ -51,7 +51,7 @@
 #include "lexical.hpp"
 #include "util/stable_hash.hpp"
 
-#include "../common/prof-lean/placeholders.h"
+#include "../common/lean/placeholders.h"
 
 #include "stdshim/bit.hpp"
 #include <cassert>

@@ -20,7 +20,7 @@
 // *********************************************************
 
 // ******* HPCToolkit Includes *********************************
-#include "../../common/prof-lean/spinlock.h"
+#include "../../common/lean/spinlock.h"
 
 #include "../thread_data.h"
 #include "../messages/messages.h"

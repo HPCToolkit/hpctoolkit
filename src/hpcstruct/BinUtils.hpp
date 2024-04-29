@@ -67,7 +67,7 @@
 //*************************** User Include Files ****************************
 
 
-#include "../common/support/ProcNameMgr.hpp"
+#include "../common/ProcNameMgr.hpp"
 
 //*************************** Forward Declarations ***************************
 

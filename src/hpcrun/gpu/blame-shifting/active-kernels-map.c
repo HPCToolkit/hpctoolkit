@@ -15,8 +15,8 @@
 #include "blame-kernel-map.h"           // kernel_node_t
 
 #include "../gpu-splay-allocator.h"
-#include "../../../common/prof-lean/splay-uint64.h"
-#include "../../../common/prof-lean/spinlock.h"
+#include "../../../common/lean/splay-uint64.h"
+#include "../../../common/lean/spinlock.h"
 #include "../../messages/messages.h"
 
 

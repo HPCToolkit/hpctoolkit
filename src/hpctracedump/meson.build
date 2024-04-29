@@ -3,13 +3,11 @@ _srcs = files(
 )
 
 hpctracedump = executable('hpctracedump', _srcs,
-  prof_lean_srcs,
-  support_srcs,
+  common_srcs,
   dependencies: [
     libiberty_dep,
     lzma_dep,
-    prof_lean_deps,
-    support_deps,
+    common_deps,
   ])
 
 _devenv = environment()

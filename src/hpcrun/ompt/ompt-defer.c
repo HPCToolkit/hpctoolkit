@@ -54,7 +54,7 @@
 // local includes
 //*****************************************************************************
 
-#include "../../common/prof-lean/placeholders.h"
+#include "../../common/lean/placeholders.h"
 
 #include "../unresolved.h"
 #include "../utilities/timer.h"

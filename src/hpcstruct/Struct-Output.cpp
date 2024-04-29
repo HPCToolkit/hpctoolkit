@@ -75,9 +75,9 @@
 #include <string>
 
 #include "VMAInterval.hpp"
-#include "../common/support/FileUtil.hpp"
-#include "../common/support/StringTable.hpp"
-#include "../common/support/dictionary.h"
+#include "../common/FileUtil.hpp"
+#include "../common/StringTable.hpp"
+#include "../common/dictionary.h"
 
 #include "xml.hpp"
 #include "static.data.h"

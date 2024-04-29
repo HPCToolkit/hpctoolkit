@@ -44,68 +44,47 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
+// This file provides a wrapper around libiberty's cplus_demangle() to
+// provide a uniform interface for the options that we want for
+// hpcstruct and hpcprof.  All cases wanting to do demangling should
+// use this file.
 //
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
+// Libiberty cplus_demangle() does many malloc()s, but does appear to
+// be reentrant and thread-safe.  But not signal safe.
+
 //***************************************************************************
 
-#ifndef Analysis_Raw_Raw_hpp
-#define Analysis_Raw_Raw_hpp
+#include <string.h>
 
-//************************* System Include Files ****************************
+#include "gnu_demangle.h"
+#include "spinlock.h"
+#include "hpctoolkit_demangle.h"
 
-#include <string>
+#define DEMANGLE_FLAGS  (DMGL_PARAMS | DMGL_ANSI | DMGL_VERBOSE | DMGL_RET_DROP)
 
-//*************************** User Include Files ****************************
+static spinlock_t demangle_lock = SPINLOCK_UNLOCKED;
 
-#include "../prof-lean/hpcrun-fmt.h"
-#include "../prof-lean/id-tuple.h"
+// Returns: malloc()ed string for the demangled name, or else NULL if
+// 'name' is not a mangled name.
+//
+// Note: the caller is responsible for calling free() on the result.
+//
+char *
+hpctoolkit_demangle(const char * name)
+{
+  if (name == NULL) {
+    return NULL;
+  }
 
-//*************************** Forward Declarations ***************************
+  if (strncmp(name, "_Z", 2) != 0) {
+    return NULL;
+  }
 
-//****************************************************************************
+  // NOTE: comments in GCC demangler indicate that the demangler uses shared state
+  // and that locking for multithreading is our responsibility
+  spinlock_lock(&demangle_lock);
+  char *demangled = cplus_demangle(name, DEMANGLE_FLAGS);
+  spinlock_unlock(&demangle_lock);
 
-namespace Analysis {
-
-namespace Raw {
-
-void
-writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep);
-//YUMENG: second arg: if more flags, maybe build a struct to include all flags and pass the struct around
-
-void
-writeAsText_callpath(/*destination,*/ const char* filenm, bool sm_easyToGrep);
-
-void
-writeAsText_profiledb(const char* filenm, bool sm_easyToGrep);
-
-void
-writeAsText_cctdb(const char* filenm, bool sm_easyToGrep);
-
-void
-writeAsText_tracedb(const char* filenm);
-
-void
-writeAsText_metadb(const char* filenm);
-
-void
-writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
-
-void
-writeAsText_callpathTrace(/*destination,*/ const char* filenm);
-
-} // namespace Raw
-
-} // namespace Analysis
-
-//****************************************************************************
-
-#endif // Analysis_Raw_Raw_hpp
+  return demangled;
+}

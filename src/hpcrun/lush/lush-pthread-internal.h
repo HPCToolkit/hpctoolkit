@@ -71,8 +71,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "../../common/include/gcc-attr.h"
-#include "../../common/prof-lean/BalancedTree.h"
+#include "../../common/lean/gcc-attr.h"
+#include "../../common/lean/BalancedTree.h"
 
 #ifndef __cplusplus
 #include <stdatomic.h>

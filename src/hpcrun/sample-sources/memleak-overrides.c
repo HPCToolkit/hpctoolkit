@@ -94,8 +94,8 @@
 #include "../messages/messages.h"
 #include "../safe-sampling.h"
 #include "../sample_event.h"
-#include "../../common/prof-lean/spinlock.h"
-#include "../../common/prof-lean/splay-macros.h"
+#include "../../common/lean/spinlock.h"
+#include "../../common/lean/splay-macros.h"
 
 // FIXME: the inline getcontext macro is broken on 32-bit x86, so
 // revert to the getcontext syscall for now.

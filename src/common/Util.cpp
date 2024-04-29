@@ -57,98 +57,102 @@
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
-
 //************************* System Include Files ****************************
 
 #include <iostream>
+
 #include <string>
-#include <vector>
+using std::string;
+
+#include <algorithm>
+#include <typeinfo>
+
+#include <cstring> // strlen()
+
+#include <dirent.h> // scandir()
 
 //*************************** User Include Files ****************************
 
+#include "lean/gcc-attr.h"
 
-#include "../common/Args.hpp"
+#include "Util.hpp"
 
-#include "../common/diagnostics.h"
-#include "../common/CmdLineParser.hpp"
+#include "lean/hpcio.h"
+#include "lean/hpcfmt.h"
+#include "lean/hpcrun-fmt.h"
+#include "lean/hpcrunflat-fmt.h"
+#include "lean/formats/cctdb.h"
+#include "lean/formats/metadb.h"
+#include "lean/formats/profiledb.h"
+#include "lean/formats/tracedb.h"
 
-//*************************** Forward Declarations **************************
+#include "PathFindMgr.hpp"
+#include "PathReplacementMgr.hpp"
+#include "diagnostics.h"
+#include "dictionary.h"
+#include "realpath.h"
+#include "IOUtil.hpp"
+
+#define DEBUG_DEMAND_STRUCT  0
+#define TMP_BUFFER_LEN 1024
 
 //***************************************************************************
+//
+//***************************************************************************
 
-class Args : public Analysis::Args {
-public:
+namespace Analysis {
+namespace Util {
 
-  class Exception : public Diagnostics::Exception {
-  public:
-    Exception(const char* x,
-              const char* filenm = NULL, unsigned int lineno = 0)
-      : Diagnostics::Exception(x, filenm, lineno)
-      { }
+Analysis::Util::ProfType_t
+getProfileType(const std::string& filenm)
+{
+  static const int bufSZ = 32;
+  char buf[bufSZ] = { '\0' };
 
-    Exception(std::string x,
-              const char* filenm = NULL, unsigned int lineno = 0)
-      : Diagnostics::Exception(x, filenm, lineno)
-      { }
+  std::istream* is = IOUtil::OpenIStream(filenm.c_str());
+  is->read(buf, bufSZ);
+  IOUtil::CloseStream(is);
 
-    ~Exception() { }
-  };
+  ProfType_t ty = ProfType_NULL;
+  if (strncmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) == 0) {
+    ty = ProfType_Callpath;
+  }
+  else if (strncmp(buf, HPCMETRICDB_FMT_Magic, HPCMETRICDB_FMT_MagicLen) == 0) {
+    ty = ProfType_CallpathMetricDB;
+  }
+  else if (strncmp(buf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen) == 0) {
+    ty = ProfType_CallpathTrace;
+  }
+  else if (strncmp(buf, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) == 0) {
+    ty = ProfType_Flat;
+  }else if(fmt_profiledb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_ProfileDB;
+  }else if(fmt_cctdb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_CctDB;
+  }else if(fmt_tracedb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_TraceDB;
+  }else if(fmt_metadb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_MetaDB;
+  }
 
 
-public:
-  Args();
-  Args(int argc, const char* const argv[]);
-  virtual ~Args();
+  return ty;
+}
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
+} // end of Util namespace
+} // end of Analysis namespace
 
-  void
-  printUsage(std::ostream& os) const;
+//***************************************************************************
+//
+//***************************************************************************
 
-  // Error
-  static void
-  printError(std::ostream& os, const char* msg) /*const*/;
+namespace Analysis {
+namespace Util {
 
-  static void
-  printError(std::ostream& os, const std::string& msg) /*const*/;
+OutputOption_t option = Print_All;
 
-  // Dump
-  virtual void
-  dump(std::ostream& os = std::cerr) const;
+} // end of Util namespace
+} // end of Analysis namespace
 
-public:
-  // Parsed Data: Command
-  static const std::string&
-  getCmd() /*const*/;
 
-  static void
-  parseArg_metric(Args* args, const std::string& opts, const char* errTag);
-
-public:
-
-  // Object Correlation args
-  std::vector<std::string> obj_procGlobs;
-  uint64_t obj_procThreshold;
-
-  bool obj_metricsAsPercents;
-  bool obj_showSourceCode;
-
-public:
-
-  // Sparse metrics data format version - YUMENG
-  bool sm_easyToGrep = false; //default
-
-private:
-  void Ctor();
-  void setHPCHome();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-};
-
-#endif // Args_hpp
+//****************************************************************************

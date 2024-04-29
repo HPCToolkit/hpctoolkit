@@ -49,7 +49,7 @@
 
 #include "level0-command-queue-map.h"
 #include "level0-handle-map.h"
-#include "../../../../../common/prof-lean/spinlock.h"
+#include "../../../../../common/lean/spinlock.h"
 
 #include <stdio.h>
 

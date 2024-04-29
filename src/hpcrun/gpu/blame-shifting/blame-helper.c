@@ -14,7 +14,7 @@
 //******************************************************************************
 
 #include "../../memory/hpcrun-malloc.h"    // hpcrun_malloc
-#include "../../../common/prof-lean/splay-uint64.h"     // splay_visit_t
+#include "../../../common/lean/splay-uint64.h"     // splay_visit_t
 #include <stdatomic.h>        // atomic_fetch_add
 
 #include "blame-kernel-map.h"               // kernel_node_t

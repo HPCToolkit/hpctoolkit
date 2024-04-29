@@ -73,7 +73,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "../../common/include/min-max.h"
+#include "../../common/lean/min-max.h"
 
 #include "lush.h"
 #include "lush-backtrace.h"

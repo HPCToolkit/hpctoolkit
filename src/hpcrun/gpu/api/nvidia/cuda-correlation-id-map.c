@@ -4,8 +4,8 @@
 
 #define _GNU_SOURCE
 
-#include "../../../../common/prof-lean/collections/splay-tree-entry-data.h"
-#include "../../../../common/prof-lean/collections/freelist-entry-data.h"
+#include "../../../../common/lean/collections/splay-tree-entry-data.h"
+#include "../../../../common/lean/collections/freelist-entry-data.h"
 
 #include "../../../memory/hpcrun-malloc.h"
 
@@ -35,11 +35,11 @@ typedef struct cuda_correlation_id_map_entry_t {
 #define SPLAY_TREE_KEY_FIELD      gpu_correlation_id
 #define SPLAY_TREE_ENTRY_TYPE     cuda_correlation_id_map_entry_t
 #define SPLAY_TREE_DEFINE_INPLACE
-#include "../../../../common/prof-lean/collections/splay-tree.h"
+#include "../../../../common/lean/collections/splay-tree.h"
 
 
 #define FREELIST_ENTRY_TYPE       cuda_correlation_id_map_entry_t
-#include "../../../../common/prof-lean/collections/freelist.h"
+#include "../../../../common/lean/collections/freelist.h"
 
 
 

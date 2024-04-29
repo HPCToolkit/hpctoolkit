@@ -65,8 +65,8 @@
 //******************************************************************************
 
 #include <stdatomic.h>
-#include "../../../common/prof-lean/mcs-lock.h"
-#include "../../../common/support-lean/OSUtil.h"
+#include "../../../common/lean/mcs-lock.h"
+#include "../../../common/lean/OSUtil.h"
 
 #include "../../cct/cct.h"
 #include "../../control-knob.h"

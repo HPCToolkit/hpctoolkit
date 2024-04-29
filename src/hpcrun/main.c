@@ -81,7 +81,7 @@
 //***************************************************************************
 
 
-#include "../common/prof-lean/placeholders.h"
+#include "../common/lean/placeholders.h"
 
 #include "main.h"
 
@@ -109,7 +109,7 @@
 #include "sample-sources/none.h"
 #include "sample-sources/itimer.h"
 
-#include "../common/support-lean/OSUtil.h"
+#include "../common/lean/OSUtil.h"
 
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
@@ -143,10 +143,10 @@
 #include "lush/lush-backtrace.h"
 #include "lush/lush-pthread.h"
 
-#include "../common/prof-lean/hpcrun-fmt.h"
-#include "../common/prof-lean/hpcio.h"
-#include "../common/prof-lean/spinlock.h"
-#include "../common/prof-lean/vdso.h"
+#include "../common/lean/hpcrun-fmt.h"
+#include "../common/lean/hpcio.h"
+#include "../common/lean/spinlock.h"
+#include "../common/lean/vdso.h"
 
 #include "messages/messages.h"
 #include "messages/debug-flag.h"

@@ -72,7 +72,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "../../common/prof-lean/lush/lush-support.h"
+#include "../../common/lean/lush/lush-support.h"
 
 #include "../unwind/common/unwind.h"
 

@@ -111,7 +111,7 @@
 
 #include "../unwind/common/unwind.h"
 
-#include "../../common/support-lean/timer.h"
+#include "../../common/lean/timer.h"
 
 #include "blame-shift/blame-shift.h"
 

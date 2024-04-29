@@ -78,12 +78,12 @@ using std::string;
 
 #include "Args.hpp"
 
-#include "../common/include/hpctoolkit-version.h"
+#include "../common/hpctoolkit-version.h"
 
-#include "../common/analysis/Util.hpp"
-#include "../common/support/diagnostics.h"
-#include "../common/support/FileUtil.hpp"
-#include "../common/support/StrUtil.hpp"
+#include "../common/Util.hpp"
+#include "../common/diagnostics.h"
+#include "../common/FileUtil.hpp"
+#include "../common/StrUtil.hpp"
 
 //*************************** Forward Declarations **************************
 

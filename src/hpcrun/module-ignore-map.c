@@ -85,7 +85,7 @@
 
 #include "libmonitor/monitor.h"
 
-#include "../common/prof-lean/pfq-rwlock.h"
+#include "../common/lean/pfq-rwlock.h"
 #include "loadmap.h"
 
 #include "module-ignore-map.h"

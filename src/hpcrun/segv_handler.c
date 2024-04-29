@@ -70,7 +70,7 @@
 // user include files
 //***************************************************************************
 
-#include "../common/include/queue.h" // Singly-linkled list macros
+#include "../common/lean/queue.h" // Singly-linkled list macros
 
 #include "main.h"
 #include "thread_data.h"

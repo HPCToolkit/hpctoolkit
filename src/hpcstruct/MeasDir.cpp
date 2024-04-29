@@ -68,14 +68,14 @@ using std::endl;
 
 #include "hpcstruct.hpp"
 
-#include "../common/prof-lean/cpuset_hwthreads.h"
-#include "../common/prof-lean/gpu-binary-naming.h"
-#include "../common/prof-lean/hpcio.h"
-#include "../common/support/realpath.h"
-#include "../common/support/FileUtil.hpp"
-#include "../common/support/IOUtil.hpp"
+#include "../common/lean/cpuset_hwthreads.h"
+#include "../common/lean/gpu-binary-naming.h"
+#include "../common/lean/hpcio.h"
+#include "../common/realpath.h"
+#include "../common/FileUtil.hpp"
+#include "../common/IOUtil.hpp"
 
-#include "../common/support/RealPathMgr.hpp"
+#include "../common/RealPathMgr.hpp"
 
 using namespace std;
 

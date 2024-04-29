@@ -57,72 +57,55 @@
 //
 //***************************************************************************
 
-#ifndef prof_Prof_CallPath_Profile_hpp
-#define prof_Prof_CallPath_Profile_hpp
+#ifndef Analysis_Raw_Raw_hpp
+#define Analysis_Raw_Raw_hpp
 
 //************************* System Include Files ****************************
 
-#include <iostream>
-#include <cstdio>
-
-#include <vector>
-#include <set>
 #include <string>
-
 
 //*************************** User Include Files ****************************
 
-
-#include "../prof-lean/hpcrun-fmt.h"
+#include "lean/hpcrun-fmt.h"
+#include "lean/id-tuple.h"
 
 //*************************** Forward Declarations ***************************
 
-//***************************************************************************
-// Profile
-//***************************************************************************
+//****************************************************************************
 
+namespace Analysis {
 
-namespace Prof {
+namespace Raw {
 
-namespace CallPath {
+void
+writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep);
+//YUMENG: second arg: if more flags, maybe build a struct to include all flags and pass the struct around
 
+void
+writeAsText_callpath(/*destination,*/ const char* filenm, bool sm_easyToGrep);
 
-class Profile
-{
-public:
-  static void
-  make(const char* fnm, FILE* outfs, bool sm_easyToGrep);
+void
+writeAsText_profiledb(const char* filenm, bool sm_easyToGrep);
 
+void
+writeAsText_cctdb(const char* filenm, bool sm_easyToGrep);
 
-  // fmt_*_fread(): Reads the appropriate hpcrun_fmt object from the
-  // file stream 'infs', checking for errors, and constructs
-  // appropriate Prof::Profile::CallPath objects.  If 'outfs' is
-  // non-null, a textual form of the data is echoed to 'outfs' for
-  // human inspection.
+void
+writeAsText_tracedb(const char* filenm);
 
+void
+writeAsText_metadb(const char* filenm);
 
-  static int
-  fmt_fread(FILE* infs,
-            std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep);
+void
+writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
 
-  static int
-  fmt_epoch_fread(FILE* infs,
-                  const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
-                  std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep);
+void
+writeAsText_callpathTrace(/*destination,*/ const char* filenm);
 
-static int
-  fmt_cct_fread(FILE* infs,
-                std::string ctxtStr, FILE* outfs);
-};
+} // namespace Raw
 
-} // namespace CallPath
+} // namespace Analysis
 
-} // namespace Prof
+//****************************************************************************
 
-
-//***************************************************************************
-
-
-//***************************************************************************
-
-#endif /* prof_Prof_CallPath_Profile_hpp */
+#endif // Analysis_Raw_Raw_hpp

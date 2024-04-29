@@ -106,9 +106,9 @@
 #include "../unwind/common/uw_recipe_map.h"
 #include "../messages/messages.h"
 
-#include "../../common/prof-lean/spinlock.h"
-#include "../../common/prof-lean/vdso.h"
-#include "../../common/prof-lean/crypto-hash.h"
+#include "../../common/lean/spinlock.h"
+#include "../../common/lean/vdso.h"
+#include "../../common/lean/crypto-hash.h"
 
 
 

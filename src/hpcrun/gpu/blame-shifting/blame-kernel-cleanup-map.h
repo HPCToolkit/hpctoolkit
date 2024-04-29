@@ -13,7 +13,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../common/prof-lean/hpcrun-opencl.h"      // cl_event
+#include "../../../common/lean/hpcrun-opencl.h"      // cl_event
 
 
 

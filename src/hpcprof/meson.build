@@ -54,16 +54,15 @@ _deps = [
   yaml_cpp_dep,
 ]
 
+_srcs += common_lean_srcs
+_deps += common_lean_deps
+
 hpcprof = executable('hpcprof', version_cpp, _srcs,
   'main.cpp',
   'mpi/standalone.cpp',
-  prof_lean_srcs,
-  support_lean_srcs,
   implicit_include_directories: false,
   dependencies: [
     _deps,
-    prof_lean_deps,
-    support_lean_deps,
   ],
   install: true)
 
@@ -72,14 +71,10 @@ if get_option('hpcprof_mpi').enable_auto_if(mpi_dep.found()).enabled()
     'main-mpi.cpp',
     'mpi.cpp',
     'tree.cpp',
-    prof_lean_srcs,
-    support_lean_srcs,
     implicit_include_directories: false,
     dependencies: [
       _deps,
       mpi_dep,
-      prof_lean_deps,
-      support_lean_deps,
     ],
     install: true)
 endif

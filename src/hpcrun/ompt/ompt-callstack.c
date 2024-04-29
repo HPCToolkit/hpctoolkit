@@ -51,7 +51,7 @@
 
 #define _GNU_SOURCE
 
-#include "../../common/prof-lean/placeholders.h"
+#include "../../common/lean/placeholders.h"
 
 #include "../cct_backtrace_finalize.h"
 #include "../hpcrun-initializers.h"

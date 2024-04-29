@@ -52,11 +52,11 @@
 #include "sources/hpcrun4.hpp"
 #include "finalizers/kernelsyms.hpp"
 #include "finalizers/struct.hpp"
-#include "../common/include/hpctoolkit-version.h"
+#include "../common/hpctoolkit-version.h"
 #include "mpi/all.hpp"
 
-#include "../common/prof-lean/cpuset_hwthreads.h"
-#include "../common/prof-lean/hpcrun-fmt.h"
+#include "../common/lean/cpuset_hwthreads.h"
+#include "../common/lean/hpcrun-fmt.h"
 
 #include <cassert>
 #include <getopt.h>

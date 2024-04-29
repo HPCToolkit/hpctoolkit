@@ -58,7 +58,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../common/prof-lean/stacks.h"
+#include "../../../common/lean/stacks.h"
 #include "../../utilities/ip-normalized.h"
 
 #include "../activity/gpu-activity-channel.h"

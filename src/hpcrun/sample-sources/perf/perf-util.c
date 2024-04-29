@@ -57,10 +57,10 @@
  *****************************************************************************/
 
 #include "../../cct_insert_backtrace.h"
-#include "../../../common/prof-lean/spinlock.h"     // hostid
-#include "../../../common/support-lean/OSUtil.h"     // hostid
+#include "../../../common/lean/spinlock.h"     // hostid
+#include "../../../common/lean/OSUtil.h"     // hostid
 
-#include "../../../common/include/linux_info.h"
+#include "../../../common/lean/linux_info.h"
 #include "perf-util.h"
 #include "perf_skid.h"
 

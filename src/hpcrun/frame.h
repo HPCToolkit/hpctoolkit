@@ -49,8 +49,8 @@
 
 #include "unwind/common/unw-datatypes.h"
 #include "utilities/ip-normalized.h"
-#include "../common/prof-lean/lush/lush-support.h"
-#include "../common/prof-lean/lush/lush-support.h"
+#include "../common/lean/lush/lush-support.h"
+#include "../common/lean/lush/lush-support.h"
 #include "utilities/ip-normalized.h"
 
 // --------------------------------------------------------------------------

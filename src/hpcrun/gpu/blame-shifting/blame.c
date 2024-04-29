@@ -27,9 +27,9 @@
 #include "../../memory/hpcrun-malloc.h"                            // hpcrun_malloc_safe
 #include "../../safe-sampling.h"                                   // hpcrun_safe_enter, hpcrun_safe_exit
 
-#include "../../../common/prof-lean/spinlock.h"                                 // spinlock_t, SPINLOCK_UNLOCKED
+#include "../../../common/lean/spinlock.h"                                 // spinlock_t, SPINLOCK_UNLOCKED
 #include <stdatomic.h>                                // atomic_fetch_add
-#include "../../../common/support-lean/timer.h"                                 // time_getTimeReal
+#include "../../../common/lean/timer.h"                                 // time_getTimeReal
 
 
 

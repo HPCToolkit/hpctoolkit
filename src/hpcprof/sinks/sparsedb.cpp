@@ -53,9 +53,9 @@
 #include "../mpi/all.hpp"
 #include "../util/log.hpp"
 
-#include "../../common/prof-lean/id-tuple.h"
-#include "../../common/prof-lean/formats/profiledb.h"
-#include "../../common/prof-lean/formats/cctdb.h"
+#include "../../common/lean/id-tuple.h"
+#include "../../common/lean/formats/profiledb.h"
+#include "../../common/lean/formats/cctdb.h"
 
 #include "../stdshim/numeric.hpp"
 #include "../stdshim/filesystem.hpp"

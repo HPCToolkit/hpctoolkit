@@ -1,4 +1,4 @@
-prof_lean_srcs = files(
+common_lean_srcs = files(
   'BalancedTree.c',
   'bichannel.c',
   'binarytree.c',
@@ -35,8 +35,14 @@ prof_lean_srcs = files(
   'urand.c',
   'usec_time.c',
   'vdso.c',
+  'timer.c',
+  'OSUtil.c',
+  'compress_lzma.c',
+  'demangle.c',
 )
-prof_lean_deps = [
+common_lean_deps = [
   libelf_dep,
+  libiberty_dep,
+  lzma_dep,
   threads_dep,
 ]

@@ -66,7 +66,7 @@
 
 #include <stdint.h>
 #include "libmonitor/monitor.h"
-#include "../common/support-lean/OSUtil.h"
+#include "../common/lean/OSUtil.h"
 #include "rank.h"
 
 struct jobinfo {

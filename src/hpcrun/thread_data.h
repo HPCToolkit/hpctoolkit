@@ -71,8 +71,8 @@
 #include "unwind/common/backtrace.h"
 #include "unwind/common/uw_hash.h"
 
-#include "../common/prof-lean/hpcio.h"
-#include "../common/prof-lean/hpcio-buffer.h"
+#include "../common/lean/hpcio.h"
+#include "../common/lean/hpcio-buffer.h"
 
 #define TOOL_THREAD_ID (-1)
 

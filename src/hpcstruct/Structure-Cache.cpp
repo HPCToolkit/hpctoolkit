@@ -79,10 +79,10 @@
 // local includes
 //***************************************************************************
 
-#include "../common/prof-lean/elf-hash.h"
-#include "../common/support/diagnostics.h"
-#include "../common/support/Exception.hpp"
-#include "../common/support/FileUtil.hpp"
+#include "../common/lean/elf-hash.h"
+#include "../common/diagnostics.h"
+#include "../common/Exception.hpp"
+#include "../common/FileUtil.hpp"
 
 #include "Structure-Cache.hpp"
 #include "Structure-Version.hpp"

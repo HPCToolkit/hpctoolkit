@@ -59,8 +59,8 @@
 
 #include "messages/messages.h"
 
-#include "../common/prof-lean/hpcfmt.h"
-#include "../common/prof-lean/spinlock.h"
+#include "../common/lean/hpcfmt.h"
+#include "../common/lean/spinlock.h"
 
 #define LOADMAP_DEBUG 0
 

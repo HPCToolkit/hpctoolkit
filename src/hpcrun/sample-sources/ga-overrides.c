@@ -87,7 +87,7 @@
 #include "ga.h"
 #include "ga-overrides.h"
 
-#include "../../common/support-lean/timer.h"
+#include "../../common/lean/timer.h"
 
 
 //***************************************************************************

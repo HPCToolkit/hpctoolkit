@@ -80,7 +80,7 @@
 //***************************************************************************
 
 #include "../VMAInterval.hpp"
-#include "../../common/support/FileUtil.hpp"
+#include "../../common/FileUtil.hpp"
 
 #include "GPUCFGFactory.hpp"
 #include "GPUFunction.hpp"

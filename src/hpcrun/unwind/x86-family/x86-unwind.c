@@ -76,7 +76,7 @@
 // local include files
 //***************************************************************************
 
-#include "../../../common/include/gcc-attr.h"
+#include "../../../common/lean/gcc-attr.h"
 #include "x86-decoder.h"
 
 #include "../../epoch.h"

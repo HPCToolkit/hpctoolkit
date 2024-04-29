@@ -69,7 +69,7 @@
 #include "../../../messages/messages.h"
 
 #include "cubin-symbols.h"
-#include "../../../../common/prof-lean/elf-helper.h"
+#include "../../../../common/lean/elf-helper.h"
 
 //******************************************************************************
 // macros

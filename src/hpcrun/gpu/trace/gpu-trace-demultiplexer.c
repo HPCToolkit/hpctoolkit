@@ -56,7 +56,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../common/prof-lean/collections/concurrent-stack-entry-data.h"
+#include "../../../common/lean/collections/concurrent-stack-entry-data.h"
 
 #include "../../control-knob.h"
 #include "../../memory/hpcrun-malloc.h"
@@ -86,7 +86,7 @@ typedef struct channel_set_entry_t {
 
 #define CONCURRENT_STACK_PREFIX         channel_set_stack
 #define CONCURRENT_STACK_ENTRY_TYPE     channel_set_entry_t
-#include "../../../common/prof-lean/collections/concurrent-stack.h"
+#include "../../../common/lean/collections/concurrent-stack.h"
 
 
 

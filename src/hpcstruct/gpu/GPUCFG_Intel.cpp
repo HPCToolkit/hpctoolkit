@@ -80,7 +80,7 @@
 //******************************************************************************
 
 #include "../ElfHelper.hpp"
-#include "../../common/support/diagnostics.h"
+#include "../../common/diagnostics.h"
 
 #include "GPUCFG.hpp"
 #include "GPUCFGFactory.hpp"

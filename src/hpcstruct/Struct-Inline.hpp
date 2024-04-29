@@ -71,10 +71,10 @@
 #include <map>
 
 #include "VMAInterval.hpp"
-#include "../common/support/FileUtil.hpp"
-#include "../common/support/RealPathMgr.hpp"
-#include "../common/support/SrcFile.hpp"
-#include "../common/support/StringTable.hpp"
+#include "../common/FileUtil.hpp"
+#include "../common/RealPathMgr.hpp"
+#include "../common/SrcFile.hpp"
+#include "../common/StringTable.hpp"
 
 #include <Symtab.h>
 #include <Function.h>

@@ -57,102 +57,72 @@
 //
 //***************************************************************************
 
+#ifndef prof_Prof_CallPath_Profile_hpp
+#define prof_Prof_CallPath_Profile_hpp
+
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <cstdio>
 
+#include <vector>
+#include <set>
 #include <string>
-using std::string;
 
-#include <algorithm>
-#include <typeinfo>
-
-#include <cstring> // strlen()
-
-#include <dirent.h> // scandir()
 
 //*************************** User Include Files ****************************
 
-#include "../include/gcc-attr.h"
 
-#include "Util.hpp"
+#include "lean/hpcrun-fmt.h"
 
-#include "../prof-lean/hpcio.h"
-#include "../prof-lean/hpcfmt.h"
-#include "../prof-lean/hpcrun-fmt.h"
-#include "../prof-lean/hpcrunflat-fmt.h"
-#include "../prof-lean/formats/cctdb.h"
-#include "../prof-lean/formats/metadb.h"
-#include "../prof-lean/formats/profiledb.h"
-#include "../prof-lean/formats/tracedb.h"
-
-#include "../support/PathFindMgr.hpp"
-#include "../support/PathReplacementMgr.hpp"
-#include "../support/diagnostics.h"
-#include "../support/dictionary.h"
-#include "../support/realpath.h"
-#include "../support/IOUtil.hpp"
-
-#define DEBUG_DEMAND_STRUCT  0
-#define TMP_BUFFER_LEN 1024
+//*************************** Forward Declarations ***************************
 
 //***************************************************************************
-//
+// Profile
 //***************************************************************************
 
-namespace Analysis {
-namespace Util {
 
-Analysis::Util::ProfType_t
-getProfileType(const std::string& filenm)
+namespace Prof {
+
+namespace CallPath {
+
+
+class Profile
 {
-  static const int bufSZ = 32;
-  char buf[bufSZ] = { '\0' };
-
-  std::istream* is = IOUtil::OpenIStream(filenm.c_str());
-  is->read(buf, bufSZ);
-  IOUtil::CloseStream(is);
-
-  ProfType_t ty = ProfType_NULL;
-  if (strncmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) == 0) {
-    ty = ProfType_Callpath;
-  }
-  else if (strncmp(buf, HPCMETRICDB_FMT_Magic, HPCMETRICDB_FMT_MagicLen) == 0) {
-    ty = ProfType_CallpathMetricDB;
-  }
-  else if (strncmp(buf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen) == 0) {
-    ty = ProfType_CallpathTrace;
-  }
-  else if (strncmp(buf, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) == 0) {
-    ty = ProfType_Flat;
-  }else if(fmt_profiledb_check(buf, nullptr) != fmt_version_invalid){
-    ty = ProfType_ProfileDB;
-  }else if(fmt_cctdb_check(buf, nullptr) != fmt_version_invalid){
-    ty = ProfType_CctDB;
-  }else if(fmt_tracedb_check(buf, nullptr) != fmt_version_invalid){
-    ty = ProfType_TraceDB;
-  }else if(fmt_metadb_check(buf, nullptr) != fmt_version_invalid){
-    ty = ProfType_MetaDB;
-  }
+public:
+  static void
+  make(const char* fnm, FILE* outfs, bool sm_easyToGrep);
 
 
-  return ty;
-}
+  // fmt_*_fread(): Reads the appropriate hpcrun_fmt object from the
+  // file stream 'infs', checking for errors, and constructs
+  // appropriate Prof::Profile::CallPath objects.  If 'outfs' is
+  // non-null, a textual form of the data is echoed to 'outfs' for
+  // human inspection.
 
-} // end of Util namespace
-} // end of Analysis namespace
+
+  static int
+  fmt_fread(FILE* infs,
+            std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep);
+
+  static int
+  fmt_epoch_fread(FILE* infs,
+                  const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
+                  std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep);
+
+static int
+  fmt_cct_fread(FILE* infs,
+                std::string ctxtStr, FILE* outfs);
+};
+
+} // namespace CallPath
+
+} // namespace Prof
+
 
 //***************************************************************************
-//
+
+
 //***************************************************************************
 
-namespace Analysis {
-namespace Util {
-
-OutputOption_t option = Print_All;
-
-} // end of Util namespace
-} // end of Analysis namespace
-
-
-//****************************************************************************
+#endif /* prof_Prof_CallPath_Profile_hpp */

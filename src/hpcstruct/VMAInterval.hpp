@@ -71,7 +71,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "../common/include/gcc-attr.h"
+#include "../common/lean/gcc-attr.h"
 
 
 //*************************** Forward Declarations **************************

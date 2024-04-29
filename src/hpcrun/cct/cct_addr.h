@@ -47,7 +47,7 @@
 #ifndef CCT_ADDR_H
 #define CCT_ADDR_H
 
-#include "../../common/prof-lean/lush/lush-support.h"
+#include "../../common/lean/lush/lush-support.h"
 #include "../utilities/ip-normalized.h"
 
 typedef struct cct_addr_t cct_addr_t;

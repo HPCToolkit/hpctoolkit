@@ -54,7 +54,7 @@
 #include "../formats/metadb.hpp"
 #include "../formats/primitives.hpp"
 
-#include "../../common/prof-lean/placeholders.h"
+#include "../../common/lean/placeholders.h"
 
 #include <fstream>
 #include <stack>

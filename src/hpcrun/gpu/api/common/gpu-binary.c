@@ -67,9 +67,9 @@
 #include "../../../files.h"
 #include "../../../messages/messages.h"
 #include "../../../loadmap.h"
-#include "../../../../common/prof-lean/crypto-hash.h"
-#include "../../../../common/prof-lean/gpu-binary-naming.h"
-#include "../../../../common/prof-lean/spinlock.h"
+#include "../../../../common/lean/crypto-hash.h"
+#include "../../../../common/lean/gpu-binary-naming.h"
+#include "../../../../common/lean/spinlock.h"
 
 #include "gpu-binary.h"
 

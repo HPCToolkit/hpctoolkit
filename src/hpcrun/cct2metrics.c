@@ -13,7 +13,7 @@
 #include "cct/cct.h"
 #include "cct2metrics.h"
 #include "thread_data.h"
-#include "../common/prof-lean/splay-macros.h"
+#include "../common/lean/splay-macros.h"
 
 
 //

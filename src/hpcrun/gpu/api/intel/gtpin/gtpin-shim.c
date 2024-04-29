@@ -80,7 +80,7 @@
 #include "../../../../safe-sampling.h"
 #include "../../../../utilities/hpcrun-nanotime.h"
 
-#include "../../../../../common/prof-lean/crypto-hash.h"
+#include "../../../../../common/lean/crypto-hash.h"
 
 #include "../../../../libmonitor/monitor.h"
 

@@ -85,10 +85,10 @@
 #include "../utilities/ip-normalized.h"
 
 
-#include "../../common/prof-lean/hpcio.h"
-#include "../../common/prof-lean/hpcfmt.h"
-#include "../../common/prof-lean/hpcrun-fmt.h"
-#include "../../common/prof-lean/placeholders.h"
+#include "../../common/lean/hpcio.h"
+#include "../../common/lean/hpcfmt.h"
+#include "../../common/lean/hpcrun-fmt.h"
+#include "../../common/lean/placeholders.h"
 
 #include "cct_addr.h"
 

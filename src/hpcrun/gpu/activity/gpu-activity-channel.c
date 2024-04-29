@@ -47,8 +47,8 @@
 
 #define _GNU_SOURCE
 
-#include "../../../common/prof-lean/mcs-lock.h"
-#include "../../../common/prof-lean/collections/mpsc-queue-entry-data.h"
+#include "../../../common/lean/mcs-lock.h"
+#include "../../../common/lean/collections/mpsc-queue-entry-data.h"
 
 #include "../../memory/hpcrun-malloc.h"
 
@@ -70,7 +70,7 @@ typedef struct mpscq_entry_t {
 #define MPSC_QUEUE_PREFIX         mpscq
 #define MPSC_QUEUE_ENTRY_TYPE     mpscq_entry_t
 #define MPSC_QUEUE_ALLOCATE       hpcrun_malloc_safe
-#include "../../../common/prof-lean/collections/mpsc-queue.h"
+#include "../../../common/lean/collections/mpsc-queue.h"
 
 
 
@@ -92,7 +92,7 @@ typedef struct gpu_activity_channel_t {
 #define CONCURRENT_ID_MAP_PREFIX                ch_map
 #define CONCURRENT_ID_MAP_ENTRY_INITIALIZER     { .base = MPSC_QUEUE_INITIALIZER }
 #define CONCURRENT_ID_MAP_ENTRY_TYPE            gpu_activity_channel_t
-#include "../../../common/prof-lean/collections/concurrent-id-map.h"
+#include "../../../common/lean/collections/concurrent-id-map.h"
 
 
 

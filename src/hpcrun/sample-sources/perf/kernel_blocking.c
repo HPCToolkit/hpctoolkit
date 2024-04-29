@@ -55,7 +55,7 @@
  */
 #define _GNU_SOURCE
 
-#include "../../../common/include/linux_info.h"
+#include "../../../common/lean/linux_info.h"
 
 #include "../../metrics.h"
 

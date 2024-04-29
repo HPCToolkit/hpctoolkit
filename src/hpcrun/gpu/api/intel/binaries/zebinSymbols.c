@@ -68,7 +68,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../../../common/prof-lean/elf-helper.h"
+#include "../../../../../common/lean/elf-helper.h"
 
 #include "zebinSymbols.h"
 

@@ -61,8 +61,8 @@
 // local include files
 //***************************************************************************
 
-#include "../common/prof-lean/hpcfmt.h"
-#include "../common/prof-lean/hpcrun-fmt.h"
+#include "../common/lean/hpcfmt.h"
+#include "../common/lean/hpcrun-fmt.h"
 
 
 

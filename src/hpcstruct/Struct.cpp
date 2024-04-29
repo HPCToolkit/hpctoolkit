@@ -86,12 +86,12 @@
 #include "VMAInterval.hpp"
 #include "ElfHelper.hpp"
 #include "InputFile.hpp"
-#include "../common/support/FileNameMap.hpp"
-#include "../common/support/FileUtil.hpp"
-#include "../common/support/RealPathMgr.hpp"
-#include "../common/support/StringTable.hpp"
-#include "../common/support/diagnostics.h"
-#include "../common/support/dictionary.h"
+#include "../common/FileNameMap.hpp"
+#include "../common/FileUtil.hpp"
+#include "../common/RealPathMgr.hpp"
+#include "../common/StringTable.hpp"
+#include "../common/diagnostics.h"
+#include "../common/dictionary.h"
 
 #include <boost/atomic.hpp>
 

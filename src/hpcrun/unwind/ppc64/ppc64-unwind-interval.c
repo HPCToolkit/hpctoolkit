@@ -62,8 +62,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "../../../common/include/gcc-attr.h"
-#include "../../../common/include/min-max.h"
+#include "../../../common/lean/gcc-attr.h"
+#include "../../../common/lean/min-max.h"
 #include "ppc64-unwind-interval.h"
 #include "../../memory/hpcrun-malloc.h"
 #include "../common/uw_recipe_map.h"

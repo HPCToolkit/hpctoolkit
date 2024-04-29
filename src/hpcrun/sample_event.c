@@ -52,7 +52,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "../common/prof-lean/placeholders.h"
+#include "../common/lean/placeholders.h"
 #include "unwind/common/backtrace.h"
 #include "cct/cct.h"
 #include "hpcrun_stats.h"
@@ -83,7 +83,7 @@
 
 #include "messages/messages.h"
 
-#include "../common/prof-lean/hpcrun-fmt.h"
+#include "../common/lean/hpcrun-fmt.h"
 
 #define HPCRUN_DEBUG_TRACING 0
 

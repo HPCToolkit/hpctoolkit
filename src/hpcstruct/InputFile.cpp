@@ -71,7 +71,7 @@
 // local includes
 //******************************************************************************
 
-#include "../common/support/diagnostics.h"
+#include "../common/diagnostics.h"
 
 #include "ElfHelper.hpp"
 #include "Fatbin.hpp"

@@ -72,7 +72,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "../../common/include/gcc-attr.h"
+#include "../../common/lean/gcc-attr.h"
 
 #include "lush-pthread.h"
 

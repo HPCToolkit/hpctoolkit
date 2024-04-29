@@ -69,10 +69,10 @@
 //*************************** User Include Files ****************************
 
 
-// #include "../common/analysis/Args.hpp"
+// #include "../common/Args.hpp"
 
-#include "../common/support/diagnostics.h"
-#include "../common/support/CmdLineParser.hpp"
+#include "../common/diagnostics.h"
+#include "../common/CmdLineParser.hpp"
 
 //*************************** Forward Declarations **************************
 

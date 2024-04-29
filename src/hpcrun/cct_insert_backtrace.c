@@ -56,8 +56,8 @@
 #include "metrics.h"
 #include "unresolved.h"
 
-#include "../common/prof-lean/lush/lush-support.h"
-#include "../common/prof-lean/placeholders.h"
+#include "../common/lean/lush/lush-support.h"
+#include "../common/lean/placeholders.h"
 #include "lush/lush-backtrace.h"
 #include "thread_data.h"
 #include "hpcrun_stats.h"

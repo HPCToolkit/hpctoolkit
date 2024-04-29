@@ -78,8 +78,8 @@
 #include "messages/messages.h"
 #include "trampoline/common/trampoline.h"
 #include "memory/mmap.h"
-#include "../common/prof-lean/id-tuple.h"
-#include "../common/support-lean/OSUtil.h"
+#include "../common/lean/id-tuple.h"
+#include "../common/lean/OSUtil.h"
 
 
 //***************************************************************************

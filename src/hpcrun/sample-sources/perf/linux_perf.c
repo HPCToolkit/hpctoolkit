@@ -109,10 +109,10 @@
 
 #include "../../evlist.h"
 #include <limits.h>   // PATH_MAX
-#include "../../../common/prof-lean/hpcrun-metric.h" // prefix for metric helper
-#include "../../../common/support-lean/OSUtil.h"     // hostid
+#include "../../../common/lean/hpcrun-metric.h" // prefix for metric helper
+#include "../../../common/lean/OSUtil.h"     // hostid
 
-#include "../../../common/include/linux_info.h"
+#include "../../../common/lean/linux_info.h"
 
 #include "perfmon-util.h"
 
@@ -127,7 +127,7 @@
 
 #include "kernel_blocking.h"  // api for predefined kernel blocking event
 
-#include "../../../common/support-lean/compress.h"
+#include "../../../common/lean/compress.h"
 
 //******************************************************************************
 // macros

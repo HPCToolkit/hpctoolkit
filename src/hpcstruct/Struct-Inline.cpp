@@ -86,12 +86,12 @@
 
 #include "BinUtils.hpp"
 #include "ElfHelper.hpp"
-#include "../common/support/diagnostics.h"
-#include "../common/support/FileNameMap.hpp"
-#include "../common/support/FileUtil.hpp"
-#include "../common/support/RealPathMgr.hpp"
-#include "../common/support/StringTable.hpp"
-#include "../common/support/dictionary.h"
+#include "../common/diagnostics.h"
+#include "../common/FileNameMap.hpp"
+#include "../common/FileUtil.hpp"
+#include "../common/RealPathMgr.hpp"
+#include "../common/StringTable.hpp"
+#include "../common/dictionary.h"
 
 #include "Struct-Inline.hpp"
 

@@ -12,7 +12,7 @@
 // local include files
 //******************************************************************************
 
-#include "../../../common/prof-lean/mcs-lock.h"
+#include "../../../common/lean/mcs-lock.h"
 #include "interval_t.h"
 
 static char

@@ -49,7 +49,7 @@
 
 #include "core.hpp"
 
-#include "../../common/prof-lean/formats/metadb.h"
+#include "../../common/lean/formats/metadb.h"
 
 namespace hpctoolkit::formats {
 

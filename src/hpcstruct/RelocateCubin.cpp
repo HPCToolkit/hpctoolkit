@@ -81,7 +81,7 @@
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
 
-#include "../common/prof-lean/elf-helper.h"
+#include "../common/lean/elf-helper.h"
 
 
 

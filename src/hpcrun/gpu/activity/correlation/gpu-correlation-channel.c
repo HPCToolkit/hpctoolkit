@@ -47,7 +47,7 @@
 
 #define _GNU_SOURCE
 
-#include "../../../../common/prof-lean/collections/mpsc-queue-entry-data.h"
+#include "../../../../common/lean/collections/mpsc-queue-entry-data.h"
 
 #include "../../../memory/hpcrun-malloc.h"
 
@@ -74,7 +74,7 @@ typedef struct mpscq_entry_t {
 #define MPSC_QUEUE_PREFIX         mpscq
 #define MPSC_QUEUE_ENTRY_TYPE     mpscq_entry_t
 #define MPSC_QUEUE_ALLOCATE       hpcrun_malloc_safe
-#include "../../../../common/prof-lean/collections/mpsc-queue.h"
+#include "../../../../common/lean/collections/mpsc-queue.h"
 
 
 

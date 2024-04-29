@@ -4,21 +4,15 @@ _srcs = files(
 )
 
 hpcproftt = executable('hpcproftt', version_cpp, _srcs,
-  analysis_srcs,
-  prof_lean_srcs,
-  prof_srcs,
-  support_srcs,
+  common_srcs,
   implicit_include_directories: false,
   dependencies: [
-    analysis_deps,
+    common_deps,
     iga_dep,
     igc_dep,
     libdw_dep,
     libelf_dep,
     lzma_dep,
-    prof_deps,
-    prof_lean_deps,
-    support_deps,
     xerces_dep,
   ])
 

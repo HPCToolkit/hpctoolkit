@@ -68,12 +68,12 @@
 
 //*************************** User Include Files ****************************
 
-#include "../include/gcc-attr.h"
+#include "gcc-attr.h"
 
-#include "../prof-lean/hpcio.h"
-#include "../prof-lean/hpcio-buffer.h"
-#include "../prof-lean/hpcfmt.h"
-#include "../prof-lean/hpcrun-fmt.h"
+#include "hpcio.h"
+#include "hpcio-buffer.h"
+#include "hpcfmt.h"
+#include "hpcrun-fmt.h"
 #include "id-tuple.h"
 
 //***************************************************************************

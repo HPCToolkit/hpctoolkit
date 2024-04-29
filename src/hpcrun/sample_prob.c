@@ -57,7 +57,7 @@
 #include <unistd.h>
 
 #include "messages/messages.h"
-#include "../common/support-lean/OSUtil.h"
+#include "../common/lean/OSUtil.h"
 #include "sample_prob.h"
 
 #define HPCRUN_SAMPLE_PROB  "HPCRUN_PROCESS_FRACTION"

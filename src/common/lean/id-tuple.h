@@ -71,9 +71,9 @@
 //***************************************************************************
 
 
-#include "../prof-lean/hpcio.h"
-#include "../prof-lean/hpcio-buffer.h"
-#include "../prof-lean/hpcfmt.h"
+#include "hpcio.h"
+#include "hpcio-buffer.h"
+#include "hpcfmt.h"
 
 
 

@@ -72,8 +72,8 @@
 //*************************** User Include Files ****************************
 
 
-#include "../common/support/StrUtil.hpp"
-#include "../common/support/IOUtil.hpp"
+#include "../common/StrUtil.hpp"
+#include "../common/IOUtil.hpp"
 
 //*************************** Forward Declarations ***************************
 

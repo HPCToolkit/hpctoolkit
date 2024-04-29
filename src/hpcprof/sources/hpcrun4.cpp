@@ -47,8 +47,8 @@
 #include "hpcrun4.hpp"
 
 #include "../util/log.hpp"
-#include "../../common/prof-lean/hpcrun-fmt.h"
-#include "../../common/prof-lean/placeholders.h"
+#include "../../common/lean/hpcrun-fmt.h"
+#include "../../common/lean/placeholders.h"
 
 namespace fs = hpctoolkit::stdshim::filesystem;
 
