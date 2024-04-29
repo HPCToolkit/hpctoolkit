@@ -102,9 +102,6 @@ skipLoadMapEntry(loadmap_entry_t* x)
   if (x->name == NULL) return true;
 
   bool result = false;
-
-  result |= x->name[0] == '<';
-
   for (int i = 0; filter_strings[i]; i++) {
     result |= strstr(x->name, filter_strings[i]) != 0;
   }

@@ -96,7 +96,8 @@ void
 gpu_binary_path_generate
 (
   const char *file_name,
-  char *path
+  char *path,
+  char *fullpath
 );
 
 

@@ -419,8 +419,9 @@ void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
   } while(1);
   close(fd);
 
-  // Register the path with the loadmap
-  atomic_store_explicit(&store->lm_id, hpcrun_loadModule_add(store->path), memory_order_release);
+  // Register the relative path with the loadmap
+  // logical/ + <generator> + . + <8 random hex digits> + \0
+  atomic_store_explicit(&store->lm_id, hpcrun_loadModule_add(store->path + strlen(hpcrun_files_output_directory()) + 1), memory_order_release);
 }
 
 // Roughly the FNV-1a hashing algorithm, simplified slightly for ease of use

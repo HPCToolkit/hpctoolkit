@@ -257,7 +257,7 @@ int main(int argc, char* const argv[]) {
     finalizers::LogicalFile lf;
     pipelineB2 << lf;
     for(auto& sp: args.ksyms)
-      pipelineB2 << std::make_unique<finalizers::KernelSymbols>(sp.second);
+      pipelineB2 << std::make_unique<finalizers::KernelSymbols>();
     for(auto& sp: args.structs){
       assert(sp.second.parent_path().filename() == "structs");
       // FIXME: the hacky ugly measurement directory

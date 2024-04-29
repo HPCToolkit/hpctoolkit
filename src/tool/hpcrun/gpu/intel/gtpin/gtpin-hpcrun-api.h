@@ -92,7 +92,7 @@ typedef struct gtpin_hpcrun_api_t {
   void (*real_exit)(int code);
 
   gpu_binary_kind_t (*binary_kind)(const char *mem_ptr, size_t mem_size);
-  void (*gpu_binary_path_generate)(const char *, char *);
+  void (*gpu_binary_path_generate)(const char *, char *, char *);
   bool (*gpu_binary_store)(const char *, const void *, size_t);
   uint32_t (*gpu_binary_loadmap_insert)(const char *, bool);
 

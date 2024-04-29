@@ -68,7 +68,7 @@ extern "C" {
 
 #define VDSO_SEGMENT_NAME_SHORT "[vdso]"
 #define VDSO_SEGMENT_NAME_LONG  "linux-vdso.so"
-
+#define VDSO_SUFFIX ".vdso"
 
 
 //***************************************************************************

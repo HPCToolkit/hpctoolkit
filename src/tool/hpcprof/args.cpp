@@ -524,7 +524,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       // Check for a kernel_symbols/ directory for ksymsfiles.
       fs::path sp = p / "kernel_symbols";
       if(fs::is_directory(sp))
-        ProfArgs::ksyms.emplace_back(std::make_unique<finalizers::KernelSymbols>(sp), sp);
+        ProfArgs::ksyms.emplace_back(std::make_unique<finalizers::KernelSymbols>(), p);
 
       // Construct the recommended arguments for hpcstruct, in case we need them
       std::string structargs;

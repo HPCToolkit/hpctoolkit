@@ -221,7 +221,8 @@ get_load_module
   //
   // Step 3: generate <binary hash>.gpubin as the kernel load module name
   char load_module_name[PATH_MAX] = {'\0'};
-  gpu_binary_path_generate(binary_hash, load_module_name);
+  char load_module_name_fullpath[PATH_MAX] = {'\0'};
+  gpu_binary_path_generate(binary_hash, load_module_name, load_module_name_fullpath);
 
   // if patch token binary, append the kernel name hash to the load module name
   switch (bkind){

@@ -108,7 +108,7 @@
 
 #include "../../../lib/prof-lean/spinlock.h"
 #include "../../../lib/prof-lean/vdso.h"
-
+#include "../../../lib/prof-lean/crypto-hash.h"
 
 
 
@@ -303,10 +303,21 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
 
   // [vdso] and linux-gate.so are virtual files and don't exist
   // in the file system.
+  // filename is recorded in returned dso_info_t as its name (relative path for vdso)
+  // pathname_for_query is used in hpcrun_syserv_query (absolute path for vdso)
   if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
     filename[sizeof(filename) - 1] = 0;
     strncpy(filename, incoming_filename, PATH_MAX);
     pathname_for_query = filename;
+  } else if (strstr(incoming_filename, "/vdso/") != NULL && strstr(incoming_filename, ".vdso") != NULL) {
+    char tmp_filename [PATH_MAX + 1];
+    realpath(incoming_filename, tmp_filename);
+    pathname_for_query = tmp_filename;
+    if(strlen(incoming_filename) < 9 + CRYPTO_HASH_STRING_LENGTH){ //use realpath then
+      strcpy(filename, tmp_filename);
+    }else{
+      strncpy(filename, &tmp_filename[strlen(incoming_filename) - 9 - CRYPTO_HASH_STRING_LENGTH], 10 + CRYPTO_HASH_STRING_LENGTH);
+    }
   } else {
     realpath(incoming_filename, filename);
     pathname_for_query = filename;

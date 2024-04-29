@@ -181,7 +181,7 @@ CPUBIN_DIR  = $(MEAS_DIR)/cpubins
 #-------------------------------------------------------------------------------
 $(CPUBIN_DIR): $(MEAS_DIR)/all.lm
 	-@mkdir $(CPUBIN_DIR) >&- 2>&-
-	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep -v gpubin | grep ^/`; do ln -s $$i; done >&- 2>&-
+	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep ^/`; do ln -s $$i; done >&- 2>&-
 	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep -v gpubin | grep -v ^/`; do ln -s $(MEAS_DIR)/$$i; done >&- 2>&-
 
 #-------------------------------------------------------------------------------

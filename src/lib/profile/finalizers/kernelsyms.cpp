@@ -60,8 +60,7 @@
 using namespace hpctoolkit;
 using namespace finalizers;
 
-KernelSymbols::KernelSymbols(stdshim::filesystem::path root)
-  : root(std::move(root)) {}
+KernelSymbols::KernelSymbols() {}
 
 void KernelSymbols::notifyPipeline() noexcept {
   ud = sink.structs().module.add_default<udModule>(
@@ -86,15 +85,11 @@ KernelSymbols::classify(Context& c, NestedScope& ns) noexcept {
 }
 
 void KernelSymbols::load(const Module& m, udModule& ud) noexcept {
-  // We only take action if the Module's path is relatively awkward
-  if(m.path().has_root_path() || m.path().has_parent_path()) return;
-  // Check for the <...> markers that this is a "special case"
-  std::string name = m.path().filename();
-  if(name.front() != '<' || name.back() != '>') return;
-  name = name.substr(1, name.size()-2);
+  // We only take action if the Module's relative path starts with kernel_symbols/
+  if(m.relative_path().empty() || m.relative_path().parent_path().filename() != "kernel_symbols") return;
 
   // Check if we have a symbols file for this one
-  stdshim::filesystem::path syms = root / name;
+  stdshim::filesystem::path syms = m.path();
   if(!stdshim::filesystem::is_regular_file(syms)) return;
 
   // Give it a shot, catch any errors if things go south
@@ -153,7 +148,7 @@ void KernelSymbols::load(const Module& m, udModule& ud) noexcept {
     ud.symbols.make_consistent();
   } catch(std::exception& e) {
     util::log::vwarning{} << "Exception caught while parsing symbols data from "
-      << syms << " for " << name << "\n"
+      << syms << " for " << m.path() << "\n"
          "  what(): " << e.what();
     ud.symbols.clear();
   }
