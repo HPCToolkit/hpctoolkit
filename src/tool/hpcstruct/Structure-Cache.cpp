@@ -471,9 +471,9 @@ hpcstruct_cache_flat_entry
  const char *hash  // hash for elf file
 )
 {
-  std::string path = cache_dir;
+  hpctoolkit::stdshim::filesystem::path path = cache_dir;
 
-  path += "/FLAT";
+  path /= "FLAT";
 
   ckpath_ret_t ret = mk_dirpath(path.c_str(), "Failed to create hpcstruct cache FLAT directory", true);
   if ( (ret != PATH_DIR_CREATED) && (ret != PATH_DIR_WRITEABLE) ) {
@@ -482,7 +482,7 @@ hpcstruct_cache_flat_entry
   }
 
   // compute the full path to the new cache directory
-  path = path + '/' + hash;
+  path /= hash;
 
   // return the full path for the new cache entry
   return strdup(path.c_str());
@@ -495,14 +495,14 @@ char *
 hpcstruct_cache_path_directory
 (
  const char *cache_dir,
- const char *binary_abspath,
+ const char *binary_path, // absolute for cpubin, relative for gpubin
  const char *hash, // hash for elf file
  const char *suffix
 )
 {
-  std::string path = cache_dir;
+  hpctoolkit::stdshim::filesystem::path path = cache_dir;
 
-  path += "/PATH";
+  path /= "PATH";
 
   // early error for path prefix
   ckpath_ret_t ret = mk_dirpath(path.c_str(), "Failed to create hpcstruct cache PATH directory", true);
@@ -511,7 +511,11 @@ hpcstruct_cache_path_directory
     exit(1);
   }
 
-  path += binary_abspath;
+  if(hpctoolkit::stdshim::filesystem::path(binary_path).has_root_path()){
+    path = path / &binary_path[1];
+  }else{
+    path = path / binary_path;
+  }
 
   // error checking for full path
   mk_dirpath(path.c_str(), "Failed to create entry in hpcstruct cache directory", true);
@@ -520,7 +524,7 @@ hpcstruct_cache_path_directory
   hpcstruct_cache_cleanup(cache_dir, path.c_str(), hash );
 
   // compute the full path to the new cache entry's directory
-  path = path + '/' + hash;
+  path /= hash;
 
   // ensure the new cache directory exists
   mk_dirpath(path.c_str(), "Failed to create new hpcstruct cache directory", true);
@@ -533,15 +537,19 @@ hpcstruct_cache_path_directory
 char *
 hpcstruct_cache_path_link
 (
- const char *binary_abspath,
+ const char *binary_path, // absolute for cpubin, relative for gpubin
  const char *hash // hash for elf file
 )
 {
-  std::string path = "../PATH";
+  hpctoolkit::stdshim::filesystem::path path = "../PATH";
 
-  path += binary_abspath;
-  path = path + '/' + hash;
+  if(hpctoolkit::stdshim::filesystem::path(binary_path).has_root_path()){
+    path = path / &binary_path[1];
+  }else{
+    path = path / binary_path;
+  }
 
+  path /= hash;
   return strdup(path.c_str());
 }
 
@@ -553,10 +561,10 @@ hpcstruct_cache_entry
  const char *kind
 )
 {
-  std::string path = directory;
+  hpctoolkit::stdshim::filesystem::path path = directory;
 
   // compute the full path for the new cache entry
-  path = path + '/' + kind;
+  path /= kind;
 
   // return the full path for the new cache entry
   return strdup(path.c_str());

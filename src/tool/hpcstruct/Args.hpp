@@ -68,6 +68,7 @@
 //*************************** User Include Files ****************************
 
 #include "../../lib/support/CmdLineParser.hpp"
+#include "../../lib/profile/stdshim/filesystem.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -131,6 +132,7 @@ public:
 
   // Parsed Data: arguments
   std::string in_filenm;
+  hpctoolkit::stdshim::filesystem::path full_filenm;
   std::string out_filenm;
   std::string cache_directory;
 

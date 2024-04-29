@@ -105,7 +105,8 @@ public:
 };
 
 void
-makeStructure(std::string filename,
+makeStructure(std::string absfilepath,
+              std::string filename,
               std::ostream * outFile,
               std::ostream * gapsFile,
               std::string gaps_filenm,

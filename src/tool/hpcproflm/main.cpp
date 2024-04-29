@@ -81,7 +81,8 @@ namespace fs = hpctoolkit::stdshim::filesystem;
 //****************************************************************************
 
 static const char *filter_strings[] = {
-  "/logical/",
+  "logical/",
+  "kernel_symbols/",
   0
 };
 

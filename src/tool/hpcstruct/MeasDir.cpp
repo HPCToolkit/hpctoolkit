@@ -147,7 +147,7 @@ GPUBIN_USED_DIR  = $(MEAS_DIR)/gpubins-used
 #-------------------------------------------------------------------------------
 $(GPUBIN_USED_DIR): $(MEAS_DIR)/all.lm
 	-@mkdir $(GPUBIN_USED_DIR) >&- 2>&-
-	-@cd $(GPUBIN_USED_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep gpubin`; do ln -s $$i; done >&- 2>&-
+	-@cd $(GPUBIN_USED_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep gpubin`; do ln -s $(MEAS_DIR)/$$i; done >&- 2>&-
 
 #-------------------------------------------------------------------------------
 # $(GB): gpubin files
@@ -181,7 +181,8 @@ CPUBIN_DIR  = $(MEAS_DIR)/cpubins
 #-------------------------------------------------------------------------------
 $(CPUBIN_DIR): $(MEAS_DIR)/all.lm
 	-@mkdir $(CPUBIN_DIR) >&- 2>&-
-	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep -v gpubin`; do ln -s $$i; done >&- 2>&-
+	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep -v gpubin | grep ^/`; do ln -s $$i; done >&- 2>&-
+	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep -v gpubin | grep -v ^/`; do ln -s $(MEAS_DIR)/$$i; done >&- 2>&-
 
 #-------------------------------------------------------------------------------
 # $(CB): cpubin files
@@ -216,6 +217,7 @@ endif
 #-------------------------------------------------------------------------------
 $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 	@cpubin_name=`basename -s x $<`
+	@input_name=`cat $(MEAS_DIR)/all.lm | grep $$cpubin_name`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$cpubin_name.warnings
 	# @echo  DEBUG cpubin = $$cpu_bin_name
@@ -234,7 +236,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		fi
 
 		#  invoke hpcstruct on the CPU binary in the measurements directory
-		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1 || { err=$$?; egrep 'ERROR|WARNING' $$warn_name >&2; }
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) -o $$struct_name -M $$meas_dir $$input_name > $$warn_name 2>&1 || { err=$$?; egrep 'ERROR|WARNING' $$warn_name >&2; }
 		# echo DEBUG: hpcstruct for analysis of CPU binary $$cpubin_name returned
 
 		# See if there is anything to worry about in the warnings file
@@ -264,6 +266,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 #-------------------------------------------------------------------------------
 $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 	@gpubin_name=`basename -s x $<`
+	@input_name=`cat $(MEAS_DIR)/all.lm | grep $$gpubin_name`
 	struct_name=$@
 	rm -f $(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG_ALT).hpcstruct
 	rm -f $(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG_ALT).warnings
@@ -283,7 +286,7 @@ $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 		fi
 
 		# invoke hpcstruct to process the gpu binary
-		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1 || { err=$$?; egrep 'ERROR|WARNING' $$warn_name >&2; }
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name -M $$meas_dir $$input_name > $$warn_name 2>&1 || { err=$$?; egrep 'ERROR|WARNING' $$warn_name >&2; }
 		# echo debug: hpcstruct for analysis of GPU binary $$gpubin_name returned
 
 		# See if there is anything to worry about in the warnings file
