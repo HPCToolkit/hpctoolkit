@@ -49,13 +49,15 @@ test(
 
 if gtpin_dep.found()
 
-test(
-  'Measurement of tstexe-vecadd-sycl with instruction counting produces profiles',
-  _tst,
-  args: [hpctesttool, hpcrun, _tstexe_vecadd_sycl, 'gpu=level0,inst=count', ''],
-  suite: ['hpcrun', 'level0'],
-  depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
-)
+# FIXME: This test is commented out because GTPin has very stringent hardware requirements and
+# for now it's unable to be predicted.
+# test(
+#   'Measurement of tstexe-vecadd-sycl with instruction counting produces profiles',
+#   _tst,
+#   args: [hpctesttool, hpcrun, _tstexe_vecadd_sycl, 'gpu=level0,inst=count', ''],
+#   suite: ['hpcrun', 'level0'],
+#   depends: hpcrun_test_depends,
+#   env: hpcrun_test_env,
+# )
 
 endif
