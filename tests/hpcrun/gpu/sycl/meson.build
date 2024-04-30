@@ -56,7 +56,6 @@ test(
   suite: ['hpcrun', 'level0'],
   depends: hpcrun_test_depends,
   env: hpcrun_test_env,
-  should_fail: true,
 )
 
 endif

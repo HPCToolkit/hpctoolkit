@@ -84,7 +84,6 @@ static void mainlib_disconnect();
 static bool update_shadow();
 
 static void* (*real_dlopen)(const char*, int) = NULL;
-static void* (*real_dlmopen)(Lmid_t, const char*, int) = NULL;
 static int (*real_dlclose)(void*) = NULL;
 static void* private_ns = NULL;
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
@@ -119,7 +118,6 @@ void hpcrun_init_fake_auditor() {
 
   real_dlopen = dlsym(RTLD_NEXT, "dlopen");
   real_dlclose = dlsym(RTLD_NEXT, "dlclose");
-  real_dlmopen = dlsym(RTLD_NEXT, "dlmopen");
 
   // Load the private namespace and get the binding function out of it
   private_ns = dlmopen(LM_ID_NEWLM, "libhpcrun_private_ns.so", RTLD_NOW);
@@ -290,19 +288,6 @@ void* dlopen(const char* fn, int flags) {
   if(!real_dlopen)
     return ((void*(*)(const char*, int))dlsym(RTLD_NEXT, "dlopen"))(fn, flags);
   void* out = real_dlopen(fn, flags);
-  if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
-    if(verbose)
-      fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
-    hooks.stable(true);
-  }
-  return out;
-}
-__attribute__((visibility("default")))
-void* dlmopen(Lmid_t lmid, const char* fn, int flags) {
-  if(!real_dlmopen)
-    return ((void*(*)(Lmid_t, const char*, int))dlsym(RTLD_NEXT, "dlmopen"))(lmid, fn, flags);
-  void* out = real_dlmopen(lmid, fn, flags);
-  // TODO: Scan the (potentially newly created) link map for entries
   if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
     if(verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
