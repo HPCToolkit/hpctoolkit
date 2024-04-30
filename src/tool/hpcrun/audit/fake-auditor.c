@@ -89,20 +89,6 @@ static void* private_ns = NULL;
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
 
 
-// Scan the phdrs for an entry that looks like ours, and nab the DYNAMIC section
-static ElfW(Addr) self_baseaddr;
-static const ElfW(Dyn)* self_dynamic;
-static int self_scan_dl(struct dl_phdr_info* map, size_t sz, void* vp) {
-  if(map->dlpi_addr != self_baseaddr) return 0;
-  for(size_t i = 0; i < map->dlpi_phnum; i++) {
-    if(map->dlpi_phdr[i].p_type == PT_DYNAMIC) {
-      self_dynamic = (const void*)map->dlpi_addr + map->dlpi_phdr[i].p_vaddr;
-      return 1;
-    }
-  }
-  return 1;
-}
-
 // Initialization can happen from multiple locations, but always looks like this:
 static bool initialized = false;
 __attribute__((visibility("default")))
