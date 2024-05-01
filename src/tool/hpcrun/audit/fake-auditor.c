@@ -84,25 +84,10 @@ static void mainlib_disconnect();
 static bool update_shadow();
 
 static void* (*real_dlopen)(const char*, int) = NULL;
-static void* (*real_dlmopen)(Lmid_t, const char*, int) = NULL;
 static int (*real_dlclose)(void*) = NULL;
 static void* private_ns = NULL;
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
 
-
-// Scan the phdrs for an entry that looks like ours, and nab the DYNAMIC section
-static ElfW(Addr) self_baseaddr;
-static const ElfW(Dyn)* self_dynamic;
-static int self_scan_dl(struct dl_phdr_info* map, size_t sz, void* vp) {
-  if(map->dlpi_addr != self_baseaddr) return 0;
-  for(size_t i = 0; i < map->dlpi_phnum; i++) {
-    if(map->dlpi_phdr[i].p_type == PT_DYNAMIC) {
-      self_dynamic = (const void*)map->dlpi_addr + map->dlpi_phdr[i].p_vaddr;
-      return 1;
-    }
-  }
-  return 1;
-}
 
 // Initialization can happen from multiple locations, but always looks like this:
 static bool initialized = false;
@@ -119,7 +104,6 @@ void hpcrun_init_fake_auditor() {
 
   real_dlopen = dlsym(RTLD_NEXT, "dlopen");
   real_dlclose = dlsym(RTLD_NEXT, "dlclose");
-  real_dlmopen = dlsym(RTLD_NEXT, "dlmopen");
 
   // Load the private namespace and get the binding function out of it
   private_ns = dlmopen(LM_ID_NEWLM, "libhpcrun_private_ns.so", RTLD_NOW);
@@ -290,19 +274,6 @@ void* dlopen(const char* fn, int flags) {
   if(!real_dlopen)
     return ((void*(*)(const char*, int))dlsym(RTLD_NEXT, "dlopen"))(fn, flags);
   void* out = real_dlopen(fn, flags);
-  if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
-    if(verbose)
-      fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
-    hooks.stable(true);
-  }
-  return out;
-}
-__attribute__((visibility("default")))
-void* dlmopen(Lmid_t lmid, const char* fn, int flags) {
-  if(!real_dlmopen)
-    return ((void*(*)(Lmid_t, const char*, int))dlsym(RTLD_NEXT, "dlmopen"))(lmid, fn, flags);
-  void* out = real_dlmopen(lmid, fn, flags);
-  // TODO: Scan the (potentially newly created) link map for entries
   if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
     if(verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
