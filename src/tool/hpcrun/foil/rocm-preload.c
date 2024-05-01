@@ -47,7 +47,7 @@
 #define _GNU_SOURCE
 
 #include "foil.h"
-#include "../gpu/amd/rocprofiler-api.h"
+#include "../gpu/api/amd/rocprofiler-api.h"
 
 // NB: The argument is actually a rocprofiler_settings_t, but we can't include rocprofiler.h here
 HPCRUN_EXPOSED void OnLoadToolProp(void* settings) {

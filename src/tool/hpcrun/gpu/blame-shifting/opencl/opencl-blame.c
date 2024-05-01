@@ -15,11 +15,11 @@
 #include "../../../safe-sampling.h"             // hpcrun_safe_enter, hpcrun_safe_exit
 
 #include "../blame.h"                         // sync_prologue, sync_epilogue, etc
-#include "../../opencl/opencl-api.h"     // place_cct_under_opencl_kernel
+#include "../../api/opencl/opencl-api.h"     // place_cct_under_opencl_kernel
 #include "opencl-blame.h"
 #include "../blame-kernel-cleanup-map.h"      // kernel_cleanup_map_insert
-#include "../../gpu-activity-channel.h"                        // gpu_activity_channel_get
-#include "../../opencl/intel/papi/papi-metric-collector.h"     // add_kernel_to_incomplete_list, remove_kernel_from_incomplete_list
+#include "../../activity/gpu-activity-channel.h"                        // gpu_activity_channel_get_local
+#include "../../api/opencl/intel/papi/papi-metric-collector.h"     // add_kernel_to_incomplete_list, remove_kernel_from_incomplete_list
 
 
 
@@ -92,7 +92,7 @@ opencl_kernel_prologue
   cct_node_t *cct = place_cct_under_opencl_kernel(kernel_module_id);
   kernel_prologue(event_id, cct);
   if (get_gpu_utilization_flag()) {
-    papi_metric_collection_at_kernel_start(event_id, cct, gpu_activity_channel_get());
+    papi_metric_collection_at_kernel_start(event_id, cct, gpu_activity_channel_get_local());
   }
 
   hpcrun_safe_exit();

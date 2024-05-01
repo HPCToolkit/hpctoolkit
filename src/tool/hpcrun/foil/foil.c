@@ -59,15 +59,15 @@
 #include "../sample-sources/pthread-blame-overrides.h"
 
 #ifdef USE_ROCM
-#include "../gpu/amd/rocprofiler-api.h"
+#include "../gpu/api/amd/rocprofiler-api.h"
 #endif
 
 #ifdef USE_LEVEL0
-#include "../gpu/intel/level0/level0-api.h"
+#include "../gpu/api/intel/level0/level0-api.h"
 #endif
 
 #ifdef ENABLE_OPENCL
-#include "../gpu/opencl/opencl-api-wrappers.h"
+#include "../gpu/api/opencl/opencl-api-wrappers.h"
 #endif
 
 #include <assert.h>

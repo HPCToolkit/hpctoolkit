@@ -52,7 +52,8 @@
 #include "../safe-sampling.h"
 #include "../sample_event.h"
 
-#include "gpu-activity-channel.h"
+#include "activity/gpu-activity-channel.h"
+#include "activity/gpu-activity-process.h"
 #include "gpu-metrics.h"
 
 
@@ -63,7 +64,7 @@
 
 #define DEBUG 0
 
-#include "gpu-print.h"
+#include "common/gpu-print.h"
 
 
 
@@ -140,6 +141,16 @@ gpu_application_thread_correlation_callback_impl
   return result;
 }
 
+void
+receive_activity
+(
+  gpu_activity_t *activity
+)
+{
+  gpu_activity_process(activity);
+  gpu_metrics_attribute(activity);
+}
+
 
 
 //******************************************************************************
@@ -152,7 +163,7 @@ gpu_application_thread_process_activities
  void
 )
 {
-  gpu_activity_channel_consume(gpu_metrics_attribute);
+  gpu_activity_channel_receive_all(receive_activity);
 }
 
 

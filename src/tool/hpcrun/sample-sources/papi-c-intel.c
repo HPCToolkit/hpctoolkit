@@ -26,7 +26,7 @@
 #include "../sample_event.h"
 #include "../safe-sampling.h"
 #include "../sample_sources_all.h"
-#include "../gpu/gpu-activity.h"
+#include "../gpu/activity/gpu-activity.h"
 #include "common.h"
 #include "ss-obj-name.h"
 

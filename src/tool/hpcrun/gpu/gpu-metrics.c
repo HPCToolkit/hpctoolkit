@@ -57,9 +57,9 @@
 #include "../safe-sampling.h"
 #include "../thread_data.h"
 
-#include "gpu-activity.h"
+#include "activity/gpu-activity.h"
 #include "gpu-metrics.h"
-#include "gpu-monitoring.h"
+#include "common/gpu-monitoring.h"
 
 //*****************************************************************************
 // macros

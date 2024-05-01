@@ -41,10 +41,10 @@
 
 #include "../control-knob.h"
 #include "../device-finalizers.h"
-#include "../gpu/amd/roctracer-api.h"
-#include "../gpu/gpu-activity.h"
+#include "../gpu/api/amd/roctracer-api.h"
+#include "../gpu/activity/gpu-activity.h"
 #include "../gpu/gpu-metrics.h"
-#include "../gpu/gpu-trace.h"
+#include "../gpu/trace/gpu-trace-api.h"
 #include "../hpcrun_options.h"
 #include "../hpcrun_stats.h"
 #include "../metrics.h"

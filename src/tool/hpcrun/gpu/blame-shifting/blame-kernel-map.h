@@ -6,7 +6,7 @@
 //******************************************************************************
 
 #include "../../cct/cct.h"                   // cct_node_t
-#include "../gpu-activity.h"          // gpu_activity_channel_t
+#include "../activity/gpu-activity-channel.h"  // gpu_activity_channel_t
 #ifndef __cplusplus
 #include <stdatomic.h>
 #else

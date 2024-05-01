@@ -84,8 +84,8 @@
 #include "../../lib/support-lean/OSUtil.h"
 
 #ifdef ENABLE_GTPIN
-#include "gpu/intel/gtpin/gtpin-instrumentation.h"
-#include "gpu/intel/level0/level0-api.h"
+#include "gpu/api/intel/gtpin/gtpin-instrumentation.h"
+#include "gpu/api/intel/level0/level0-api.h"
 #endif
 
 //*****************************************************************************

@@ -230,6 +230,7 @@
  E(REC_COMPRESS), \
  E(CPU_GPU), \
  E(CPU_GPU_BLAME_CTL), \
+ E(GPU), \
  E(CUDA), \
  E(CUDA_DEVICE), \
  E(CUPTI), \
