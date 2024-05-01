@@ -52,10 +52,10 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/splay-uint64.h>
-#include <lib/prof-lean/spinlock.h>
-#include <hpcrun/gpu/gpu-splay-allocator.h> // typed_splay_alloc
-#include <hpcrun/memory/hpcrun-malloc.h>    // hpcrun_malloc_safe
+#include "../../../../../../lib/prof-lean/splay-uint64.h"
+#include "../../../../../../lib/prof-lean/spinlock.h"
+#include "../../../gpu-splay-allocator.h" // typed_splay_alloc
+#include "../../../../memory/hpcrun-malloc.h"    // hpcrun_malloc_safe
 
 #include "kernel-param-map.h"
 

@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <lib/prof-lean/hpcio-buffer.h>
-#include <lib/prof-lean/hpcfmt.h> // for metric_aux_info_t
+#include "../../lib/prof-lean/hpcio-buffer.h"
+#include "../../lib/prof-lean/hpcfmt.h" // for metric_aux_info_t
 
 #include "epoch.h"
 #include "cct2metrics.h"

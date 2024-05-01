@@ -50,8 +50,8 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
-#include <messages/messages.h>
-#include <hpcrun/thread_data.h>
+#include "../messages/messages.h"
+#include "../thread_data.h"
 
 void
 CMETHOD_FN(add_event, const char *ev)

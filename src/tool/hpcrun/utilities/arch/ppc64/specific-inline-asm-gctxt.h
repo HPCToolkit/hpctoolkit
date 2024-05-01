@@ -1,7 +1,7 @@
 #ifndef SPECIFIC_INLINE_ASM_GCTXT
 #define SPECIFIC_INLINE_ASM_GCTXT
 
-#include <utilities/arch/ucontext-manip.h>
+#include "../ucontext-manip.h"
 
 //
 #if 0 // ppc code unknown, so "inline asm"

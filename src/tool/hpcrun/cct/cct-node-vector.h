@@ -16,7 +16,7 @@
  * local includes
  *****************************************************************************/
 
-#include <hpcrun/cct/cct.h>
+#include "cct.h"
 
 typedef struct cct_node_vector_s cct_node_vector_t;
 

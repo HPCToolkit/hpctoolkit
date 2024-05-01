@@ -58,7 +58,7 @@
 
 #include "hpcrun-nanotime.h"
 
-#include <messages/errors.h>
+#include "../messages/errors.h"
 
 
 //*****************************************************************************

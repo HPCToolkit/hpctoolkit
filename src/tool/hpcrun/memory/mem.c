@@ -68,13 +68,13 @@
 #  include "hpcrun-malloc.h"
 #undef _IN_MEM_C
 
-#include "env.h"
+#include "../env.h"
 #include "newmem.h"
-#include "sample_event.h"
-#include "thread_data.h"
-#include "safe-sampling.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
+#include "../safe-sampling.h"
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 #define DEFAULT_MEMSIZE   (4 * 1024 * 1024)
 #define MIN_LOW_MEMSIZE  (80 * 1024)

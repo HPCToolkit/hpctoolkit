@@ -58,7 +58,7 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/stacks.h>
+#include "../../../lib/prof-lean/stacks.h"
 
 
 

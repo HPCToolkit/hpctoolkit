@@ -91,26 +91,26 @@ SPDX-License-Identifier: MIT
 
 extern "C"
 {
-#include <hpcrun/gpu/gpu-binary.h>
-#include <hpcrun/gpu/gpu-correlation.h>
-#include <hpcrun/gpu/gpu-instrumentation.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/gpu-operation-multiplexer.h>
-#include <hpcrun/gpu/intel/binaries/patchTokenSymbols.h>
-#include <hpcrun/gpu/intel/binaries/zebinSymbols.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/crypto-hash.h>
-#include <hpcrun/messages/messages.h>
+#include "../../gpu-binary.h"
+#include "../../gpu-correlation.h"
+#include "../../gpu-instrumentation.h"
+#include "../../gpu-op-placeholders.h"
+#include "../../gpu-activity-channel.h"
+#include "../../gpu-monitoring-thread-api.h"
+#include "../../gpu-operation-multiplexer.h"
+#include "../binaries/patchTokenSymbols.h"
+#include "../binaries/zebinSymbols.h"
+#include "../../../safe-sampling.h"
+#include "../../../utilities/hpcrun-nanotime.h"
+#include "../../gpu-metrics.h"
+#include "../../../../../lib/prof-lean/spinlock.h"
+#include "../../../../../lib/prof-lean/crypto-hash.h"
+#include "../../../messages/messages.h"
 #include <monitor.h>
 };
 
-#include <lib/profile/util/locked_unordered.hpp>
-#include <lib/profile/util/locked_unordered.hpp>
+#include "../../../../../lib/profile/util/locked_unordered.hpp"
+#include "../../../../../lib/profile/util/locked_unordered.hpp"
 
 
 

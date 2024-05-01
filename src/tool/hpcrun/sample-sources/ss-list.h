@@ -58,7 +58,7 @@
 //
 //******************************************************************************
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 SAMPLE_SOURCE_DECL_MACRO(ga)
 SAMPLE_SOURCE_DECL_MACRO(io)

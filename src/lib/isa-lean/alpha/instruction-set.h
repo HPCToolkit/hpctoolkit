@@ -60,7 +60,7 @@
 #ifndef ALPHA_INSTRUCTIONS_H
 #define ALPHA_INSTRUCTIONS_H
 
-#include "inttypes.h"
+#include <inttypes.h>
 
 // Information about Alpha instructions, encoding, conventions, and
 // section numbers is from

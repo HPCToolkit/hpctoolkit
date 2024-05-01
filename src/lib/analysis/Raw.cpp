@@ -73,20 +73,20 @@ using std::string;
 #include "Raw.hpp"
 #include "Util.hpp"
 
-#include <lib/prof/CallPath-Profile.hpp>
+#include "../prof/CallPath-Profile.hpp"
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/id-tuple.h>
-#include <lib/prof-lean/formats/cctdb.h>
-#include <lib/prof-lean/formats/metadb.h>
-#include <lib/prof-lean/formats/primitive.h>
-#include <lib/prof-lean/formats/profiledb.h>
-#include <lib/prof-lean/formats/tracedb.h>
+#include "../prof-lean/hpcio.h"
+#include "../prof-lean/hpcfmt.h"
+#include "../prof-lean/hpcrun-fmt.h"
+#include "../prof-lean/id-tuple.h"
+#include "../prof-lean/formats/cctdb.h"
+#include "../prof-lean/formats/metadb.h"
+#include "../prof-lean/formats/primitive.h"
+#include "../prof-lean/formats/profiledb.h"
+#include "../prof-lean/formats/tracedb.h"
 
 
-#include <lib/support/diagnostics.h>
+#include "../support/diagnostics.h"
 
 //*************************** Forward Declarations ***************************
 

@@ -48,25 +48,25 @@
 #include <stdbool.h>
 #include <ucontext.h>
 
-#include <cct/cct_bundle.h>
-#include <cct/cct.h>
-#include <messages/messages.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/unresolved.h>
+#include "cct/cct_bundle.h"
+#include "cct/cct.h"
+#include "messages/messages.h"
+#include "metrics.h"
+#include "unresolved.h"
 
-#include <lib/prof-lean/lush/lush-support.h>
-#include <lib/prof-lean/placeholders.h>
-#include <lush/lush-backtrace.h>
-#include <thread_data.h>
-#include <hpcrun_stats.h>
-#include <trace.h>
-#include <trampoline/common/trampoline.h>
-#include <utilities/ip-normalized.h>
+#include "../../lib/prof-lean/lush/lush-support.h"
+#include "../../lib/prof-lean/placeholders.h"
+#include "lush/lush-backtrace.h"
+#include "thread_data.h"
+#include "hpcrun_stats.h"
+#include "trace.h"
+#include "trampoline/common/trampoline.h"
+#include "utilities/ip-normalized.h"
 #include "frame.h"
-#include <unwind/common/backtrace_info.h>
-#include <unwind/common/fence_enum.h>
-#include <ompt/ompt-defer.h>
-#include <ompt/ompt-callstack.h>
+#include "unwind/common/backtrace_info.h"
+#include "unwind/common/fence_enum.h"
+#include "ompt/ompt-defer.h"
+#include "ompt/ompt-callstack.h"
 
 #include "cct_insert_backtrace.h"
 #include "cct_backtrace_finalize.h"

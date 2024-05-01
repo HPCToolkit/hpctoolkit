@@ -64,7 +64,7 @@
 #include "gpu-channel-item-allocator.h"
 #include "gpu-trace-item.h"
 #include "gpu-print.h"
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 
 

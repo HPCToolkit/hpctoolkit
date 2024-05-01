@@ -51,14 +51,14 @@
 
 //*************************** configuration ****************************
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 //*************************** User Include Files ****************************
 
 #include "x86-unwind-analysis.h"
 #include "x86-build-intervals.h"
 #include "x86-decoder.h"
-#include "fnbounds_interface.h"
+#include "../../fnbounds/fnbounds_interface.h"
 
 static void
 x86_print_intervals(btuwi_status_t intervals)

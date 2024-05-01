@@ -48,7 +48,7 @@
  * includes
  *****************************************************************************/
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
 #include "x86-build-intervals.h"
 #include "x86-decoder.h"

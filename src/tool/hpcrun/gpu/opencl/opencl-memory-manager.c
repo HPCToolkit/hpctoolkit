@@ -52,8 +52,8 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-channel-item-allocator.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../gpu-channel-item-allocator.h"
+#include "../../memory/hpcrun-malloc.h"
 
 #include "opencl-memory-manager.h"
 

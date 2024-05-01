@@ -46,7 +46,7 @@
 
 #include "atomic.hpp"
 
-#include "include/hpctoolkit-config.h"
+#include "hpctoolkit-config.h"
 
 #include <thread>
 

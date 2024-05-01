@@ -83,7 +83,6 @@ endif
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
-	$(HPC_IFLAGS)  \
 	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \

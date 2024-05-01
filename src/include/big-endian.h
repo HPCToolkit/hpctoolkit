@@ -78,7 +78,7 @@
 #define include_big_endian_h
 
 #include <stdint.h>
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 //**************************************************
 // Internal helper functions

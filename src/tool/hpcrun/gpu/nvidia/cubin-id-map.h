@@ -56,7 +56,7 @@
 // local includes
 //*****************************************************************************
 
-#include <hpcrun/sample_event.h>
+#include "../../sample_event.h"
 #include "cubin-symbols.h"
 
 

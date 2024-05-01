@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#include "sample_sources_registered.h"
+#include "../sample_sources_registered.h"
 
 #undef _TPx
 #undef _T3

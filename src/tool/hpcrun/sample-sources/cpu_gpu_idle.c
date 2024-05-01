@@ -75,38 +75,38 @@
  *****************************************************************************/
 #include "sample_source_obj.h"
 #include "common.h"
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/hpcrun_stats.h>
+#include "../gpu/gpu-metrics.h"
+#include "../hpcrun_options.h"
+#include "../hpcrun_stats.h"
 
-#include <hpcrun/metrics.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trace.h>
+#include "../metrics.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../sample_sources_registered.h"
+#include "../thread_data.h"
+#include "../trace.h"
 
-#include <lush/lush-backtrace.h>
-#include <messages/messages.h>
+#include "../lush/lush-backtrace.h"
+#include "../messages/messages.h"
 
-#include <utilities/tokenize.h>
-#include <utilities/arch/context-pc.h>
+#include "../utilities/tokenize.h"
+#include "../utilities/arch/context-pc.h"
 
-#include <unwind/common/unwind.h>
+#include "../unwind/common/unwind.h"
 
-#include <lib/support-lean/timer.h>
-#include <lib/prof-lean/spinlock.h>
+#include "../../../lib/support-lean/timer.h"
+#include "../../../lib/prof-lean/spinlock.h"
 #include <stdatomic.h>
-#include <lib/prof-lean/splay-macros.h>
+#include "../../../lib/prof-lean/splay-macros.h"
 #include "blame-shift/blame-shift.h"
 
-#include <hpcrun/gpu/blame-shifting/blame.h>
+#include "../gpu/blame-shifting/blame.h"
 #if defined(ENABLE_CUDA)
 #include "cpu_gpu_idle.h"
 #endif // ENABLE_CUDA
 
 #ifdef ENABLE_OPENCL
-#include <hpcrun/gpu/opencl/opencl-api.h>
+#include "../gpu/opencl/opencl-api.h"
 #endif // ENABLE_OPENCL
 
 // ****************** utility macros *********************

@@ -49,7 +49,7 @@
 // OpenMP includes
 //******************************************************************************
 
-#include <omp-tools.h>
+#include "../../ompt/omp-tools.h"
 
 
 

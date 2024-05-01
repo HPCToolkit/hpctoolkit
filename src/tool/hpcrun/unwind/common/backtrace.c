@@ -62,14 +62,14 @@
 // local include files
 //***************************************************************************
 
-#include <unwind/common/unw-throw.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/control-knob.h>
+#include "unw-throw.h"
+#include "../../hpcrun_stats.h"
+#include "../../control-knob.h"
 
 #include <monitor.h>
 
-#include <trampoline/common/trampoline.h>
-#include <dbg_backtrace.h>
+#include "../../trampoline/common/trampoline.h"
+#include "dbg_backtrace.h"
 #include "backtrace_info.h"
 #include "../../thread_data.h"
 

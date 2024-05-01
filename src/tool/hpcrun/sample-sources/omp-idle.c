@@ -1,4 +1,4 @@
-#include "ompt/ompt-interface.h"
+#include "../ompt/ompt-interface.h"
 
 #define BLAME_NAME OMP_IDLE
 #define BLAME_LAYER OpenMP

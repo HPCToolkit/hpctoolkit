@@ -73,19 +73,19 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/thread_data.h>
-#include <utilities/tokenize.h>
-#include <cct/cct.h>
+#include "../hpcrun_options.h"
+#include "../metrics.h"
+#include "../sample_event.h"
+#include "../sample_sources_registered.h"
+#include "../thread_data.h"
+#include "../utilities/tokenize.h"
+#include "../cct/cct.h"
 
 #if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)
 
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
-#include <lib/prof-lean/hpcrun-metric.h>
+#include "../../../lib/prof-lean/hpcrun-metric.h"
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 

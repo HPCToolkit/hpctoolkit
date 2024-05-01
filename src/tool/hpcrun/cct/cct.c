@@ -76,18 +76,18 @@
 
 //*************************** User Include Files ****************************
 
-#include <memory/hpcrun-malloc.h>
-#include <hpcrun/metrics.h>
-#include <messages/messages.h>
-#include <lib/prof-lean/splay-macros.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/spinlock.h>
-#include <hpcrun/hpcrun_return_codes.h>
+#include "../memory/hpcrun-malloc.h"
+#include "../metrics.h"
+#include "../messages/messages.h"
+#include "../../../lib/prof-lean/splay-macros.h"
+#include "../../../lib/prof-lean/hpcrun-fmt.h"
+#include "../../../lib/prof-lean/hpcrun-fmt.h"
+#include "../../../lib/prof-lean/spinlock.h"
+#include "../hpcrun_return_codes.h"
 
 #include "cct.h"
 #include "cct_addr.h"
-#include "cct2metrics.h"
+#include "../cct2metrics.h"
 #include "../memory/hpcrun-malloc.h"
 //#include "../ompt/ompt-interface.h"
 //#include "../memory/hpcrun-malloc.h"

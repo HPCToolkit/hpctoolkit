@@ -49,7 +49,7 @@
 #include "x86-unwind-interval.h"
 #include "x86-interval-arg.h"
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
 #define HW_INITIALIZED          0x8
 #define HW_BP_SAVED             0x4

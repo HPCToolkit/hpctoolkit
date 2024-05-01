@@ -55,7 +55,7 @@
 //*************************** User Include Files ****************************
 
 #include "x86-decoder.h"
-#include "unwind.h"
+#include "../common/unwind.h"
 
 //*************************** Forward Declarations **************************
 

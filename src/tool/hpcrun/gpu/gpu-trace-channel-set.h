@@ -44,7 +44,7 @@
 #ifndef gpu_trace_channel_set_h
 #define gpu_trace_channel_set_h
 
-#include <lib/prof-lean/stacks.h>
+#include "../../../lib/prof-lean/stacks.h"
 
 //******************************************************************************
 // forward type declarations

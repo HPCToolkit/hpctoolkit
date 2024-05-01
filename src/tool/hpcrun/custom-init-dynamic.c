@@ -72,7 +72,7 @@
 
 #include "custom-init.h"
 #include <monitor.h>
-#include <messages/messages.h>
+#include "messages/messages.h"
 
 // *********************************************
 // interface functions

@@ -45,11 +45,11 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
+#include "../gpu-monitoring-thread-api.h"
 
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include "../gpu-activity.h"
+#include "../gpu-activity-process.h"
+#include "../gpu-correlation-id-map.h"
 
 #include "ompt-gpu-api.h"
 #include "ompt-activity-translate.h"

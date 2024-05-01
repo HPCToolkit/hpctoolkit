@@ -53,7 +53,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <utilities/arch/mcontext.h>
+#include "mcontext.h"
 
 /// Fetch the current address (PC) out of the arch-specific context structure,
 /// if can be done async-signal-safely. Otherwise returns a constant NULL.

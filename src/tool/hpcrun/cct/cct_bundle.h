@@ -51,7 +51,7 @@
 #include "cct.h"
 #include "cct_ctxt.h"
 
-#include <hpcrun/cct2metrics.h> // need to be placed after cct.h
+#include "../cct2metrics.h" // need to be placed after cct.h
 
 //
 // Data type not opaque : FIXME ??

@@ -87,12 +87,12 @@
  * local include files
  *****************************************************************************/
 
-#include <sample-sources/memleak.h>
-#include <messages/messages.h>
-#include <safe-sampling.h>
-#include <sample_event.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/splay-macros.h>
+#include "memleak.h"
+#include "../messages/messages.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../../../lib/prof-lean/spinlock.h"
+#include "../../../lib/prof-lean/splay-macros.h"
 
 // FIXME: the inline getcontext macro is broken on 32-bit x86, so
 // revert to the getcontext syscall for now.
@@ -101,8 +101,8 @@
 #define USE_SYS_GCTXT
 #endif
 #else  // ! __i386__
-#include <utilities/arch/inline-asm-gctxt.h>
-#include <utilities/arch/mcontext.h>
+#include "../utilities/arch/inline-asm-gctxt.h"
+#include "../utilities/arch/mcontext.h"
 #endif
 
 

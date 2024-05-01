@@ -96,13 +96,13 @@
  * local include files
  *****************************************************************************/
 
-#include <main.h>
-#include <safe-sampling.h>
-#include <sample_event.h>
-#include <thread_data.h>
+#include "../main.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
 
-#include <messages/messages.h>
-#include <sample-sources/io.h>
+#include "../messages/messages.h"
+#include "io.h"
 
 
 /******************************************************************************

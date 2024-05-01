@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 #include "foil.h"
-#include "ompt/ompt-interface.h"
-#include "monitor-exts/openmp.h"
+#include "../ompt/ompt-interface.h"
+#include "../monitor-exts/openmp.h"
 
 HPCRUN_EXPOSED ompt_start_tool_result_t* ompt_start_tool(unsigned int omp_version,
     const char *runtime_version) {

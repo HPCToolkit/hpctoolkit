@@ -65,7 +65,7 @@ extern "C" {
 
 //*************************** User Include Files ****************************
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 //*************************** Forward Declarations **************************
 

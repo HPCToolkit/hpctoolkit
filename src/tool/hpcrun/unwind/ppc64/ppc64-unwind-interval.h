@@ -60,8 +60,8 @@
 
 //*************************** User Include Files ****************************
 
-#include <unwind/common/binarytree_uwi.h>
-#include <unwind/common/unwind-interval.h>
+#include "../common/binarytree_uwi.h"
+#include "../common/unwind-interval.h"
 
 /******************************************************************************
  * macro

@@ -74,16 +74,16 @@
 //*************************** User Include Files ****************************
 
 
-#include <lib/binutils/VMAInterval.hpp>
+#include "../binutils/VMAInterval.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/Logic.hpp>
-#include <lib/support/NonUniformDegreeTree.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/SrcFile.hpp>
+#include "../support/diagnostics.h"
+#include "../support/FileUtil.hpp"
+#include "../support/Logic.hpp"
+#include "../support/NonUniformDegreeTree.hpp"
+#include "../support/RealPathMgr.hpp"
+#include "../support/SrcFile.hpp"
 using SrcFile::ln_NULL;
-#include <lib/support/Unique.hpp>
+#include "../support/Unique.hpp"
 
 //*************************** Forward Declarations **************************
 

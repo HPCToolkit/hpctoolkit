@@ -78,17 +78,17 @@
 
 //*************************** User Include Files ****************************
 
-#include <hpcrun/metrics.h>
+#include "../metrics.h"
 
-#include <hpcrun/unwind/common/backtrace.h>
+#include "../unwind/common/backtrace.h"
 
-#include <hpcrun/utilities/ip-normalized.h>
+#include "../utilities/ip-normalized.h"
 
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/placeholders.h>
+#include "../../../lib/prof-lean/hpcio.h"
+#include "../../../lib/prof-lean/hpcfmt.h"
+#include "../../../lib/prof-lean/hpcrun-fmt.h"
+#include "../../../lib/prof-lean/placeholders.h"
 
 #include "cct_addr.h"
 

@@ -135,17 +135,17 @@ char    *outfile;
 #include <unistd.h>
 
 #if !defined(STAND_ALONE_CLIENT)
-#include <hpcfnbounds/syserv-mesg.h>
+#include "../../hpcfnbounds/syserv-mesg.h"
 #include "client.h"
-#include "disabled.h"
+#include "../disabled.h"
 #include "fnbounds_file_header.h"
-#include "main.h"
-#include "messages.h"
-#include "sample_sources_all.h"
-#include "monitor.h"
-#include "audit/audit-api.h"
+#include "../main.h"
+#include "../messages/messages.h"
+#include "../sample_sources_all.h"
+#include <monitor.h>
+#include "../audit/audit-api.h"
 #else
-#include "syserv-mesg.h"
+#include "../../hpcfnbounds/syserv-mesg.h"
 #include "fnbounds_file_header.h"
 #endif
 

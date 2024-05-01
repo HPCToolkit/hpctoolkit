@@ -50,9 +50,9 @@
 #include <sys/types.h>
 #include <stdbool.h>
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../../lib/prof-lean/hpcio.h"
+#include "../../lib/prof-lean/hpcfmt.h"
+#include "../../lib/prof-lean/hpcrun-fmt.h"
 
 // tallent: I have moved flags into hpcfile_csprof.h.  The flags don't
 // really belong there but:
@@ -65,9 +65,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../../lib/prof-lean/hpcio.h"
+#include "../../lib/prof-lean/hpcfmt.h"
+#include "../../lib/prof-lean/hpcrun-fmt.h"
 
 typedef hpcrun_metricVal_t cct_metric_data_t;
 

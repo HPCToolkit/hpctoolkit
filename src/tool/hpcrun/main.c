@@ -79,8 +79,8 @@
 //***************************************************************************
 
 
-#include <include/hpctoolkit-config.h>
-#include <lib/prof-lean/placeholders.h>
+#include "hpctoolkit-config.h"
+#include "../../lib/prof-lean/placeholders.h"
 
 #include "main.h"
 
@@ -89,8 +89,8 @@
 #include "control-knob.h"
 #include "loadmap.h"
 #include "files.h"
-#include "fnbounds_interface.h"
-#include "fnbounds_table_interface.h"
+#include "fnbounds/fnbounds_interface.h"
+#include "fnbounds/fnbounds_table_interface.h"
 #include "hpcrun-initializers.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
@@ -105,10 +105,10 @@
 #include "metrics.h"
 
 #include "sample_event.h"
-#include <sample-sources/none.h>
-#include <sample-sources/itimer.h>
+#include "sample-sources/none.h"
+#include "sample-sources/itimer.h"
 
-#include <lib/support-lean/OSUtil.h>
+#include "../../lib/support-lean/OSUtil.h"
 
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
@@ -127,31 +127,31 @@
 #include "trace.h"
 #include "write_data.h"
 #include "sample-sources/itimer.h"
-#include <utilities/token-iter.h>
+#include "utilities/token-iter.h"
 
-#include <memory/hpcrun-malloc.h>
-#include <memory/mmap.h>
-#include <tool/hpcrun/sample-sources/gpu/stream-tracing.h>
+#include "memory/hpcrun-malloc.h"
+#include "memory/mmap.h"
+#include "sample-sources/gpu/stream-tracing.h"
 
-#include <cct/cct.h>
+#include "cct/cct.h"
 
-#include <unwind/common/backtrace.h>
-#include <unwind/common/unwind.h>
+#include "unwind/common/backtrace.h"
+#include "unwind/common/unwind.h"
 
-#include <utilities/arch/context-pc.h>
+#include "utilities/arch/context-pc.h"
 
-#include <lush/lush-backtrace.h>
-#include <lush/lush-pthread.h>
+#include "lush/lush-backtrace.h"
+#include "lush/lush-pthread.h"
 
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/vdso.h>
+#include "../../lib/prof-lean/hpcrun-fmt.h"
+#include "../../lib/prof-lean/hpcio.h"
+#include "../../lib/prof-lean/spinlock.h"
+#include "../../lib/prof-lean/vdso.h"
 
-#include <messages/messages.h>
-#include <messages/debug-flag.h>
+#include "messages/messages.h"
+#include "messages/debug-flag.h"
 
-#include <loadmap.h>
+#include "loadmap.h"
 
 #include "audit/audit-api.h"
 extern void hpcrun_set_retain_recursion_mode(bool mode);

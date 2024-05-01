@@ -49,7 +49,7 @@
 
 #include <stdbool.h>
 
-#include <unwind/common/binarytree_uwi.h>
+#include "../common/binarytree_uwi.h"
 
 /******************************************************************************
  * macros
@@ -125,7 +125,7 @@ typedef struct x86recipe_s {
 extern "C" {
 #endif
 
-#include <unwind/common/unwind-interval.h>
+#include "../common/unwind-interval.h"
 
   void set_ui_canonical(unwind_interval *u, unwind_interval *value);
 

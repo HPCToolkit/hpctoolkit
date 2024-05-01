@@ -206,7 +206,6 @@ UNW_X86_FILES = \
 # unwind/x86-family/x86-libunwind.c  # presently unused on x86
 
 UNW_X86_INCLUDE_DIRS = \
-	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
 
 UNW_PPC64_FILES = \
@@ -214,9 +213,6 @@ UNW_PPC64_FILES = \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
 	unwind/common/default_validation_summary.c
-
-UNW_PPC64_INCLUDE_DIRS = \
-	-I$(srcdir)/unwind/ppc64
 
 UNW_PPC64_LD_FLAGS =
 
@@ -232,18 +228,12 @@ UNW_LIBUNW_FILES = \
 	unwind/generic-libunwind/libunw-unwind.c \
 	unwind/common/default_validation_summary.c
 
-UNW_LIBUNW_INCLUDE_DIRS = \
-	-I$(srcdir)/unwind/generic-libunwind
-
 UNW_LIBUNW_LD_FLAGS =
 
 UNW_MIPS_FILES = \
 	$(UNW_COMMON_FILES) \
 	unwind/mips/mips-unwind.c \
 	unwind/mips/mips-unwind-interval.c
-
-UNW_MIPS_INCLUDE_DIRS = \
-	-I$(srcdir)/unwind/mips
 
 UNW_MIPS_LD_FLAGS =
 
@@ -542,7 +532,7 @@ MY_OPENCL_FILES = \
 	gpu/blame-shifting/opencl/opencl-blame.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
-libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
+libhpcrun_opencl_la_CPPFLAGS  = $(OPENCL_IFLAGS)
 libhpcrun_opencl_la_SOURCES   = foil/opencl-preload.c
 libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
 libhpcrun_opencl_la_LDFLAGS   += $(OPT_OCL_BH_LDFLAGS)
@@ -552,7 +542,7 @@ if OPT_ENABLE_GTPIN
 
 MY_DYNAMIC_FILES += gpu/intel/gtpin/gtpin-shim.c
 pkglib_LTLIBRARIES += libhpcrun_gtpin_cxx.la
-libhpcrun_gtpin_cxx_la_CPPFLAGS  = -g $(MY_INCLUDE_DIRS) -I$(top_srcdir)/src/tool/hpcrun/unwind/x86-family
+libhpcrun_gtpin_cxx_la_CPPFLAGS  = -g $(MY_INCLUDE_DIRS)
 libhpcrun_gtpin_cxx_la_CXXFLAGS  = @HOST_CXXFLAGS@
 
 INTEL_GPU_SYMBOLS = gpu/intel/binaries/patchTokenSymbols.c gpu/intel/binaries/symbolVector.c gpu/intel/binaries/zebinSymbols.c
@@ -608,16 +598,6 @@ MY_CPP_DEFINES += -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
 endif
 
 MY_INCLUDE_DIRS =   \
-	-I$(top_srcdir)/src/tool       \
-	-I$(srcdir)/messages           \
-	-I$(srcdir)/fnbounds           \
-	-I$(srcdir)/memory             \
-	-I$(srcdir)/os/linux           \
-	-I$(srcdir)/cct                \
-	-I$(srcdir)/ompt               \
-	-I$(srcdir)/unwind/common      \
-	-I$(srcdir)/utilities          \
-	$(HPC_IFLAGS)                  \
 	$(LIBUNWIND_IFLAGS)            \
 	$(OPT_GTPIN_IFLAGS)            \
 	$(ROCM_INC_FLGS)               \
@@ -628,22 +608,6 @@ MY_INCLUDE_DIRS =   \
 	$(OPENCL_IFLAGS)               \
 	$(OPT_CUDA_IFLAGS)             \
 	$(OPT_CUPTI_IFLAGS)
-
-
-MY_MIPS_INCLUDE_DIRS = \
-	-I$(srcdir)/unwind/mips
-
-MY_PPC_INCLUDE_DIRS = 		\
-	-I$(srcdir)/utilities/arch/ppc64
-
-MY_X86_INCLUDE_DIRS =		\
-	-I$(srcdir)/utilities/arch/x86-family
-
-MY_IA64_INCLUDE_DIRS =         \
-	-I$(srcdir)/utilities/arch/ia64
-
-MY_AARCH64_INCLUDE_DIRS = \
-	-I$(srcdir)/utilities/arch/aarch64
 
 libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -687,10 +651,6 @@ libhpctoolkit_la_SOURCES = 		\
 libhpcrun_la_CPPFLAGS =			\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
-
-if OPT_BGQ_BACKEND
-libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
-endif
 
 libhpcrun_unwind_la_CPPFLAGS =	\
 	$(MY_CPP_DEFINES)		\
@@ -888,14 +848,7 @@ endif
 
 if HOST_CPU_AARCH64
 libhpcrun_la_SOURCES  += $(MY_AARCH64_FILES)
-libhpcrun_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_gprof_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_pthread_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-libhpcrun_mpi_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 endif
 
 if OPT_PAPI_DYNAMIC
@@ -945,7 +898,6 @@ endif
 
 if UNW_PPC64
 UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
-UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
 UNW_DYNAMIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
 endif
 
@@ -988,7 +940,6 @@ endif
 
 if UNW_LIBUNW
 UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
-UNW_INCLUDE_DIRS = $(UNW_LIBUNW_INCLUDE_DIRS)
 UNW_DYNAMIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
 endif
 

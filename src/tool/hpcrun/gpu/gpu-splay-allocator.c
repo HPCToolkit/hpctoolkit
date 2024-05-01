@@ -53,7 +53,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 
 #include "gpu-splay-allocator.h"
 

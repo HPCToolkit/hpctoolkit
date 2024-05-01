@@ -52,13 +52,13 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-trace-item.h>
-#include <hpcrun/gpu/gpu-context-id-map.h>
+#include "../cct/cct.h"
+#include "gpu-activity.h"
+#include "gpu-activity-channel.h"
+#include "gpu-trace-item.h"
+#include "gpu-context-id-map.h"
 #include <stdatomic.h>
-#include <messages/messages.h>
+#include "../messages/messages.h"
 
 #include "gpu-operation-item.h"
 #include "gpu-operation-item-process.h"

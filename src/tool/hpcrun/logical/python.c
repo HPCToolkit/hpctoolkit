@@ -46,12 +46,12 @@
 
 #define _GNU_SOURCE 1
 
-#include "logical/common.h"
+#include "common.h"
 
-#include "loadmap.h"
-#include "messages/messages.h"
-#include "thread_data.h"
-#include "safe-sampling.h"
+#include "../loadmap.h"
+#include "../messages/messages.h"
+#include "../thread_data.h"
+#include "../safe-sampling.h"
 
 #include <libelf.h>
 #include <gelf.h>

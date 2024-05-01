@@ -48,7 +48,7 @@
 // local includes
 //*****************************************************************************
 
-#include <hpcrun/gpu/gpu-binary.h>
+#include "../../gpu-binary.h"
 
 #include "level0-api.h"
 

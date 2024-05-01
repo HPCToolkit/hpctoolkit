@@ -11,8 +11,8 @@
 // local include files
 //******************************************************************************
 
-#include <lib/prof-lean/mcs-lock.h>
-#include <lib/prof-lean/binarytree.h>
+#include "../../../../lib/prof-lean/mcs-lock.h"
+#include "../../../../lib/prof-lean/binarytree.h"
 #include "binarytree_uwi.h"
 
 #define NUM_NODES 10

@@ -57,9 +57,9 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/hpctoolkit-config.h>
-#include <unwind/common/fence_enum.h>
-#include <utilities/ip-normalized.h>
+#include "hpctoolkit-config.h"
+#include "fence_enum.h"
+#include "../../utilities/ip-normalized.h"
 
 //*************************** Forward Declarations **************************
 

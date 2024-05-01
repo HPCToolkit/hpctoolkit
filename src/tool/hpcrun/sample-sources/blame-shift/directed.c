@@ -60,15 +60,15 @@
  * local includes
  *****************************************************************************/
 
-#include <hpctoolkit.h>
+#include "../../hpctoolkit.h"
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
+#include "../../cct/cct.h"
+#include "../../safe-sampling.h"
+#include "../../sample_event.h"
 
-#include <hpcrun/sample-sources/blame-shift/blame-map.h>
-#include <hpcrun/sample-sources/blame-shift/directed.h>
-#include <hpcrun/sample-sources/blame-shift/metric_info.h>
+#include "blame-map.h"
+#include "directed.h"
+#include "metric_info.h"
 
 
 

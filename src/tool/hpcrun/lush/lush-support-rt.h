@@ -72,12 +72,12 @@
 
 //*************************** User Include Files ****************************
 
-#include <lib/prof-lean/lush/lush-support.h>
+#include "../../../lib/prof-lean/lush/lush-support.h"
 
-#include <unwind/common/unwind.h>
+#include "../unwind/common/unwind.h"
 
-#include <memory/hpcrun-malloc.h>
-#include <utilities/ip-normalized.h>
+#include "../memory/hpcrun-malloc.h"
+#include "../utilities/ip-normalized.h"
 
 
 //*************************** Forward Declarations **************************

@@ -37,29 +37,29 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
-#include <hpcrun/control-knob.h>
-#include <hpcrun/device-finalizers.h>
-#include <hpcrun/gpu/amd/roctracer-api.h>
-#include <hpcrun/gpu/amd/rocprofiler-api.h>
-#include <hpcrun/gpu/amd/hip-api.h>
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/gpu-trace.h>
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/module-ignore-map.h>
-#include <hpcrun/ompt/ompt-interface.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trace.h>
+#include "../control-knob.h"
+#include "../device-finalizers.h"
+#include "../gpu/amd/roctracer-api.h"
+#include "../gpu/amd/rocprofiler-api.h"
+#include "../gpu/amd/hip-api.h"
+#include "../gpu/gpu-activity.h"
+#include "../gpu/gpu-metrics.h"
+#include "../gpu/gpu-trace.h"
+#include "../hpcrun_options.h"
+#include "../hpcrun_stats.h"
+#include "../metrics.h"
+#include "../module-ignore-map.h"
+#include "../ompt/ompt-interface.h"
+#include "../safe-sampling.h"
+#include "../sample_sources_registered.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
+#include "../trace.h"
 
-#include <utilities/tokenize.h>
-#include <messages/messages.h>
-#include <lush/lush-backtrace.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../utilities/tokenize.h"
+#include "../messages/messages.h"
+#include "../lush/lush-backtrace.h"
+#include "../../../lib/prof-lean/hpcrun-fmt.h"
 
 #include <roctracer_hip.h>
 

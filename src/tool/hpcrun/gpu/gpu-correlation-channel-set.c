@@ -45,9 +45,9 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/stacks.h>
+#include "../../../lib/prof-lean/stacks.h"
 
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include "../memory/hpcrun-malloc.h"
 
 #include "gpu-correlation-channel.h"
 #include "gpu-correlation-channel-set.h"

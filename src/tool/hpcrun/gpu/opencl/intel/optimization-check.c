@@ -10,19 +10,19 @@
 //******************************************************************************
 
 #include "optimization-check.h"
-#include <cct/cct.h>                                // hpcrun_cct_insert_ip_norm, hpcrun_cct_retain
+#include "../../../cct/cct.h"                                // hpcrun_cct_insert_ip_norm, hpcrun_cct_retain
 #include "maps/queue-context-map.h"
 #include "maps/kernel-context-map.h"
 #include "maps/kernel-param-map.h"
 #include "maps/buffer-map.h"
 #include "maps/device-map.h"
 
-#include <hpcrun/gpu/gpu-activity.h>                // intel_optimization_t
-#include <hpcrun/gpu/gpu-application-thread-api.h>  // gpu_application_thread_correlation_callback
-#include <hpcrun/gpu/gpu-metrics.h>                 // gpu_metrics_attribute
-#include <hpcrun/gpu/gpu-op-placeholders.h>         // gpu_op_placeholder_flags, gpu_op_placeholder_flags_set
-#include <hpcrun/gpu/opencl/opencl-api.h>           // place_cct_under_opencl_kernel
-#include <hpcrun/safe-sampling.h>                   // hpcrun_safe_enter, hpcrun_safe_exit
+#include "../../gpu-activity.h"                // intel_optimization_t
+#include "../../gpu-application-thread-api.h"  // gpu_application_thread_correlation_callback
+#include "../../gpu-metrics.h"                 // gpu_metrics_attribute
+#include "../../gpu-op-placeholders.h"         // gpu_op_placeholder_flags, gpu_op_placeholder_flags_set
+#include "../opencl-api.h"           // place_cct_under_opencl_kernel
+#include "../../../safe-sampling.h"                   // hpcrun_safe_enter, hpcrun_safe_exit
 
 
 

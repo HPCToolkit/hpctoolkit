@@ -122,7 +122,7 @@ MYSOURCES = \
 	formats/cctdb.h formats/cctdb.c \
 	formats/tracedb.h formats/tracedb.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC) -fvisibility=hidden
+MYCFLAGS = @HOST_CFLAGS@ -I$(LIBELF_INC) -fvisibility=hidden
 
 if IS_HOST_AR
 MYAR = @HOST_AR@

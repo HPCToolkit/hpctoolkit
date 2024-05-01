@@ -51,29 +51,29 @@
 #include "level0-kernel-module-map.h"
 #include "level0-api.h"
 
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-correlation-channel.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-host-correlation-map.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/gpu-application-thread-api.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/gpu/gpu-cct.h>
-#include <hpcrun/gpu/gpu-operation-multiplexer.h>
-#include <hpcrun/gpu/gpu-kernel-table.h>
+#include "../../gpu-activity-channel.h"
+#include "../../gpu-activity-process.h"
+#include "../../gpu-correlation-channel.h"
+#include "../../gpu-correlation-id-map.h"
+#include "../../gpu-host-correlation-map.h"
+#include "../../gpu-metrics.h"
+#include "../../gpu-monitoring-thread-api.h"
+#include "../../gpu-application-thread-api.h"
+#include "../../gpu-op-placeholders.h"
+#include "../../gpu-cct.h"
+#include "../../gpu-operation-multiplexer.h"
+#include "../../gpu-kernel-table.h"
 
 #ifdef ENABLE_GTPIN
-#include <hpcrun/gpu/intel/gtpin/gtpin-instrumentation.h>
+#include "../gtpin/gtpin-instrumentation.h"
 #endif
 
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/logical/common.h>
-#include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <lib/prof-lean/crypto-hash.h>
+#include "../../../safe-sampling.h"
+#include "../../../logical/common.h"
+#include "../../../utilities/hpcrun-nanotime.h"
+#include "../../../../../lib/prof-lean/crypto-hash.h"
 #include <stdatomic.h>
-#include <lib/prof-lean/usec_time.h>
+#include "../../../../../lib/prof-lean/usec_time.h"
 
 #include <monitor.h>
 
@@ -84,7 +84,7 @@
 //*****************************************************************************
 #define DEBUG 0
 
-#include "hpcrun/gpu/gpu-print.h"
+#include "../../gpu-print.h"
 
 //*****************************************************************************
 // local variables

@@ -54,7 +54,7 @@
 //*************************** User Include Files ****************************
 
 #include "binarytree_uwi.h"
-#include <hpcrun/loadmap.h>
+#include "../../loadmap.h"
 #include "interval_t.h"
 
 //******************************************************************************

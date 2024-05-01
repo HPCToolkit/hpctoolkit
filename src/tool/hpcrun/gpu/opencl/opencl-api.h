@@ -48,9 +48,9 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-instrumentation.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
+#include "../gpu-activity.h"
+#include "../gpu-instrumentation.h"
+#include "../../../../lib/prof-lean/hpcrun-opencl.h"
 #include "opencl-memory-manager.h"
 
 

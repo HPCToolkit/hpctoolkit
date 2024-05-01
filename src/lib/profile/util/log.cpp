@@ -46,7 +46,7 @@
 
 #include "log.hpp"
 
-#include "mpi/core.hpp"
+#include "../mpi/core.hpp"
 
 #include <cassert>
 #include <cstdlib>

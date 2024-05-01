@@ -68,18 +68,18 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "pthread-blame.h"
-#include <sample-sources/blame-shift/blame-shift.h>
-#include <sample-sources/blame-shift/blame-map.h>
+#include "blame-shift/blame-shift.h"
+#include "blame-shift/blame-map.h"
 
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/metrics.h>
+#include "../cct2metrics.h"
+#include "../metrics.h"
 
-#include <hpcrun/hpctoolkit.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/cct/cct.h>
-#include <messages/messages.h>
+#include "../hpctoolkit.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
+#include "../cct/cct.h"
+#include "../messages/messages.h"
 
 
 // *****************************************************************************

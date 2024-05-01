@@ -66,23 +66,23 @@
 
 //*************************** User Include Files ****************************
 
-#include <unwind/common/unwind.h>
-#include <unwind/common/unw-datatypes.h>
-#include <unwind/common/libunw_intervals.h>
+#include "../common/unwind.h"
+#include "../common/unw-datatypes.h"
+#include "../common/libunw_intervals.h"
 
 #include "ppc64-unwind-interval.h"
 
-#include "sample_event.h"
+#include "../../sample_event.h"
 
-#include "uw_recipe_map.h"
+#include "../common/uw_recipe_map.h"
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
-#include <utilities/ip-normalized.h>
-#include <utilities/arch/mcontext.h>
+#include "../../utilities/ip-normalized.h"
+#include "../../utilities/arch/mcontext.h"
 
-#include <lib/isa-lean/power/instruction-set.h>
-#include <unwind/common/fence_enum.h>
+#include "../../../../lib/isa-lean/power/instruction-set.h"
+#include "../common/fence_enum.h"
 
 
 

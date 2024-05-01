@@ -53,18 +53,18 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-correlation-id.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-context-id-map.h>
-#include <hpcrun/gpu/gpu-event-id-map.h>
-#include <hpcrun/gpu/gpu-function-id-map.h>
-#include <hpcrun/gpu/gpu-host-correlation-map.h>
-#include <hpcrun/gpu/gpu-trace-item.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/trace.h>
+#include "../cct/cct.h"
+#include "gpu-activity.h"
+#include "gpu-activity-channel.h"
+#include "gpu-correlation-id.h"
+#include "gpu-correlation-id-map.h"
+#include "gpu-context-id-map.h"
+#include "gpu-event-id-map.h"
+#include "gpu-function-id-map.h"
+#include "gpu-host-correlation-map.h"
+#include "gpu-trace-item.h"
+#include "../hpcrun_stats.h"
+#include "../trace.h"
 
 
 

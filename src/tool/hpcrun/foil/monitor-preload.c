@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #include "foil.h"
-#include "main.h"
+#include "../main.h"
 
 #include <monitor.h>
 

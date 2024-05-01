@@ -52,10 +52,10 @@
 // local includes
 //*****************************************************************************
 
-#include <messages.h>
+#include "../../../messages/messages.h"
 
-#include <lib/prof-lean/crypto-hash.h>
-#include <lib/prof-lean/spinlock.h>
+#include "../../../../../lib/prof-lean/crypto-hash.h"
+#include "../../../../../lib/prof-lean/spinlock.h"
 
 #include "level0-binary.h"
 #include "level0-handle-map.h"

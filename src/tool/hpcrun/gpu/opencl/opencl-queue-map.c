@@ -53,11 +53,11 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/splay-uint64.h>
-#include <lib/prof-lean/spinlock.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-splay-allocator.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
+#include "../../../../lib/prof-lean/splay-uint64.h"
+#include "../../../../lib/prof-lean/spinlock.h"
+#include "../gpu-activity-channel.h"
+#include "../gpu-splay-allocator.h"
+#include "../gpu-op-placeholders.h"
 
 #include "opencl-queue-map.h"
 

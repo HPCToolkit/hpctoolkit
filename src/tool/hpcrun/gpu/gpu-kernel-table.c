@@ -43,7 +43,7 @@
 
 
 #include "gpu-kernel-table.h"
-#include "logical/common.h"
+#include "../logical/common.h"
 
 
 static bool did_init = false;

@@ -50,11 +50,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "cct.h"
+#include "cct/cct.h"
 #include "thread_data.h"
-#include <trampoline/common/trampoline.h>
-#include <unwind/common/backtrace.h>
-#include <messages/messages.h>
+#include "trampoline/common/trampoline.h"
+#include "unwind/common/backtrace.h"
+#include "messages/messages.h"
 
 
 //***************************************************************************

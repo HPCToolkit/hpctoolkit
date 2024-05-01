@@ -56,7 +56,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-activity.h>
+#include "../gpu-activity.h"
 
 
 

@@ -57,15 +57,15 @@
 // local includes
 //***************************************************************************
 
-#include <sample-sources/simple_oo.h>
-#include <sample-sources/sample_source_obj.h>
-#include <sample-sources/common.h>
-#include <sample-sources/ga.h>
+#include "simple_oo.h"
+#include "sample_source_obj.h"
+#include "common.h"
+#include "ga.h"
 
-#include <hpcrun/metrics.h>
-#include <hpcrun/thread_data.h>
-#include <messages/messages.h>
-#include <utilities/tokenize.h>
+#include "../metrics.h"
+#include "../thread_data.h"
+#include "../messages/messages.h"
+#include "../utilities/tokenize.h"
 
 
 //***************************************************************************

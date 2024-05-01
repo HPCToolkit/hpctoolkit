@@ -107,8 +107,8 @@ MYSOURCES = \
 	QuickSort.hpp QuickSort.cpp \
 	Unique.hpp Unique.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) -fvisibility=hidden
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) -fvisibility=hidden
+MYCFLAGS   = @HOST_CFLAGS@ -fvisibility=hidden
+MYCXXFLAGS = @HOST_CXXFLAGS@ -fvisibility=hidden
 
 if IS_HOST_AR
 MYAR = @HOST_AR@

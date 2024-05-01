@@ -74,13 +74,13 @@
 // local includes
 //**************************************************************************
 
-#include "fnbounds_interface.h"
-#include "uw_recipe_map.h"
+#include "../../fnbounds/fnbounds_interface.h"
+#include "../common/uw_recipe_map.h"
 #include "x86-decoder.h"
 #include "x86-unwind-analysis.h"
 #include "x86-interval-arg.h"
 
-#include <messages/messages.h>
+#include "../../messages/messages.h"
 
 
 

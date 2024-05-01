@@ -45,10 +45,10 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/module-ignore-map.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
+#include "../cct/cct.h"
+#include "../module-ignore-map.h"
+#include "../safe-sampling.h"
+#include "../sample_event.h"
 
 #include "gpu-activity-channel.h"
 #include "gpu-metrics.h"

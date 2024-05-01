@@ -72,21 +72,21 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/gcc-attr.h>
-#include <include/min-max.h>
+#include "../../../include/gcc-attr.h"
+#include "../../../include/min-max.h"
 
 #include "lush-pthread.i"
 #include "lush-backtrace.h" // for 'lush_agents'
 
-#include <safe-sampling.h>
-#include <sample_event.h>
-#include <cct/cct.h>
+#include "../safe-sampling.h"
+#include "../sample_event.h"
+#include "../cct/cct.h"
 
-#include <metrics.h>
+#include "../metrics.h"
 
-#include <lib/prof-lean/BalancedTree.h>
+#include "../../../lib/prof-lean/BalancedTree.h"
 
-#include <lib/support-lean/timer.h>
+#include "../../../lib/support-lean/timer.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -55,7 +55,7 @@
 #include <ostream>
 #include <string>
 
-#include <lib/support/StringTable.hpp>
+#include "../support/StringTable.hpp"
 
 #include "Struct-Inline.hpp"
 #include "Struct-Skel.hpp"

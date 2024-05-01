@@ -60,7 +60,7 @@
 #include "sample_sources_all.h"
 #include "sample_sources_registered.h"
 
-#include <messages/messages.h>
+#include "messages/messages.h"
 
 /* option handling */
 /* FIXME: this needs to be split up a little bit for different backends */

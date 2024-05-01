@@ -47,7 +47,7 @@
 #ifndef MEM_ERROR_GEN_H
 #define MEM_ERROR_GEN_H
 
-#include "mem_error_dbg.h"
+#include "../../memory/mem_error_dbg.h"
 
 #if GEN_INF_MEM_REQ
   // special purpose extreme error condition checking code

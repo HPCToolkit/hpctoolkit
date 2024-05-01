@@ -64,13 +64,13 @@
 //*****************************************************************************
 // johnmc merge
 #if 0
-#include "ompt-parallel-region-map.h"
+#include <ompt-parallel-region-map.h>
 #endif
 
-#include <lib/prof-lean/placeholders.h>
+#include "../../../lib/prof-lean/placeholders.h"
 
-#include <hpcrun/unresolved.h>
-#include <hpcrun/utilities/timer.h>
+#include "../unresolved.h"
+#include "../utilities/timer.h"
 
 #include "ompt-callstack.h"
 #include "ompt-defer.h"

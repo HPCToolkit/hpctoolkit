@@ -55,7 +55,7 @@
 
 #include "x86-unwind-interval.h"
 
-#include <memory/hpcrun-malloc.h>
+#include "../../memory/hpcrun-malloc.h"
 
 //***************************************************************************
 

@@ -47,7 +47,7 @@
 
 #include "level0-command-queue-map.h"
 #include "level0-handle-map.h"
-#include "lib/prof-lean/spinlock.h"
+#include "../../../../../lib/prof-lean/spinlock.h"
 
 #include <stdio.h>
 

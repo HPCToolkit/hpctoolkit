@@ -76,8 +76,8 @@
 
 //*************************** User Include Files ****************************
 
-#include <lush/lushi.h>
-#include <lush/lushi-cb.h>
+#include "../lush/lushi.h"
+#include "../lush/lushi-cb.h"
 
 //*************************** Forward Declarations **************************
 

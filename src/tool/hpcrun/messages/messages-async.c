@@ -79,14 +79,14 @@
 // local includes
 //*****************************************************************************
 
-#include "disabled.h"
+#include "../disabled.h"
 #include "messages.h"
 #include "messages.i"
 #include "fmt.h"
-#include "sample_event.h"
-#include "sample_prob.h"
-#include "thread_data.h"
-#include "thread_use.h"
+#include "../sample_event.h"
+#include "../sample_prob.h"
+#include "../thread_data.h"
+#include "../thread_use.h"
 
 
 

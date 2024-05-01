@@ -92,24 +92,24 @@
 #include "fnbounds_interface.h"
 #include "fnbounds_file_header.h"
 #include "client.h"
-#include "dylib.h"
+#include "../os/linux/dylib.h"
 
-#include <hpcrun/main.h>
-#include <hpcrun_stats.h>
-#include <disabled.h>
-#include <files.h>
-#include <loadmap.h>
-#include <epoch.h>
-#include <sample_event.h>
-#include <thread_data.h>
+#include "../main.h"
+#include "../hpcrun_stats.h"
+#include "../disabled.h"
+#include "../files.h"
+#include "../loadmap.h"
+#include "../epoch.h"
+#include "../sample_event.h"
+#include "../thread_data.h"
 
-#include <unwind/common/uw_recipe_map.h>
-#include <messages/messages.h>
+#include "../unwind/common/uw_recipe_map.h"
+#include "../messages/messages.h"
 
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/vdso.h>
+#include "../../../lib/prof-lean/spinlock.h"
+#include "../../../lib/prof-lean/vdso.h"
 
-#include <include/hpctoolkit-config.h>
+#include "hpctoolkit-config.h"
 
 
 

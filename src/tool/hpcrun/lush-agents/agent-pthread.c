@@ -71,14 +71,14 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/min-max.h>
+#include "../../../include/min-max.h"
 
 #include "agent-pthread.h"
 
-#include <thread_data.h>       // N.B.: outside of LUSHI interface
-#include <lush/lush-pthread.h> // N.B.: outside of LUSHI interface
+#include "../thread_data.h"       // N.B.: outside of LUSHI interface
+#include "../lush/lush-pthread.h" // N.B.: outside of LUSHI interface
 
-#include <lib/prof-lean/atomic.h> // N.B.: outside of LUSHI interface
+#include "../../../lib/prof-lean/atomic.h" // N.B.: outside of LUSHI interface
 
 //*************************** Forward Declarations **************************
 

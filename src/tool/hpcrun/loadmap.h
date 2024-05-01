@@ -59,9 +59,9 @@
 
 // Local includes
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../../lib/prof-lean/hpcio.h"
+#include "../../lib/prof-lean/hpcfmt.h"
+#include "../../lib/prof-lean/hpcrun-fmt.h"
 
 #ifndef __cplusplus
 #include <stdatomic.h>
@@ -69,7 +69,7 @@
 #include <atomic>
 #endif
 
-#include "fnbounds_file_header.h"
+#include "fnbounds/fnbounds_file_header.h"
 
 #include <link.h>
 

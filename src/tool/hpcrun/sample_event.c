@@ -50,12 +50,12 @@
 
 //*************************** User Include Files ****************************
 
-#include <lib/prof-lean/placeholders.h>
-#include <unwind/common/backtrace.h>
-#include <cct/cct.h>
+#include "../../lib/prof-lean/placeholders.h"
+#include "unwind/common/backtrace.h"
+#include "cct/cct.h"
 #include "hpcrun_stats.h"
-#include "hpcrun-malloc.h"
-#include "fnbounds_interface.h"
+#include "memory/hpcrun-malloc.h"
+#include "fnbounds/fnbounds_interface.h"
 #include "main.h"
 #include "metrics_types.h"
 #include "cct2metrics.h"
@@ -65,23 +65,23 @@
 #include "thread_data.h"
 #include "trace.h"
 #include "handling_sample.h"
-#include "unwind.h"
-#include <utilities/arch/context-pc.h>
-#include "hpcrun-malloc.h"
+#include "unwind/common/unwind.h"
+#include "utilities/arch/context-pc.h"
+#include "memory/hpcrun-malloc.h"
 #include "sample_event.h"
 #include "sample_sources_all.h"
 #include "start-stop.h"
-#include "uw_recipe_map.h"
-#include "validate_return_addr.h"
+#include "unwind/common/uw_recipe_map.h"
+#include "unwind/common/validate_return_addr.h"
 #include "write_data.h"
 #include "cct_insert_backtrace.h"
 #include "utilities/arch/context-pc.h"
 
 #include <monitor.h>
 
-#include <messages/messages.h>
+#include "messages/messages.h"
 
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include "../../lib/prof-lean/hpcrun-fmt.h"
 
 #define HPCRUN_DEBUG_TRACING 0
 

@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 #include <string.h>
-#include "x86-unwind-interval-fixup.h"
-#include "x86-unwind-interval.h"
+#include "../x86-unwind-interval-fixup.h"
+#include "../x86-unwind-interval.h"
 
 // code snippets from ld-2.17.so
 

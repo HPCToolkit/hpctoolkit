@@ -51,12 +51,12 @@
 #include "sample_event.h"
 #include "disabled.h"
 
-#include <memory/hpcrun-malloc.h>
-#include <messages/messages.h>
+#include "memory/hpcrun-malloc.h"
+#include "messages/messages.h"
 
 #include <stdatomic.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <unwind/common/validate_return_addr.h>
+#include "../../lib/prof-lean/hpcrun-fmt.h"
+#include "unwind/common/validate_return_addr.h"
 
 
 //***************************************************************************
