@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 find_path(Libiberty_INCLUDE_DIR
   # Libiberty upstream and Debian install the headers under .../include/libiberty,
   # but the RHELs install just demangle.h as .../include/demangle.h.

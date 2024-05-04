@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021-2022 Rice University
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 - e4s_product: hpctoolkit
   docs:  [README.md, README.ReleaseNotes, LICENSE]
   Area: "Development tools"

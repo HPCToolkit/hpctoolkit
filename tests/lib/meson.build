@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Running thread-disruptive <command>... will run the command in an environment where only a single
 # random thread is available to the command. Note that this uses affinity, so the command may run
 # far slower than expected in this environment.

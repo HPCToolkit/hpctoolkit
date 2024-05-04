@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2016-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef __BINARYTREE_UWI_H__
 #define __BINARYTREE_UWI_H__
 

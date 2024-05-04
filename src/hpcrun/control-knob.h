@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef HPCRUN_CONTROL_KNOB_H
 #define HPCRUN_CONTROL_KNOB_H
 

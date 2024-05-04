@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # Python code is formatted with Black, so 4-space indents
 [decode-mpi,lint-depends]
 indent_size = 4

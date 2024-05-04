@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 test(
   'Perf period sampling measures on @0@'.format(simple_tstexe.name()),
   find_program(files('tst-perf-period-produces-profiles')),

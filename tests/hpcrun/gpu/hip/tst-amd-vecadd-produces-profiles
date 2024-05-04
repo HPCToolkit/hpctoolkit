@@ -1,5 +1,9 @@
 #!/bin/bash -ex
 
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 hpctesttool="$1"
 hpcrun="$2"
 tstexe_amd_vecadd="$3"

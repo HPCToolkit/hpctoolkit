@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 _compile_options = {
   'dbg': ['debug=true', 'optimization=0'],
   'dbgopt': ['debug=true', 'optimization=3'],

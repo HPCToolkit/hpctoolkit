@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2011-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef MMAP_H
 #define MMAP_H
 

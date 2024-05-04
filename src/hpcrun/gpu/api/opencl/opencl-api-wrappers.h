@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef _OPENCL_API_WRAPPERS_H_
 #define _OPENCL_API_WRAPPERS_H_
 

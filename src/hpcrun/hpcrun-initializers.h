@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2015-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef hpcrun_initializers_h
 #define hpcrun_initializers_h
 //******************************************************************************

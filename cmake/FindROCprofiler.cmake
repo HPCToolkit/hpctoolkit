@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 find_path(ROCprofiler_INCLUDE_DIR
   NAMES rocprofiler/rocprofiler.h
   PATH_SUFFIXES rocprofiler)

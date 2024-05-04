@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2012-2024 Rice University
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
         .file   "ia64-tramp.s"
         .pred.safe_across_calls p1-p5,p16-p63
         .text

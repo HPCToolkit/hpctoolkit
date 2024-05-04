@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # This directory provides `hpctesttool`, a super-command for a series of helpful tools for writing
 # precise and robust test-scripts. And other debugging tool.
 

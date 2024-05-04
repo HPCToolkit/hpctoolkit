@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: 2009-2024 Rice University
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
         .file   "tramp.S"
         .section        ".text"
         .align 2

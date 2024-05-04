@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2013-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef CORE_PROFILE_TRACE_DATA_H
 #define CORE_PROFILE_TRACE_DATA_H
 

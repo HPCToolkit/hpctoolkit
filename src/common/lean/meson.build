@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 common_lean_srcs = files(
   'BalancedTree.c',
   'bichannel.c',

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 test(
   'CPUTIME event measures on @0@'.format(simple_tstexe.name()),
   find_program(files('tst-cputime-produces-profiles')),

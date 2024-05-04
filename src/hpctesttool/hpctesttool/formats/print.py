@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2008-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import argparse
 import sys
 import typing

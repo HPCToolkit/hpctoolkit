@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # Structfiles are XML but are also generated data. Do not touch.
 [*.hpcstruct]
 trim_trailing_whitespace = unset

@@ -1,3 +1,6 @@
+SPDX-FileCopyrightText: 2019-2024 Rice University
+SPDX-License-Identifier: CC-BY-4.0
+
 Current Spack Issues for HPCToolkit
 ===================================
 

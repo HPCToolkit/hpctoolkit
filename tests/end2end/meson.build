@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 _tst = find_program(files('tst-default-pipeline'))
 foreach exe : [
   executable(f'tstexe-e2e-openmp', files('openmp.cpp'), dependencies: openmp_dep)

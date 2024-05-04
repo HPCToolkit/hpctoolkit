@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef CUDA_KERNEL_DATA_MAP_H
 #define CUDA_KERNEL_DATA_MAP_H
 

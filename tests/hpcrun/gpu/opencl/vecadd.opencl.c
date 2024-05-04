@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #define CL_TARGET_OPENCL_VERSION 200
 #include <CL/cl.h>
 

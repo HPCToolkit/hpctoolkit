@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 venv="$1"
 srcdir="$2"
 output="$3"

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # FIXME: We shouldn't actually support the xed-interface.h case, but Spack only installs
 # without the xed/ prefix at the moment, and from-source only supports with the xed/ prefix.
 # So in the end we need to support both possible paths. Sigh.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2019-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 //
 // Created by user on 17.8.2019..
 //

@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Install the bash completion package
 if ! [ -f /etc/bash_completion ]; then
   if command -v apt-get; then

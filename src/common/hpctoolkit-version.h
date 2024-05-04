@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2020-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef HPCTOOLKI_VERSION_HPP
 #define HPCTOOLKI_VERSION_HPP
 

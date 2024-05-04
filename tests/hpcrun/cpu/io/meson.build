@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 _example_tstexe = executable('tstexe-io-example', 'example.c', dependencies: threads_dep)
 
 test(

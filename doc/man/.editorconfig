@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Rice University
+#
+# SPDX-License-Identifier: CC0-1.0
+
 # The latex2man LaTeX code is external, do not touch.
 [/hpctoolkit-latex2man.trans]
 trim_trailing_whitespace = unset

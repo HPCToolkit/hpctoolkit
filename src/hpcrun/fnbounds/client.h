@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2012-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef _FNBOUNDS_CLIENT_H_
 #define _FNBOUNDS_CLIENT_H_
 

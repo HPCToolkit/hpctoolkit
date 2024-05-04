@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2003-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import contextlib
 import dataclasses
 import io

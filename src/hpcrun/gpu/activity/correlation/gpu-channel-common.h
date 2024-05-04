@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef GPU_CHANNEL_COMMON_H
 #define GPU_CHANNEL_COMMON_H
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2011-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef INLINE_ASM_GCTXT_H
 #define INLINE_ASM_GCTXT_H
 

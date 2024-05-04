@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2016-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef UNRESOLVED_H
 #define UNRESOLVED_H
 #define UNRESOLVED_ROOT -50

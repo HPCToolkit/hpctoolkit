@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2018-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef sample_sources_nvidia_h
 #define sample_sources_nvidia_h
 

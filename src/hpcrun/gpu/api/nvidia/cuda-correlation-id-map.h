@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef cuda_correlation_id_map_H
 #define cuda_correlation_id_map_H
 

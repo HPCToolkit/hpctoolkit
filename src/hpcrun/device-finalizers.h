@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2017-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef _HPCTOOLKIT_DEVICE_FINALIZERS_H_
 #define _HPCTOOLKIT_DEVICE_FINALIZERS_H_
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include "../splay-tree-entry-data.h"
 
 #define KEY_TYPE      unsigned long

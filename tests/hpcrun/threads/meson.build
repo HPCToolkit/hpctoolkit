@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 _threadmodels = {
   'pthread': executable('tstexe-pthread', files('pthread.c'), dependencies: [threads_dep, math_dep]),

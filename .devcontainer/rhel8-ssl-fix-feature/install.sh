@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Later commands use the nanolayer CLI, which doesn't understand the SSL certificates
 # present in RHEL 8. Setting this environment variable helps.
 # Why? I don't get it either. But this seems to work.

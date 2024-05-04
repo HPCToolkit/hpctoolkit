@@ -1,3 +1,6 @@
+.. SPDX-License-Identifier: CC-BY-4.0
+.. Copyright information is in the :copyright: field below
+
 =========
 hpcstruct
 =========

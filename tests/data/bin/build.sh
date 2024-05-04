@@ -1,5 +1,9 @@
 #!/bin/sh -e
 
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 cd "$(dirname "$(realpath "$0")")"
 
 rm -rf bin/

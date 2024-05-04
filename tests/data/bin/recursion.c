@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 // The following code implements a "heart" or "double-diamond" recursion pattern: two recursive
 // loops sharing a call edge.
 

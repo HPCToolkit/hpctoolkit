@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 if not cupti_dep.found() or not has_cuda
   subdir_done()
 endif

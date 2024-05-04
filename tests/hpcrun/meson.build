@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 _args = []
 if rocm_dep.found()
   assert(not is_disabler(rocprofiler_path))
