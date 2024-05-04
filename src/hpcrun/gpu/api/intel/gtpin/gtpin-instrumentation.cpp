@@ -303,12 +303,6 @@ static ip_normalized_t ipNormalizedEmpty = {.lm_id = 0, .lm_ip = 0};
 // code imported from Intel's gtpin sample
 //*****************************************************************************
 
-/*========================== begin_copyright_notice ============================
-Copyright (C) 2016-2022 Intel Corporation
-
-SPDX-License-Identifier: MIT
-============================= end_copyright_notice ===========================*/
-
 bool
 Use64BitCounters
 (const IGtGenCoder &coder)

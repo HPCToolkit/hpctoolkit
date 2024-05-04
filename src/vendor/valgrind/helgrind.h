@@ -11,8 +11,7 @@
    This file is part of Helgrind, a Valgrind tool for detecting errors
    in threaded programs.
 
-   Copyright (C) 2007-2017 OpenWorks LLP
-      info@open-works.co.uk
+   SPDX-FileCopyrightText: 2007-2017 OpenWorks LLP <info@open-works.co.uk>
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -44,6 +43,8 @@
    WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+   SPDX-License-Identifier: bzip2-1.0.6
 
    ----------------------------------------------------------------
 
