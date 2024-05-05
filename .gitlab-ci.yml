@@ -63,7 +63,7 @@ include:
     name: rhel9-arm64
     containerfile: .ci.predeps/Containerfile.rhel9
     platform: linux/arm64
-    job_tag: rice-linux-medium-arm64
+    job_tag: saas-linux-medium-arm64
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -87,7 +87,7 @@ include:
     name: ubuntu22.04-arm64
     containerfile: .ci.predeps/Containerfile.ubuntu22.04
     platform: linux/arm64
-    job_tag: rice-linux-medium-arm64
+    job_tag: saas-linux-medium-arm64
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -116,7 +116,7 @@ include:
     name: bare-arm64
     containerfile: .ci.predeps/Containerfile.bare
     platform: linux/arm64
-    job_tag: rice-linux-medium-arm64
+    job_tag: saas-linux-medium-arm64
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -301,7 +301,7 @@ ubuntu22.04 arm64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu22.04-arm64]']
   image: $PREDEPS_IMAGE_UBUNTU22_04_ARM64
-  tags: [rice-linux-medium-arm64]
+  tags: [saas-linux-medium-arm64]
 ubuntu22.04 ppc64le:
   extends: .individual test job std
   needs: ['predeps: [ubuntu22.04-ppc64le]']
@@ -336,7 +336,7 @@ rhel9 arm64:
   extends: .individual test job std
   needs: ['predeps: [rhel9-arm64]']
   image: $PREDEPS_IMAGE_RHEL9_ARM64
-  tags: [rice-linux-medium-arm64]
+  tags: [saas-linux-medium-arm64]
   variables:
     # FIXME: This particular combination of PAPI et al. seems to cause hpcrun to hang, always.
     # Disable PAPI in the build until a proper investigation can be carried out.
@@ -379,7 +379,7 @@ bare arm64:
   extends: .individual test job bare
   needs: ['predeps: [bare-arm64]']
   image: $PREDEPS_IMAGE_BARE_ARM64
-  tags: [rice-linux-medium-arm64]
+  tags: [saas-linux-medium-arm64]
 bare ppc64le:
   extends: .individual test job bare
   needs: ['predeps: [bare-ppc64le]']
