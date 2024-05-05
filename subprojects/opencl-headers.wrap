@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 The Meson development team
+#
+# SPDX-License-Identifier: MIT
+
 [wrap-file]
 directory = OpenCL-Headers-2023.04.17
 source_url = https://github.com/KhronosGroup/OpenCL-Headers/archive/refs/tags/v2023.04.17.tar.gz

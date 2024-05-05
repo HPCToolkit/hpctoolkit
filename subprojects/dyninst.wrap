@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 The Meson development team
+#
+# SPDX-License-Identifier: MIT
+
 [wrap-file]
 directory = dyninst-13.0.0
 source_url = https://github.com/dyninst/dyninst/archive/refs/tags/v13.0.0.tar.gz
