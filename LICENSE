@@ -1,6 +1,13 @@
-BSD 3-Clause License
+This source distribution follows the [REUSE Specification] Version 3 to declare copyright and licensing for individual files. License texts applying to individual files are provided in the `LICENSES/` subdirectory.
+
+The BSD-3-Clause license text below applies to this source distribution as a whole.
+
+[REUSE Specification]: https://reuse.software/spec/
+
+***
 
 Copyright (c) 2002-2024, Rice University
+
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
