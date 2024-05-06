@@ -40,6 +40,22 @@ default:
     - stuck_or_timeout_failure
     - runner_system_failure
 
+.not external mr:
+  # Some jobs require specialized hardware that isn't generally available to the average GitLab user,
+  # this includes any of the `rice-*` tags as well as `saas-linux-*large-*` and `saas-linux-*-gpu-*`.
+  # These jobs should never run in scenarios where said runners may not be available.
+  rules: &only_runner_privileged
+  - &never_if_runner_unprivileged
+    # Never run in merge request (but not merged results) pipelines from external projects (forks)
+    if: >-
+      ($ENABLE_HPCTOOLKIT_CUSTOM_RUNNERS == "" || $ENABLE_HPCTOOLKIT_CUSTOM_RUNNERS == null)
+      && $CI_COMMIT_REF_PROTECTED == "false"
+      && $CI_MERGE_REQUEST_IID
+      && ($CI_MERGE_REQUEST_SOURCE_BRANCH_SHA == "" || $CI_MERGE_REQUEST_SOURCE_BRANCH_SHA == null)
+      && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_PROJECT_ID
+    when: never
+  - when: on_success
+
 
 include:
 # All code should pass pre-commit without error.
@@ -221,6 +237,13 @@ include:
     "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD"
     > "$PREDEPS_SECRET_spack_mirrors"
 
+'predeps: [ubuntu22.04-ppc64le]':
+  rules: *only_runner_privileged
+'predeps: [rhel9-ppc64le]':
+  rules: *only_runner_privileged
+'predeps: [bare-ppc64le]':
+  rules: *only_runner_privileged
+
 
 # The vast majority of jobs in this sequence do a build and then run some tests. This is the base
 # job spec for such jobs, configurable via a small number of variables.
@@ -307,6 +330,7 @@ ubuntu22.04 ppc64le:
   needs: ['predeps: [ubuntu22.04-ppc64le]']
   image: $PREDEPS_IMAGE_UBUNTU22_04_PPC64LE
   tags: [rice-linux-medium-ppc64le]
+  rules: *only_runner_privileged
 leap15 amd64:
   extends: .individual test job std
   needs: ['predeps: [leap15-amd64]']
@@ -350,6 +374,7 @@ rhel9 ppc64le:
   needs: ['predeps: [rhel9-ppc64le]']
   image: $PREDEPS_IMAGE_RHEL9_PPC64LE
   tags: [rice-linux-medium-ppc64le]
+  rules: *only_runner_privileged
   variables:
     # FIXME: This particular combination of PAPI et al. seems to cause hpcrun to hang, always.
     # Disable PAPI in the build until a proper investigation can be carried out.
@@ -385,10 +410,12 @@ bare ppc64le:
   needs: ['predeps: [bare-ppc64le]']
   image: $PREDEPS_IMAGE_BARE_PPC64LE
   tags: [rice-linux-medium-ppc64le]
+  rules: *only_runner_privileged
 
 .individual test job cuda:
   extends: .individual test job
   tags: [rice-linux-large-amd64-gpu-p100]
+  rules: *only_runner_privileged
   variables:
     TEST_ARGS: >-
       --suite opencl
@@ -410,6 +437,7 @@ cuda12.3 amd64:
 .individual test job rocm:
   extends: .individual test job
   tags: [rice-linux-large-amd64-gpu-amd]
+  rules: *only_runner_privileged
   variables:
     TEST_ARGS: >-
       --suite opencl
@@ -446,6 +474,7 @@ rocm6.1 amd64:
 intel amd64:
   extends: .individual test job std
   tags: [rice-linux-large-amd64-gpu-intel]
+  rules: *only_runner_privileged
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
@@ -463,6 +492,7 @@ intel amd64:
 .semifresh test job:
   extends: .test job
   stage: semi-fresh tests
+  rules: *only_runner_privileged
   variables:
     SETUP_ARGS: ''
     REGEN_SUITES: ''
@@ -519,6 +549,7 @@ fresh testdata:
   - semifresh none cpu
   - semifresh nvidia sw-cuda
   - semifresh amd
+  rules: *only_runner_privileged
   when: always
   script:
   - apk add git
@@ -572,6 +603,7 @@ compiler clang16:
 compiler icx:
   extends: .compiler compat test job
   tags: [rice-linux-large-amd64-gpu-intel]
+  rules: *only_runner_privileged
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
@@ -649,6 +681,7 @@ compiler icx:
 'option: [intel amd64]':
   extends: .option test job
   tags: [rice-linux-large-amd64-gpu-intel]
+  rules: *only_runner_privileged
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   parallel:
@@ -693,6 +726,7 @@ compiler icx:
   needs: ['predeps: [spack]']
   tags: [saas-linux-medium-amd64]
   rules:
+  - *never_if_runner_unprivileged  # Expensive and not necessary for review
   - if: $CI_COMMIT_REF_PROTECTED == "true"
     allow_failure: false
   - allow_failure: true
