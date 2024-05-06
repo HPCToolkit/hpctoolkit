@@ -1,6 +1,14 @@
 # Only spawn workflows for MRs or protected branches
 workflow:
+  auto_cancel:
+    on_job_failure: all
+    on_new_commit: interruptible
   rules:
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+    auto_cancel:
+      on_job_failure: none
+      on_new_commit: none
+    when: always
   - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_PROTECTED != "true"
     when: never
   - when: always
@@ -30,8 +38,6 @@ variables:
 
 
 default:
-  # Most jobs can be interrupted and should be retried if failed for mysterious reasons
-  interruptible: true
   retry:
     max: 2
     when:
@@ -261,6 +267,7 @@ include:
 #     {# of repeats} > log(1 - {confidence}) / log({min prob of success})
 # So a 99% confidence of 90% success rate requires a --repeat of at least 44.
 .test job:
+  interruptible: true
   cache:
   - key: meson-packagecache
     when: always
@@ -719,6 +726,7 @@ compiler icx:
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
 'spack install':
+  interruptible: true
   stage: configuration tests
   image:
     name: $PREDEPS_IMAGE_SPACK
