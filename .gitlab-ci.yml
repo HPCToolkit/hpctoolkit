@@ -84,7 +84,7 @@ include:
     name: ubuntu20.04-arm64
     containerfile: .ci.predeps/Containerfile.ubuntu20.04
     platform: linux/arm64
-    job_tag: rice-linux-medium-arm64
+    job_tag: saas-linux-medium-arm64
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -118,7 +118,7 @@ include:
     name: min-ubuntu20.04-arm64
     containerfile: .ci.predeps/Containerfile.ubuntu20.04
     platform: linux/arm64
-    job_tag: rice-linux-medium-arm64
+    job_tag: saas-linux-medium-arm64
     build_args: |
       VERMODE=minimum
 - component: *ci_predeps
@@ -619,14 +619,14 @@ validate:
 'check arm64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-arm64]
+  tags: [saas-linux-medium-arm64]
   variables:
     JOB_TEST_REPEAT: 1
   before_script: *perf_enable
 'check min arm64: [cpu]':
   extends: .check
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_ARM64
-  tags: [rice-linux-small-arm64]
+  tags: [saas-linux-medium-arm64]
   variables:
     JOB_TEST_REPEAT: 1
   before_script: *perf_enable
