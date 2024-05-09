@@ -79,7 +79,7 @@ namespace ParseAPI {
 // type declarations
 //***************************************************************************
 
-  class PARSER_EXPORT GPUCodeSource : public /*Symtab */ CodeSource {
+  class GPUCodeSource : public /*Symtab */ CodeSource {
  public:
   GPUCodeSource(std::vector<GPUParse::Function *> &functions,
                 Dyninst::SymtabAPI::Symtab *s);

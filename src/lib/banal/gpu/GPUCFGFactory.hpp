@@ -87,7 +87,7 @@ namespace ParseAPI {
 //***************************************************************************
 
 
-class PARSER_EXPORT GPUCFGFactory : public CFGFactory {
+class GPUCFGFactory : public CFGFactory {
  public:
   GPUCFGFactory(std::vector<GPUParse::Function *> &functions) :
     _functions(functions) {}
