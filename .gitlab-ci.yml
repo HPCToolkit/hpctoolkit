@@ -18,6 +18,7 @@ stages:
 - individual tests
 - semi-fresh tests
 - configuration tests
+- pre-deploy checks
 
 variables:
   # Most jobs require the submodules, those that don't will override this
@@ -225,23 +226,6 @@ include:
     <<: *ci_predeps_shared
     name: libintl-amd64
     containerfile: .ci.predeps/Containerfile.libintl
-
-# Image(s) containing Spack-installed software for Spack-based verification
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: spack
-    containerfile: .ci.predeps/Containerfile.spack
-    ignorefile: .ci.predeps/ignore.spack
-
-'predeps: [spack]':
-  before_script:
-  - export PREDEPS_SECRET_spack_mirrors=/tmp/mirrors.yaml
-  - >-
-    printf "mirrors: {%s: {url: '%s', access_pair: ['%s', '%s'], binary: true, source: false}}"
-    __ci_remote_cache_push_mirror oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v@SPACK_CURRENT_RELEASE@
-    "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD"
-    > "$PREDEPS_SECRET_spack_mirrors"
 
 'predeps: [ubuntu22.04-ppc64le]':
   rules: *only_runner_privileged
@@ -725,40 +709,91 @@ compiler icx:
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
-'spack install':
+spack:
   interruptible: true
-  stage: configuration tests
+  stage: pre-deploy checks
   image:
-    name: $PREDEPS_IMAGE_SPACK
+    name: ghcr.io/spack/almalinux9:develop
     entrypoint: ['spack-env']
-  needs: ['predeps: [spack]']
-  tags: [saas-linux-medium-amd64]
+  needs: []
+  tags: [saas-linux-large-amd64]
+  allow_failure:
+    exit_codes: [77]
+  variables:
+    ERRORS_IGNORED_EXIT_CODE: 0  # Do not report ignored errors
+    ERRORS_REPORTED_EXIT_CODE: 77  # Do not fail on real errors
   rules:
   - *never_if_runner_unprivileged  # Expensive and not necessary for review
   - if: $CI_COMMIT_REF_PROTECTED == "true"
-    allow_failure: false
-  - allow_failure: true
+    variables:
+      ERRORS_IGNORED_EXIT_CODE: 77  # Report but do not fail on ignored errors
+      ERRORS_REPORTED_EXIT_CODE: 1  # Fail on real errors
+  - when: on_success
   cache:
   - key: spack-src
     paths:
     - .cache/spack-src/
   before_script:
-  - mkdir -p .cache/spack-src
-  - spack config add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src
-  script:
-  # Update to the latest Spack develop, from whatever we have here
-  - git -C $SPACK_ROOT pull
-  # Install the environment, running the tests along the way
-  - spack env create -d /tmp/env ci/tests.spack.yaml
-  # FIXME: Apparently the reuse concretization allows deprecated versions to appear in the final
-  # spec? For now allow installing deprecated versions as needed until this can be properly fixed.
-  - spack -D /tmp/env install --fail-fast --test=root --deprecated
-  - spack -D /tmp/env test run --log-file spack.junit.xml --log-format junit hpctoolkit
-  after_script:
+  # Update to the latest Spack. We fiddle with the Git repository some to get access to the entire
+  # commit history with tags, without downloading all the diffs and stuff.
   - |
-    echo "To reproduce:"
-    echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit:O --workdir /hpctoolkit $CI_JOB_IMAGE"
+    # Updating Spack to the latest...
+    git -C $SPACK_ROOT checkout --quiet develop || exit $?
+    git -C $SPACK_ROOT remote set-branches origin develop || exit $?
+    git -C $SPACK_ROOT config --add remote.origin.partialclonefilter tree:0 || exit $?
+    git -C $SPACK_ROOT pull --unshallow --quiet || exit $?
+    spack --version || exit $?
+  # Figure out the version of the recipe we claim this commit to be. There are a number of cases.
+  - |
+    # Determining Spack package version for Git ref...
+    if [ "$CI_COMMIT_TAG" ] && [ "$CI_COMMIT_REF_PROTECTED" = "true" ]; then
+      ver="$CI_COMMIT_TAG"  # Protected tags are valid versions
+    else
+      branch="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_COMMIT_BRANCH:-develop}}"
+      case "$branch" in
+      develop) ver="develop"; ;;  # develop -> @develop
+      release/*) ver="$(echo "$branch" | cut -d/ -f2-).stable"; ;;  # release/X -> @X.stable
+      *) ver="develop.${branch//\//.}"; ;;  # X/Y -> @develop.X.Y
+      esac
+    fi
+    refver="git.${CI_COMMIT_SHA}=${ver}"
+    echo "Identified ref as hpctoolkit@git.${CI_COMMIT_SHA}=${ver}"
+  # Save the location of the stages directory to a file, for the after_script.
+  - spack location --stages > spack-stages
+  # Link in a cache for files that get pulled in from the network. Not absolutely required for
+  # correct operation so push past any errors.
+  - spack config --scope=site add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src || true
+  # Pad the install paths to make sure the generated buildcache binaries are compatible across
+  # multiple systems and environments.
+  - spack config --scope=site add config:install_tree:padded_length:128
+  script:
+  - |
+    ci/spack/run.sh -d env/ -c @DEVELOP_SNAPSHOT -c @GIT_HPCTOOLKIT -j spack.junit.xml -k \
+      -b '--unsigned --type binary shared oci://"$CI_REGISTRY_IMAGE"/ci.spack-buildcache' \
+      -S '--unsigned --type binary
+          --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
+          __emul_autopush oci://"$CI_REGISTRY_IMAGE"/ci.spack-buildcache' \
+      "$refver" \
+    || case $? in
+    44) exit $ERRORS_REPORTED_EXIT_CODE; ;;
+    77) exit $ERRORS_IGNORED_EXIT_CODE; ;;
+    *) exit $?; ;;
+    esac
+  after_script:
+  # Try to recover the logs generated during the install process
+  - mkdir -p spack-logs/
+  - cp --parents -v -t spack-logs/ "$(cat spack-stages)"/*/*.txt ~/.spack/test/*/*.txt || true
+  - |
+    echo "To reproduce in a container environment:"
+    echo "  podman run --rm -it -v ./:/hpctoolkit:ro $CI_JOB_IMAGE"
+    echo "  curl -Lo /tmp/artifacts.zip ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
+    echo "  unzip -d /tmp/ /tmp/artifacts.zip"
+    echo "  /hpctoolkit/ci/spack/run.sh -d /tmp/env -k"
   artifacts:
+    expire_in: 2 days
+    paths:
+    - spack-logs/
+    - env/
     reports:
       junit: spack.junit.xml
+    when: always
