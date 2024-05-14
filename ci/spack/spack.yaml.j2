@@ -1,0 +1,36 @@
+spack:
+  view: false
+  concretizer:
+    unify: false
+    reuse:
+      roots: false
+      from:
+      - type: external
+      - type: buildcache
+    targets:
+      granularity: generic
+    duplicates:
+      strategy: full
+
+  specs:
+  - matrix:
+    - - hpctoolkit@{{VERSION}}
+    - - ~viewer ~mpi +opencl ~cuda ~rocm ~level_zero
+    - [build_system=meson buildtype=release, build_system=autotools ~debug]
+    - [+papi, ~papi]
+
+  packages:
+    all:
+      require:
+      - target=:x86_64_v3
+      # FIXME: This is to avoid errors where Spack installs a gcc-runtime of older version, then
+      # proceeds to mess up the RPATHs such that binaries find the older version instead of the
+      # newer version. Forcing everything to compile with one compiler solves most of these issues.
+      - '%gcc@11'
+
+  mirrors:
+    spack-release:
+      url: https://binaries.spack.io/v0.22.0
+      signed: true
+      binary: true
+      source: false
