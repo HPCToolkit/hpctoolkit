@@ -627,9 +627,6 @@ level0_command_list_append_launch_kernel_entry
     level0_data_node_t * data_for_kernel = level0_commandlist_alloc_kernel(kernel, event, event_pool);;
     // Associate the data entry with the event
     level0_event_map_insert(event, data_for_kernel);
-    // For immediate command list, the kernel is dispatched to GPU at this point.
-    // So, we attribute GPU metrics to the current CPU calling context.
-    level0_command_begin(data_for_kernel);
   }
   return event;
 }
@@ -671,9 +668,6 @@ level0_command_list_append_launch_memcpy_entry
     level0_data_node_t * data_for_memcpy = level0_commandlist_alloc_memcpy(src_type, dst_type, mem_copy_size, event, event_pool);
     // Associate the data entry with the event
     level0_event_map_insert(event, data_for_memcpy);
-    // For immediate command list, the mempcy is dispatched to GPU at this point.
-    // So, we attribute GPU metrics to the current CPU calling context.
-    level0_command_begin(data_for_memcpy);
   }
   return event;
 }
@@ -777,6 +771,11 @@ level0_process_immediate_command_list
   if (command_list_data_head == NULL) {
     // This is a GPU activity to an immediate command list
     level0_data_node_t* data_for_act = level0_event_map_lookup(event);
+
+    // For immediate command list, the kernel is dispatched to GPU at this point.
+    // So, we attribute GPU metrics to the current CPU calling context.
+    level0_command_begin(data_for_act);
+
     level0_attribute_event(event);
 
     // For command in immediate command list,
