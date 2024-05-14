@@ -765,7 +765,7 @@ spack:
   - spack config --scope=site add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src || true
   # Pad the install paths to make sure the generated buildcache binaries are compatible across
   # multiple systems and environments.
-  - spack config --scope=site add config:install_tree:padded_length:128
+  - spack config --scope=site add config:install_tree:padded_length:64
   script:
   - |
     ci/spack/run.sh -d env/ -c @DEVELOP_SNAPSHOT -c @GIT_HPCTOOLKIT -j spack.junit.xml -k \
