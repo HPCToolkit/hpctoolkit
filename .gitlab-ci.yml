@@ -10,6 +10,7 @@ stages:
 - setup
 - validate
 - test
+- pre-deploy checks
 
 
 variables:
@@ -749,37 +750,90 @@ fresh testdata:
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
-'spack install':
-  stage: test
+spack:
+  interruptible: true
+  stage: pre-deploy checks
   image:
-    name: ghcr.io/spack/fedora37:develop
+    name: ghcr.io/spack/almalinux9:develop
     entrypoint: ['spack-env']
-  dependencies: []
-  tags: [saas-linux-medium-amd64]
+  needs: []
+  tags: [saas-linux-large-amd64]
+  allow_failure:
+    exit_codes: [77]
+  variables:
+    ERRORS_IGNORED_EXIT_CODE: 0  # Do not report ignored errors
+    ERRORS_REPORTED_EXIT_CODE: 77  # Do not fail on real errors
   rules:
   - if: $CI_COMMIT_REF_PROTECTED == "true"
-    allow_failure: false
-  - allow_failure: true
-  parallel:
-    matrix:
-    - BUILDSYS: [autotools, meson]
+    variables:
+      ERRORS_IGNORED_EXIT_CODE: 77  # Report but do not fail on ignored errors
+      ERRORS_REPORTED_EXIT_CODE: 1  # Fail on real errors
+  - when: on_success
   cache:
   - key: spack-src
     paths:
     - .cache/spack-src/
   before_script:
-  - mkdir -p .cache/spack-src
-  - >-
-    spack config add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src
-  - >-
-    test -z "$CI_REGISTRY" ||
-    spack mirror add --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
-    --type binary remote-cache oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21
-  script:
-  - spack env create -d /tmp/env ci/tests.spack.yaml
-  - spack -D /tmp/env install --fail-fast --no-check-signature
-  after_script:
+  # Update to the latest Spack. We fiddle with the Git repository some to get access to the entire
+  # commit history with tags, without downloading all the diffs and stuff.
   - |
-    echo "To reproduce:"
-    echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit:O --workdir /hpctoolkit $CI_JOB_IMAGE"
+    # Updating Spack to the latest...
+    git -C $SPACK_ROOT checkout --quiet develop || exit $?
+    git -C $SPACK_ROOT remote set-branches origin develop || exit $?
+    git -C $SPACK_ROOT config --add remote.origin.partialclonefilter tree:0 || exit $?
+    git -C $SPACK_ROOT pull --unshallow --quiet || exit $?
+    spack --version || exit $?
+  # Figure out the version of the recipe we claim this commit to be. There are a number of cases.
+  - |
+    # Determining Spack package version for Git ref...
+    if [ "$CI_COMMIT_TAG" ] && [ "$CI_COMMIT_REF_PROTECTED" = "true" ]; then
+      ver="$CI_COMMIT_TAG"  # Protected tags are valid versions
+    else
+      branch="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_COMMIT_BRANCH:-develop}}"
+      case "$branch" in
+      develop) ver="develop"; ;;  # develop -> @develop
+      release/*) ver="$(echo "$branch" | cut -d/ -f2-).stable"; ;;  # release/X -> @X.stable
+      *) ver="develop.${branch//\//.}"; ;;  # X/Y -> @develop.X.Y
+      esac
+    fi
+    refver="git.${CI_COMMIT_SHA}=${ver}"
+    echo "Identified ref as hpctoolkit@git.${CI_COMMIT_SHA}=${ver}"
+  # Save the location of the stages directory to a file, for the after_script.
+  - spack location --stages > spack-stages
+  # Link in a cache for files that get pulled in from the network. Not absolutely required for
+  # correct operation so push past any errors.
+  - spack config --scope=site add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src || true
+  # Pad the install paths to make sure the generated buildcache binaries are compatible across
+  # multiple systems and environments.
+  - spack config --scope=site add config:install_tree:padded_length:64
+  script:
+  - |
+    ci/spack/run.sh -d env/ -c @DEVELOP_SNAPSHOT -c @GIT_HPCTOOLKIT -j spack.junit.xml -k \
+      -b '--unsigned --type binary shared oci://"$CI_REGISTRY_IMAGE"/ci.spack-buildcache' \
+      -S '--unsigned --type binary
+          --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
+          __emul_autopush oci://"$CI_REGISTRY_IMAGE"/ci.spack-buildcache' \
+      "$refver" \
+    || case $? in
+    44) exit $ERRORS_REPORTED_EXIT_CODE; ;;
+    77) exit $ERRORS_IGNORED_EXIT_CODE; ;;
+    *) exit $?; ;;
+    esac
+  after_script:
+  # Try to recover the logs generated during the install process
+  - mkdir -p spack-logs/
+  - cp --parents -v -t spack-logs/ "$(cat spack-stages)"/*/*.txt "$(cat spack-stages)"/*/spack-src/tests/*.log ~/.spack/test/*/*.txt || true
+  - |
+    echo "To reproduce in a container environment:"
+    echo "  podman run --rm -it -v ./:/hpctoolkit:ro $CI_JOB_IMAGE"
+    echo "  curl -Lo /tmp/artifacts.zip ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
+    echo "  unzip -d /tmp/ /tmp/artifacts.zip"
+    echo "  /hpctoolkit/ci/spack/run.sh -d /tmp/env -k"
+  artifacts:
+    expire_in: 2 days
+    paths:
+    - spack-logs/
+    - env/
+    reports:
+      junit: spack.junit.xml
+    when: always
