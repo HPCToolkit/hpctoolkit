@@ -69,7 +69,7 @@ namespace ParseAPI {
 // type declarations
 //***************************************************************************
 
-class PARSER_EXPORT GPUFunction : public ParseAPI::Function {
+class GPUFunction : public ParseAPI::Function {
  public:
   GPUFunction(Address addr, std::string name, CodeObject * obj,
     CodeRegion * region, InstructionSource * isource) :

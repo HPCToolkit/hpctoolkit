@@ -78,7 +78,7 @@ namespace ParseAPI {
 //***************************************************************************
 
 
-class PARSER_EXPORT GPUBlock : public Block {
+class GPUBlock : public Block {
 public:
   GPUBlock(CodeObject * o, CodeRegion * r,
     Address start, Address end, Address last,
