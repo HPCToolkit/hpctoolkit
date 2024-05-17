@@ -60,7 +60,7 @@ COPY \
 
 
 # Spack installation side-stage: Install (some) software from Spack to /opt/software
-FROM ghcr.io/spack/almalinux8:0.21.1 as spack-install
+FROM ghcr.io/spack/almalinux8:0.22.0 as spack-install
 
 # Install all the packages we want, using the environment. This also generates a Meson native file
 # referring to all the packages.

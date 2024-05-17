@@ -280,7 +280,7 @@ include:
   - export PREDEPS_SECRET_spack_mirrors=/tmp/mirrors.yaml
   - >-
     printf "mirrors: {%s: {url: '%s', access_pair: ['%s', '%s'], binary: true, source: false}}"
-    __ci_remote_cache_push_mirror oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.21
+    __ci_remote_cache_push_mirror oci://"$CI_REGISTRY_IMAGE"/spack-buildcache/v0.22
     "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD"
     > "$PREDEPS_SECRET_spack_mirrors"
 'predeps: [ubuntu20.04-amd64]':
