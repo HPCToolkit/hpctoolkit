@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2020-2024 Rice University
+SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
 
 SPDX-License-Identifier: CC-BY-4.0
 -->
