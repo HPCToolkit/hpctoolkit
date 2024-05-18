@@ -1,0 +1,141 @@
+[tool.poetry]
+name = "hpctesttool"
+version = "0.1.0"
+description = "Test utilities for the HPCToolkit project"
+authors = ["Jonathon Anderson <janderson@rice.edu>"]
+license = "BSD-3-Clause"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+click = "^8.1.3"
+ruamel-yaml = "^0.17.16"
+pytest = "^7.2.1"
+pyparsing = "^3.0.9"
+
+[tool.poetry.scripts]
+hpctesttool = "hpctesttool.__main__:main"
+
+[tool.pytest.ini_options]
+xfail_strict = true
+junit_suite_name = "py-hpctesttool"
+
+# These are dependencies that are you will never need, but are needed for the vendoring deps.
+[tool.poetry.group.implicit]
+optional = true
+[tool.poetry.group.implicit.dependencies]
+poetry-core = "^1.7.0"
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = [
+  "fixme",
+  "trailing-whitespace",
+  "missing-final-newline",
+  "too-few-public-methods",
+  "too-many-public-methods",
+  "global-statement",
+  "assignment-from-none",
+  "unused-format-string-key",
+  "invalid-name",
+  "bad-classmethod-argument",
+  "bad-mcs-method-argument",
+  "bad-mcs-classmethod-argument",
+  "too-many-lines",
+  "multiple-statements",
+  "superfluous-parens",
+  "no-self-argument",
+  "E1103",
+  "I0014",
+  "exec-used",
+  "attribute-defined-outside-init",
+  "abstract-method",
+  "super-init-not-called",
+  "unnecessary-semicolon",
+  "wildcard-import",
+  "global-variable-undefined",
+  "redefined-outer-name",
+  "broad-except",
+  "anomalous-backslash-in-string",
+  "wrong-import-order",
+  "ungrouped-imports",
+  "empty-docstring",
+  "missing-docstring",
+  "missing-module-docstring",
+  "missing-function-docstring",
+  "missing-class-docstring",
+  "duplicate-code",
+  "import-error",
+  "protected-access",
+]
+
+[tool.pylint.FORMAT]
+max-line-length=159
+
+[tool.pylint.DESIGN]
+max-locals=20
+max-returns=6
+max-branches=23
+max-statements=60
+min-public-methods=1
+max-public-methods=20
+max-parents=7
+max-attributes=11
+max-module-lines=1000
+max-args=8
+
+[tool.ruff.lint]
+select = [
+  "F",  # Pyflakes
+  "E", "W",  # pycodestyle
+  "C90",  # mccabe
+
+  # pydocstyle
+  "D200", "D201", "D202", "D206", "D207", "D208", "D209", "D210", "D212",
+  "D214", "D215", "D3", "D4",
+
+  "UP",  # pyupgrade
+  "N",  # pep8-naming
+  "YTT",  # flake8-2020
+  "B",  # Bugbear
+  "A",  # flake8-builtins
+  "C4",  # flake8-comprehensions
+  "T10",  # flake8-debugger
+  "ISC",  # flake8-implicit-str-concat
+  "ICN",  # flake8-import-conventions
+  "PT",  # flake8-pytest-style
+  "Q",  # flake8-quotes
+  "RET",  # flake8-return
+  "SIM",  # flake8-simplify
+  "DTZ",  # flake8-datetimez
+  "ERA",  # eradicate
+  "PGH",  # pygrep-hooks
+  "PLE", "PLW",  # Pylint
+  "PIE",  # flake8-pie
+  "RUF", # Ruff-specific rules (ambiguous unicode and unused noqa)
+]
+
+ignore = [
+  # Allow going over the max line length, for now.
+  "E501",
+]
+
+unfixable = [
+  # Eradication can sometimes make comments weird. Don't remove automatically.
+  "ERA",
+
+  # Don't remove unused noqas, since they may have disappeared due to other errors.
+  "RUF100",
+
+  # Don't automatically remove unused bits, they usually indicate typos
+  "F8",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.mypy]
+python_version = "3.8"
+check_untyped_defs = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

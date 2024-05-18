@@ -64,7 +64,7 @@ repos:
     exclude: &vendored |
       (?x)^(
         .*/[^/]+\.patch |    # Patches
-        src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
+        src/vendor/valgrind/[^/]+\.h |    # External Valgrind headers
         tests/data/dbase/[^/]+\.d/.* |    # Generated test data
         tests/data/meas/[^/]+\.m/.* |    # Generated test data
         tests/data/struct/[^/]+\.hpcstruct |    # Generated test data
@@ -120,45 +120,64 @@ repos:
   hooks:
   # Ensure the pyproject.toml files are valid for Poetry
   - id: poetry-check
-    args: [-C, lib/python/, --lock]
+    args: [-C, src/hpctesttool/, --lock]
 
 - repo: https://github.com/netromdk/vermin
   rev: v1.6.0
   hooks:
   # Check that the Python code doesn't require a newer version than expected
   - id: vermin
-    args: [--violations, -vvv]
+    args:
+    - --target=3.8-
+    - --eval-annotations
+    - --parse-comments
+    - --violations
+    - -vvv
 
 - repo: https://github.com/jendrikseipp/vulture
   rev: v2.11
   hooks:
   # Check that there isn't any dead Python code lying around
   - id: vulture
-    args: ['lib/python']
+    args: ['src/hpctesttool']
 
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.10.0
   hooks:
  # Run static checks on the Python code
   - id: mypy
+    args:
+    - --config-file=src/hpctesttool/pyproject.toml
+    # - --scripts-are-modules
     # NB: The MyPy cache needs to be disabled (--no-incremental) to dodge
     # https://github.com/python/mypy/issues/12664 which affects ruamel.yaml
-    args: [--scripts-are-modules, --no-incremental, --show-column-numbers, --pretty]
+    - --no-incremental
+    - --show-column-numbers
+    - --pretty
+    files: '^src/hpctesttool'
     additional_dependencies:
     - pytest >=7.3.2, <8
     - ruamel.yaml >=0.17.16, <0.18
     - click >=8.1.5, <9
     - pyparsing >=3.0.9, <4
     - Jinja2 >=3.1, <4
+  - id: mypy
+    exclude: '^src/hpctesttool/'
+    args: [--scripts-are-modules, --pretty]
 
 - repo: https://github.com/pylint-dev/pylint
   rev: v3.1.0
   hooks:
   # Run the aggressive static Python linter
   - id: pylint
+    args: ['--rcfile=src/hpctesttool/pyproject.toml']
+    files: '^src/hpctesttool/'
     additional_dependencies:
     - ruamel.yaml >=0.17.32, <0.18
     - pylint-pytest
+  - id: pylint
+    exclude: '^src/hpctesttool/'
+    args: [--disable=line-too-long]
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.10.0.1
@@ -184,12 +203,17 @@ repos:
   # Identify common spelling mistakes in code and comments
   - id: codespell
     stages: [pre-commit, commit-msg]
-    args: ['--config', '.codespellrc']
+    args:
+    # HSA is part of the ROCm software stack. codespell mistakes it for "has".
+    # deques is the plural of "deque" (doubly-ended queue). codespell mistakes it for "dequeues".
+    # InsId is a type name from GTPin. codespell mistakes it for "inside".
+    - --ignore-words-list=hsa,deques,insid
+    # Wil Phan is one of our staff members. codespell mistakes it for "will/well".
+    - --ignore-regex=\b(Wil\s+Phan)\b
     exclude: |
       (?x)^(
-        lib/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
-        tools/latex2man/.* |    # External code
-        src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
+        doc/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
+        src/vendor/valgrind/[^/]+\.h |    # External Valgrind headers
       )$
 
 - repo: https://github.com/Yelp/detect-secrets

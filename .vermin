@@ -1,4 +1,0 @@
-[vermin]
-targets = 3.8-
-eval_annotations = yes
-parse_comments = yes

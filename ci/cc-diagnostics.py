@@ -9,6 +9,8 @@ done
 exit 127
 """  # noqa: D400, D415
 
+# pylint: disable=invalid-name
+
 import argparse
 import collections.abc
 import configparser
@@ -102,6 +104,8 @@ def _gcc_to_cq(project_root: Path, exclude_dirs: typing.List[Path], line: str) -
 def cc_diagnostics(
     project_root: Path, output: typing.TextIO, logfiles: collections.abc.Sequence
 ) -> None:
+    """Main function"""
+
     exclude_dirs = list(_collect_wrap_subprojects(project_root))
 
     reports = []
@@ -145,5 +149,8 @@ if __name__ == "__main__":
     parser.add_argument("logfiles", type=Path, nargs="+")
     args = parser.parse_args()
     with open(args.output, "w", encoding="utf-8") as outf, contextlib.ExitStack() as es:
-        logfiles = tuple(es.enter_context(open(lf, encoding="utf-8")) for lf in args.logfiles)
-        cc_diagnostics(Path(".").resolve(strict=True), outf, logfiles)
+        cc_diagnostics(
+            Path(".").resolve(strict=True),
+            outf,
+            tuple(es.enter_context(open(lf, encoding="utf-8")) for lf in args.logfiles),
+        )

@@ -9,6 +9,8 @@ done
 exit 127
 """  # noqa: D400, D415
 
+# pylint: disable=invalid-name
+
 import configparser
 import os.path
 import re
