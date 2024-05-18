@@ -1,2 +1,6 @@
+# SPDX-FileCopyrightText: 2022-2023 Rice University
+#
+# SPDX-License-Identifier: CC0-1.0
+
 * text=auto
 *.hpcstruct -diff

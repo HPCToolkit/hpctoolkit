@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef GPU_OP_CCTS_MAP_H
 #define GPU_OP_CCTS_MAP_H
 

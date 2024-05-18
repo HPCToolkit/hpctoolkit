@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2020-2024 Rice University
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # HPCToolkit
 
 HPCToolkit is an integrated suite of tools for measurement and

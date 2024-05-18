@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # OS installation stage: Install build tools from the OS
 ARG ONEAPI_VERSION=2024.0.1
 FROM docker.io/intel/oneapi-basekit:${ONEAPI_VERSION}-devel-ubuntu22.04 as os-install

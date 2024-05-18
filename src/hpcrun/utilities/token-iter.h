@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2015-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef TOKEN_ITER
 #define TOKEN_ITER
 #include <string.h>

@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2008-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # -*- Mode:Shell-script -*-
 
 dolog (){

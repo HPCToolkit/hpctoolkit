@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Only spawn workflows for MRs or protected branches
 workflow:
   auto_cancel:
@@ -233,6 +237,24 @@ include:
   rules: *only_runner_privileged
 'predeps: [bare-ppc64le]':
   rules: *only_runner_privileged
+
+
+# The repository follows the REUSE specification v3.x for representing copyright and licencing
+# information on a per-file basis. This job checks for compliance using the REUSE helper tool.
+#
+# NB: This could be done via pre-commit, but unfortunately the `reuse` tool does not check the Git
+# index and thus often errors on uncommitted files. While temporary files should in general be
+# guarded against accidental inclusion, it's also a surprise to the casual developer.
+# So for now we opt to use a separate CI job instead.
+reuse:
+  stage: .pre
+  image:
+    name: docker.io/fsfe/reuse:3
+    entrypoint: [""]
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  script:
+  - reuse --include-submodules --include-meson-subprojects lint
 
 
 # The vast majority of jobs in this sequence do a build and then run some tests. This is the base

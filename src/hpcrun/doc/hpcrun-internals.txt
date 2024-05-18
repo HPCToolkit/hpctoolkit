@@ -1,3 +1,6 @@
+SPDX-FileCopyrightText: 2007-2024 Rice University
+SPDX-License-Identifier: CC-BY-4.0
+
 ISSUES
         augment libunwind to support call stack surgery
                 find return address of current frame (when at a sample)

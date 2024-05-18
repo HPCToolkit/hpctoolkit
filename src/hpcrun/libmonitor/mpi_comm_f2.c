@@ -1,10 +1,9 @@
+// SPDX-FileCopyrightText: 2007-2023 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 /*
  *  Override mpi_comm_rank__ in Fortran.
- *
- *  Copyright (c) 2007-2023, Rice University.
- *  See the file LICENSE for details.
- *
- *  $Id$
  */
 
 #define _GNU_SOURCE

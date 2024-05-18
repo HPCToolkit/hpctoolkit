@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 find_path(IGA_INCLUDE_DIR
   NAMES iga/iga.h)
 find_library(IGA_LIBRARY

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef GENERIC_COLLECTIONS_UTIL_H
 #define GENERIC_COLLECTIONS_UTIL_H 1
 

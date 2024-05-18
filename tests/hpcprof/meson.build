@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 _tst = find_program(files('tst-flags-effective'))
 foreach name, meas : testdata_meas
   test(

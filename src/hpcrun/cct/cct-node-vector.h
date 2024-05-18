@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2018-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef _HPCTOOLKIT_CCT_NODE_VECTOR_H_
 #define _HPCTOOLKIT_CCT_NODE_VECTOR_H_
 

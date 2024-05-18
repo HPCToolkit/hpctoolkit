@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2012-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef _MCONTEXT_H
 #define _MCONTEXT_H
 

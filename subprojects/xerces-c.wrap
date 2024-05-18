@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 The Meson development team
+#
+# SPDX-License-Identifier: MIT
+
 [wrap-file]
 directory = xerces-c-3.2.5
 source_url = https://dlcdn.apache.org//xerces/c/3/sources/xerces-c-3.2.5.tar.gz

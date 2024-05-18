@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2012-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 //
 // This software was produced with support in part from the Defense Advanced
 // Research Projects Agency (DARPA) through AFRL Contract FA8650-09-C-1915.

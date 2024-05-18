@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024-2023 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 if not rst2man.found()
   subdir_done()
 endif

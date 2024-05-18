@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef gpu_blame_kernel_map_h_
 #define gpu_blame_kernel_map_h_
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2012-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #define _GNU_SOURCE
 
 #include "amd-xop.h"

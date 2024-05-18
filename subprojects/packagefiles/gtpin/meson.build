@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 project('gtpin', 'cpp', version: '4.0', meson_version: '>=1.0.0')
 
 if not (host_machine.system() == 'linux' and host_machine.cpu_family() == 'x86_64')

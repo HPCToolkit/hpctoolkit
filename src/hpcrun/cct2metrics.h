@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2011-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef CCT2METRICS_H
 #define CCT2METRICS_H
 

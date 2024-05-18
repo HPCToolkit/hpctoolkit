@@ -12,7 +12,8 @@
   This file is part of DRD, a Valgrind tool for verification of
   multithreaded programs.
 
-  Copyright (C) 2006-2020 Bart Van Assche <bvanassche@acm.org>.
+  SPDX-FileCopyrightText: 2006-2020 Bart Van Assche <bvanassche@acm.org>
+
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -45,6 +46,8 @@
   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+  SPDX-License-Identifier: bzip2-1.0.6
 
   ----------------------------------------------------------------
 

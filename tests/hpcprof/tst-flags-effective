@@ -1,5 +1,9 @@
 #!/bin/sh -ex
 
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 hpctesttool="$1"
 hpcprof="$2"
 meas="$3"

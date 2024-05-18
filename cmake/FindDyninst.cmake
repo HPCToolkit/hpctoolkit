@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 find_package(Dyninst CONFIG QUIET
   OPTIONAL_COMPONENTS ${Dyninst_FIND_COMPONENTS}
   VERSION ${Dyninst_FIND_VERSION})

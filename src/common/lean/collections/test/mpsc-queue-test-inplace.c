@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include "../mpsc-queue-entry-data.h"
 
 #define VALUE_TYPE int

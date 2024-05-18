@@ -1,5 +1,5 @@
 //==============================================================
-// Copyright © 2019 Intel Corporation
+// SPDX-FileCopyrightText: 2019 Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,6 +18,8 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+//
+// SPDX-License-Identifier: MIT
 // =============================================================
 
 #ifndef PTI_SAMPLES_UTILS_DWARF_H_

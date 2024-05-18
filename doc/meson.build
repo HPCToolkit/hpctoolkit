@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 docdir = get_option('datadir') / 'doc' / meson.project_name()
 
 install_data(

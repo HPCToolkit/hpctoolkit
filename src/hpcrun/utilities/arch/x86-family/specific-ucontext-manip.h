@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2011-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef SPECIFIC_UCONTEXT_MANIP
 #define SPECIFIC_UCONTEXT_MANIP
 

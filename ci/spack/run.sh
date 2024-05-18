@@ -1,5 +1,9 @@
 #!/usr/bin/bash
 
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 help() {
   echo "Usage: $0 [-d ENV/] [-c MIRSPEC] [-b MIRSPEC] [-S MIRSPEC] [-k] [-j FILE] [VERSION]
 

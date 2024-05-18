@@ -1,3 +1,6 @@
+SPDX-FileCopyrightText: 2006-2024 Rice University
+SPDX-License-Identifier: CC-BY-4.0
+
 File
   header        FileHeader
   data          CsProfData

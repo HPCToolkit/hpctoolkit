@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 find_path(Perfmon2_INCLUDE_DIR
   NAMES perfmon/pfmlib.h)
 find_library(Perfmon2_LIBRARY

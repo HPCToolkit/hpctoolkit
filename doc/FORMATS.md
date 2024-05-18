@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2021-2023 Rice University
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 A full HPCToolkit database consists of the following files and directories:
 
     database/

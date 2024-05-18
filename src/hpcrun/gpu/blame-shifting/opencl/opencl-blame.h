@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef blame_shift_opencl_h
 #define blame_shift_opencl_h
 

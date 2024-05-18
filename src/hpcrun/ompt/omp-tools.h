@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2011-2024 LLVM Project
+
 /*
  * include/omp-tools.h.var
  */

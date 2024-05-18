@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023-2024 Rice University
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 This directory contains a series of small binaries, each built from a single source file. The following suffixes are
 used to mark which compiler and options were used to compile the binary:
 

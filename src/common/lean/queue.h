@@ -1,6 +1,7 @@
 /*-
- * Copyright (c) 1991, 1993
- *      The Regents of the University of California.  All rights reserved.
+ * SPDX-FileCopyrightText: 1991, 1993 The Regents of the University of California
+ *
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,6 +26,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  *      @(#)queue.h     8.5 (Berkeley) 8/20/94
  * $FreeBSD$

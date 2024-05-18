@@ -1,3 +1,6 @@
+SPDX-FileCopyrightText: 2017-2024 Rice University
+SPDX-License-Identifier: CC-BY-4.0
+
 This directory contains the implementation of perf-events for HPCToolkit (hpcrun).
 The files in this directory (ordered based on its importance):
 

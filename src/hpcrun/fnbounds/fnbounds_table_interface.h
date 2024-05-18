@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2012-2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #ifndef FNBOUNDS_TABLE_IFACE
 #define FNBOUNDS_TABLE_IFACE
 #include <stddef.h>

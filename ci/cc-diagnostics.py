@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # The following is run by sh and ignored by Python.
 """:"
 for trial in python3.12 python3.11 python3.10 python3.9 python3.8 python3 python; do

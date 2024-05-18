@@ -1,8 +1,19 @@
 #!/bin/sh
 
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 while [ "$#" -ge 1 ]; do
   echo "$1 -> $2"
   rm -rf "$2"
   cp -rT "$1" "$2"
+
+  echo "CDLA Permissive 2.0 applied via $2.license"
+# REUSE-IgnoreStart
+  echo "SPDX-FileCopyrightText: $(date +%Y) The HPCToolkit Project
+SPDX-License-Identifier: CDLA-Permissive-2.0" > "$2".license
+# REUSE-IgnoreEnd
+
   shift 2
 done

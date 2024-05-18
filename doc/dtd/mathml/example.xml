@@ -1,4 +1,11 @@
 <?xml version="1.0"?>
+
+<!--
+SPDX-FileCopyrightText: 2024 1998-2000 World Wide Web Consortium
+
+SPDX-License-Identifier: W3C
+-->
+
 <!DOCTYPE mathml SYSTEM "mathml.dtd">
 <mathml>
  <apply>

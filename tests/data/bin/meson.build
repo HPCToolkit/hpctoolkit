@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 testdata_bin = {
   'inlines+loops-sm_62-nvcc102-0': {'file': files('inlines+loops-sm_62-nvcc102-0'), 'cuda': true},
   'inlines+loops-sm_62-nvcc102-dr': {'file': files('inlines+loops-sm_62-nvcc102-dr'), 'cuda': true},

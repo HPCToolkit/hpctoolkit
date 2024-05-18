@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Rice University
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <CL/sycl.hpp>
 #include <numeric>
 #include <iostream>
