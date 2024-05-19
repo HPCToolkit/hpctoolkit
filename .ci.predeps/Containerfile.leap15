@@ -41,12 +41,19 @@ RUN \
     zlib-devel \
   && : # END
 
-# Install a up-to-date version of Meson
-# Also install docutils for processing documentation
+# Install an up-to-date version of Meson
 RUN \
   python3.11 -m pip install \
     'meson>=1.3.2,<2' \
   && : # END
+
+# Install Sphinx and necessary dependencies, in a venv to keep from tangling the system install
+RUN \
+  python3 -m venv /opt/sphinx \
+  && /opt/sphinx/bin/python -m pip install \
+    sphinx \
+    myst-parser \
+  && ln -s /opt/sphinx/bin/sphinx-build /usr/bin/sphinx-build
 
 # Ensure the appropriate MPI is loaded into the shell environment, always.
 RUN mpi-selector --system --set mpich

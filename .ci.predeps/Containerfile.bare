@@ -47,7 +47,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     sed  `# FIXME: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
   && : # END
 
-# Install a up-to-date versions of Meson, using a suitable Python
+# Install an up-to-date version of Meson, using a suitable Python
 RUN \
   python3 -m pip install \
     'meson>=1.1.0,<2' \
@@ -88,6 +88,7 @@ RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
   && echo "auto_features = 'enabled'" >> "$t" \
   && echo "extended_tests = 'disabled'" >> "$t" \
   && echo "manpages = 'disabled'" >> "$t" \
+  && echo "manual = 'disabled'" >> "$t" \
   && echo "python = 'disabled'" >> "$t" \
   && echo "hpcprof_mpi = 'disabled'" >> "$t" \
   && echo "papi = 'disabled'" >> "$t" \

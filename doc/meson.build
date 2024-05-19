@@ -12,12 +12,6 @@ install_data(
   install_tag: 'docs',
 )
 
-install_data(
-  'HPCToolkit-users-manual.pdf',
-  install_dir: docdir / 'manual',
-  install_tag: 'docs',
-)
-
 dtd_hpc_structure = files('dtd/hpc-structure.dtd')
 
 install_data(
@@ -55,4 +49,5 @@ install_data(
   install_tag: 'dtd',
 )
 
+subdir('src')
 subdir('man')

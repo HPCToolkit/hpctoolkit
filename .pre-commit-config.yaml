@@ -57,6 +57,11 @@ repos:
   - id: mdformat
     # Currently only limited to the README
     files: ^README\.md$
+  - id: mdformat
+    files: ^doc/src/
+    additional_dependencies:
+    - mdformat-myst ==0.1.4
+    - mdformat-deflist ==0.1.2
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.6.0
@@ -219,6 +224,7 @@ repos:
       (?x)^(
         doc/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
         src/vendor/valgrind/[^/]+\.h |    # External Valgrind headers
+        .*\.svg |  # Images
       )$
 
 - repo: https://github.com/Yelp/detect-secrets

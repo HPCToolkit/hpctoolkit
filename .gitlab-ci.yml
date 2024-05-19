@@ -24,6 +24,7 @@ stages:
 - semi-fresh tests
 - configuration tests
 - pre-deploy checks
+- artifacts
 
 variables:
   # Most jobs require the submodules, those that don't will override this
@@ -231,6 +232,13 @@ include:
     <<: *ci_predeps_shared
     name: libintl-amd64
     containerfile: .ci.predeps/Containerfile.libintl
+
+# Image(s) containing bare + extra software for documentation generation
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: docs
+    containerfile: .ci.predeps/Containerfile.docs
 
 'predeps: [ubuntu22.04-ppc64le]':
   rules: *only_runner_privileged
@@ -557,7 +565,7 @@ semifresh amd:
 
 # For easy access, the regenerated test data is made available as a single job artifact archive
 fresh testdata:
-  stage: semi-fresh tests
+  stage: artifacts
   image: docker.io/alpine
   needs:
   - semifresh none cpu
@@ -820,3 +828,26 @@ spack:
     reports:
       junit: spack.junit.xml
     when: always
+
+
+# Generate just the documentation, and expose all the possible formats as artifacts.
+documentation:
+  stage: artifacts
+  image: $PREDEPS_IMAGE_DOCS
+  needs: ['predeps: [docs]']
+  tags: [saas-linux-small-amd64]
+  script:
+  - meson setup -Dmanual=enabled -Dmanual_pdf=enabled builddir/
+  - meson compile -C builddir/ html hpctoolkit.epub hpctoolkit.pdf
+  - >-
+    mv -t .
+    builddir/doc/src/html builddir/doc/src/hpctoolkit.epub builddir/doc/src/hpctoolkit.pdf
+  artifacts:
+    expose_as: 'Rendered documentation'
+    paths:
+    # HTML version is the primary one exposed
+    - html/index.html
+    - html/
+    # Single-file variants are also available
+    - hpctoolkit.epub
+    - hpctoolkit.pdf
