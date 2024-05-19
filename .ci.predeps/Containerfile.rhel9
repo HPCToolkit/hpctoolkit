@@ -42,12 +42,19 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
     zlib-devel \
   && : # END
 
-# Install a up-to-date versions of Meson, using a suitable Python
-# Also install docutils for processing documentation.
+# Install an up-to-date version of Meson, using a suitable Python
 RUN \
   python3 -m pip install \
     'meson>=1.1.0,<2' \
   && : # END
+
+# Install Sphinx and necessary dependencies, in a venv to keep from tangling the system install
+RUN \
+  python3 -m venv /opt/sphinx \
+  && /opt/sphinx/bin/python -m pip install \
+    sphinx \
+    myst-parser \
+  && ln -s /opt/sphinx/bin/sphinx-build /usr/bin/sphinx-build
 
 # Ensure the appropriate MPI is loaded into the shell environment, always.
 ENTRYPOINT ["/bin/sh", "-c", ". /etc/profile.d/modules.sh && module load mpi && exec \"$@\"", "sh"]
