@@ -453,6 +453,10 @@ bare ppc64le:
       --suite opencl
       --suite cuda
       --suite hpcstruct
+ubuntu22.04 cuda amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [ubuntu22.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU22_04_AMD64
 cuda11.8 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda11.8-amd64]']
