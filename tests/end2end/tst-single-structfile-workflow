@@ -1,0 +1,20 @@
+#!/bin/sh -ex
+
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+hpctesttool="$1"
+hpcrun="$2"
+hpcstruct="$3"
+hpcprof="$4"
+shift 4  # Remaining arguments are the app command line
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+"$hpcrun" -o "$tmpdir"/m "$@"
+"$hpcstruct" -o "$tmpdir"/exe.hpcstruct "$(command -v "$1")"
+"$hpcprof" -j1 -S "$tmpdir"/exe.hpcstruct -o "$tmpdir"/d "$tmpdir"/m
+"$hpctesttool" test check-db "$tmpdir"/d
