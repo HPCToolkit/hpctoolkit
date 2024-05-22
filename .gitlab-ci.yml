@@ -96,8 +96,8 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: fedora38-amd64
-    containerfile: .ci.predeps/Containerfile.fedora38
+    name: fedora39-amd64
+    containerfile: .ci.predeps/Containerfile.fedora39
 
 - component: *ci_predeps
   inputs:
@@ -129,13 +129,6 @@ include:
     containerfile: .ci.predeps/Containerfile.ubuntu20.04
     platform: linux/ppc64le
     job_tag: rice-linux-medium-ppc64le
-    build_args: |
-      VERMODE=minimum
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: min-fedora38-amd64
-    containerfile: .ci.predeps/Containerfile.fedora38
     build_args: |
       VERMODE=minimum
 
@@ -289,7 +282,7 @@ include:
   before_script: *predeps_before_script
 'predeps: [ubuntu20.04-ppc64le]':
   before_script: *predeps_before_script
-'predeps: [fedora38-amd64]':
+'predeps: [fedora39-amd64]':
   before_script: *predeps_before_script
 
 'predeps: [min-rhel8-amd64]':
@@ -299,8 +292,6 @@ include:
 'predeps: [min-ubuntu20.04-arm64]':
   before_script: *predeps_before_script
 'predeps: [min-ubuntu20.04-ppc64le]':
-  before_script: *predeps_before_script
-'predeps: [min-fedora38-amd64]':
   before_script: *predeps_before_script
 
 'predeps: [cuda11.6-amd64]':
@@ -432,9 +423,9 @@ validate:
   extends: .buildmany amd64 cpu
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   parallel: {matrix: [{JOB_CC: [clang10]}]}
-'buildmany: [amd64, fedora38]':
+'buildmany: [amd64, fedora39]':
   extends: .buildmany amd64 cpu
-  image: $PREDEPS_IMAGE_FEDORA38_AMD64
+  image: $PREDEPS_IMAGE_FEDORA39_AMD64
   parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
 
 .buildmany min:
@@ -450,10 +441,6 @@ validate:
   extends: [.buildmany amd64 cpu, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
   parallel: {matrix: [{JOB_CC: [clang10]}]}
-'buildmany min: [amd64, fedora38]':
-  extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
 
 
 # CUDA spins

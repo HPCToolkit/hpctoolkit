@@ -1,5 +1,5 @@
 # OS installation stage: Install build tools from the OS
-FROM docker.io/fedora:38 as os-install
+FROM docker.io/fedora:39 as os-install
 
 # Some images set problematic environment variables. Wipe those out first for safety.
 ENV \
@@ -43,7 +43,7 @@ RUN \
   . /etc/profile.d/modules.sh \
   && module load mpi \
   && cp -svrTn $MPI_BIN /usr/bin \
-  && cp -svrTn $MPI_LIB /usr/lib64
+  && { cp -svrTn $MPI_LIB /usr/lib64 || :; }
 
 
 # OS native-file side-stage: Collect and compose a native file for the OS software
@@ -58,8 +58,7 @@ COPY \
 
 
 # Spack installation side-stage: Install (some) software from Spack to /opt/software
-# TODO: Use fedora38 once Dyninst can be installed with a modern TBB.
-FROM ghcr.io/spack/fedora37:0.22.0 as spack-install
+FROM ghcr.io/spack/fedora39:0.22.0 as spack-install
 
 # Install all the packages we want, using the environment. This also generates a Meson native file
 # referring to all the packages.
