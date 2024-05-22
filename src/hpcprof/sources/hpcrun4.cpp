@@ -44,7 +44,7 @@ scope_exit<std::decay_t<F>> make_scope_exit(F&& f) {
 
 Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, const stdshim::filesystem::path& meas)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
-    thread(nullptr), path(fn), measDirPath(fs::canonical(meas)), tracepath(fn) {
+    thread(nullptr), path(fn), measDirPath(fs::weakly_canonical(meas)), tracepath(fn) {
   tracepath.replace_extension(".hpctrace");
   // Try to open up the file. Errors handled inside somewhere.
   file = hpcrun_sparse_open(path.c_str(), 0, 0);

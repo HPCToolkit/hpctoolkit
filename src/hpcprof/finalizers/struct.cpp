@@ -108,7 +108,7 @@ using LMData = hpctoolkit::finalizers::detail::LMData;
 using StructFileParser = hpctoolkit::finalizers::detail::StructFileParser;
 
 StructFile::StructFile(stdshim::filesystem::path p, stdshim::filesystem::path meas, std::shared_ptr<RecommendationStore> rs)
-  : recstore(std::move(rs)), path(stdshim::filesystem::absolute(std::move(p))), measDirPath(stdshim::filesystem::canonical(meas)) {
+  : recstore(std::move(rs)), path(stdshim::filesystem::absolute(std::move(p))), measDirPath(stdshim::filesystem::weakly_canonical(meas)) {
   while(1) {  // Exit on EOF or error
     auto parser = std::make_unique<StructFileParser>(path);
     if(!parser->valid()) {
