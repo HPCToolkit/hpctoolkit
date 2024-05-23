@@ -569,6 +569,7 @@ validate:
   - meson compile -C /tmp/builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
   - mkdir testdata-patches/
   - cp -t testdata-patches/ /tmp/builddir/tests2/data/*.patch
+  - find testdata-patches/ -type f -size 0 -delete
   - meson setup --wipe /tmp/builddir
   - *check_compile
   - *check_test
