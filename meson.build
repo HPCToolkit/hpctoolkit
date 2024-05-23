@@ -16,6 +16,11 @@ project(
 fs = import('fs')
 pymod = import('python')
 
+_cc = meson.get_compiler('c')
+assert(_cc.get_argument_syntax() == 'gcc', 'Compiler must support GCC-syntax arguments!')
+_cpp = meson.get_compiler('cpp')
+assert(_cpp.get_argument_syntax() == 'gcc', 'Compiler must support GCC-syntax arguments!')
+
 # Find Python. This is a hard requirement since we use Python for the regression test suite as well.
 python = pymod.find_installation('python3')
 assert(
@@ -61,9 +66,21 @@ foreach package : [
     _p = fs.expanduser(_p)
     assert(fs.is_absolute(_p), f'property \'prefix_@package@\' must be an absolute path')
     assert(fs.is_dir(_p), f'property \'prefix_@package@\' must be a directory')
+
+    # Guess the version for particular packages where we need it
+    _v = 'undefined'
+    if package == 'dyninst'
+      _pfx = '#include <@0@>'.format(_p / 'include/dyninstversion.h')
+      _v = '@0@.@1@.@2@'.format(
+        _cpp.get_define('DYNINST_MAJOR_VERSION', prefix: _pfx),
+        _cpp.get_define('DYNINST_MINOR_VERSION', prefix: _pfx),
+        _cpp.get_define('DYNINST_PATCH_VERSION', prefix: _pfx),
+      )
+    endif
+
     meson.override_dependency(
       f'@package@-hpctoolkit',
-      declare_dependency(variables: {'prefix': _p}),
+      declare_dependency(variables: {'prefix': _p}, version: _v),
     )
   endif
 endforeach
@@ -353,10 +370,6 @@ if has_cuda
 endif
 
 # Set the compilers that should be used for compilations
-_cc = meson.get_compiler('c')
-assert(_cc.get_argument_syntax() == 'gcc', 'Compiler must support GCC-syntax arguments!')
-_cpp = meson.get_compiler('cpp')
-assert(_cpp.get_argument_syntax() == 'gcc', 'Compiler must support GCC-syntax arguments!')
 _autogoo_args += [
   'CC=@0@'.format(' '.join(_cc.cmd_array())),
   'CXX=@0@'.format(' '.join(_cpp.cmd_array())),
