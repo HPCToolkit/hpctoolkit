@@ -18,9 +18,8 @@ spack:
       +atomic +date_time +filesystem +system +thread +timer +graph +regex
       +shared +multithreaded visibility=global
     - 'bzip2 @1.0.8:'
-    - 'dyninst @12.3.0:'
     - 'elfutils ~nls @0.186:'
-    - 'intel-tbb +shared @2020.3'
+    - 'intel-tbb +shared @2020.3:'
     - 'libmonitor +hpctoolkit ~dlopen @2023.03.15:'
     - 'xz @5.2.5:5.2.6,5.2.10:'
     - 'zlib +shared @1.2.13:1.2'
@@ -29,6 +28,9 @@ spack:
     - 'xerces-c transcoder=iconv @3.2.3:'
     - 'libiberty +pic @2.37:'
     - 'yaml-cpp +shared @0.7.0:'
+  - when: env["VERMODE"] == "latest"
+    core:
+    - 'dyninst @13.0.0:'
   - when: env["VERMODE"] == "minimum"
     core:
     - boost @1.70.0
@@ -82,10 +84,12 @@ spack:
   mirrors:
     upstream-cache:
       url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/spack-buildcache/v0.21
+      signed: false
       binary: true
       source: false
 
     spack-binaries:
-      url: https://binaries.spack.io/develop
+      url: https://binaries.spack.io/v0.22.0
+      signed: true
       binary: true
       source: false

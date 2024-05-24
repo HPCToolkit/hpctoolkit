@@ -59,6 +59,13 @@ foreach name, struct : testdata_struct
       suite: 'hpcstruct',
       is_parallel: 'binary' not in struct or threads == 1,
       priority: ('binary' not in struct or threads == 1) ? 0 : 100,  # High priority to optimize for lack of parallelism
+      should_fail: (
+        # FIXME: Dyninst 12.3 has a bug that makes it unable to parse certain inline sequences
+        # from LLVM binaries, see https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/754.
+        # This is fixed in 13.0, but mark as XFAIL to support older Dyninst.
+        name in ['inlines+loops-x86_64-llvm15-0', 'inlines+loops-x86_64-llvm15-d', 'inlines+loops-x86_64-llvm15-dr']
+        and dyninst_exdep.version().version_compare('<13.0.0')
+      ),
     )
   endforeach
 endforeach
