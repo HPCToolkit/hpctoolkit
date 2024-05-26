@@ -43,15 +43,9 @@ struct Vertex {
 struct Edge {
   size_t source_id;
   size_t target_id;
-  // At most two entries for port
-  std::vector<std::string> source_port;
-  std::vector<std::string> target_port;
 
-  Edge(size_t source_id, size_t target_id,
-    const std::vector<std::string> &source_port,
-    const std::vector<std::string> &target_port) :
-    source_id(source_id), target_id(target_id),
-    source_port(source_port), target_port(target_port) {}
+  Edge(size_t source_id, size_t target_id) :
+    source_id(source_id), target_id(target_id) {}
 };
 
 
