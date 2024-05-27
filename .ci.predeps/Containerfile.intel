@@ -3,11 +3,22 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# OS installation stage: Install build tools from the OS
 ARG ONEAPI_VERSION=2024.0.1
+
+# Intel doesn't always update their repository keys very fast. Download them
+# ahead of time so that they are up-to-date for later.
+FROM docker.io/alpine:3 as intel-keys
+RUN apk add gpg && mkdir /keyrings
+ADD https://repositories.intel.com/gpu/intel-graphics.key /tmp/a.key
+RUN gpg --yes --dearmor --output /keyrings/intel-graphics-archive-keyring.gpg < /tmp/a.key && rm /tmp/a.key
+ADD https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB /tmp/a.key
+RUN gpg --yes --dearmor --output /keyrings/intel-oneapi-archive-keyring.gpg < /tmp/a.key && rm /tmp/a.key
+
+# OS installation stage: Install build tools from the OS
 FROM docker.io/intel/oneapi-basekit:${ONEAPI_VERSION}-devel-ubuntu22.04 as os-install
 
 # Install the required OS packages
+COPY --from=intel-keys /keyrings/*.gpg /usr/share/keyrings/
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
   rm -f /etc/apt/apt.conf.d/docker-clean \
   && apt-get update -yqq \
