@@ -25,6 +25,7 @@ stages:
 - configuration tests
 - pre-deploy checks
 - artifacts
+- deploy
 
 variables:
   # Most jobs require the submodules, those that don't will override this
@@ -851,3 +852,21 @@ documentation:
     # Single-file variants are also available
     - hpctoolkit.epub
     - hpctoolkit.pdf
+
+
+# Publish the rendered documentation to GitLab pages for easy browsing from the web.
+# FIXME: Currently this only happens for the default branch. Eventually we should extend this to
+# include protected tags (releases) as well, once multiple deployments are easy.
+# See https://gitlab.com/gitlab-org/gitlab/-/issues/422145 and https://gitlab.com/groups/gitlab-org/-/epics/10914.
+pages:
+  stage: deploy
+  image: docker.io/alpine
+  needs: [documentation]
+  rules:
+  - *never_if_runner_unprivileged
+  - if: $CI_COMMIT_REF_PROTECTED == "true" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+  - mv -T html/ public/
+  - echo "Deploying documentation to ${CI_PAGES_URL}"
+  artifacts:
+    paths: [public/]
