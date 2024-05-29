@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2023-2024 Rice University
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# OS installation stage: Install build tools from the OS
+FROM docker.io/fedora:40 as os-install
+
+# Install the required OS packages
+RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
+  dnf install -y \
+    binutils-devel \
+    boost-devel \
+    bzip2-devel \
+    ccache \
+    clang \
+    cmake \
+    dyninst-devel \
+    elfutils-devel \
+    gcc \
+    gcc-c++ \
+    git \
+    libpfm-devel \
+    libunwind-devel \
+    make  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \
+    ninja-build \
+    ocl-icd-devel \
+    openmpi-devel \
+    papi-devel \
+    pkg-config \
+    python3 \
+    python3-devel \
+    python3-docutils \
+    python3-myst-parser \
+    python3-pip \
+    python3-sphinx \
+    tbb-devel \
+    xerces-c-devel \
+    xxhash-devel \
+    xz-devel \
+    yaml-cpp-devel \
+    zlib-devel \
+  && : # END
+
+# Install an up-to-date version of Meson, using a suitable Python
+RUN \
+  python3 -m pip install \
+    'meson>=1.3.2,<2' \
+  && : # END
+
+# Ensure the appropriate MPI is loaded into the shell environment, always.
+ENTRYPOINT ["/bin/sh", "-c", ". /etc/profile.d/modules.sh && module load mpi && exec \"$@\"", "sh"]
+CMD ["/bin/bash"]
+
+
+# From-source installation side-stage: Install (some) software from source
+FROM os-install as src-install
+
+
+# Composition stage: Produce what will become the final image
+FROM os-install
+# COPY --from=src-install /dest /
+COPY \
+  ci/native/src/clang.ini \
+  ci/native/src/gcc.ini \
+  /usr/share/meson/native/
+
+RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
+  && echo "[built-in options]" >> "$t" \
+  && echo "wrap_mode = 'nofallback'" >> "$t" \
+  && echo "force_fallback_for = ['xed']" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[project options]" >> "$t" \
+  && echo "auto_features = 'enabled'" >> "$t" \
+  && echo "cuda = 'disabled'" >> "$t" \
+  && echo "rocm = 'disabled'" >> "$t" \
+  && echo "level0 = 'disabled'" >> "$t" \
+  && echo "gtpin = 'disabled'" >> "$t" \
+  && echo "" >> "$t" \
+  && echo "[zstd:project options]" >> "$t" \
+  && echo "lz4 = 'disabled'" >> "$t" \
+  && : # EOF
