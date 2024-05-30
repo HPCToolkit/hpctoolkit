@@ -17,12 +17,21 @@ spack:
     duplicates:
       strategy: full
 
+  definitions:
+  - when: env.get("ENABLE_CUDA") != "1"
+    hpct_cuda: [~cuda]
+  - when: env.get("ENABLE_CUDA") == "1"
+    hpct_cuda: [+cuda]
+
   specs:
   - matrix:
     - - hpctoolkit@{{VERSION}} build_system=meson
-    - - ~viewer ~mpi +opencl ~cuda ~rocm ~level_zero
+    - - ~viewer ~mpi +opencl ~rocm ~level_zero
     - - buildtype=release
     - [+papi, ~papi]
+    - - $hpct_cuda
+    exclude:
+    - hpctoolkit +papi +cuda
 
   packages:
     all:

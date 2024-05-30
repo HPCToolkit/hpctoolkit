@@ -315,9 +315,16 @@ endif
 #
 # There are a couple different Meson bugs and antifeatures at play here to cause this, but it works.
 nvdisasm = find_program('nvdisasm', '/usr/local/cuda/bin/nvdisasm', required: get_option('cuda'))
-cupti_dep = dependency('CUDA', modules: ['cupti'], required: get_option('cuda'), version: '>=11.2').partial_dependency(compile_args: true, includes: true)
 if nvdisasm.found()
   add_project_arguments('-DCUDA_NVDISASM_PATH="@0@"'.format(nvdisasm.full_path().replace('\\', '\\\\').replace('"', '\\"')), language: ['c', 'cpp'])
+endif
+cupti_dep = dependency('', required: false)
+if get_option('cuda').allowed()
+  cupti_dep = dependency('CUDA', modules: ['cupti'], required: false, version: '>=11.2')
+  if not cupti_dep.found()
+    cupti_dep = dependency('CUDAToolkit', components: ['cupti'], modules: ['CUDA::cupti'], required: get_option('cuda'))
+  endif
+  cupti_dep = cupti_dep.partial_dependency(compile_args: true, includes: true)
 endif
 if cupti_dep.found()
   add_project_arguments(
