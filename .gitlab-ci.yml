@@ -130,6 +130,26 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
+    name: ubuntu24.04-amd64
+    containerfile: .ci.predeps/Containerfile.ubuntu24.04
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: ubuntu24.04-arm64
+    containerfile: .ci.predeps/Containerfile.ubuntu24.04
+    platform: linux/arm64
+    job_tags: [saas-linux-medium-arm64]
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: ubuntu24.04-ppc64le
+    containerfile: .ci.predeps/Containerfile.ubuntu24.04
+    platform: linux/ppc64le
+    job_tags: [rice-linux-medium-ppc64le]
+    job_rules: *only_runner_privileged
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
     name: fedora39-amd64
     containerfile: .ci.predeps/Containerfile.fedora39
 - component: *ci_predeps
@@ -355,6 +375,21 @@ ubuntu22.04 ppc64le:
   image: $PREDEPS_IMAGE_UBUNTU22_04_PPC64LE
   tags: [rice-linux-medium-ppc64le]
   rules: *only_runner_privileged
+ubuntu24.04 amd64:
+  extends: .individual test job std
+  needs: ['predeps: [ubuntu24.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+ubuntu24.04 arm64:
+  extends: .individual test job std
+  needs: ['predeps: [ubuntu24.04-arm64]']
+  image: $PREDEPS_IMAGE_UBUNTU24_04_ARM64
+  tags: [saas-linux-medium-arm64]
+ubuntu24.04 ppc64le:
+  extends: .individual test job std
+  needs: ['predeps: [ubuntu24.04-ppc64le]']
+  image: $PREDEPS_IMAGE_UBUNTU24_04_PPC64LE
+  tags: [rice-linux-medium-ppc64le]
+  rules: *only_runner_privileged
 leap15 amd64:
   extends: .individual test job std
   needs: ['predeps: [leap15-amd64]']
@@ -453,6 +488,10 @@ ubuntu22.04 cuda amd64:
   extends: .individual test job cuda
   needs: ['predeps: [ubuntu22.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU22_04_AMD64
+ubuntu24.04 cuda amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [ubuntu24.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
 cuda11.8 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda11.8-amd64]']
@@ -737,8 +776,8 @@ compiler icx:
 'setup: [no libdw]':  # Libelf but not libdw
   extends: .test job
   stage: configuration tests
-  needs: ['predeps: [ubuntu22.04-amd64]']
-  image: $PREDEPS_IMAGE_UBUNTU22_04_AMD64
+  needs: ['predeps: [ubuntu24.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
   variables:
     SETUP_ARGS: ''
   before_script:
