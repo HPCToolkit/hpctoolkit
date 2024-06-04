@@ -76,4 +76,7 @@ testdata_bin = {
   'recursion-x86_64-llvm7-d': {'file': files('recursion-x86_64-llvm7-d')},
   'recursion-x86_64-llvm7-dr': {'file': files('recursion-x86_64-llvm7-dr')},
   'recursion-x86_64-llvm7-r': {'file': files('recursion-x86_64-llvm7-r')},
+  'quicksilver-sm_62-dr': {'file': files('quicksilver-sm_62-dr'), 'cuda': true},
+  'quicksilver-sm_70-dr': {'file': files('quicksilver-sm_70-dr'), 'cuda': true},
+  'quicksilver-sm_87-dr': {'file': files('quicksilver-sm_87-dr'), 'cuda': true},
 }

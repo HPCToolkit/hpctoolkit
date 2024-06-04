@@ -69,6 +69,9 @@ _structfiles = {
   'recursion-x86_64-llvm7-d': {'': {}},
   'recursion-x86_64-llvm7-dr': {'': {}},
   'recursion-x86_64-llvm7-r': {'': {}},
+  'quicksilver-sm_62-dr': {'': {}, '+gpucfg': {'gpucfg': true}},
+  'quicksilver-sm_70-dr': {'': {}, '+gpucfg': {'gpucfg': true}},
+  'quicksilver-sm_87-dr': {'': {}, '+gpucfg': {'gpucfg': true}},
 }
 foreach name, variants : _structfiles
   foreach suffix, features : variants
