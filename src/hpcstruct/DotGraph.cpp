@@ -33,6 +33,7 @@
 #include <CFG.h>
 #include <CodeObject.h>
 #include <CodeSource.h>
+#include <CFGFactory.h>
 #include <Function.h>
 #include <Symtab.h>
 #include <Instruction.h>
@@ -42,10 +43,10 @@
 
 #include "Struct-Inline.hpp"
 
-#include "gpu/GPUCFG_Cuda.hpp"
+#include "gpu/CudaCFG.hpp"
 
 #ifdef ENABLE_IGC
-#include "gpu/GPUCFG_Intel.hpp"
+#include "intel/GPUCFG_Intel.hpp"
 #endif // ENABLE_IGC
 
 #ifdef ENABLE_OPENMP
@@ -273,25 +274,29 @@ main(int argc, char **argv)
 
     bool parsable = true;
     CodeSource *code_src = NULL;
+    CFGFactory *code_factory = NULL;
     CodeObject *code_obj = NULL;
 
-    if (cuda_file) { // don't run parseapi on cuda binary
-#ifdef OPT_HAVE_CUDA
-      buildCudaGPUCFG("./", elfFile, symtab, &code_src, &code_obj);
-      parsable = true;
-#else
-      std::cerr << "ERROR: CFG requested for CUDA binary but hpcstruct was not compiled with CUDA support\n";
-      throw 1;
-#endif
-    } else if (intel_file) { // don't run parseapi on intel binary
+    if (intel_file) { // don't run parseapi on intel binary
       #ifdef ENABLE_IGC
       // this thread count for performing backward slicing has been selected after some manual runs of hpcstruct
       int threads = 5;
       parsable = buildIntelGPUCFG("./", elfFile, symtab, true, false, threads, &code_src, &code_obj);
       #endif // ENABLE_IGC
     } else {
-      code_src = new SymtabCodeSource(symtab);
-      code_obj = new CodeObject(code_src);
+      if (cuda_file) { // don't run parseapi on cuda binary
+#ifdef OPT_HAVE_CUDA
+        code_src = new gpu::CudaCFG::CudaCodeSource(elfFile->getFileName(), elfFile->getArch(), *symtab);
+        code_factory = new gpu::CudaCFG::CudaFactory();
+        parsable = true;
+#else
+        std::cerr << "ERROR: CFG requested for CUDA binary but hpcstruct was not compiled with CUDA support\n";
+        throw 1;
+#endif
+      } else {
+        code_src = new SymtabCodeSource(symtab);
+      }
+      code_obj = new CodeObject(code_src, code_factory);
       code_obj->parse();
     }
 
