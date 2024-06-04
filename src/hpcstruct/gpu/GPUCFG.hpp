@@ -263,7 +263,7 @@ struct CudaInst : public Inst {
   explicit CudaInst(Address offset) : Inst(offset, 0, Dyninst::Arch_cuda) {}
 
   // Cuda instruction constructor
-  CudaInst(std::string &inst_str) : CudaInst(0, 0) {
+  CudaInst(std::string &inst_str, int size) : CudaInst(0, size) {
     if (inst_str.find("{") != std::string::npos) {  // Dual first
       auto pos = inst_str.find("{");
       inst_str.replace(pos, 1, " ");

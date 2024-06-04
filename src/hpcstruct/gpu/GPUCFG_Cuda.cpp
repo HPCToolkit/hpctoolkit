@@ -182,7 +182,7 @@ parseDotCFG
         GPUParse::Graph graph;
         std::vector<GPUParse::Function *> funcs;
         graph_reader.read(graph);
-        cfg_parser.parse(graph, funcs);
+        cfg_parser.parse(graph, funcs, cuda_arch);
         // Local functions inside a global function cannot be independently parsed
         for (auto *func : funcs) {
           std::string symbol_name;
@@ -218,7 +218,6 @@ parseDotCFG
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
         inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
-        inst->size = cuda_arch >= 70 ? 16 : 8;
       }
       block->address = block->insts[0]->offset;
     }
@@ -256,7 +255,7 @@ parseDotCFG
     function->address = symbol->getOffset();
     auto block_name = symbol->getMangledName() + "_0";
     auto *block = new GPUParse::Block(max_block_id++, std::move(block_name));
-    block->begin_offset = cuda_arch >= 70 ? 0 : 8;
+    block->begin_offset = 0;
     block->address = symbol->getOffset() + block->begin_offset;
     int len = cuda_arch >= 70 ? 16 : 8;
     // Add dummy insts
@@ -283,7 +282,7 @@ parseDotCFG
         }
         auto *block = new GPUParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
         block->address = function_size + function->address;
-        block->begin_offset = cuda_arch >= 70 ? 16 : 8;
+        block->begin_offset = 0;
         max_block_id++;
         while (function_size < symbol_size) {
           block->insts.push_back(new GPUParse::CudaInst(function_size + function->address, len));

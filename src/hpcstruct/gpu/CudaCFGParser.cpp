@@ -268,7 +268,7 @@ static bool compare_target_ptr(Target *l, Target *r) {
 }
 
 
-void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
+void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions, int cuda_arch) {
   std::unordered_map<size_t, Block *> block_id_map;
   std::unordered_map<std::string, Block *> block_name_map;
   std::vector<Block *> blocks;
@@ -279,8 +279,18 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
 
     std::deque<std::string> inst_strings;
     parse_inst_strings(vertex->label, inst_strings);
+
     for (auto &inst_string : inst_strings) {
-      block->insts.push_back(new CudaInst(inst_string));
+      auto* inst = new CudaInst(inst_string, cuda_arch >= 70 ? 16 : 8);
+
+      // on sm_6x and below, the first 8 bytes in every 32 is an undocumented instruction or
+      // something. Insert NOP instructions to fill in these gaps.
+      if (cuda_arch < 70 && inst->offset % 32 == 8
+          && (block->insts.empty() || block->insts.back()->offset + 8 < inst->offset)) {
+        block->insts.push_back(new CudaInst(inst->offset - 8, 8));
+      }
+
+      block->insts.push_back(inst);
     }
 
     blocks.push_back(block);

@@ -43,7 +43,7 @@ class CudaCFGParser {
  public:
   CudaCFGParser() : _block_parent(0) {}
 
-  void parse(const Graph &graph, std::vector<Function *> &functions);
+  void parse(const Graph &graph, std::vector<Function *> &functions, int cuda_arch);
 
   void parse_calls(std::vector<Function *> &functions);
 
