@@ -232,7 +232,9 @@ def struct_compare(*, structfile: typing.BinaryIO, canonical: typing.BinaryIO) -
     expected = struct_canonicalize.canonical_form(canonical)
     got = struct_canonicalize.canonical_form(structfile)
     if got != expected:
-        for line in difflib.unified_diff(expected, got):
+        for line in difflib.unified_diff(
+            expected, got, fromfile="expected structfile", tofile="produced structfile"
+        ):
             click.echo(line, nl=False)
         raise click.ClickException("Differences found between obtained and expected structure!")
 
