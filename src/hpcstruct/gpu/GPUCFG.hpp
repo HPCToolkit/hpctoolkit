@@ -270,7 +270,6 @@ struct CudaInst : public Inst {
       dual_first = true;
     }
     if (inst_str.find("}") != std::string::npos) {  // Dual second
-      inst_str = inst_str.substr(2);
       auto pos = inst_str.find("*/");
       if (pos != std::string::npos) {
         inst_str.replace(pos, 2, ":");
