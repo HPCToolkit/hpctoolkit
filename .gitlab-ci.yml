@@ -76,7 +76,7 @@ include:
 - component: gitlab.com/blue42u/ci.pre-commit/lite@0.2.0
 
 # These images are based on classic distributions and contain no vendor software
-- component: &ci_predeps gitlab.com/blue42u/ci.predeps/buildah@0.4.1
+- component: &ci_predeps gitlab.com/blue42u/ci.predeps/buildah@1
   inputs:
     <<: &ci_predeps_shared
       fallback_registry: registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
@@ -93,14 +93,15 @@ include:
     name: rhel9-arm64
     containerfile: .ci.predeps/Containerfile.rhel9
     platform: linux/arm64
-    job_tag: saas-linux-medium-arm64
+    job_tags: [saas-linux-medium-arm64]
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: rhel9-ppc64le
     containerfile: .ci.predeps/Containerfile.rhel9
     platform: linux/ppc64le
-    job_tag: rice-linux-medium-ppc64le
+    job_tags: [rice-linux-medium-ppc64le]
+    job_rules: *only_runner_privileged
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -117,14 +118,15 @@ include:
     name: ubuntu22.04-arm64
     containerfile: .ci.predeps/Containerfile.ubuntu22.04
     platform: linux/arm64
-    job_tag: saas-linux-medium-arm64
+    job_tags: [saas-linux-medium-arm64]
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: ubuntu22.04-ppc64le
     containerfile: .ci.predeps/Containerfile.ubuntu22.04
     platform: linux/ppc64le
-    job_tag: rice-linux-medium-ppc64le
+    job_tags: [rice-linux-medium-ppc64le]
+    job_rules: *only_runner_privileged
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
@@ -151,14 +153,15 @@ include:
     name: bare-arm64
     containerfile: .ci.predeps/Containerfile.bare
     platform: linux/arm64
-    job_tag: saas-linux-medium-arm64
+    job_tags: [saas-linux-medium-arm64]
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
     name: bare-ppc64le
     containerfile: .ci.predeps/Containerfile.bare
     platform: linux/ppc64le
-    job_tag: rice-linux-medium-ppc64le
+    job_tags: [rice-linux-medium-ppc64le]
+    job_rules: *only_runner_privileged
 
 # Images based on (containing) Nvidia's CUDA Toolkit
 - component: *ci_predeps
@@ -245,13 +248,6 @@ include:
     <<: *ci_predeps_shared
     name: docs
     containerfile: .ci.predeps/Containerfile.docs
-
-'predeps: [ubuntu22.04-ppc64le]':
-  rules: *only_runner_privileged
-'predeps: [rhel9-ppc64le]':
-  rules: *only_runner_privileged
-'predeps: [bare-ppc64le]':
-  rules: *only_runner_privileged
 
 
 # The repository follows the REUSE specification v3.x for representing copyright and licencing
