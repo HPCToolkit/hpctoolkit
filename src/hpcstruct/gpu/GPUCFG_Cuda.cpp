@@ -281,28 +281,6 @@ parseDotCFG
       std::cout << std::endl;
     }
   }
-
-  // Step 5: create a nvidia directory and dump dot files
-  if (parsed_function_symbols.size() > 0) {
-    const std::string dot_dir = search_path + "/nvidia";
-    int ret = mkdir(dot_dir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH);
-    if (ret != 0 && errno != EEXIST) {
-      std::cout << "WARNING: failed to mkdir: " << dot_dir << std::endl;
-      return;
-    }
-
-    const std::string dot_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".dot";
-    std::string cmd = CUDA_NVDISASM_PATH " -cfg -poff -fun ";
-    for (auto *symbol : parsed_function_symbols) {
-      auto index = symbol->getIndex();
-      cmd += std::to_string(index) + ",";
-    }
-    cmd += " " + cubin + " > " + dot_output;
-
-    if (system(cmd.c_str()) != 0) {
-      std::cout << "WARNING: failed to dump static database file: " << dot_output << std::endl;
-    }
-  }
 }
 
 
