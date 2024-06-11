@@ -267,37 +267,6 @@ parseDotCFG
     parsed_func_symbol_map[function] = symbol;
   }
 
-  // Step4: add compensate blocks that only contains nop instructions
-  for (auto &iter : parsed_func_symbol_map) {
-    auto symbol = iter.second;
-    auto function = iter.first;
-    if (symbol->getSize() > 0) {
-      int len = cuda_arch >= 70 ? 16 : 8;
-      unsigned long function_size = function->blocks.back()->insts.back()->offset + len - function->address;
-      unsigned long symbol_size = symbol->getSize();
-      if (function_size < symbol_size) {
-        if (DEBUG_CFG_PARSE) {
-          std::cout << function->name << " append nop instructions" << std::endl;
-          std::cout << "function_size: " << function_size << " < " << "symbol_size: " << symbol_size << std::endl;
-        }
-        auto *block = new GPUParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
-        block->address = function_size + function->address;
-        block->begin_offset = 0;
-        max_block_id++;
-        while (function_size < symbol_size) {
-          block->insts.push_back(new GPUParse::CudaInst(function_size + function->address, len));
-          function_size += len;
-        }
-        if (function->blocks.size() > 0) {
-          auto *last_block = function->blocks.back();
-          last_block->targets.push_back(
-            new GPUParse::Target(last_block->insts.back(), block, GPUParse::TargetType::DIRECT));
-        }
-        function->blocks.push_back(block);
-      }
-    }
-  }
-
   // Parse function calls
   cfg_parser.parse_calls(functions);
 
