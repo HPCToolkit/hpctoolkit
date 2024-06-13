@@ -789,6 +789,7 @@ spack:
     git -C $SPACK_ROOT remote set-branches origin develop || exit $?
     git -C $SPACK_ROOT config --add remote.origin.partialclonefilter tree:0 || exit $?
     git -C $SPACK_ROOT pull --unshallow --quiet || exit $?
+    git -C $SPACK_ROOT rev-parse HEAD > spack-commit || exit $?
     spack --version || exit $?
   # Figure out the version of the recipe we claim this commit to be. There are a number of cases.
   - |
@@ -833,6 +834,7 @@ spack:
   - |
     echo "To reproduce in a container environment:"
     echo "  podman run --rm -it -v ./:/hpctoolkit:ro $CI_JOB_IMAGE"
+    echo "  git -C "'$SPACK_ROOT'" pull origin $(cat spack-commit):"
     echo "  curl -Lo /tmp/artifacts.zip ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
     echo "  unzip -d /tmp/ /tmp/artifacts.zip"
     echo "  /hpctoolkit/ci/spack/run.sh -d /tmp/env -k"

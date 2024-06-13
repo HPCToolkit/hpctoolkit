@@ -190,7 +190,7 @@ fi
 
 # Install everything except HPCToolkit itself. We do this first to ignore build errors that have
 # nothing to do with us directly.
-spack -D "$env_dir" install --fail-fast --only=dependencies || {
+spack -D "$env_dir" install --fail-fast --only=dependencies --only-concrete || {
   echo -e "\n\n--- Spack exited with code $?. This probably isn't an error with the hpctoolkit recipe, so it will be ignored." >&2
   exit 77
 }
@@ -202,7 +202,7 @@ fi
 
 
 # Install HPCToolkit and run the build-time tests.
-spack -D "$env_dir" install --fail-fast --test=root || exit 44
+spack -D "$env_dir" install --fail-fast --test=root --only-concrete || exit 44
 if spack -D "$env_dir" mirror list | grep -q '^__emul_autopush '; then
   # FIXME: See prior FIXME
   spack -D "$env_dir" buildcache push __emul_autopush || true
