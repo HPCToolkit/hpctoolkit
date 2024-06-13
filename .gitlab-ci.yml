@@ -396,7 +396,10 @@ ubuntu24.04 ppc64le:
   image: $PREDEPS_IMAGE_UBUNTU24_04_PPC64LE
   tags: [rice-linux-medium-ppc64le]
   rules: *only_runner_privileged
-  variables: *ubuntu24_04_vars
+  # FIXME: For unknown reasons, the Python support doesn't work in this version of Python.
+  # Not sure why. Disable it for now. https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/847
+  variables:
+    TEST_ARGS: --no-suite mpi --no-suite python
 leap15 amd64:
   extends: .individual test job std
   needs: ['predeps: [leap15-amd64]']
