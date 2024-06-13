@@ -379,17 +379,24 @@ ubuntu24.04 amd64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu24.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  variables: &ubuntu24_04_vars
+    # FIXME: The version of MPICH shipped with Ubuntu 24.04 requires an authentication system to
+    # operate properly. We don't have one set up in the container nor do we want to. Disable MPI
+    # tests for this container.
+    TEST_ARGS: --no-suite mpi
 ubuntu24.04 arm64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu24.04-arm64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_ARM64
   tags: [saas-linux-medium-arm64]
+  variables: *ubuntu24_04_vars
 ubuntu24.04 ppc64le:
   extends: .individual test job std
   needs: ['predeps: [ubuntu24.04-ppc64le]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_PPC64LE
   tags: [rice-linux-medium-ppc64le]
   rules: *only_runner_privileged
+  variables: *ubuntu24_04_vars
 leap15 amd64:
   extends: .individual test job std
   needs: ['predeps: [leap15-amd64]']
