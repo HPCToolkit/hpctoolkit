@@ -316,8 +316,9 @@ earlyexit:
     for(; seg != NULL; seg = seg->prev) {
       for(; off > 0; off--) {
         logical_region_t* cur = &seg->regions[off-1];
-        TMSG(LOGICAL_UNWIND, " sp @ exit = %p, sp @ beforeenter = %p",
-             cur->exit, cur->beforeenter.sp);
+        TMSG(LOGICAL_UNWIND, " sp @ exit[%hhu] = %p | %p | %p | %p, sp @ beforeenter = %p",
+             cur->exit_len, cur->exit[0], cur->exit[1], cur->exit[2], cur->exit[3],
+             cur->beforeenter.sp);
       }
     }
   }
