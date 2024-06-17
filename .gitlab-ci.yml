@@ -187,21 +187,39 @@ include:
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
-    name: cuda11.8-amd64
-    containerfile: .ci.predeps/Containerfile.cuda
-    build_args: CUDA_VERSION=11.8.0
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
     name: cuda12.0-amd64
     containerfile: .ci.predeps/Containerfile.cuda
     build_args: CUDA_VERSION=12.0.1
 - component: *ci_predeps
   inputs:
     <<: *ci_predeps_shared
+    name: cuda12.1-amd64
+    containerfile: .ci.predeps/Containerfile.cuda
+    build_args: CUDA_VERSION=12.1.1
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: cuda12.2-amd64
+    containerfile: .ci.predeps/Containerfile.cuda
+    build_args: CUDA_VERSION=12.2.2
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
     name: cuda12.3-amd64
     containerfile: .ci.predeps/Containerfile.cuda
     build_args: CUDA_VERSION=12.3.2
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: cuda12.4-amd64
+    containerfile: .ci.predeps/Containerfile.cuda
+    build_args: CUDA_VERSION=12.4.1
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
+    name: cuda12.5-amd64
+    containerfile: .ci.predeps/Containerfile.cuda
+    build_args: CUDA_VERSION=12.5.0
 
 # Images based on (containing) AMD's ROCm
 - component: *ci_predeps
@@ -502,18 +520,30 @@ ubuntu24.04 cuda amd64:
   extends: .individual test job cuda
   needs: ['predeps: [ubuntu24.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
-cuda11.8 amd64:
-  extends: .individual test job cuda
-  needs: ['predeps: [cuda11.8-amd64]']
-  image: $PREDEPS_IMAGE_CUDA11_8_AMD64
 cuda12.0 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda12.0-amd64]']
   image: $PREDEPS_IMAGE_CUDA12_0_AMD64
+cuda12.1 amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [cuda12.1-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_1_AMD64
+cuda12.2 amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [cuda12.2-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_2_AMD64
 cuda12.3 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda12.3-amd64]']
   image: $PREDEPS_IMAGE_CUDA12_3_AMD64
+cuda12.4 amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [cuda12.4-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_4_AMD64
+cuda12.5 amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [cuda12.5-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_5_AMD64
 
 .individual test job rocm:
   extends: .individual test job
@@ -609,8 +639,8 @@ semifresh none cpu:
     REGEN_SUITES: none cpu
 semifresh nvidia sw-cuda:
   extends: .semifresh test job
-  needs: ['predeps: [cuda11.8-amd64]']
-  image: $PREDEPS_IMAGE_CUDA11_8_AMD64
+  needs: ['predeps: [cuda12.3-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_3_AMD64
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     REGEN_SUITES: nvidia sw-cuda
@@ -743,8 +773,8 @@ compiler icx:
       TEST_ARGS: --suite none
 'option: [cuda amd64]':
   extends: .option test job
-  needs: ['predeps: [cuda12.0-amd64]']
-  image: $PREDEPS_IMAGE_CUDA12_0_AMD64
+  needs: ['predeps: [cuda12.3-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_3_AMD64
   parallel:
     matrix:
     - SETUP_ARGS:
