@@ -1,0 +1,879 @@
+<?xml version="1.0"?>
+<!DOCTYPE HPCToolkitStructure [
+<!--
+SPDX-FileCopyrightText: 2003-2024 Rice University
+SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
+<!-- ******************************************************************** -->
+<!-- HPCToolkit Structure DTD                                             -->
+<!-- Version 4.9                                                          -->
+<!-- ******************************************************************** -->
+
+<!ELEMENT HPCToolkitStructure (LM)*>
+<!ATTLIST HPCToolkitStructure
+        version CDATA #REQUIRED
+        i       CDATA #REQUIRED
+        n       CDATA #IMPLIED>
+  <!-- Load module: -->
+  <!--   (i)d: unique identifier for cross referencing -->
+  <!--   (n)ame -->
+  <!--   (l)ine range: "beg-end" (inclusive range) -->
+  <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
+  <!ELEMENT LM (F|P)*>
+  <!ATTLIST LM
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED
+        has-calls CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- File: -->
+  <!ELEMENT F (P|L|S)*>
+  <!ATTLIST F
+        i CDATA #REQUIRED
+        n CDATA #REQUIRED>
+  <!-- Procedure: ln=link name (if different than name) -->
+  <!ELEMENT P (P|A|L|S|C)*>
+  <!ATTLIST P
+        i  CDATA #REQUIRED
+        n  CDATA #REQUIRED
+        ln CDATA #IMPLIED
+        l  CDATA #IMPLIED
+        s  CDATA #IMPLIED
+        v  CDATA #IMPLIED>
+  <!-- Alien: (f)ilename -->
+  <!ELEMENT A (A|L|S|C)*>
+  <!ATTLIST A
+        i CDATA #REQUIRED
+        f CDATA #IMPLIED
+        n CDATA #IMPLIED
+        ln CDATA #IMPLIED
+        l CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Loop -->
+  <!ELEMENT L (A|L|S|C)*>
+  <!ATTLIST L
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        f CDATA #IMPLIED
+        v CDATA #IMPLIED>
+  <!-- Statement -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED>
+  <!-- Callsite (a special Statement) -->
+  <!ELEMENT C (C)*>
+  <!ATTLIST C
+        i CDATA #REQUIRED
+        l CDATA #REQUIRED
+        v CDATA #IMPLIED
+        t CDATA #IMPLIED
+        d CDATA #IMPLIED>
+]>
+<HPCToolkitStructure i="0" version="4.9" n="">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/builddir/../tests/data/bin/quicksilver-sm_62-dr" has-calls="1" v="{}">
+<F i="3" n="/tmp/quicksilver/src/CollisionEvent.cc">
+<P i="4" n="CollisionEvent(MonteCarlo*, MC_Particle&amp;, unsigned int)" ln="_Z14CollisionEventP10MonteCarloR11MC_Particlej" l="50" v="{[0x42fa0-0x42fa1)}">
+<S i="5" l="50" v="{[0x42fa0-0x42fa8) [0x43758-0x43768)}"/>
+<S i="6" l="67" v="{[0x43440-0x43448) [0x43480-0x43488) [0x436e0-0x436e8)}"/>
+<S i="7" l="71" v="{[0x43578-0x43590) [0x43680-0x43688) [0x43698-0x436b0)}"/>
+<S i="8" l="84" v="{[0x43768-0x43770) [0x437a0-0x437a8)}"/>
+<S i="9" l="94" v="{[0x43a40-0x43a48)}"/>
+<S i="10" l="106" v="{[0x43de0-0x43de8) [0x44040-0x44048)}"/>
+<S i="11" l="120" v="{[0x44020-0x44028)}"/>
+<S i="12" l="125" v="{[0x44610-0x44628) [0x45a60-0x45a68)}"/>
+<S i="13" l="135" v="{[0x45a78-0x45a88) [0x45a90-0x45a98)}"/>
+<S i="14" l="141" v="{[0x46c60-0x46c68)}"/>
+<S i="15" l="142" v="{[0x46ca0-0x46ca8)}"/>
+<S i="16" l="147" v="{[0x46d38-0x46e60)}"/>
+<A i="17" l="103" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="18" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::QS::atomicIncrement&lt;unsigned long&gt;(unsigned long&amp;)" v="{}">
+<A i="19" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="20" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="21" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="22" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="23" l="226" v="{[0x43b90-0x43c10)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="24" l="109" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="25" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::QS::atomicIncrement&lt;unsigned long&gt;(unsigned long&amp;)" v="{}">
+<A i="26" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="27" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="28" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="29" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="30" l="226" v="{[0x43f78-0x43fb0)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="31" l="112" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="32" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::QS::atomicIncrement&lt;unsigned long&gt;(unsigned long&amp;)" v="{}">
+<A i="33" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="34" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="35" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="36" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="37" l="226" v="{[0x44500-0x44508) [0x44520-0x44528) [0x44558-0x445d8) [0x445e0-0x445e8)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="38" l="115" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="39" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::QS::atomicIncrement&lt;unsigned long&gt;(unsigned long&amp;)" v="{}">
+<A i="40" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="41" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="42" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="43" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="44" l="226" v="{[0x441b0-0x44230)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="45" l="116" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="46" l="87" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::QS::atomicAdd&lt;unsigned long&gt;(unsigned long&amp;, unsigned long)" v="{}">
+<A i="47" l="87" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="48" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="49" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="50" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_be3409d9_17_CollisionEvent_cc_a854d781::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="51" l="226" v="{[0x44340-0x44348) [0x443d8-0x44410)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="52" l="131" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="53" l="34" f="/tmp/quicksilver/src/CollisionEvent.cc" n="updateTrajectory(double, double, MC_Particle&amp;)" v="{}">
+<S i="54" l="36" v="{[0x45598-0x455b0) [0x45600-0x45608)}"/>
+<S i="55" l="39" v="{[0x454c0-0x454c8) [0x454e0-0x454e8)}"/>
+<S i="56" l="44" v="{[0x45800-0x45818) [0x459c0-0x459d8)}"/>
+<A i="57" l="31" f="/tmp/quicksilver/src/CollisionEvent.cc" n="&lt;inline&gt;" v="{}">
+<S i="58" l="31" v="{[0x44ae0-0x44ae8) [0x44b00-0x44c78)}"/>
+<S i="59" l="32" v="{[0x44c78-0x44c88) [0x44cd8-0x44cf0) [0x44d20-0x44d28) [0x44d38-0x44d50) [0x44d58-0x44d70)}"/>
+<S i="60" l="33" v="{[0x452f8-0x45310) [0x45360-0x45368)}"/>
+</A>
+<A i="61" l="34" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="62" l="127" f="/tmp/quicksilver/src/DirectionCosine.hh" n="DirectionCosine::Rotate3DVector(double, double, double, double)" v="{}">
+<S i="63" l="127" v="{[0x44f78-0x44f90) [0x44fc0-0x44fc8) [0x44fd0-0x44fe8)}"/>
+<S i="64" l="131" v="{[0x45018-0x45030)}"/>
+<S i="65" l="138" v="{[0x450e0-0x450e8) [0x45100-0x45108) [0x45110-0x45128)}"/>
+<S i="66" l="139" v="{[0x451e0-0x451e8) [0x45218-0x45230) [0x45238-0x45250)}"/>
+</A>
+</A>
+</A>
+</A>
+<A i="67" l="135" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="68" l="29" f="/tmp/quicksilver/src/CollisionEvent.cc" n="updateTrajectory(double, double, MC_Particle&amp;)" v="{}">
+<S i="69" l="30" v="{[0x45bb8-0x45bd0)}"/>
+<S i="70" l="31" v="{[0x45bd0-0x45c10) [0x45ca0-0x45ca8) [0x45cc0-0x45e38)}"/>
+<S i="71" l="32" v="{[0x45e38-0x45e48) [0x45e98-0x45eb0) [0x45ee0-0x45ee8) [0x45ef8-0x45f10) [0x45f18-0x45f30)}"/>
+<S i="72" l="33" v="{[0x46518-0x46530) [0x46540-0x46548) [0x46550-0x46568)}"/>
+<S i="73" l="36" v="{[0x467b0-0x467c8) [0x46820-0x46828)}"/>
+<S i="74" l="39" v="{[0x46700-0x46708)}"/>
+<S i="75" l="40" v="{[0x46a20-0x46a28)}"/>
+<S i="76" l="42" v="{[0x46a28-0x46a38)}"/>
+<S i="77" l="44" v="{[0x46be0-0x46bf8)}"/>
+<A i="78" l="27" f="/tmp/quicksilver/src/CollisionEvent.cc" n="&lt;inline&gt;" v="{}">
+<S i="79" l="27" v="{[0x45a70-0x45a78) [0x45a88-0x45a90) [0x45ae8-0x45af0)}"/>
+</A>
+<A i="80" l="29" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="81" l="26" f="/tmp/quicksilver/src/MC_RNG_State.hh" n="rngSample(unsigned long*)" v="{}">
+<S i="82" l="26" v="{[0x45a98-0x45ae8) [0x45af0-0x45b98) [0x45ba8-0x45bb0)}"/>
+<S i="83" l="31" v="{[0x45b98-0x45ba8) [0x45bb0-0x45bb8)}"/>
+</A>
+</A>
+<A i="84" l="34" f="/tmp/quicksilver/src/CollisionEvent.cc" n="" v="{}">
+<A i="85" l="127" f="/tmp/quicksilver/src/DirectionCosine.hh" n="DirectionCosine::Rotate3DVector(double, double, double, double)" v="{}">
+<S i="86" l="127" v="{[0x46140-0x46158) [0x461b8-0x461d0)}"/>
+<S i="87" l="131" v="{[0x46458-0x46470)}"/>
+<S i="88" l="139" v="{[0x46418-0x46430) [0x46438-0x46450)}"/>
+</A>
+</A>
+</A>
+</A>
+</P>
+</F>
+<F i="89" n="/tmp/quicksilver/src/CycleTracking.cc">
+<P i="90" n="CycleTrackingGuts(MonteCarlo*, int, ParticleVault*, ParticleVault*)" ln="_Z17CycleTrackingGutsP10MonteCarloiP13ParticleVaultS2_" l="15" v="{[0x46e60-0x46e61)}">
+<S i="91" l="15" v="{[0x46e60-0x46e68)}"/>
+<S i="92" l="30" v="{[0x48438-0x48460)}"/>
+<A i="93" l="26" f="/tmp/quicksilver/src/CycleTracking.cc" n="" v="{}">
+<A i="94" l="53" f="/tmp/quicksilver/src/CycleTracking.cc" n="CycleTrackingFunction(MonteCarlo*, MC_Particle&amp;, int, ParticleVault*, ParticleVault*)" v="{}">
+<S i="95" l="57" v="{[0x476c0-0x476c8)}"/>
+<S i="96" l="72" v="{[0x481b0-0x481c8)}"/>
+<S i="97" l="86" v="{[0x48110-0x48118) [0x48128-0x48130)}"/>
+<S i="98" l="87" v="{[0x48118-0x48128) [0x48138-0x48148)}"/>
+<S i="99" l="88" v="{[0x48130-0x48138)}"/>
+<S i="100" l="90" v="{[0x47ec0-0x47ec8)}"/>
+<S i="101" l="93" v="{[0x47f18-0x47f30)}"/>
+<S i="102" l="110" v="{[0x47dd0-0x47de8)}"/>
+<S i="103" l="114" v="{[0x47e20-0x47e28)}"/>
+<S i="104" l="118" v="{[0x481e0-0x481e8)}"/>
+<A i="105" l="53" f="/tmp/quicksilver/src/CycleTracking.cc" n="" v="{}">
+<A i="106" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::QS::atomicIncrement&lt;unsigned long&gt;(unsigned long&amp;)" v="{}">
+<A i="107" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="108" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="109" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="110" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="111" l="226" v="{[0x475c0-0x475c8) [0x475f8-0x47678) [0x47680-0x47688)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="112" l="85" f="/tmp/quicksilver/src/CycleTracking.cc" n="" v="{}">
+<A i="113" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::QS::atomicIncrement&lt;unsigned long&gt;(unsigned long&amp;)" v="{}">
+<A i="114" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="115" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="116" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="117" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="118" l="226" v="{[0x48020-0x48028) [0x48040-0x48048) [0x48080-0x48108)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="119" l="107" f="/tmp/quicksilver/src/CycleTracking.cc" n="" v="{}">
+<A i="120" l="91" f="/tmp/quicksilver/src/ParticleVault.hh" n="ParticleVault::pushParticle(MC_Particle&amp;)" v="{}">
+<A i="121" l="91" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="122" l="183" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Base_Particle&gt;::atomic_Index_Inc(int)" v="{}">
+<A i="123" l="183" f="/tmp/quicksilver/src/QS_Vector.hh" n="" v="{}">
+<A i="124" l="99" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::QS::atomicCaptureAdd&lt;int&gt;(int&amp;, int, int&amp;)" v="{}">
+<A i="125" l="99" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="126" l="107" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::atomicAdd(int*, int)" v="{}">
+<S i="127" l="107" v="{[0x478c0-0x478c8) [0x47900-0x47908)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="128" l="108" f="/tmp/quicksilver/src/CycleTracking.cc" n="" v="{}">
+<A i="129" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::QS::atomicIncrement&lt;unsigned long&gt;(unsigned long&amp;)" v="{}">
+<A i="130" l="93" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="131" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="132" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="133" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_657d33cf_16_CycleTracking_cc_f7c06f68::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="134" l="226" v="{[0x47ce0-0x47ce8) [0x47d00-0x47d08) [0x47d40-0x47dc8)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="135" l="29" f="/tmp/quicksilver/src/CycleTracking.cc" n="" v="{}">
+<A i="136" l="195" f="/tmp/quicksilver/src/ParticleVault.hh" n="ParticleVault::invalidateParticle(int)" v="{}">
+<S i="137" l="195" v="{[0x482e8-0x48438)}"/>
+<A i="138" l="193" f="/tmp/quicksilver/src/ParticleVault.hh" n="&lt;inline&gt;" v="{}">
+<S i="139" l="193" v="{[0x481e8-0x481f8) [0x48200-0x48208) [0x48240-0x48248)}"/>
+<S i="140" l="194" v="{[0x48280-0x48288) [0x482c0-0x482c8)}"/>
+</A>
+<A i="141" l="195" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="142" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Base_Particle&gt;::operator[](int)" v="{}">
+<S i="143" l="94" v="{[0x482c8-0x482e8)}"/>
+</A>
+</A>
+</A>
+</A>
+</P>
+</F>
+<F i="144" n="/tmp/quicksilver/src/MCT.cc">
+<P i="145" n="MCT_Reflect_Particle(MonteCarlo*, MC_Particle&amp;)" ln="_Z20MCT_Reflect_ParticleP10MonteCarloR11MC_Particle" l="401" v="{[0x48c20-0x48c21)}">
+<S i="146" l="401" v="{[0x48c20-0x48c28)}"/>
+<S i="147" l="426" v="{[0x48fe8-0x49008) [0x49018-0x49028)}"/>
+<S i="148" l="427" v="{[0x49008-0x49010) [0x49028-0x49030)}"/>
+<S i="149" l="428" v="{[0x49010-0x49018) [0x49030-0x49058)}"/>
+<S i="150" l="429" v="{[0x49058-0x490a0)}"/>
+<A i="151" l="425" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="152" l="93" f="/tmp/quicksilver/src/MC_Vector.hh" n="MC_Vector::Length() const" v="{}">
+<S i="153" l="93" v="{[0x48f70-0x48f88) [0x48fe0-0x48fe8)}"/>
+</A>
+</A>
+</P>
+<P i="154" n="MCT_Nearest_Facet(MC_Particle*, MC_Location&amp;, MC_Vector&amp;, DirectionCosine const*, double, double, bool, MonteCarlo*)" ln="_Z17MCT_Nearest_FacetP11MC_ParticleR11MC_LocationR9MC_VectorPK15DirectionCosineddbP10MonteCarlo" l="87" v="{[0x490a0-0x490a1)}">
+<S i="155" l="87" v="{[0x490a0-0x490a8)}"/>
+<S i="156" l="101" v="{[0x49260-0x49268) [0x492a0-0x492a8)}"/>
+<S i="157" l="103" v="{[0x492e0-0x492e8)}"/>
+<S i="158" l="114" v="{[0x4bc10-0x4bc38)}"/>
+<S i="159" l="116" v="{[0x4bc38-0x4bc48) [0x4bc50-0x4bc58)}"/>
+<S i="160" l="136" v="{[0x4bc90-0x4bde0)}"/>
+<A i="161" l="112" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="162" l="595" f="/tmp/quicksilver/src/MCT.cc" n="_INTERNAL_676a92b9_6_MCT_cc_14a6bf50::(anonymous namespace)::MCT_Nearest_Facet_3D_G(MC_Particle*, MC_Domain&amp;, MC_Location&amp;, MC_Vector&amp;, DirectionCosine const*)" v="{}">
+<S i="163" l="606" v="{[0x4a958-0x4a968)}"/>
+<S i="164" l="619" v="{[0x4bc00-0x4bc08)}"/>
+<A i="165" l="571" f="/tmp/quicksilver/src/MCT.cc" n="&lt;inline&gt;" v="{}">
+<S i="166" l="571" v="{[0x496e0-0x496e8)}"/>
+<S i="167" l="575" v="{[0x4a968-0x4a9a8)}"/>
+<S i="168" l="590" v="{[0x497a0-0x497a8)}"/>
+</A>
+<A i="169" l="595" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="170" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Vector&gt;::operator[](int)" v="{}">
+<S i="171" l="94" v="{[0x499f0-0x499f8)}"/>
+</A>
+</A>
+<A i="172" l="596" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="173" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Vector&gt;::operator[](int)" v="{}">
+<S i="174" l="94" v="{[0x49a30-0x49b38) [0x49b48-0x49b50)}"/>
+</A>
+</A>
+<A i="175" l="597" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="176" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Vector&gt;::operator[](int)" v="{}">
+<S i="177" l="94" v="{[0x499f8-0x49a28) [0x49b58-0x49b78)}"/>
+</A>
+</A>
+<A i="178" l="599" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="179" l="307" f="/tmp/quicksilver/src/MCT.cc" n="_INTERNAL_676a92b9_6_MCT_cc_14a6bf50::(anonymous namespace)::MCT_Nearest_Facet_3D_G_Distance_To_Segment(double, double, double, double, double, double, MC_Vector const&amp;, MC_Vector const&amp;, MC_Vector const&amp;, MC_Vector const&amp;, DirectionCosine const*, bool)" v="{}">
+<S i="180" l="307" v="{[0x499a0-0x499a8) [0x499e0-0x499f0)}"/>
+<S i="181" l="311" v="{[0x49b38-0x49b48)}"/>
+<S i="182" l="312" v="{[0x49b50-0x49b58)}"/>
+<S i="183" l="331" v="{[0x49a28-0x49a30) [0x49b78-0x49b88)}"/>
+<S i="184" l="333" v="{[0x4a4c0-0x4a4c8) [0x4a500-0x4a508)}"/>
+<S i="185" l="334" v="{[0x4a560-0x4a568) [0x4a5a0-0x4a5a8)}"/>
+<S i="186" l="335" v="{[0x4a680-0x4a688)}"/>
+<S i="187" l="336" v="{[0x4a720-0x4a728) [0x4a738-0x4a750)}"/>
+<S i="188" l="346" v="{[0x4a200-0x4a208) [0x4a860-0x4a868)}"/>
+<S i="189" l="353" v="{[0x4a0a0-0x4a0a8) [0x4a0e0-0x4a0e8)}"/>
+<S i="190" l="354" v="{[0x4a140-0x4a148) [0x4a180-0x4a188)}"/>
+<S i="191" l="355" v="{[0x4a260-0x4a268)}"/>
+<S i="192" l="356" v="{[0x4a300-0x4a308) [0x4a318-0x4a330)}"/>
+<S i="193" l="358" v="{[0x4a330-0x4a348) [0x4a358-0x4a368) [0x4a370-0x4a378) [0x4a398-0x4a3a8) [0x4a3b8-0x4a3e8) [0x4a428-0x4a430)}"/>
+<S i="194" l="361" v="{[0x4a348-0x4a358) [0x4a368-0x4a370) [0x4a378-0x4a390) [0x4a3a8-0x4a3b0) [0x4a3e8-0x4a3f0) [0x4a3f8-0x4a408) [0x4a410-0x4a418) [0x4a430-0x4a438)}"/>
+<S i="195" l="364" v="{[0x49de0-0x49de8) [0x4a390-0x4a398) [0x4a3b0-0x4a3b8) [0x4a3f0-0x4a3f8) [0x4a408-0x4a410) [0x4a418-0x4a428) [0x4a438-0x4a450)}"/>
+<S i="196" l="369" v="{[0x49bb0-0x49c10)}"/>
+<S i="197" l="371" v="{[0x49c80-0x49c88) [0x49cc0-0x49cc8)}"/>
+<S i="198" l="372" v="{[0x49d20-0x49d28) [0x49d60-0x49d68)}"/>
+<S i="199" l="373" v="{[0x49e40-0x49e48) [0x4a620-0x4a628)}"/>
+<S i="200" l="374" v="{[0x49ee0-0x49ee8) [0x49ef8-0x49f10)}"/>
+<S i="201" l="376" v="{[0x49f10-0x49f28) [0x49f38-0x49f48) [0x49f50-0x49f58) [0x49f78-0x49f88) [0x49f98-0x49fc8) [0x4a008-0x4a010)}"/>
+<S i="202" l="379" v="{[0x49f28-0x49f38) [0x49f48-0x49f50) [0x49f58-0x49f70) [0x49f88-0x49f90) [0x49fc8-0x49fd0) [0x49fd8-0x49fe8) [0x49ff0-0x49ff8) [0x4a010-0x4a018)}"/>
+<S i="203" l="382" v="{[0x49f70-0x49f78) [0x49f90-0x49f98) [0x49fd0-0x49fd8) [0x49fe8-0x49ff0) [0x49ff8-0x4a008) [0x4a018-0x4a030)}"/>
+<S i="204" l="390" v="{[0x4a930-0x4a948)}"/>
+</A>
+</A>
+<A i="205" l="611" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="206" l="497" f="/tmp/quicksilver/src/MCT.cc" n="_INTERNAL_676a92b9_6_MCT_cc_14a6bf50::(anonymous namespace)::MCT_Nearest_Facet_Find_Nearest(MC_Particle*, MC_Domain*, MC_Location*, MC_Vector&amp;, int&amp;, double&amp;, int, MC_Distance_To_Facet*, int&amp;)" v="{}">
+<S i="207" l="506" v="{[0x4b0c0-0x4b0c8)}"/>
+<S i="208" l="512" v="{[0x4bab0-0x4bab8)}"/>
+<S i="209" l="515" v="{[0x4bbd8-0x4bbf0)}"/>
+<S i="210" l="520" v="{[0x4baa8-0x4bab0) [0x4bae8-0x4baf0) [0x4bb28-0x4bb30) [0x4bb40-0x4bb48)}"/>
+<S i="211" l="522" v="{[0x4bb80-0x4bb88)}"/>
+<A i="212" l="497" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="213" l="446" f="/tmp/quicksilver/src/MCT.cc" n="_INTERNAL_676a92b9_6_MCT_cc_14a6bf50::(anonymous namespace)::MCT_Nearest_Facet_Find_Nearest(int, MC_Distance_To_Facet*)" v="{}">
+<S i="214" l="446" v="{[0x4aa00-0x4aa08) [0x4ad90-0x4adb0)}"/>
+<S i="215" l="448" v="{[0x4aa78-0x4aa90) [0x4abc0-0x4abc8)}"/>
+<S i="216" l="450" v="{[0x4ab78-0x4ab90) [0x4ac20-0x4ac38) [0x4acd0-0x4ace8) [0x4ad78-0x4ad90) [0x4ae78-0x4ae90) [0x4af38-0x4af50) [0x4aff0-0x4b008)}"/>
+<S i="217" l="458" v="{[0x4ab20-0x4ab28) [0x4ad20-0x4ad28) [0x4ae20-0x4ae28) [0x4aee0-0x4aee8)}"/>
+<S i="218" l="462" v="{[0x4ab40-0x4ab58) [0x4abf0-0x4ac08) [0x4ac98-0x4acb0) [0x4ad40-0x4ad58) [0x4ae40-0x4ae58) [0x4af00-0x4af18) [0x4afb8-0x4afd0)}"/>
+<S i="219" l="468" v="{[0x4bc48-0x4bc50)}"/>
+</A>
+</A>
+<A i="220" l="510" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="221" l="661" f="/tmp/quicksilver/src/MCT.cc" n="_INTERNAL_676a92b9_6_MCT_cc_14a6bf50::(anonymous namespace)::MCT_Nearest_Facet_3D_G_Move_Particle(MC_Domain&amp;, MC_Location const&amp;, MC_Vector&amp;, double)" v="{}">
+<S i="222" l="663" v="{[0x4ba98-0x4baa8) [0x4bab8-0x4bac8) [0x4bad8-0x4bae8) [0x4baf0-0x4baf8) [0x4bb08-0x4bb10)}"/>
+<S i="223" l="664" v="{[0x4bac8-0x4bad0) [0x4baf8-0x4bb08) [0x4bb18-0x4bb28)}"/>
+<S i="224" l="665" v="{[0x4bad0-0x4bad8) [0x4bb10-0x4bb18) [0x4bb30-0x4bb38)}"/>
+<A i="225" l="661" f="/tmp/quicksilver/src/MCT.cc" n="" v="{}">
+<A i="226" l="238" f="/tmp/quicksilver/src/MCT.cc" n="MCT_Cell_Position_3D_G(MC_Domain const&amp;, int)" v="{}">
+<S i="227" l="238" v="{[0x4b1c0-0x4b1c8) [0x4b278-0x4b290) [0x4b5b8-0x4b5c8) [0x4b5d0-0x4b5d8) [0x4b5e8-0x4b5f0) [0x4b6a8-0x4b6b0) [0x4b6c0-0x4b6c8) [0x4b7e8-0x4b7f0) [0x4b8e8-0x4b8f0)}"/>
+<S i="228" l="240" v="{[0x4b2b8-0x4b328)}"/>
+<S i="229" l="242" v="{[0x4b328-0x4b4d0) [0x4b4e8-0x4b4f0) [0x4b4f8-0x4b570) [0x4b578-0x4b588) [0x4b590-0x4b5b8) [0x4b5f0-0x4b5f8) [0x4b618-0x4b628) [0x4b658-0x4b668) [0x4b678-0x4b688) [0x4b698-0x4b6a8)}"/>
+<S i="230" l="243" v="{[0x4b4d0-0x4b4e8) [0x4b588-0x4b590) [0x4b5c8-0x4b5d0) [0x4b5f8-0x4b608) [0x4b630-0x4b638) [0x4b648-0x4b658) [0x4b670-0x4b678) [0x4b688-0x4b690)}"/>
+<S i="231" l="244" v="{[0x4b4f0-0x4b4f8) [0x4b570-0x4b578) [0x4b5d8-0x4b5e8) [0x4b608-0x4b618) [0x4b628-0x4b630) [0x4b638-0x4b648) [0x4b668-0x4b670) [0x4b690-0x4b698) [0x4b7d8-0x4b7e8) [0x4b8d8-0x4b8e8) [0x4b9d0-0x4b9e8)}"/>
+<S i="232" l="247" v="{[0x4ba40-0x4ba58)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</P>
+</F>
+<F i="233" n="/tmp/quicksilver/src/MC_Adjacent_Facet.cc">
+<P i="234" n="MCT_Adjacent_Facet(MC_Location const&amp;, MC_Particle&amp;, MonteCarlo*)" ln="_Z18MCT_Adjacent_FacetRK11MC_LocationR11MC_ParticleP10MonteCarlo" l="11" v="{[0x4bde0-0x4bde1)}">
+<S i="235" l="11" v="{[0x4bde0-0x4bde8)}"/>
+<S i="236" l="14" v="{[0x4bde8-0x4bdf8) [0x4be10-0x4be18)}"/>
+<S i="237" l="16" v="{[0x4be98-0x4bea0) [0x4bed8-0x4bee0) [0x4bee8-0x4bf00) [0x4bf08-0x4bf10) [0x4bf18-0x4bf20) [0x4bf28-0x4bf40) [0x4bf48-0x4bf60) [0x4bf68-0x4bf80) [0x4bf88-0x4bfa0)}"/>
+<S i="238" l="18" v="{[0x4bfa8-0x4bfe0)}"/>
+<A i="239" l="14" f="/tmp/quicksilver/src/MC_Adjacent_Facet.cc" n="" v="{}">
+<A i="240" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Domain&gt;::operator[](int)" v="{}">
+<S i="241" l="94" v="{[0x4bdf8-0x4be00) [0x4be08-0x4be10) [0x4be18-0x4be20)}"/>
+</A>
+</A>
+<A i="242" l="16" f="/tmp/quicksilver/src/MC_Adjacent_Facet.cc" n="" v="{}">
+<A i="243" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Facet_Adjacency_Cell&gt;::operator[](int)" v="{}">
+<S i="244" l="94" v="{[0x4be28-0x4be40) [0x4be48-0x4be60) [0x4be68-0x4be80) [0x4be88-0x4be98) [0x4bea8-0x4bec0) [0x4bec8-0x4bed8)}"/>
+</A>
+</A>
+</P>
+</F>
+<F i="245" n="/tmp/quicksilver/src/MC_Facet_Crossing_Event.cc">
+<P i="246" n="MC_Facet_Crossing_Event(MC_Particle&amp;, MonteCarlo*, int, ParticleVault*)" ln="_Z23MC_Facet_Crossing_EventR11MC_ParticleP10MonteCarloiP13ParticleVault" l="25" v="{[0x4bfe0-0x4bfe1)}">
+<S i="247" l="25" v="{[0x4bfe0-0x4bfe8)}"/>
+<S i="248" l="36" v="{[0x4cb60-0x4cb68)}"/>
+<S i="249" l="39" v="{[0x4c300-0x4c308)}"/>
+<S i="250" l="47" v="{[0x4caa0-0x4caa8)}"/>
+<S i="251" l="49" v="{[0x4c320-0x4c328)}"/>
+<S i="252" l="65" v="{[0x4c688-0x4c690) [0x4ca40-0x4ca48) [0x4ca60-0x4ca68)}"/>
+<S i="253" l="69" v="{[0x4cb68-0x4cda0)}"/>
+<A i="254" l="62" f="/tmp/quicksilver/src/MC_Facet_Crossing_Event.cc" n="" v="{}">
+<A i="255" l="179" f="/tmp/quicksilver/src/ParticleVault.hh" n="ParticleVault::putParticle(MC_Particle, int)" v="{}">
+<S i="256" l="179" v="{[0x4c680-0x4c688) [0x4c690-0x4c698)}"/>
+<A i="257" l="178" f="/tmp/quicksilver/src/ParticleVault.hh" n="&lt;inline&gt;" v="{}">
+<S i="258" l="178" v="{[0x4c600-0x4c608)}"/>
+</A>
+<A i="259" l="179" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="260" l="19" f="/tmp/quicksilver/src/ParticleVault.hh" n="ParticleVault::size() const" v="{}">
+<A i="261" l="19" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="262" l="106" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Base_Particle&gt;::size() const" v="{}">
+<S i="263" l="106" v="{[0x4c660-0x4c668)}"/>
+</A>
+</A>
+</A>
+</A>
+<A i="264" l="182" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="265" l="27" f="/tmp/quicksilver/src/MC_Base_Particle.hh" n="MC_Base_Particle::operator=(MC_Base_Particle const&amp;)" v="{}">
+<A i="266" l="27" f="/tmp/quicksilver/src/MC_Base_Particle.hh" n="" v="{}">
+<A i="267" l="27" f="/tmp/quicksilver/src/MC_Vector.hh" n="MC_Vector::operator=(MC_Vector const&amp;)" v="{}">
+<S i="268" l="27" v="{[0x4ca20-0x4ca28)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</P>
+</F>
+<F i="269" n="/tmp/quicksilver/src/MC_Load_Particle.cc">
+<P i="270" n="MC_Load_Particle(MonteCarlo*, MC_Particle&amp;, ParticleVault*, int)" ln="_Z16MC_Load_ParticleP10MonteCarloR11MC_ParticleP13ParticleVaulti" l="11" v="{[0x4d160-0x4d161)}">
+<S i="271" l="11" v="{[0x4d160-0x4d168) [0x4d2c8-0x4d2e8)}"/>
+<S i="272" l="17" v="{[0x4dd30-0x4dd38)}"/>
+<S i="273" l="19" v="{[0x4dda0-0x4dda8)}"/>
+<S i="274" l="23" v="{[0x4dd20-0x4dd30)}"/>
+<S i="275" l="26" v="{[0x4de18-0x4dea8)}"/>
+<S i="276" l="29" v="{[0x4dea8-0x4dee0)}"/>
+<A i="277" l="14" f="/tmp/quicksilver/src/MC_Load_Particle.cc" n="" v="{}">
+<A i="278" l="167" f="/tmp/quicksilver/src/ParticleVault.hh" n="ParticleVault::getParticle(MC_Particle&amp;, int)" v="{}">
+<A i="279" l="164" f="/tmp/quicksilver/src/ParticleVault.hh" n="&lt;inline&gt;" v="{}">
+<S i="280" l="164" v="{[0x4d2b8-0x4d2c8) [0x4d2e8-0x4d2f0)}"/>
+</A>
+<A i="281" l="167" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="282" l="317" f="/tmp/quicksilver/src/MC_Base_Particle.hh" n="MC_Particle::MC_Particle(MC_Base_Particle const&amp;)" v="{}">
+<S i="283" l="321" v="{[0x4d9d0-0x4d9e8) [0x4da00-0x4da08) [0x4da10-0x4da28)}"/>
+<S i="284" l="324" v="{[0x4da60-0x4da68)}"/>
+<A i="285" l="317" f="/tmp/quicksilver/src/MC_Base_Particle.hh" n="" v="{}">
+<A i="286" l="93" f="/tmp/quicksilver/src/MC_Vector.hh" n="MC_Vector::Length() const" v="{}">
+<S i="287" l="93" v="{[0x4d8e0-0x4d8e8)}"/>
+</A>
+</A>
+</A>
+</A>
+<A i="288" l="167" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="289" l="18" f="/tmp/quicksilver/src/MC_Particle.hh" n="MC_Particle::operator=(MC_Particle&amp;&amp;)" v="{}">
+<S i="290" l="18" v="{[0x4dd00-0x4dd08)}"/>
+</A>
+</A>
+</A>
+</A>
+</P>
+</F>
+<F i="291" n="/tmp/quicksilver/src/MC_Location.cc">
+<P i="292" n="MC_Location::get_domain(MonteCarlo*) const" ln="_ZNK11MC_Location10get_domainEP10MonteCarlo" l="9" v="{[0x4dee0-0x4dee1)}">
+<S i="293" l="9" v="{[0x4dee0-0x4dee8)}"/>
+<S i="294" l="11" v="{[0x4dee8-0x4def8) [0x4df10-0x4df18) [0x4dfa8-0x4dfe0)}"/>
+<A i="295" l="11" f="/tmp/quicksilver/src/MC_Location.cc" n="" v="{}">
+<A i="296" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Domain&gt;::operator[](int)" v="{}">
+<S i="297" l="94" v="{[0x4def8-0x4df00) [0x4df08-0x4df10) [0x4df18-0x4df20) [0x4df28-0x4df40) [0x4df48-0x4df60) [0x4df68-0x4df80) [0x4df88-0x4dfa0)}"/>
+</A>
+</A>
+</P>
+</F>
+<F i="298" n="/tmp/quicksilver/src/MC_RNG_State.cc">
+<P i="299" n="rngSpawn_Random_Number_Seed(unsigned long*)" ln="_Z27rngSpawn_Random_Number_SeedPm" l="42" v="{[0x4dfe0-0x4dfe1)}">
+<S i="300" l="107" v="{[0x4dfe0-0x4dfe8)}"/>
+<S i="301" l="109" v="{[0x4dfe8-0x4e000)}"/>
+<S i="302" l="112" v="{[0x4e1c8-0x4e1e0)}"/>
+<A i="303" l="109" f="/tmp/quicksilver/src/MC_RNG_State.cc" n="" v="{}">
+<A i="304" l="94" f="/tmp/quicksilver/src/MC_RNG_State.cc" n="_INTERNAL_9db49f16_15_MC_RNG_State_cc_b2259ff0::(anonymous namespace)::hash_state(unsigned long)" v="{}">
+<A i="305" l="94" f="/tmp/quicksilver/src/MC_RNG_State.cc" n="" v="{}">
+<A i="306" l="42" f="/tmp/quicksilver/src/MC_RNG_State.cc" n="_INTERNAL_9db49f16_15_MC_RNG_State_cc_b2259ff0::(anonymous namespace)::pseudo_des(unsigned int&amp;, unsigned int&amp;)" v="{}">
+<S i="307" l="42" v="{[0x4e010-0x4e018) [0x4e0a8-0x4e0b0)}"/>
+<S i="308" l="43" v="{[0x4e028-0x4e030) [0x4e0c8-0x4e0d0)}"/>
+<S i="309" l="44" v="{[0x4e018-0x4e020) [0x4e0b8-0x4e0c0)}"/>
+<S i="310" l="45" v="{[0x4e030-0x4e040) [0x4e048-0x4e050) [0x4e0d8-0x4e0e0) [0x4e0e8-0x4e0f8)}"/>
+<S i="311" l="48" v="{[0x4e050-0x4e060) [0x4e068-0x4e070) [0x4e078-0x4e080) [0x4e0f8-0x4e100) [0x4e108-0x4e118) [0x4e130-0x4e138)}"/>
+</A>
+</A>
+</A>
+</A>
+<A i="312" l="111" f="/tmp/quicksilver/src/MC_RNG_State.cc" n="" v="{}">
+<A i="313" l="26" f="/tmp/quicksilver/src/MC_RNG_State.hh" n="rngSample(unsigned long*)" v="{}">
+<S i="314" l="26" v="{[0x4e008-0x4e010) [0x4e070-0x4e078) [0x4e088-0x4e0a0) [0x4e0b0-0x4e0b8) [0x4e0d0-0x4e0d8) [0x4e118-0x4e120) [0x4e128-0x4e130) [0x4e138-0x4e140) [0x4e148-0x4e160) [0x4e168-0x4e180) [0x4e188-0x4e1a0) [0x4e1a8-0x4e1c0)}"/>
+</A>
+</A>
+</P>
+</F>
+<F i="315" n="/tmp/quicksilver/src/MC_Segment_Outcome.cc">
+<P i="316" n="MC_Segment_Outcome(MonteCarlo*, MC_Particle&amp;, unsigned int&amp;)" ln="_Z18MC_Segment_OutcomeP10MonteCarloR11MC_ParticleRj" l="31" v="{[0x4e9a0-0x4e9a1)}">
+<S i="317" l="31" v="{[0x4e9a0-0x4e9a8)}"/>
+<S i="318" l="43" v="{[0x4ecc0-0x4ecc8)}"/>
+<S i="319" l="47" v="{[0x4ecc8-0x4ecd8) [0x4ece0-0x4ece8)}"/>
+<S i="320" l="50" v="{[0x4ed20-0x4ed28)}"/>
+<S i="321" l="58" v="{[0x4ed60-0x4ed68)}"/>
+<S i="322" l="63" v="{[0x4ede0-0x4ede8)}"/>
+<S i="323" l="70" v="{[0x4ef60-0x4ef68)}"/>
+<S i="324" l="74" v="{[0x4ee90-0x4eea8) [0x4eee0-0x4eee8) [0x4ef00-0x4ef08)}"/>
+<S i="325" l="77" v="{[0x4efa0-0x4efa8)}"/>
+<S i="326" l="83" v="{[0x4f170-0x4f188) [0x4f338-0x4f350) [0x4f360-0x4f368)}"/>
+<S i="327" l="144" v="{[0x4f6c0-0x4f6c8)}"/>
+<S i="328" l="146" v="{[0x4f700-0x4f708)}"/>
+<S i="329" l="158" v="{[0x4f800-0x4f808)}"/>
+<S i="330" l="179" v="{[0x4f8c0-0x4f8c8)}"/>
+<S i="331" l="181" v="{[0x4f900-0x4f908)}"/>
+<S i="332" l="185" v="{[0x4f8e0-0x4f8e8)}"/>
+<S i="333" l="208" v="{[0x4fae0-0x4fae8) [0x4fb20-0x4fb28)}"/>
+<S i="334" l="224" v="{[0x4fe98-0x4ffe0)}"/>
+<A i="335" l="39" f="/tmp/quicksilver/src/MC_Segment_Outcome.cc" n="" v="{}">
+<A i="336" l="93" f="/tmp/quicksilver/src/MC_Vector.hh" n="MC_Vector::Length() const" v="{}">
+<S i="337" l="93" v="{[0x4ec18-0x4ec30) [0x4ec60-0x4ec78)}"/>
+</A>
+</A>
+<A i="338" l="221" f="/tmp/quicksilver/src/MC_Segment_Outcome.cc" n="" v="{}">
+<A i="339" l="353" f="/tmp/quicksilver/src/Tallies.hh" n="Tallies::TallyScalarFlux(double, int, int, int, int)" v="{}">
+<A i="340" l="353" f="/tmp/quicksilver/src/Tallies.hh" n="" v="{}">
+<A i="341" l="87" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_59a9ba99_21_MC_Segment_Outcome_cc_4ac44025::QS::atomicAdd&lt;double&gt;(double&amp;, double)" v="{}">
+<A i="342" l="87" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="343" l="294" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/sm_60_atomic_functions.hpp" n="_INTERNAL_59a9ba99_21_MC_Segment_Outcome_cc_4ac44025::atomicAdd(double*, double)" v="{}">
+<S i="344" l="294" v="{[0x4fe20-0x4fe28) [0x4fe40-0x4fe90)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</P>
+</F>
+<F i="345" n="/tmp/quicksilver/src/MacroscopicCrossSection.cc">
+<P i="346" n="weightedMacroscopicCrossSection(MonteCarlo*, int, int, int, int)" ln="_Z31weightedMacroscopicCrossSectionP10MonteCarloiiii" l="59" v="{[0x4ffe0-0x4ffe1)}">
+<S i="347" l="59" v="{[0x4ffe0-0x4ffe8)}"/>
+<S i="348" l="64" v="{[0x502c0-0x502c8) [0x50300-0x50308)}"/>
+<S i="349" l="71" v="{[0x50580-0x50588) [0x50e78-0x50e88) [0x50e90-0x50eb0) [0x510e8-0x510f8) [0x51108-0x51128)}"/>
+<S i="350" l="73" v="{[0x50e88-0x50e90) [0x510f8-0x51108)}"/>
+<S i="351" l="79" v="{[0x51188-0x512e0)}"/>
+<A i="352" l="73" f="/tmp/quicksilver/src/MacroscopicCrossSection.cc" n="" v="{}">
+<A i="353" l="21" f="/tmp/quicksilver/src/MacroscopicCrossSection.cc" n="macroscopicCrossSection(MonteCarlo*, int, int, int, int, int)" v="{}">
+<S i="354" l="21" v="{[0x50970-0x50988) [0x50b70-0x50b88) [0x50d90-0x50da8)}"/>
+<S i="355" l="31" v="{[0x507e0-0x507e8) [0x50c00-0x50c08) [0x50ec0-0x50ec8) [0x50ee0-0x50ee8) [0x51060-0x51068)}"/>
+<S i="356" l="36" v="{[0x510c0-0x510c8)}"/>
+<S i="357" l="45" v="{[0x50e58-0x50e78) [0x510d0-0x510e8)}"/>
+</A>
+</A>
+<A i="358" l="77" f="/tmp/quicksilver/src/MacroscopicCrossSection.cc" n="" v="{}">
+<A i="359" l="81" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_ec9a3cf6_26_MacroscopicCrossSection_cc_fa7d45aa::QS::atomicWrite&lt;double&gt;(double&amp;, double)" v="{}">
+<A i="360" l="81" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="361" l="61" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_ec9a3cf6_26_MacroscopicCrossSection_cc_fa7d45aa::atomicExch(double*, double)" v="{}">
+<A i="362" l="61" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="363" l="231" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_ec9a3cf6_26_MacroscopicCrossSection_cc_fa7d45aa::atomicExch(unsigned long long*, unsigned long long)" v="{}">
+<S i="364" l="231" v="{[0x51160-0x51168) [0x51180-0x51188)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</P>
+<P i="365" n="macroscopicCrossSection(MonteCarlo*, int, int, int, int, int)" ln="_Z23macroscopicCrossSectionP10MonteCarloiiiii" l="15" v="{[0x512e0-0x512e1)}">
+<S i="366" l="15" v="{[0x512e0-0x512e8)}"/>
+<S i="367" l="33" v="{[0x515c0-0x515c8)}"/>
+<S i="368" l="41" v="{[0x515e0-0x515e8)}"/>
+<S i="369" l="45" v="{[0x51620-0x516a0)}"/>
+</P>
+</F>
+<F i="370" n="/tmp/quicksilver/src/NuclearData.cc">
+<P i="371" n="NuclearData::getReactionCrossSection(unsigned int, unsigned int, unsigned int)" ln="_ZN11NuclearData23getReactionCrossSectionEjjj" l="248" v="{[0x51860-0x51861)}">
+<S i="372" l="248" v="{[0x51860-0x51868)}"/>
+<S i="373" l="251" v="{[0x51920-0x51928) [0x51960-0x51968)}"/>
+<S i="374" l="253" v="{[0x51d48-0x51d60)}"/>
+<A i="375" l="253" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="376" l="194" f="/tmp/quicksilver/src/NuclearData.cc" n="NuclearDataReaction::getCrossSection(unsigned int)" v="{}">
+<S i="377" l="194" v="{[0x51d18-0x51d48)}"/>
+<A i="378" l="193" f="/tmp/quicksilver/src/NuclearData.cc" n="&lt;inline&gt;" v="{}">
+<S i="379" l="193" v="{[0x51c40-0x51c48) [0x51c80-0x51c88)}"/>
+</A>
+<A i="380" l="194" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="381" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;double&gt;::operator[](int)" v="{}">
+<S i="382" l="94" v="{[0x51c90-0x51d18)}"/>
+</A>
+</A>
+</A>
+</A>
+</P>
+<P i="383" n="NuclearData::getTotalCrossSection(unsigned int, unsigned int)" ln="_ZN11NuclearData20getTotalCrossSectionEjj" l="233" v="{[0x51d60-0x51d61)}">
+<S i="384" l="233" v="{[0x51d60-0x51d68)}"/>
+<S i="385" l="235" v="{[0x51ea0-0x51ea8) [0x51ee0-0x51ee8)}"/>
+<S i="386" l="238" v="{[0x526d8-0x52710) [0x52718-0x52728) [0x52988-0x529b0) [0x529b8-0x529c8)}"/>
+<S i="387" l="240" v="{[0x52710-0x52718) [0x529b0-0x529b8)}"/>
+<S i="388" l="242" v="{[0x529c8-0x52ae0)}"/>
+<A i="389" l="240" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="390" l="193" f="/tmp/quicksilver/src/NuclearData.cc" n="NuclearDataReaction::getCrossSection(unsigned int)" v="{}">
+<S i="391" l="193" v="{[0x52038-0x52050) [0x52160-0x52168) [0x521a0-0x521a8) [0x52320-0x52328) [0x524c0-0x524c8) [0x52640-0x52648) [0x52680-0x52688) [0x52740-0x52748) [0x52820-0x52828) [0x528e0-0x528e8) [0x52920-0x52928)}"/>
+<S i="392" l="194" v="{[0x526b8-0x526d8) [0x52968-0x52988)}"/>
+<A i="393" l="193" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="394" l="106" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;double&gt;::size() const" v="{}">
+<S i="395" l="106" v="{[0x52220-0x52238) [0x523f0-0x52408) [0x52590-0x525a8)}"/>
+</A>
+</A>
+<A i="396" l="194" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="397" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;double&gt;::operator[](int)" v="{}">
+<S i="398" l="94" v="{[0x52688-0x526b8) [0x52930-0x52968)}"/>
+</A>
+</A>
+</A>
+</A>
+</P>
+<P i="399" n="NuclearData::getNumberReactions(unsigned int)" ln="_ZN11NuclearData18getNumberReactionsEj" l="199" v="{[0x52ae0-0x52ae1)}">
+<S i="400" l="199" v="{[0x52ae0-0x52ae8)}"/>
+<S i="401" l="201" v="{[0x52b60-0x52b68) [0x52ba0-0x52ba8)}"/>
+<S i="402" l="202" v="{[0x52cb8-0x52ce0)}"/>
+<A i="403" l="202" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="404" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;NuclearDataIsotope&gt;::operator[](int)" v="{}">
+<S i="405" l="94" v="{[0x52bb0-0x52bd8)}"/>
+</A>
+</A>
+<A i="406" l="202" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="407" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;NuclearDataSpecies&gt;::operator[](int)" v="{}">
+<S i="408" l="94" v="{[0x52bd8-0x52c90)}"/>
+</A>
+</A>
+<A i="409" l="202" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="410" l="106" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;NuclearDataReaction&gt;::size() const" v="{}">
+<S i="411" l="106" v="{[0x52c90-0x52cb8)}"/>
+</A>
+</A>
+</P>
+<P i="412" n="NuclearData::getEnergyGroup(double)" ln="_ZN11NuclearData14getEnergyGroupEd" l="208" v="{[0x52ce0-0x52ce1)}">
+<S i="413" l="208" v="{[0x52ce0-0x52cf0)}"/>
+<S i="414" l="211" v="{[0x52d10-0x52d20) [0x52d28-0x52d40) [0x52d48-0x52d50)}"/>
+<S i="415" l="212" v="{[0x52d70-0x52d78) [0x52d98-0x52dc0) [0x52dc8-0x52dd0)}"/>
+<S i="416" l="217" v="{[0x52dd8-0x52df0) [0x52df8-0x52e08) [0x52ea0-0x52ea8)}"/>
+<S i="417" l="226" v="{[0x52ea8-0x52ee0)}"/>
+<L i="418" l="217" f="/tmp/quicksilver/src/NuclearData.cc" v="{[0x52e08-0x52e09)}">
+<S i="419" l="217" v="{[0x52e88-0x52ea0)}"/>
+<S i="420" l="219" v="{[0x52e08-0x52e20)}"/>
+<S i="421" l="220" v="{[0x52e48-0x52e60) [0x52e68-0x52e70)}"/>
+<S i="422" l="221" v="{[0x52e70-0x52e80)}"/>
+<A i="423" l="220" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="424" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;double&gt;::operator[](int)" v="{}">
+<S i="425" l="94" v="{[0x52e28-0x52e40)}"/>
+</A>
+</A>
+</L>
+<A i="426" l="210" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="427" l="106" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;double&gt;::size() const" v="{}">
+<S i="428" l="106" v="{[0x52d50-0x52d70)}"/>
+</A>
+</A>
+<A i="429" l="211" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="430" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;double&gt;::operator[](int)" v="{}">
+<S i="431" l="94" v="{[0x52cf0-0x52d00) [0x52d08-0x52d10)}"/>
+</A>
+</A>
+<A i="432" l="212" f="/tmp/quicksilver/src/NuclearData.cc" n="" v="{}">
+<A i="433" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;double&gt;::operator[](int)" v="{}">
+<S i="434" l="94" v="{[0x52d78-0x52d98)}"/>
+</A>
+</A>
+</P>
+<P i="435" n="NuclearDataReaction::sampleCollision(double, double, double*, double*, int&amp;, unsigned long*, int)" ln="_ZN19NuclearDataReaction15sampleCollisionEddPdS0_RiPmi" l="54" v="{[0x52ee0-0x52ee1)}">
+<S i="436" l="54" v="{[0x52ee0-0x52ee8)}"/>
+<S i="437" l="64" v="{[0x54158-0x54170) [0x541a0-0x541a8)}"/>
+<S i="438" l="75" v="{[0x53240-0x53258) [0x53c60-0x53c68) [0x53ca0-0x53ca8)}"/>
+<S i="439" l="85" v="{[0x54380-0x54388)}"/>
+<S i="440" l="86" v="{[0x543b8-0x54460)}"/>
+</P>
+</F>
+<F i="441" n="/tmp/quicksilver/src/ParticleVaultContainer.cc">
+<P i="442" n="ParticleVaultContainer::addExtraParticle(MC_Particle&amp;)" ln="_ZN22ParticleVaultContainer16addExtraParticleER11MC_Particle" l="342" v="{[0x54ba0-0x54ba1)}">
+<S i="443" l="342" v="{[0x54ba0-0x54c08) [0x54c10-0x54c18) [0x54c28-0x54c38) [0x552a8-0x552b8)}"/>
+<S i="444" l="346" v="{[0x54da0-0x54da8) [0x54ed8-0x54ef0)}"/>
+<S i="445" l="348" v="{[0x55558-0x555a0)}"/>
+<A i="446" l="345" f="/tmp/quicksilver/src/ParticleVaultContainer.cc" n="" v="{}">
+<A i="447" l="99" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_8938cc24_25_ParticleVaultContainer_cc_cbb02129::QS::atomicCaptureAdd&lt;unsigned long&gt;(unsigned long&amp;, unsigned long, unsigned long&amp;)" v="{}">
+<A i="448" l="99" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="449" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_8938cc24_25_ParticleVaultContainer_cc_cbb02129::atomicAdd(unsigned long*, unsigned long)" v="{}">
+<A i="450" l="49" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="451" l="226" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_8938cc24_25_ParticleVaultContainer_cc_cbb02129::atomicAdd(unsigned long long*, unsigned long long)" v="{}">
+<S i="452" l="226" v="{[0x54c08-0x54c10) [0x54c18-0x54c28) [0x54c38-0x54c48) [0x54c60-0x54c68) [0x54cb0-0x54d30) [0x54d40-0x54d48)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="453" l="347" f="/tmp/quicksilver/src/ParticleVaultContainer.cc" n="" v="{}">
+<A i="454" l="90" f="/tmp/quicksilver/src/ParticleVault.hh" n="ParticleVault::pushParticle(MC_Particle&amp;)" v="{}">
+<A i="455" l="90" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="456" l="200" f="/tmp/quicksilver/src/MC_Base_Particle.hh" n="MC_Base_Particle::MC_Base_Particle(MC_Particle const&amp;)" v="{}">
+<S i="457" l="200" v="{[0x552b8-0x552d0)}"/>
+</A>
+</A>
+<A i="458" l="91" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="459" l="183" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Base_Particle&gt;::atomic_Index_Inc(int)" v="{}">
+<A i="460" l="183" f="/tmp/quicksilver/src/QS_Vector.hh" n="" v="{}">
+<A i="461" l="99" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_8938cc24_25_ParticleVaultContainer_cc_cbb02129::QS::atomicCaptureAdd&lt;int&gt;(int&amp;, int, int&amp;)" v="{}">
+<A i="462" l="99" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="463" l="107" f="/usr/local/cuda/bin/../targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_8938cc24_25_ParticleVaultContainer_cc_cbb02129::atomicAdd(int*, int)" v="{}">
+<S i="464" l="107" v="{[0x551a0-0x551a8) [0x551c0-0x551c8)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="465" l="92" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="466" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;MC_Base_Particle&gt;::operator[](int)" v="{}">
+<S i="467" l="94" v="{[0x551f8-0x55290) [0x55308-0x55310)}"/>
+</A>
+</A>
+<A i="468" l="92" f="/tmp/quicksilver/src/ParticleVault.hh" n="" v="{}">
+<A i="469" l="27" f="/tmp/quicksilver/src/MC_Base_Particle.hh" n="MC_Base_Particle::operator=(MC_Base_Particle const&amp;)" v="{}">
+<S i="470" l="27" v="{[0x552f8-0x55308) [0x55310-0x55378)}"/>
+<A i="471" l="27" f="/tmp/quicksilver/src/MC_Base_Particle.hh" n="" v="{}">
+<A i="472" l="23" f="/tmp/quicksilver/src/MC_Vector.hh" n="MC_Vector::operator=(MC_Vector const&amp;)" v="{}">
+<S i="473" l="23" v="{[0x55290-0x552a8) [0x553b0-0x553c8)}"/>
+<S i="474" l="25" v="{[0x552d0-0x552f0) [0x553d0-0x553f8)}"/>
+<S i="475" l="26" v="{[0x552f0-0x552f8) [0x55378-0x55388) [0x553f8-0x55410)}"/>
+<S i="476" l="27" v="{[0x55388-0x553b0) [0x553c8-0x553d0) [0x55410-0x55558)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+</P>
+<P i="477" n="ParticleVaultContainer::getSendQueue()" ln="_ZN22ParticleVaultContainer12getSendQueueEv" l="136" v="{[0x555a0-0x555a1)}">
+<S i="478" l="136" v="{[0x555a0-0x555a8)}"/>
+<S i="479" l="138" v="{[0x555a8-0x555c0) [0x555c8-0x555e0)}"/>
+</P>
+</F>
+<F i="480" n="/tmp/quicksilver/src/SendQueue.cc">
+<P i="481" n="SendQueue::push(int, int)" ln="_ZN9SendQueue4pushEii" l="35" v="{[0x555e0-0x555e1)}">
+<S i="482" l="35" v="{[0x555e0-0x555e8) [0x555f0-0x555f8)}"/>
+<S i="483" l="39" v="{[0x55690-0x556a0) [0x556a8-0x556c0) [0x556c8-0x556d8)}"/>
+<S i="484" l="40" v="{[0x556e8-0x55700) [0x55708-0x55718)}"/>
+<S i="485" l="41" v="{[0x55718-0x55760)}"/>
+<A i="486" l="37" f="/tmp/quicksilver/src/SendQueue.cc" n="" v="{}">
+<A i="487" l="183" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;sendQueueTuple&gt;::atomic_Index_Inc(int)" v="{}">
+<A i="488" l="183" f="/tmp/quicksilver/src/QS_Vector.hh" n="" v="{}">
+<A i="489" l="99" f="/tmp/quicksilver/src/QS_atomics.hh" n="_INTERNAL_8f02d54d_12_SendQueue_cc_4fcd1737::QS::atomicCaptureAdd&lt;int&gt;(int&amp;, int, int&amp;)" v="{}">
+<A i="490" l="99" f="/tmp/quicksilver/src/QS_atomics.hh" n="" v="{}">
+<A i="491" l="107" f="/usr/local/cuda-12.5/targets/x86_64-linux/include/device_atomic_functions.hpp" n="_INTERNAL_8f02d54d_12_SendQueue_cc_4fcd1737::atomicAdd(int*, int)" v="{}">
+<S i="492" l="107" v="{[0x555e8-0x555f0) [0x555f8-0x55600) [0x55608-0x55640) [0x55648-0x55668)}"/>
+</A>
+</A>
+</A>
+</A>
+</A>
+</A>
+<A i="493" l="39" f="/tmp/quicksilver/src/SendQueue.cc" n="" v="{}">
+<A i="494" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;sendQueueTuple&gt;::operator[](int)" v="{}">
+<S i="495" l="94" v="{[0x55668-0x55680) [0x55688-0x55690)}"/>
+</A>
+</A>
+<A i="496" l="40" f="/tmp/quicksilver/src/SendQueue.cc" n="" v="{}">
+<A i="497" l="94" f="/tmp/quicksilver/src/QS_Vector.hh" n="qs_vector&lt;sendQueueTuple&gt;::operator[](int)" v="{}">
+<S i="498" l="94" v="{[0x556d8-0x556e0)}"/>
+</A>
+</A>
+</P>
+</F>
+<F i="499" n="/tmp/quicksilver/src/cudaFunctions.cc">
+<P i="500" n="__nv_static_38__c64c31d9_16_cudaFunctions_cc_2bb9853e__ZN49_GLOBAL__N__c64c31d9_16_cudaFunctions_cc_2bb9853e13trivialKernelEv" l="9" v="{[0x55760-0x55761)}">
+<S i="501" l="9" v="{[0x55760-0x55780) [0x55788-0x55790)}"/>
+<S i="502" l="15" v="{[0x55790-0x557a0)}"/>
+</P>
+<P i="503" n="getGlobalThreadID()" ln="_Z17getGlobalThreadIDv" l="74" v="{[0x557a0-0x557a1)}">
+<S i="504" l="74" v="{[0x557a0-0x557a8)}"/>
+<S i="505" l="76" v="{[0x557b8-0x557c8)}"/>
+<S i="506" l="77" v="{[0x557a8-0x557b0)}"/>
+<S i="507" l="78" v="{[0x557b0-0x557b8) [0x557d0-0x557f8) [0x55808-0x55818)}"/>
+<S i="508" l="81" v="{[0x557c8-0x557d0)}"/>
+<S i="509" l="82" v="{[0x557f8-0x55808)}"/>
+<S i="510" l="83" v="{[0x55818-0x55888)}"/>
+<S i="511" l="84" v="{[0x55888-0x558a0)}"/>
+</P>
+</F>
+<F i="512" n="/tmp/quicksilver/src/main.cc">
+<P i="513" n="CycleTrackingKernel(MonteCarlo*, int, ParticleVault*, ParticleVault*)" ln="_Z19CycleTrackingKernelP10MonteCarloiP13ParticleVaultS2_" l="128" v="{[0x558a0-0x558a1)}">
+<S i="514" l="128" v="{[0x558a0-0x558b0) [0x558f0-0x558f8)}"/>
+<S i="515" l="130" v="{[0x558b8-0x558c0) [0x558c8-0x558e0) [0x558e8-0x558f0)}"/>
+<S i="516" l="132" v="{[0x558f8-0x55900) [0x55908-0x55920) [0x55928-0x55938) [0x55940-0x55960)}"/>
+<S i="517" l="134" v="{[0x55968-0x559a0)}"/>
+<C i="518" l="128" v="{[0x558b0-0x558b8)}" t="0x557a8" d="NVIDIA sm_62"/>
+<C i="519" l="132" v="{[0x55938-0x55940)}" t="0x46e68" d="NVIDIA sm_62"/>
+</P>
+</F>
+<F i="520" n="[quicksilver-sm_62-dr]">
+<P i="521" n="__internal_trig_reduction_slowpathd" l="0" v="{[0x420e0-0x420e1)}">
+<S i="522" l="0" v="{[0x420e0-0x42118) [0x421a0-0x421b8) [0x42250-0x42448) [0x42960-0x429a0)}"/>
+</P>
+<P i="523" n="__cuda_sm20_div_rn_f64_full" l="0" v="{[0x429a0-0x429a1)}">
+<S i="524" l="0" v="{[0x429a0-0x42b58) [0x42c00-0x42c08) [0x42c70-0x42c88) [0x42cc0-0x42cc8) [0x42d18-0x42d30) [0x42d38-0x42d50) [0x42d58-0x42da0)}"/>
+</P>
+<P i="525" n="__cuda_sm20_dsqrt_rn_f64_mediumpath_v1" l="0" v="{[0x42da0-0x42da1)}">
+<S i="526" l="0" v="{[0x42da0-0x42dc0) [0x42dc8-0x42de0) [0x42de8-0x42e00) [0x42e08-0x42e60) [0x42e70-0x42ea0) [0x42ea8-0x42ec0) [0x42ec8-0x42ee0) [0x42ee8-0x42f00) [0x42f08-0x42f20) [0x42f28-0x42fa0)}"/>
+</P>
+<P i="527" n="__cuda_sm20_dsqrt_rn_f64_mediumpath_v1" l="0" v="{[0x48460-0x48461)}">
+<S i="528" l="0" v="{[0x48460-0x48480) [0x48488-0x484a0) [0x484a8-0x484c0) [0x484c8-0x48520) [0x48530-0x48560) [0x48568-0x48580) [0x48588-0x485a0) [0x485a8-0x485c0) [0x485c8-0x485e0) [0x485e8-0x48660)}"/>
+</P>
+<P i="529" n="__cuda_sm20_dblrcp_rn_slowpath_v3" l="0" v="{[0x48660-0x48661)}">
+<S i="530" l="0" v="{[0x48660-0x48680) [0x48688-0x486a0) [0x486a8-0x486d0) [0x486d8-0x486e0) [0x486e8-0x48700) [0x48708-0x48720) [0x48728-0x48740) [0x48748-0x48780) [0x48788-0x48790) [0x48798-0x487a0) [0x487a8-0x487c0) [0x487c8-0x48820)}"/>
+</P>
+<P i="531" n="__cuda_sm20_div_rn_f64_full" l="0" v="{[0x48820-0x48821)}">
+<S i="532" l="0" v="{[0x48820-0x489d8) [0x48a80-0x48a88) [0x48af0-0x48b08) [0x48b40-0x48b48) [0x48b98-0x48bb0) [0x48bb8-0x48bd0) [0x48bd8-0x48c20)}"/>
+</P>
+<P i="533" n="__cuda_sm20_dblrcp_rn_slowpath_v3" l="0" v="{[0x4cda0-0x4cda1)}">
+<S i="534" l="0" v="{[0x4cda0-0x4cdc0) [0x4cdc8-0x4cde0) [0x4cde8-0x4ce10) [0x4ce18-0x4ce20) [0x4ce28-0x4ce40) [0x4ce48-0x4ce60) [0x4ce68-0x4ce80) [0x4ce88-0x4cec0) [0x4cec8-0x4ced0) [0x4ced8-0x4cee0) [0x4cee8-0x4cf00) [0x4cf08-0x4cf60)}"/>
+</P>
+<P i="535" n="__cuda_sm20_dsqrt_rn_f64_mediumpath_v1" l="0" v="{[0x4cf60-0x4cf61)}">
+<S i="536" l="0" v="{[0x4cf60-0x4cf80) [0x4cf88-0x4cfa0) [0x4cfa8-0x4cfc0) [0x4cfc8-0x4d020) [0x4d030-0x4d060) [0x4d068-0x4d080) [0x4d088-0x4d0a0) [0x4d0a8-0x4d0c0) [0x4d0c8-0x4d0e0) [0x4d0e8-0x4d160)}"/>
+</P>
+<P i="537" n="__cuda_sm20_div_rn_f64_full" l="0" v="{[0x4e1e0-0x4e1e1)}">
+<S i="538" l="0" v="{[0x4e1e0-0x4e398) [0x4e440-0x4e448) [0x4e4b0-0x4e4c8) [0x4e500-0x4e508) [0x4e558-0x4e570) [0x4e578-0x4e590) [0x4e598-0x4e5e0)}"/>
+</P>
+<P i="539" n="__cuda_sm20_dblrcp_rn_slowpath_v3" l="0" v="{[0x4e5e0-0x4e5e1)}">
+<S i="540" l="0" v="{[0x4e5e0-0x4e600) [0x4e608-0x4e620) [0x4e628-0x4e650) [0x4e658-0x4e660) [0x4e668-0x4e680) [0x4e688-0x4e6a0) [0x4e6a8-0x4e6c0) [0x4e6c8-0x4e700) [0x4e708-0x4e710) [0x4e718-0x4e720) [0x4e728-0x4e740) [0x4e748-0x4e7a0)}"/>
+</P>
+<P i="541" n="__cuda_sm20_dsqrt_rn_f64_mediumpath_v1" l="0" v="{[0x4e7a0-0x4e7a1)}">
+<S i="542" l="0" v="{[0x4e7a0-0x4e7c0) [0x4e7c8-0x4e7e0) [0x4e7e8-0x4e800) [0x4e808-0x4e860) [0x4e870-0x4e8a0) [0x4e8a8-0x4e8c0) [0x4e8c8-0x4e8e0) [0x4e8e8-0x4e900) [0x4e908-0x4e920) [0x4e928-0x4e9a0)}"/>
+</P>
+<P i="543" n="__cuda_sm20_dblrcp_rn_slowpath_v3" l="0" v="{[0x516a0-0x516a1)}">
+<S i="544" l="0" v="{[0x516a0-0x516c0) [0x516c8-0x516e0) [0x516e8-0x51710) [0x51718-0x51720) [0x51728-0x51740) [0x51748-0x51760) [0x51768-0x51780) [0x51788-0x517c0) [0x517c8-0x517d0) [0x517d8-0x517e0) [0x517e8-0x51800) [0x51808-0x51860)}"/>
+</P>
+<P i="545" n="__cuda_sm20_div_u64" l="0" v="{[0x54460-0x54461)}">
+<S i="546" l="0" v="{[0x54460-0x54ba0)}"/>
+</P>
+</F>
+</LM>
+</HPCToolkitStructure>
