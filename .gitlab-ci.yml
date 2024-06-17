@@ -639,8 +639,8 @@ semifresh none cpu:
     REGEN_SUITES: none cpu
 semifresh nvidia sw-cuda:
   extends: .semifresh test job
-  needs: ['predeps: [cuda12.3-amd64]']
-  image: $PREDEPS_IMAGE_CUDA12_3_AMD64
+  needs: ['predeps: [cuda12.5-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_5_AMD64
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
     REGEN_SUITES: nvidia sw-cuda
@@ -773,8 +773,8 @@ compiler icx:
       TEST_ARGS: --suite none
 'option: [cuda amd64]':
   extends: .option test job
-  needs: ['predeps: [cuda12.3-amd64]']
-  image: $PREDEPS_IMAGE_CUDA12_3_AMD64
+  needs: ['predeps: [cuda12.5-amd64]']
+  image: $PREDEPS_IMAGE_CUDA12_5_AMD64
   parallel:
     matrix:
     - SETUP_ARGS:
