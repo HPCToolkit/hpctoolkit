@@ -1,0 +1,66 @@
+{
+  "name": "ci.predeps-cuda12.1",
+  "build": {
+    "args": {
+      "CUDA_VERSION": "12.1.1"
+    },
+    "context": "${localWorkspaceFolder}",
+    "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.cuda"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ],
+  "containerEnv": {
+    "OMPI_ALLOW_RUN_AS_ROOT": "1",
+    "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mesonbuild.mesonbuild"
+      ],
+      "settings": {
+        "clangd.arguments": [
+          "--compile-commands-dir=${config:mesonbuild.buildFolder}"
+        ],
+        "mesonbuild.buildFolder": ".devcontainer/cuda12.1/builddir-${devcontainerId}",
+        "mesonbuild.configureOnOpen": true,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/bash"
+          },
+          "zsh": {
+            "args": [
+              "-l"
+            ],
+            "icon": "terminal-bash",
+            "path": "/usr/bin/zsh"
+          }
+        }
+      }
+    }
+  },
+  "features": {
+    "../bash-completion-feature": {},
+    "ghcr.io/devcontainers-contrib/features/poetry:2": {},
+    "ghcr.io/devcontainers-contrib/features/pre-commit:2": {},
+    "ghcr.io/devcontainers-contrib/features/ripgrep:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/git:1": {
+      "ppa": true,
+      "version": "latest"
+    }
+  },
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/cuda12.1/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/cuda12.1/builddir-${devcontainerId}"
+  },
+  "runArgs": [
+    "--gpus=all"
+  ]
+}
