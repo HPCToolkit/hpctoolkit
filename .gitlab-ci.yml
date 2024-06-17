@@ -420,7 +420,7 @@ rhel9 amd64:
   variables:
     # FIXME: This particular combination of PAPI et al. seems to cause hpcrun to hang, always.
     # Disable PAPI in the build until a proper investigation can be carried out.
-    SETUP_ARGS: -Dpapi=disabled
+    SETUP_ARGS: --native-file hpctoolkit-ci.ini -Dpapi=disabled
     # FIXME: MVAPICH2 reacts badly in VMs, it claims to have no threading support. The same effect
     # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
     # MPI for now until a proper fix can be figured out.
@@ -433,7 +433,7 @@ rhel9 arm64:
   variables:
     # FIXME: This particular combination of PAPI et al. seems to cause hpcrun to hang, always.
     # Disable PAPI in the build until a proper investigation can be carried out.
-    SETUP_ARGS: -Dpapi=disabled
+    SETUP_ARGS: --native-file hpctoolkit-ci.ini -Dpapi=disabled
     # FIXME: MVAPICH2 reacts badly in VMs, it claims to have no threading support. The same effect
     # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
     # MPI for now until a proper fix can be figured out.
@@ -447,7 +447,7 @@ rhel9 ppc64le:
   variables:
     # FIXME: This particular combination of PAPI et al. seems to cause hpcrun to hang, always.
     # Disable PAPI in the build until a proper investigation can be carried out.
-    SETUP_ARGS: -Dpapi=disabled
+    SETUP_ARGS: --native-file hpctoolkit-ci.ini -Dpapi=disabled
     # FIXME: MVAPICH2 reacts badly in VMs, it claims to have no threading support. The same effect
     # can't be reproduced in a local container, for whatever reason. Disable the MPI tests on this
     # MPI for now until a proper fix can be figured out.
