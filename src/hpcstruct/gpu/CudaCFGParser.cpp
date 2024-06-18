@@ -128,57 +128,6 @@ void CudaCFGParser::parse_inst_strings(
 }
 
 
-void CudaCFGParser::link_dangling_blocks(
-  std::set<Block *> &dangling_blocks,
-  std::vector<Function *> &functions) {
-  for (auto *function : functions) {
-    bool find = true;
-    // Find a matched dangling_block and insert it
-    // A while loop is for the case when we have a chain of dangling blocks not in sorted order
-    while (find) {
-      find = false;
-      for (auto iter = dangling_blocks.begin(); iter != dangling_blocks.end(); ++iter) {
-        auto *dangling_block = *iter;
-        for (auto *block : function->blocks) {
-          auto next_offset1 = block->insts.back()->offset + 8;
-          auto next_offset2 = block->insts.back()->offset + 16;
-          auto prev_offset1 = block->insts.front()->offset - 8;
-          auto prev_offset2 = block->insts.front()->offset - 16;
-          if (dangling_block->insts.front()->offset == next_offset1 ||
-            dangling_block->insts.front()->offset == next_offset2 ||
-            dangling_block->insts.back()->offset == prev_offset1 ||
-            dangling_block->insts.back()->offset == prev_offset2) {
-            // block->dangling_block
-            // Either block.address > dangling_block.address or dangling_block.address > block.address
-            bool duplicate = false;
-            for (auto *b : function->blocks) {
-              if (dangling_block->insts.back()->offset >= b->insts.front()->offset &&
-                dangling_block->insts.front()->offset <= b->insts.back()->offset) {
-                // Find existing inst, skip
-                duplicate = true;
-                break;
-              }
-            }
-            if (!duplicate) {
-              find = true;
-              block->targets.push_back(
-                new Target(block->insts.back(), dangling_block, TargetType::DIRECT));
-            }
-            // Either we inserted the target or we found a duplicate
-            break;
-          }
-        }
-        if (find) {
-          function->blocks.push_back(dangling_block);
-          dangling_blocks.erase(iter);
-          break;
-        }
-      }
-    }
-  }
-}
-
-
 void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
@@ -382,9 +331,6 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
     }
   }
 
-  link_dangling_blocks(dangling_blocks, functions);
-
-  // Sort blocks after linking dangling blocks
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       std::sort(block->targets.begin(), block->targets.end(), compare_target_ptr);
