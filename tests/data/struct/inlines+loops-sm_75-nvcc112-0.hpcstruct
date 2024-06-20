@@ -1,5 +1,12 @@
 <?xml version="1.0"?>
 <!DOCTYPE HPCToolkitStructure [
+<!--
+SPDX-FileCopyrightText: 2003-2024 Rice University
+SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 <!-- ******************************************************************** -->
 <!-- HPCToolkit Structure DTD                                             -->
 <!-- Version 4.9                                                          -->
@@ -69,7 +76,7 @@
         d CDATA #IMPLIED>
 ]>
 <HPCToolkitStructure i="0" version="4.9" n="">
-<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/inlines+loops-sm_75-nvcc112-0" has-calls="0" v="{}">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/builddir/../tests/data/bin/inlines+loops-sm_75-nvcc112-0" has-calls="0" v="{}">
 <F i="3" n="/src/inlines+loops.cu">
 <P i="4" n="f1()" ln="_Z2f1v" s="43" l="13" v="{[0x12b80-0x12b81)}">
 <S i="5" l="13" v="{[0x12b80-0x12b90)}"/>
@@ -137,7 +144,7 @@
 </A>
 </P>
 </F>
-<F i="55" n="/usr/local/cuda-11.8/targets/x86_64-linux/include/cuda_device_runtime_api.h">
+<F i="55" n="/usr/local/cuda/bin/../targets/x86_64-linux/include/cuda_device_runtime_api.h">
 <P i="56" n="cudaMalloc" s="1" l="75" v="{[0x11e00-0x11e01)}">
 <S i="57" l="75" v="{[0x11e00-0x12060)}"/>
 <S i="58" l="77" v="{[0x12060-0x12100)}"/>

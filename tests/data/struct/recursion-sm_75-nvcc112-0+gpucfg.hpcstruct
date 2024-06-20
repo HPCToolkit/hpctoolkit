@@ -1,5 +1,12 @@
 <?xml version="1.0"?>
 <!DOCTYPE HPCToolkitStructure [
+<!--
+SPDX-FileCopyrightText: 2003-2024 Rice University
+SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 <!-- ******************************************************************** -->
 <!-- HPCToolkit Structure DTD                                             -->
 <!-- Version 4.9                                                          -->
@@ -69,7 +76,7 @@
         d CDATA #IMPLIED>
 ]>
 <HPCToolkitStructure i="0" version="4.9" n="">
-<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/recursion-sm_75-nvcc112-0" has-calls="1" v="{}">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/builddir/../tests/data/bin/recursion-sm_75-nvcc112-0" has-calls="1" v="{}">
 <F i="3" n="/src/recursion.cu">
 <P i="4" n="_INTERNAL_44_tmpxft_00000035_00000000_7_recursion_cpp1_ii_main::top1(double volatile*, int)" ln="_ZN62_INTERNAL_44_tmpxft_00000035_00000000_7_recursion_cpp1_ii_main4top1EPVdi" l="30" v="{[0x13200-0x13201)}">
 <S i="5" l="30" v="{[0x13200-0x13360)}"/>
@@ -120,7 +127,7 @@
 <C i="45" l="51" v="{[0x15530-0x15540)}" t="0x14a80" d="NVIDIA sm_75"/>
 </P>
 </F>
-<F i="46" n="/usr/local/cuda-11.8/targets/x86_64-linux/include/cuda_device_runtime_api.h">
+<F i="46" n="/usr/local/cuda-12.5/targets/x86_64-linux/include/cuda_device_runtime_api.h">
 <P i="47" n="cudaMalloc" l="75" v="{[0x12480-0x12481)}">
 <S i="48" l="75" v="{[0x12480-0x126e0)}"/>
 <S i="49" l="77" v="{[0x126e0-0x12780)}"/>

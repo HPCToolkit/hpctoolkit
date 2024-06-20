@@ -1,5 +1,12 @@
 <?xml version="1.0"?>
 <!DOCTYPE HPCToolkitStructure [
+<!--
+SPDX-FileCopyrightText: 2003-2024 Rice University
+SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 <!-- ******************************************************************** -->
 <!-- HPCToolkit Structure DTD                                             -->
 <!-- Version 4.9                                                          -->
@@ -69,7 +76,7 @@
         d CDATA #IMPLIED>
 ]>
 <HPCToolkitStructure i="0" version="4.9" n="">
-<LM i="2" n="/builds/hpctoolkit/hpctoolkit/tests/data/bin/recursion-sm_87-nvcc118-dr" has-calls="0" v="{}">
+<LM i="2" n="/builds/hpctoolkit/hpctoolkit/builddir/../tests/data/bin/recursion-sm_87-nvcc118-dr" has-calls="0" v="{}">
 <F i="3" n="/src/recursion.cu">
 <P i="4" n="kernmain()" ln="_Z8kernmainv" s="1" l="50" v="{[0x2a00-0x2a01)}">
 <S i="5" l="50" v="{[0x2a00-0x2b60)}"/>
