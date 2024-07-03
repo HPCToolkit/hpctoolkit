@@ -18,9 +18,7 @@ _threadmodels = {
   ),
 }
 foreach _threadmodel, _tstexe : _threadmodels
-# FIXME: C11 thread functions aren't intercepted in current versions, which means the tests will
-  # fail when using the C11 threading model.
-  _should_fail = _threadmodel == 'c11-thread'
+  _should_fail = _threadmodel == 'c11-thread'  # FIXME: C11 threads are not yet intercepted
 
   test(
     f'Threads are tracked for @_threadmodel@',

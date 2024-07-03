@@ -57,35 +57,38 @@ foreach name, struct : testdata_struct
   endif
 
   foreach threads : _threads
+    _should_fail = false
+    # FIXME: As of Elfutils 0.191, the handling for Nvidia binaries (without nvdisasm) is
+    # no longer functional. Mark these cases as XFAIL until a fix comes about.
+    # https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/831
+    if libdw_dep.version().version_compare('>=0.191') and struct['binary'].get('cuda', false)
+      _should_fail = true
+    endif
+    # FIXME: Dyninst 12.3 has a bug that makes it unable to parse certain inline sequences
+    # from LLVM binaries, see https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/754.
+    # This is fixed in 13.0, but mark as XFAIL to support older Dyninst.
+    if dyninst_dep.version().version_compare('<13.0.0') and name in [
+      'inlines+loops-x86_64-llvm15-0',
+      'inlines+loops-x86_64-llvm15-d',
+      'inlines+loops-x86_64-llvm15-dr',
+    ]
+      _should_fail = true
+    endif
+    # NB: CUDA 12.3 and below has a bug where `CALL.REL` instructions are improperly handled
+    # by nvdisasm and are missing control flow edges. Very few binaries have these instructions.
+    # This is fixed in CUDA 12.4 but mark as XFAIL to support older versions of CUDA.
+    if cupti_dep.found() and cupti_dep.version().version_compare('<12.4') and name in [
+      'quicksilver-sm_87-dr+gpucfg',
+    ]
+      _should_fail = true
+    endif
+
     test(
       f'Analysis of @name@ is consistent (-j@threads@@_suffix@)',
       _tst,
       args: _args + [f'-j@threads@'],
       suite: 'hpcstruct',
-      should_fail: ((
-        # FIXME: As of Elfutils 0.191, the handling for Nvidia binaries (without nvdisasm) is
-        # no longer functional. Mark these cases as XFAIL until a fix comes about.
-        # https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/831
-        struct['binary'].get('cuda', false) and libdw_dep.version().version_compare('>=0.191')
-      ) or (
-        # FIXME: Dyninst 12.3 has a bug that makes it unable to parse certain inline sequences
-        # from LLVM binaries, see https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/754.
-        # This is fixed in 13.0, but mark as XFAIL to support older Dyninst.
-        name in [
-        'inlines+loops-x86_64-llvm15-0',
-        'inlines+loops-x86_64-llvm15-d',
-        'inlines+loops-x86_64-llvm15-dr',
-              ] and dyninst_dep.version().version_compare(
-        '<13.0.0',
-              )
-      ) or (
-        # NB: CUDA 12.3 and below has a bug where `CALL.REL` instructions are improperly handled
-        # by nvdisasm and are missing control flow edges. Very few binaries have these instructions.
-        # This is fixed in CUDA 12.4 but mark as XFAIL to support older versions of CUDA.
-        name in ['quicksilver-sm_87-dr+gpucfg'] and cupti_dep.found() and cupti_dep.version().version_compare(
-        '<12.4',
-              )
-      )),
+      should_fail: _should_fail,
     )
   endforeach
 endforeach

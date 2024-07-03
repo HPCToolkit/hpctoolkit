@@ -40,9 +40,9 @@ _srcs = files(
   'hpcviewer.rst',
 )
 
+
 _manpages = []
 foreach page : _srcs
-# Extract the manual section. Default to the non-section 0 on error.
   _section = '0'
   foreach line : fs.read(page).split('\n')
     if line.contains(':manual_section:')
@@ -50,7 +50,7 @@ foreach page : _srcs
       break
     endif
   endforeach
-  assert(_section != '0')
+  assert(_section != '0', 'manpage is missing a :manual_section:')
 
   _manpages += configure_file(
     output: '@BASENAME@.' + _section,

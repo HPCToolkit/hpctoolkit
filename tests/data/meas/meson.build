@@ -36,13 +36,18 @@ endif
 
 _run = [find_program(files('run')), hpcrun, hpcstruct]
 
-_measurements = {
+_measurements = {}
+
 # `small` is designed to contain a few samples scattered through a tiny, easy-to-understand
 # calling context tree. Good for debugging very bad problems.
+_measurements += {
   'small': {'tag': 'cpu', 'minsamples': 3, 'tail': ['-e', 'CPUTIME@100000', '-t', _exe_small]},
-  # `loops-*` are designed to exercise more interesting cases with multiple nested loops and
-  # simple multithreading. Various events/trace settings are tested to exercise minor differences
-  # in the different metrics.
+}
+
+# `loops-*` are designed to exercise more interesting cases with multiple nested loops and
+# simple multithreading. Various events/trace settings are tested to exercise minor differences
+# in the different metrics.
+_measurements += {
   'loops-cputime-t': {'tag': 'none', 'tail': ['-e', 'CPUTIME', '-t', _exe_loops]},
   'loops-perf': {
     'tag': 'cpu',
@@ -54,12 +59,16 @@ _measurements = {
     'tag': 'amd',
     'tail': ['--rocprofiler-path', rocprofiler_path, '-e', 'gpu=amd', '-t', _exe_loops_hip],
   },
-  # `recursion` is a small example that has recursive properties in the GPU kernel code.
+}
+
+# `recursion` is a small example that has recursive properties in the GPU kernel code.
+_measurements += {
   'recursion-cuda-nvidiapc-t': {
     'tag': 'nvidia',
     'tail': ['-e', 'gpu=nvidia,pc', '-t', _exe_recursion_cuda],
   },
 }
+
 
 foreach name, spec : _measurements
   _stamp = custom_target(
