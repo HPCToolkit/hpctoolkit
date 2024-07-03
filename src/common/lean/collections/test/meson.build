@@ -19,11 +19,26 @@ test('splay-tree-test-inplace', e)
 
 thread_dep = dependency('threads')
 
-e = executable('mpsc-queue-test-inplace', 'mpsc-queue-test-inplace.c', include_directories: incdir, dependencies: thread_dep)
+e = executable(
+  'mpsc-queue-test-inplace',
+  'mpsc-queue-test-inplace.c',
+  include_directories: incdir,
+  dependencies: thread_dep,
+)
 test('mpsc-queue-test-inplace', e)
 
-e = executable('concurrent-stack-test-inplace', 'concurrent-stack-test-inplace.c', include_directories: incdir, dependencies: thread_dep)
+e = executable(
+  'concurrent-stack-test-inplace',
+  'concurrent-stack-test-inplace.c',
+  include_directories: incdir,
+  dependencies: thread_dep,
+)
 test('concurrent-stack-test-inplace', e)
 
-e = executable('concurrent-id-map-test-inplace', 'concurrent-id-map-test-inplace.c', include_directories: incdir, dependencies: thread_dep)
+e = executable(
+  'concurrent-id-map-test-inplace',
+  'concurrent-id-map-test-inplace.c',
+  include_directories: incdir,
+  dependencies: thread_dep,
+)
 test('concurrent-id-map-test-inplace', e)

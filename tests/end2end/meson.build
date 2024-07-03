@@ -5,9 +5,7 @@
 
 _tst = find_program(files('tst-default-workflow'))
 _tst_ss = find_program(files('tst-single-structfile-workflow'))
-foreach exe : [
-  executable(f'tstexe-e2e-openmp', files('openmp.cpp'), dependencies: openmp_dep)
-]
+foreach exe : [executable('tstexe-e2e-openmp', files('openmp.cpp'), dependencies: openmp_dep)]
   test(
     'Default analysis workflow on @0@ works'.format(exe.name()),
     _tst,

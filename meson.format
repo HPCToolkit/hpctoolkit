@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+use_editor_config = true
+
+space_array = false
+kwargs_force_multiline = false
+wide_colon = false
+no_single_comma_function = false
+indent_before_comments = '  '
+simplify_string_literals = true
+sort_files = true
+group_arg_value = false

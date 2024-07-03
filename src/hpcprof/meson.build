@@ -43,43 +43,41 @@ _srcs = files(
   'util/stable_hash.cpp',
   'util/xml.cpp',
 )
-_srcs += configure_file(output: 'static.data.cpp', input: 'static.data.cpp.in',
+_srcs += configure_file(
+  output: 'static.data.cpp',
+  input: 'static.data.cpp.in',
   configuration: {
     'FORMATS_MD': fs.read(meson.project_source_root() / 'doc/FORMATS.md'),
     'METRICS_YAML': fs.read(meson.project_source_root() / 'doc/METRICS.yaml'),
-  })
+  },
+)
 
-_deps = [
-  libdw_dep,
-  libelf_dep,
-  lzma_dep,
-  openmp_dep,
-  xerces_dep,
-  xxhash_dep,
-  yaml_cpp_dep,
-]
+_deps = [libdw_dep, libelf_dep, lzma_dep, openmp_dep, xerces_dep, xxhash_dep, yaml_cpp_dep]
 
 _srcs += common_lean_srcs
 _deps += common_lean_deps
 
-hpcprof = executable('hpcprof', version_cpp, _srcs,
+hpcprof = executable(
+  'hpcprof',
+  version_cpp,
+  _srcs,
   'main.cpp',
   'mpi/standalone.cpp',
   implicit_include_directories: false,
-  dependencies: [
-    _deps,
-  ],
-  install: true)
+  dependencies: [_deps],
+  install: true,
+)
 
 if get_option('hpcprof_mpi').enable_auto_if(mpi_dep.found()).enabled()
-  hpcprof_mpi = executable('hpcprof-mpi', version_cpp, _srcs,
+  hpcprof_mpi = executable(
+    'hpcprof-mpi',
+    version_cpp,
+    _srcs,
     'main-mpi.cpp',
     'mpi.cpp',
     'tree.cpp',
     implicit_include_directories: false,
-    dependencies: [
-      _deps,
-      mpi_dep,
-    ],
-    install: true)
+    dependencies: [_deps, mpi_dep],
+    install: true,
+  )
 endif

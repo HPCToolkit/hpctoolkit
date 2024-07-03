@@ -5,25 +5,26 @@
 
 option('manpages', type: 'feature', description: 'Include and install man pages')
 option('manual', type: 'feature', description: 'Include and install the manual (HTML, EPUB)')
-option('manual_pdf', type: 'feature', description: 'Include and install the manual (PDF)', value: 'disabled')
-option('extended_tests', type: 'feature', description: 'Enable tests that require additional dependencies than those used for the build')
+option(
+  'manual_pdf',
+  type: 'feature',
+  description: 'Include and install the manual (PDF)',
+  value: 'disabled',
+)
+option(
+  'extended_tests',
+  type: 'feature',
+  description: 'Enable tests that require additional dependencies than those used for the build',
+)
 
 option('hpcprof_mpi', type: 'feature', description: 'Build hpcprof-mpi')
 
-option(
-  'python',
-  type: 'feature',
-  description: 'Enable Python unwinder (experimental)',
-)
+option('python', type: 'feature', description: 'Enable Python unwinder (experimental)')
 
 option('papi', type: 'feature', description: 'Enable PAPI metrics')
 option('cuda', type: 'feature', description: 'Enable CUDA metrics')
 option('level0', type: 'feature', description: 'Enable Level 0 metrics')
-option(
-  'gtpin',
-  type: 'feature',
-  description: 'Enable Level 0 instrumentation metrics',
-)
+option('gtpin', type: 'feature', description: 'Enable Level 0 instrumentation metrics')
 option('opencl', type: 'feature', description: 'Enable OpenCL metrics')
 option('rocm', type: 'feature', description: 'Enable ROCm metrics')
 
@@ -34,11 +35,27 @@ option(
   description: 'Inject annotations for Valgrind debugging',
 )
 
-option('hip_args', type: 'array', description: 'Arguments to pass to HIP compile line (i.e. <lang>_args)')
-option('hip_link_args', type: 'array', description: 'Arguments to pass to HIP link line (i.e. <lang>_link_args)')
+option(
+  'hip_args',
+  type: 'array',
+  description: 'Arguments to pass to HIP compile line (i.e. <lang>_args)',
+)
+option(
+  'hip_link_args',
+  type: 'array',
+  description: 'Arguments to pass to HIP link line (i.e. <lang>_link_args)',
+)
 
-option('sycl_args', type: 'array', description: 'Arguments to pass to SYCL compile line (i.e. <lang>_args)')
-option('sycl_link_args', type: 'array', description: 'Arguments to pass to SYCL link line (i.e. <lang>_link_args)')
+option(
+  'sycl_args',
+  type: 'array',
+  description: 'Arguments to pass to SYCL compile line (i.e. <lang>_args)',
+)
+option(
+  'sycl_link_args',
+  type: 'array',
+  description: 'Arguments to pass to SYCL link line (i.e. <lang>_link_args)',
+)
 
 option(
   'rocprofiler_metrics_xml',

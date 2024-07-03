@@ -9,22 +9,35 @@ _hpcrun_libs = []
 
 _unw_common_files = files(
   'unwind/common/backtrace.c',
-  'unwind/common/unw-throw.c',
   'unwind/common/binarytree_uwi.c',
   'unwind/common/interval_t.c',
   'unwind/common/libunw_intervals.c',
   'unwind/common/libunwind-interface.c',
   'unwind/common/stack_troll.c',
+  'unwind/common/unw-throw.c',
   'unwind/common/uw_hash.c',
   'unwind/common/uw_recipe_map.c',
 )
 
 _unw_x86_files = _unw_common_files + files(
+  'unwind/x86-family/amd-xop.c',
+  'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c',
+  'unwind/x86-family/manual-intervals/x86-32bit-main.c',
+  'unwind/x86-family/manual-intervals/x86-fail-intervals.c',
+  'unwind/x86-family/manual-intervals/x86-gcc-adjust.c',
+  'unwind/x86-family/manual-intervals/x86-gcc-main64.c',
+  'unwind/x86-family/manual-intervals/x86-intel-align32.c',
+  'unwind/x86-family/manual-intervals/x86-intel-align64.c',
+  'unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c',
+  'unwind/x86-family/manual-intervals/x86-intel11-f90main.c',
+  'unwind/x86-family/manual-intervals/x86-linux-dlresolver.c',
+  'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c',
   'unwind/x86-family/x86-addsub.c',
   'unwind/x86-family/x86-and.c',
   'unwind/x86-family/x86-build-intervals.c',
   'unwind/x86-family/x86-call.c',
   'unwind/x86-family/x86-canonical.c',
+  'unwind/x86-family/x86-cold-path.c',
   'unwind/x86-family/x86-debug.c',
   'unwind/x86-family/x86-decoder.c',
   'unwind/x86-family/x86-enter.c',
@@ -35,47 +48,34 @@ _unw_x86_files = _unw_common_files + files(
   'unwind/x86-family/x86-process-inst.c',
   'unwind/x86-family/x86-push.c',
   'unwind/x86-family/x86-return.c',
-  'unwind/x86-family/amd-xop.c',
-  'unwind/x86-family/x86-cold-path.c',
-  'unwind/x86-family/x86-validate-retn-addr.c',
-  'unwind/x86-family/x86-unwind-interval.c',
   'unwind/x86-family/x86-unwind-interval-fixup.c',
-  'unwind/x86-family/x86-unwind.c',
+  'unwind/x86-family/x86-unwind-interval.c',
   'unwind/x86-family/x86-unwind-support.c',
-  'unwind/x86-family/manual-intervals/x86-gcc-adjust.c',
-  'unwind/x86-family/manual-intervals/x86-gcc-main64.c',
-  'unwind/x86-family/manual-intervals/x86-linux-dlresolver.c',
-  'unwind/x86-family/manual-intervals/x86-intel11-f90main.c',
-  'unwind/x86-family/manual-intervals/x86-intel-align32.c',
-  'unwind/x86-family/manual-intervals/x86-intel-align64.c',
-  'unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c',
-  'unwind/x86-family/manual-intervals/x86-32bit-main.c',
-  'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c',
-  'unwind/x86-family/manual-intervals/x86-fail-intervals.c',
-  'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c',
+  'unwind/x86-family/x86-unwind.c',
+  'unwind/x86-family/x86-validate-retn-addr.c',
 )
 _unw_x86_include_dirs_deps = [xed_dep]
 
 _unw_ppc64_files = _unw_common_files + files(
-  'unwind/ppc64/ppc64-unwind.c',
-  'unwind/ppc64/ppc64-unwind-interval.c',
   'unwind/common/default_validation_summary.c',
+  'unwind/ppc64/ppc64-unwind-interval.c',
+  'unwind/ppc64/ppc64-unwind.c',
 )
 
 _unw_libunw_files = _unw_common_files + files(
-  'unwind/generic-libunwind/libunw-unwind.c',
   'unwind/common/default_validation_summary.c',
+  'unwind/generic-libunwind/libunw-unwind.c',
 )
 
 _my_base_files = files(
   'audit/binding.c',
-  'cct_backtrace_finalize.c',
-  'cct_insert_backtrace.c',
-  'cct/cct_bundle.c',
-  'cct/cct_ctxt.c',
   'cct/cct-node-vector.c',
   'cct/cct.c',
+  'cct/cct_bundle.c',
+  'cct/cct_ctxt.c',
   'cct2metrics.c',
+  'cct_backtrace_finalize.c',
+  'cct_insert_backtrace.c',
   'closure-registry.c',
   'control-knob.c',
   'device-finalizers.c',
@@ -125,14 +125,15 @@ _my_base_files = files(
   'gpu/trace/gpu-trace-demultiplexer.c',
   'gpu/trace/gpu-trace-item.c',
   'handling_sample.c',
+  'hpcrun-initializers.c',
   'hpcrun_options.c',
   'hpcrun_signals.c',
   'hpcrun_stats.c',
-  'hpcrun-initializers.c',
   'libmonitor/callback.c',
   'libmonitor/common.c',
   'libmonitor/fork.c',
   'libmonitor/main.c',
+  'libmonitor/mpi.c',
   'libmonitor/mpi_comm_c.c',
   'libmonitor/mpi_comm_f0.c',
   'libmonitor/mpi_comm_f1.c',
@@ -149,7 +150,6 @@ _my_base_files = files(
   'libmonitor/mpi_init_thread_f0.c',
   'libmonitor/mpi_init_thread_f1.c',
   'libmonitor/mpi_init_thread_f2.c',
-  'libmonitor/mpi.c',
   'libmonitor/pmpi.c',
   'libmonitor/pthread.c',
   'libmonitor/signal.c',
@@ -185,10 +185,6 @@ _my_base_files = files(
   'ompt/ompt-thread.c',
   'rank.c',
   'safe-sampling.c',
-  'sample_event.c',
-  'sample_prob.c',
-  'sample_sources_all.c',
-  'sample_sources_registered.c',
   'sample-sources/blame-shift/blame-map.c',
   'sample-sources/blame-shift/blame-shift.c',
   'sample-sources/blame-shift/directed.c',
@@ -212,6 +208,10 @@ _my_base_files = files(
   'sample-sources/retcnt.c',
   'sample-sources/sample-filters.c',
   'sample-sources/sync.c',
+  'sample_event.c',
+  'sample_prob.c',
+  'sample_sources_all.c',
+  'sample_sources_registered.c',
   'segv_handler.c',
   'start-stop.c',
   'term_handler.c',
@@ -243,8 +243,8 @@ if has_perf_events
   _my_base_files += files(
     'sample-sources/perf/event_custom.c',
     'sample-sources/perf/linux_perf.c',
-    'sample-sources/perf/perf_event_open.c',
     'sample-sources/perf/perf-util.c',
+    'sample-sources/perf/perf_event_open.c',
     'sample-sources/perf/perf_mmap.c',
     'sample-sources/perf/perf_skid.c',
   )
@@ -270,52 +270,44 @@ if has_perf_events
 endif
 
 _my_dynamic_files = files(
+  'custom-init-dynamic.c',
   'fnbounds/fnbounds_client.c',
   'fnbounds/fnbounds_dynamic.c',
-  'monitor-exts/openmp.c',
-  'custom-init-dynamic.c',
   'foil/hpctoolkit-preload.c',
+  'foil/mpi-preload.c',
   'foil/ompt-preload.c',
   'foil/process-preload.c',
   'foil/signal-preload.c',
-  'foil/thread-preload.c',
-  'foil/mpi-preload.c',
   'foil/syscalls/poll-preload.c',
   'foil/syscalls/ppoll-preload.c',
   'foil/syscalls/select-preload.c',
   'foil/syscalls/sysv_signal-preload.c',
+  'foil/thread-preload.c',
+  'monitor-exts/openmp.c',
 )
 _my_linux_dynamic_files = files(
+  'custom-init-dynamic.c',
   'fnbounds/fnbounds_client.c',
   'fnbounds/fnbounds_dynamic.c',
-  'monitor-exts/openmp.c',
-  'custom-init-dynamic.c',
   'foil/hpctoolkit-preload.c',
+  'foil/mpi-preload.c',
   'foil/ompt-preload.c',
   'foil/process-preload.c',
   'foil/signal-preload.c',
-  'foil/thread-preload.c',
-  'foil/mpi-preload.c',
   'foil/syscalls/poll-preload.c',
   'foil/syscalls/ppoll-preload.c',
   'foil/syscalls/select-preload.c',
   'foil/syscalls/sysv_signal-preload.c',
+  'foil/thread-preload.c',
+  'monitor-exts/openmp.c',
 )
-_my_mips_files = files(
-  'unwind/common/default_validation_summary.c',
-)
-_my_ppc_files = files(
-  'trampoline/ppc64/ppc64-tramp.s',
-  'utilities/arch/ppc64/ppc64-context-pc.c',
-)
+_my_mips_files = files('unwind/common/default_validation_summary.c')
+_my_ppc_files = files('trampoline/ppc64/ppc64-tramp.s', 'utilities/arch/ppc64/ppc64-context-pc.c')
 _my_x86_files = files(
   'trampoline/x86-family/x86-tramp.S',
   'utilities/arch/x86-family/x86-context-pc.c',
 )
-_my_ia64_files = files(
-  'trampoline/ia64/ia64-tramp.s',
-  'utilities/arch/ia64/ia64-context-pc.c',
-)
+_my_ia64_files = files('trampoline/ia64/ia64-tramp.s', 'utilities/arch/ia64/ia64-context-pc.c')
 _my_aarch64_files = files(
   'trampoline/aarch64/aarch64-tramp.c',
   'utilities/arch/libunwind/libunwind-context-pc.c',
@@ -324,17 +316,15 @@ _my_aarch64_files = files(
 _my_papi_files = []
 if papi_has_components
   _my_papi_files = files(
-    'sample-sources/papi-c.c',
     'sample-sources/papi-c-extended-info.c',
     'sample-sources/papi-c-intel.c',
+    'sample-sources/papi-c.c',
   )
   if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
     _my_papi_files += files('sample-sources/papi-c-cupti.c')
   endif
 else
-  _my_papi_files += files(
-    'sample-sources/papi.c'
-  )
+  _my_papi_files += files('sample-sources/papi.c')
 endif
 
 _my_papi_files += files(
@@ -348,7 +338,6 @@ endif
 
 if cupti_dep.found()
   _my_cupti_files = files(
-    'sample-sources/nvidia.c',
     'gpu/api/nvidia/cubin-id-map.c',
     'gpu/api/nvidia/cubin-symbols.c',
     'gpu/api/nvidia/cuda-api.c',
@@ -360,37 +349,41 @@ if cupti_dep.found()
     'gpu/api/nvidia/cupti-api.c',
     'gpu/api/nvidia/cupti-gpu-api.c',
     'gpu/api/nvidia/gpu-function-id-map.c',
+    'sample-sources/nvidia.c',
   )
 endif
 
 if opencl_dep.found()
   _my_opencl_files = files(
-    'sample-sources/opencl.c',
-    'gpu/api/opencl/opencl-api.c',
-    'gpu/api/opencl/opencl-memory-manager.c',
-    'gpu/api/opencl/opencl-activity-translate.c',
-    'gpu/api/opencl/opencl-h2d-map.c',
-    'gpu/api/opencl/opencl-queue-map.c',
-    'gpu/api/opencl/opencl-context-map.c',
-    'gpu/api/opencl/intel/optimization-check.c',
-    'gpu/api/opencl/opencl-kernel-loadmap-map.c',
-    'gpu/api/opencl/intel/maps/queue-context-map.c',
-    'gpu/api/opencl/intel/maps/kernel-context-map.c',
-    'gpu/api/opencl/intel/maps/kernel-param-map.c',
     'gpu/api/opencl/intel/maps/buffer-map.c',
     'gpu/api/opencl/intel/maps/device-map.c',
+    'gpu/api/opencl/intel/maps/kernel-context-map.c',
+    'gpu/api/opencl/intel/maps/kernel-param-map.c',
+    'gpu/api/opencl/intel/maps/queue-context-map.c',
+    'gpu/api/opencl/intel/optimization-check.c',
+    'gpu/api/opencl/opencl-activity-translate.c',
+    'gpu/api/opencl/opencl-api.c',
+    'gpu/api/opencl/opencl-context-map.c',
+    'gpu/api/opencl/opencl-h2d-map.c',
+    'gpu/api/opencl/opencl-kernel-loadmap-map.c',
+    'gpu/api/opencl/opencl-memory-manager.c',
+    'gpu/api/opencl/opencl-queue-map.c',
     'gpu/blame-shifting/blame-kernel-cleanup-map.c',
-    'gpu/blame-shifting/opencl/opencl-blame.c',
     'gpu/blame-shifting/blame.c',
+    'gpu/blame-shifting/opencl/opencl-blame.c',
+    'sample-sources/opencl.c',
   )
 
-  _hpcrun_libs += shared_module('hpcrun_opencl',
+  _hpcrun_libs += shared_module(
+    'hpcrun_opencl',
     'foil/opencl-preload.c',
     gnu_symbol_visibility: 'hidden',
     link_language: 'c',
     implicit_include_directories: false,
     dependencies: [opencl_dep, dl_dep],
-    install: true, install_dir: 'lib' / meson.project_name())
+    install: true,
+    install_dir: 'lib' / meson.project_name(),
+  )
 endif
 _my_include_dirs_deps = [
   libunwind_dep,
@@ -403,7 +396,8 @@ _my_include_dirs_deps = [
 if gtpin_dep.found()
   _my_dynamic_files += files('gpu/api/intel/gtpin/gtpin-shim.c')
 
-  _hpcrun_libs += shared_library('hpcrun_gtpin_cxx',
+  _hpcrun_libs += shared_library(
+    'hpcrun_gtpin_cxx',
     'gpu/api/intel/gtpin/gtpin-instrumentation.cpp',
     'gpu/api/intel/binaries/patchTokenSymbols.c',
     'gpu/api/intel/binaries/symbolVector.c',
@@ -420,45 +414,49 @@ if gtpin_dep.found()
       tbb_malloc_dep,
       threads_dep,
     ],
-    install: true, install_dir: 'lib' / meson.project_name())
+    install: true,
+    install_dir: 'lib' / meson.project_name(),
+  )
 endif
 
 if rocm_dep.found()
   _my_rocm_files = files(
-    'sample-sources/amd.c',
-    'sample-sources/amd-rocprofiler.c',
-    'sample-sources/openmp-target.c',
+    'foil/rocm-preload.c',
     'gpu/api/amd/hip-api.c',
+    'gpu/api/amd/rocprofiler-api.c',
     'gpu/api/amd/roctracer-activity-translate.c',
     'gpu/api/amd/roctracer-api.c',
-    'gpu/api/amd/rocprofiler-api.c',
-    'foil/rocm-preload.c',
+    'sample-sources/amd-rocprofiler.c',
+    'sample-sources/amd.c',
+    'sample-sources/openmp-target.c',
   )
 endif
 
 if level0_dep.found()
   _my_level0_files = files(
-    'sample-sources/level0.c',
     'gpu/api/intel/level0/level0-api.c',
     'gpu/api/intel/level0/level0-binary.c',
     'gpu/api/intel/level0/level0-command-list-context-map.c',
     'gpu/api/intel/level0/level0-command-list-map.c',
     'gpu/api/intel/level0/level0-command-process.c',
+    'gpu/api/intel/level0/level0-command-queue-map.c',
     'gpu/api/intel/level0/level0-data-node.c',
     'gpu/api/intel/level0/level0-event-map.c',
+    'gpu/api/intel/level0/level0-fence-map.c',
     'gpu/api/intel/level0/level0-handle-map.c',
     'gpu/api/intel/level0/level0-kernel-module-map.c',
-    'gpu/api/intel/level0/level0-fence-map.c',
-    'gpu/api/intel/level0/level0-command-queue-map.c',
+    'sample-sources/level0.c',
   )
 
-  _hpcrun_libs += shared_module('hpcrun_level0',
+  _hpcrun_libs += shared_module(
+    'hpcrun_level0',
     'foil/level0-preload.c',
     gnu_symbol_visibility: 'hidden',
     link_language: 'c',
     implicit_include_directories: false,
     dependencies: level0_dep,
-    install: true, install_dir: 'lib' / meson.project_name()
+    install: true,
+    install_dir: 'lib' / meson.project_name(),
   )
 endif
 
@@ -475,7 +473,8 @@ if host_machine.cpu_family() in ['aarch64', 'ia64']  # UNW_LIBUNW
   _unw_source_files = _unw_libunw_files
 endif
 
-_hpcrun_libs += shared_module('hpcrun',
+_hpcrun_libs += shared_module(
+  'hpcrun',
   _my_base_files,
   _my_dynamic_files,
   host_machine.system() == 'linux' ? _my_linux_dynamic_files : [],
@@ -509,93 +508,136 @@ _hpcrun_libs += shared_module('hpcrun',
     papi_dep,
     rocm_dep.partial_dependency(compile_args: true, includes: true),
     cupti_dep.partial_dependency(compile_args: true, includes: true),
-    (python_inst.found() ? python_inst.dependency() : dependency('', required: false)).partial_dependency(compile_args: true, includes: true),
+    (python_inst.found() ? python_inst.dependency() : dependency('', required: false)).partial_dependency(
+      compile_args: true,
+      includes: true,
+    ),
     opencl_dep,
     level0_dep.partial_dependency(compile_args: true, includes: true),
   ],
-  build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
-  install: true, install_dir: 'lib' / meson.project_name())
+  build_rpath: '$ORIGIN',
+  install_rpath: '$ORIGIN',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
 
-_hpcrun_libs += shared_library('hpcrun_unwind',
+_hpcrun_libs += shared_library(
+  'hpcrun_unwind',
   'unwind/common/libunwind-pvt.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [libunwind_dep],
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_fake_audit',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
+_hpcrun_libs += shared_module(
+  'hpcrun_fake_audit',
   'audit/fake-auditor.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep, threads_dep],
-  build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
+  build_rpath: '$ORIGIN',
+  install_rpath: '$ORIGIN',
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_library('hpcrun_private_ns',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
+_hpcrun_libs += shared_library(
+  'hpcrun_private_ns',
   'audit/private-ns.c',
   'audit/exports.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep, threads_dep],
-  build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
+  build_rpath: '$ORIGIN',
+  install_rpath: '$ORIGIN',
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_library('hpcrun_audit',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
+_hpcrun_libs += shared_library(
+  'hpcrun_audit',
   'audit/auditor.c',
   'audit/private-ns.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep, threads_dep],
-  build_rpath: '$ORIGIN', install_rpath: '$ORIGIN',
+  build_rpath: '$ORIGIN',
+  install_rpath: '$ORIGIN',
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_library('hpcrun_dlmopen',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
+_hpcrun_libs += shared_library(
+  'hpcrun_dlmopen',
   'dlmopen/dlmopen.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep],
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
 
-_hpcrun_libs += shared_module('hpcrun_ga',
+_hpcrun_libs += shared_module(
+  'hpcrun_ga',
   'foil/ga-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep],
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_gprof',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
+_hpcrun_libs += shared_module(
+  'hpcrun_gprof',
   'foil/gprof-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_io',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
+_hpcrun_libs += shared_module(
+  'hpcrun_io',
   'foil/io-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep],
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_memleak',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
+_hpcrun_libs += shared_module(
+  'hpcrun_memleak',
   'foil/memleak-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
-_hpcrun_libs += shared_module('hpcrun_pthread',
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
+_hpcrun_libs += shared_module(
+  'hpcrun_pthread',
   'foil/pthread-blame-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep],
   link_language: 'c',
-  install: true, install_dir: 'lib' / meson.project_name())
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
 
 
 # Configure and install the hpcrun launcher
-hpcrun = executable('hpcrun', version_cpp, 'launch.cpp',
+hpcrun = executable(
+  'hpcrun',
+  version_cpp,
+  'launch.cpp',
   implicit_include_directories: false,
-  install: true)
+  install: true,
+)
 
 # Make sure the hpcrun launcher is available in devenv
 _devenv = environment()
@@ -604,18 +646,19 @@ _devenv.set('HPCRUN_FNBOUNDS_CMD', hpcfnbounds.full_path())
 meson.add_devenv(_devenv)
 
 # Build and install the client API
-install_headers(
-  'hpctoolkit.h',
-)
-hpctoolkit_client_lib = library('hpctoolkit',
+install_headers('hpctoolkit.h')
+hpctoolkit_client_lib = library(
+  'hpctoolkit',
   'hpctoolkit.c',
-  install: true, install_dir: 'lib' / meson.project_name())
+  install: true,
+  install_dir: 'lib' / meson.project_name(),
+)
 
 # Settings needed for dependencies
 hpcrun_test_depends = [hpcfnbounds] + _hpcrun_libs
 test_depends += hpcrun_test_depends
 _env = {'HPCRUN_FNBOUNDS_CMD': hpcfnbounds.full_path()}
 hpcrun_test_env = environment(_env)
-foreach k,v : _env
+foreach k, v : _env
   test_env.set(k, v)
 endforeach
