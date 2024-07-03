@@ -5,12 +5,7 @@
 
 docdir = get_option('datadir') / 'doc' / meson.project_name()
 
-install_data(
-  'FORMATS.md',
-  'METRICS.yaml',
-  install_dir: docdir,
-  install_tag: 'docs',
-)
+install_data('FORMATS.md', 'METRICS.yaml', install_dir: docdir, install_tag: 'docs')
 
 dtd_hpc_structure = files('dtd/hpc-structure.dtd')
 

@@ -56,10 +56,7 @@ foreach _name, _features : _databases
       depends: [_stamp],
       command: [hpctesttool, 'test', 'yaml', meson.current_build_dir() / f'@_name@.d', '@OUTPUT@'],
     )
-    _dbase += {
-      'yaml': meson.current_source_dir() / f'@_name@.yaml',
-      'freshyaml': _yaml,
-    }
+    _dbase += {'yaml': meson.current_source_dir() / f'@_name@.yaml', 'freshyaml': _yaml}
     testdata_files += {_dbase['yaml']: {'src': _yaml, 'tag': _meas['tag']}}
   endif
 

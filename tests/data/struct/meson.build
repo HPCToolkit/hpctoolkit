@@ -89,9 +89,12 @@ foreach name, variants : _structfiles
       console: true,
       command: [
         hpcstruct,
-        '--nocache', '@INPUT@',
-        '-o', '@OUTPUT@',
-        '-j1', '--gpucfg=' + (features.get('gpucfg', false) ? 'yes' : 'no'),
+        '--nocache',
+        '@INPUT@',
+        '-o',
+        '@OUTPUT@',
+        '-j1',
+        '--gpucfg=' + (features.get('gpucfg', false) ? 'yes' : 'no'),
       ],
     )
 

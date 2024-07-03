@@ -6,17 +6,13 @@
 subdir('lean')
 
 common_srcs = files(
-  'Raw.cpp',
   'Args.cpp',
-  'Util.cpp',
+  'CStrUtil.cpp',
   'CallPath-Profile.cpp',
   'CmdLineParser.cpp',
-  'CStrUtil.cpp',
-  'diagnostics.cpp',
   'Exception.cpp',
   'FileNameMap.cpp',
   'FileUtil.cpp',
-  'findinstall.c',
   'HashTable.cpp',
   'HashTableSortedIterator.cpp',
   'IOUtil.cpp',
@@ -24,26 +20,26 @@ common_srcs = files(
   'Logic.cpp',
   'NaN.c',
   'NonUniformDegreeTree.cpp',
-  'pathfind.cpp',
   'PathFindMgr.cpp',
   'PathReplacementMgr.cpp',
   'PointerStack.cpp',
   'ProcNameMgr.cpp',
   'QuickSort.cpp',
-  'realpath.c',
+  'Raw.cpp',
   'RealPathMgr.cpp',
   'SrcFile.cpp',
   'StackableIterator.cpp',
   'StrUtil.cpp',
   'Trace.cpp',
   'Unique.cpp',
+  'Util.cpp',
   'WordSet.cpp',
+  'diagnostics.cpp',
+  'findinstall.c',
+  'pathfind.cpp',
+  'realpath.c',
 ) + common_lean_srcs
-common_deps = [
-  boost_dep,
-  common_lean_deps,
-  xerces_dep,
-]
+common_deps = [boost_dep, common_lean_deps, xerces_dep]
 
 # Construct a summary message that indicates all the features we have available
 # and their respective versions.
@@ -87,8 +83,15 @@ features_msg += 'Python support: @0@\n'.format(python_inst.found() ? 'yes' : 'no
 
 # Generate the final version information source file. The header also needs to be copied beside
 # it for it to compile properly.
-version_cpp = configure_file(output: 'hpctoolkit-version.cpp.vcs.in', input: 'hpctoolkit-version.cpp.in',
-  configuration: {'FEATURES_MESSAGE': features_msg, 'VERSION': meson.project_version(), 'VCS_TAG': '@VCS_TAG@'})
+version_cpp = configure_file(
+  output: 'hpctoolkit-version.cpp.vcs.in',
+  input: 'hpctoolkit-version.cpp.in',
+  configuration: {
+    'FEATURES_MESSAGE': features_msg,
+    'VERSION': meson.project_version(),
+    'VCS_TAG': '@VCS_TAG@',
+  },
+)
 version_cpp = [
   vcs_tag(output: 'hpctoolkit-version.cpp', input: version_cpp),
   fs.copyfile('hpctoolkit-version.h'),

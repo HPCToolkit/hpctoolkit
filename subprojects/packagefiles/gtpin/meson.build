@@ -17,9 +17,8 @@ gtpin_dep = declare_dependency(
   version: meson.project_version(),
 )
 
+# Check that the include directories are correct and the headers actually work.
 foreach h : ['api/gtpin_api.h', 'ged.h']
-  # NB: On Meson <1.3, include directories from 'internal' dependencies don't get applied, so
-  # explicitly add the include_directories to make this check work.
   assert(cpp.check_header(h, dependencies: gtpin_dep, include_directories: incdirs))
 endforeach
 

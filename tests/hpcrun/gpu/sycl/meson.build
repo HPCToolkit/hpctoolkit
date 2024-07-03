@@ -8,17 +8,12 @@ if not level0_dep.found() or not has_sycl
 endif
 
 if sycl_is_cpp
-  _tstexe_vecadd_sycl = executable('tstexe-vecadd-sycl',
-    'vecadd.sycl.cpp',
-    dependencies: sycl_dep,
-  )
+  _tstexe_vecadd_sycl = executable('tstexe-vecadd-sycl', 'vecadd.sycl.cpp', dependencies: sycl_dep)
 else
   _tstexe_vecadd_sycl = custom_target(
     output: 'tstexe-vecadd-sycl',
     command: sycl_ld,
-    input: sycl.process(
-      files('vecadd.sycl.cpp')
-    ),
+    input: sycl.process(files('vecadd.sycl.cpp')),
   )
 endif
 
@@ -54,15 +49,15 @@ test(
 
 if gtpin_dep.found()
 
-# FIXME: This test is commented out because GTPin has very stringent hardware requirements and
-# for now it's unable to be predicted.
-# test(
-#   'Measurement of tstexe-vecadd-sycl with instruction counting produces profiles',
-#   _tst,
-#   args: [hpctesttool, hpcrun, _tstexe_vecadd_sycl, 'gpu=level0,inst=count', ''],
-#   suite: ['hpcrun', 'level0'],
-#   depends: hpcrun_test_depends,
-#   env: hpcrun_test_env,
-# )
+  # FIXME: This test is commented out because GTPin has very stringent hardware requirements and
+  # for now it's unable to be predicted.
+  # test(
+  #   'Measurement of tstexe-vecadd-sycl with instruction counting produces profiles',
+  #   _tst,
+  #   args: [hpctesttool, hpcrun, _tstexe_vecadd_sycl, 'gpu=level0,inst=count', ''],
+  #   suite: ['hpcrun', 'level0'],
+  #   depends: hpcrun_test_depends,
+  #   env: hpcrun_test_env,
+  # )
 
 endif

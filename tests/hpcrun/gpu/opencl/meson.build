@@ -7,7 +7,8 @@ if not opencl_full_dep.found()
   subdir_done()
 endif
 
-_tstexe_vecadd_opencl = executable('tstexe-vecadd-opencl',
+_tstexe_vecadd_opencl = executable(
+  'tstexe-vecadd-opencl',
   'vecadd.opencl.c',
   dependencies: [opencl_full_dep, math_dep],
 )

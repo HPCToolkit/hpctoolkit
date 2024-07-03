@@ -10,9 +10,7 @@ endif
 _tstexe_vecadd_hip = custom_target(
   output: 'tstexe-vecadd-hip',
   command: hip_ld,
-  input: hip.process(
-    files('vecadd.hip.cpp')
-  ),
+  input: hip.process(files('vecadd.hip.cpp')),
 )
 
 _preargs = ['--rocprofiler-path', rocprofiler_path]

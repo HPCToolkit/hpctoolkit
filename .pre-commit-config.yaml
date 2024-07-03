@@ -50,6 +50,19 @@ repos:
   - id: isort
     args: [--profile, black, --line-length=100]
 
+- repo: local
+  hooks:
+  # Format all Meson code with a consistent style
+  - id: meson-format
+    name: meson format
+    entry: meson format
+    args: [--inplace, --configuration=./meson.format]
+    language: python
+    types: [text]  # TODO: This should be just [meson] but that doesn't cover new Meson filenames
+    files: (^|/)(meson\.(build|options|format)|meson_options\.txt)$
+    additional_dependencies:
+    - meson ==1.5.0rc2
+
 - repo: https://github.com/executablebooks/mdformat
   rev: 0.7.17
   hooks:

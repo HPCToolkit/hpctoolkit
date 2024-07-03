@@ -67,17 +67,24 @@ boost_dep = dependency('boost', 'Boost', modules: ['graph'], version: '>=1.66.0'
 bzip_dep = dependency('bzip2', 'BZip2', version: '>=1.0.0')
 tbb_dep = dependency('tbb', 'TBB', components: ['tbb'])
 tbb_malloc_dep = dependency('tbbmalloc', 'TBB', components: ['tbb', 'tbbmalloc'])
-libunwind_dep = dependency('libunwind', version: ['>=1.6.2', '!=1.21'],
-  default_options: ['minidebuginfo=enabled', 'zlibdebuginfo=enabled'])
+libunwind_dep = dependency(
+  'libunwind',
+  version: ['>=1.6.2', '!=1.21'],
+  default_options: ['minidebuginfo=enabled', 'zlibdebuginfo=enabled'],
+)
 _xerces_c_ver = '>=3.2.2'
 if meson.version().version_compare('>=1.4.0')
   xerces_dep = dependency('xerces-c', version: _xerces_c_ver)
 else
-  # Prior Meson versions don't provide versions for `method = cmake` wraps
   xerces_dep = dependency('xerces-c')
   if xerces_dep.type_name() != 'internal' and not xerces_dep.version().version_compare(_xerces_c_ver)
-    message('Dependency @0@ found @1@ but need: \'@2@\''.format(
-        xerces_dep.name(), xerces_dep.version(), _xerces_c_ver))
+    message(
+      'Dependency @0@ found @1@ but need: \'@2@\''.format(
+        xerces_dep.name(),
+        xerces_dep.version(),
+        _xerces_c_ver,
+      ),
+    )
     xerces_dep = dependency('xerces-c', method: 'system')  # Force fallback to wrap
   endif
 endif
@@ -88,11 +95,17 @@ _yaml_cpp_ver = '>=0.6.2'
 if meson.version().version_compare('>=1.4.0')
   yaml_cpp_dep = dependency('yaml-cpp', version: _yaml_cpp_ver)
 else
-  # Prior Meson versions don't provide versions for `method = cmake` wraps
   yaml_cpp_dep = dependency('yaml-cpp')
-  if yaml_cpp_dep.type_name() != 'internal' and not yaml_cpp_dep.version().version_compare(_yaml_cpp_ver)
-    message('Dependency @0@ found @1@ but need: \'@2@\''.format(
-        yaml_cpp_dep.name(), yaml_cpp_dep.version(), _yaml_cpp_ver))
+  if yaml_cpp_dep.type_name() != 'internal' and not yaml_cpp_dep.version().version_compare(
+    _yaml_cpp_ver,
+  )
+    message(
+      'Dependency @0@ found @1@ but need: \'@2@\''.format(
+        yaml_cpp_dep.name(),
+        yaml_cpp_dep.version(),
+        _yaml_cpp_ver,
+      ),
+    )
     yaml_cpp_dep = dependency('yaml-cpp', method: 'system')  # Force fallback to wrap
   endif
 endif
@@ -100,7 +113,11 @@ papi_dep = dependency('papi', required: get_option('papi'), version: '>=5.6.0')
 papi_has_components = false
 if papi_dep.found()
   add_project_arguments('-DHPCRUN_SS_PAPI', language: ['c', 'cpp'])
-  papi_has_components = cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component', dependencies: papi_dep)
+  papi_has_components = cc.has_header_symbol(
+    'papi.h',
+    'PAPI_get_eventset_component',
+    dependencies: papi_dep,
+  )
   if papi_has_components
     add_project_arguments('-DHPCRUN_SS_PAPI_C_INTEL', language: ['c', 'cpp'])
   endif
@@ -111,40 +128,51 @@ endif
 # compiler checks as a robustness case. The final fallback to dependency() in each stanza is to
 # provide a better error message and enable wrap fallbacks.
 libiberty_dep = dependency('Libiberty', method: 'cmake', cmake_module_path: 'cmake', required: false)
-if not libiberty_dep.found() and (cc.has_header('libiberty/demangle.h') or cc.has_header('demangle.h'))
-  _libiberty_lib = cc.find_library('iberty', required: false)
-  if _libiberty_lib.found()
-    libiberty_dep = declare_dependency(dependencies: _libiberty_lib, version: 'unknown')
+if not libiberty_dep.found()
+  if cc.has_header('libiberty/demangle.h') or cc.has_header('demangle.h')
+    _libiberty_lib = cc.find_library('iberty', required: false)
+    if _libiberty_lib.found()
+      libiberty_dep = declare_dependency(dependencies: _libiberty_lib, version: 'unknown')
+    endif
   endif
 endif
 if not libiberty_dep.found()
-  libiberty_dep = dependency('libiberty', method: 'system')
+  libiberty_dep = dependency('libiberty', method: 'system')  # Force wrap fallback
 endif
 
 xed_dep = dependency('', required: false)
 if host_machine.cpu_family() in ['x86', 'x86_64']
-  xed_dep = dependency('Xed', method: 'cmake', cmake_module_path: 'cmake', version: '>=2022.08.11', required: false)
-  if not xed_dep.found() and (cc.has_header('xed/xed-interface.h') or cc.has_header('xed-interface.h'))
-    _xed_lib = cc.find_library('xed', required: false)
-    if _xed_lib.found()
-      _xed_ver = cc.get_define('XED_VERSION', prefix: '''
-        #if __has_include(<xed/xed-interface.h>)
-        #include <xed/xed-interface.h>
-        #else
-        #include <xed-interface.h>
-        #endif
-      ''', dependencies: _xed_lib).strip('"')
-      if _xed_ver.startswith('v')
-        _xed_ver = _xed_ver.substring(1)
+  xed_dep = dependency(
+    'Xed',
+    method: 'cmake',
+    cmake_module_path: 'cmake',
+    version: '>=2022.08.11',
+    required: false,
+  )
+  if not xed_dep.found()
+    if cc.has_header('xed/xed-interface.h') or cc.has_header('xed-interface.h')
+      _xed_lib = cc.find_library('xed', required: false)
+      if _xed_lib.found()
+        _xed_ver = cc.get_define(
+          'XED_VERSION',
+          prefix: '''
+          #if __has_include(<xed/xed-interface.h>)
+          #include <xed/xed-interface.h>
+          #else
+          #include <xed-interface.h>
+          #endif
+        ''',
+          dependencies: _xed_lib,
+        ).strip('"')
+        if _xed_ver.startswith('v')
+          _xed_ver = _xed_ver.substring(1)
+        endif
+        xed_dep = declare_dependency(dependencies: _xed_lib, version: _xed_ver)
       endif
-      xed_dep = declare_dependency(
-        dependencies: _xed_lib,
-        version: _xed_ver,
-      )
     endif
   endif
   if not xed_dep.found()
-    xed_dep = dependency('xed', method: 'system', version: '>=2022.08.11')
+    xed_dep = dependency('xed', method: 'system', version: '>=2022.08.11')  # Force wrap fallback
   endif
 endif
 if xed_dep.found()
@@ -154,20 +182,36 @@ if xed_dep.found()
       add_project_arguments('-DXED_DISPLACEMENT_INT64', language: ['c', 'cpp'])
     endif
   else
-    if (cc.has_header_symbol('xed/xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep) or
-      cc.has_header_symbol('xed-operand-values-interface.h', 'xed_operand_values_get_branch_displacement_int64', dependencies: xed_dep))
-      add_project_arguments('-DXED_DISPLACEMENT_INT64', language: ['c', 'cpp'])
-    endif
+    foreach _prefix : ['xed/', '']
+      if cc.has_header_symbol(
+        f'@_prefix@xed-operand-values-interface.h',
+        'xed_operand_values_get_branch_displacement_int64',
+        dependencies: xed_dep,
+      )
+        add_project_arguments('-DXED_DISPLACEMENT_INT64', language: ['c', 'cpp'])
+        break
+      endif
+    endforeach
   endif
 endif
 
-perfmon_dep = dependency('Perfmon2', method: 'cmake', cmake_module_path: 'cmake', version: '>=4.0', required: false)
+perfmon_dep = dependency(
+  'Perfmon2',
+  method: 'cmake',
+  cmake_module_path: 'cmake',
+  version: '>=4.0',
+  required: false,
+)
 if not perfmon_dep.found()
   _perfmon_lib = cc.find_library('pfm', has_headers: ['perfmon/pfmlib.h'], required: false)
   if _perfmon_lib.found()
     perfmon_dep = declare_dependency(
       dependencies: _perfmon_lib,
-      version: cc.get_define('LIBPFM_VERSION', prefix: '#include <perfmon/pfmlib.h>', dependencies: _perfmon_lib),
+      version: cc.get_define(
+        'LIBPFM_VERSION',
+        prefix: '#include <perfmon/pfmlib.h>',
+        dependencies: _perfmon_lib,
+      ),
     )
   endif
 endif
@@ -180,16 +224,24 @@ endif
 # script that fiddles with the exposed targets until it works, so if we can't get what we want
 # directly use the find script to do so.
 _dyninst_opts = ['openmp=enabled', 'debuginfod=disabled']
-dyninst_dep = dependency('Dyninst',
+dyninst_dep = dependency(
+  'Dyninst',
   components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
   modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
-  version: '>=12.3', required: false, default_options: _dyninst_opts)
+  version: '>=12.3',
+  required: false,
+  default_options: _dyninst_opts,
+)
 if not dyninst_dep.found()
-  dyninst_dep = dependency('Dyninst', method: 'cmake',
+  dyninst_dep = dependency(
+    'Dyninst',
+    method: 'cmake',
     cmake_module_path: 'cmake',
     components: ['parseAPI', 'instructionAPI', 'symtabAPI'],
     modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
-    version: '>=12.3', default_options: _dyninst_opts)
+    version: '>=12.3',
+    default_options: _dyninst_opts,
+  )
 endif
 
 # Set flags for features available in Dyninst
@@ -208,38 +260,44 @@ if dyninst_dep.type_name() == 'internal'
     add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
   endif
 else
-  if xed_dep.found() and cpp.compiles('''
+  if xed_dep.found() and cpp.compiles(
+    '''
 #include <InstructionDecoder.h>
 void test() {
   (void)Dyninst::InstructionAPI::InstructionDecoder::unknown_instruction::register_callback;
 }
 ''',
-      name: 'Dyninst::InstructionAPI::InstructionDecoder has unknown_instruction::register_callback',
-      dependencies: dyninst_dep)
+    name: 'Dyninst::InstructionAPI::InstructionDecoder has unknown_instruction::register_callback',
+    dependencies: dyninst_dep,
+  )
     add_project_arguments('-DUSE_XED_FOR_GAPS', language: ['c', 'cpp'])
   endif
-  if cpp.compiles('''
+  if cpp.compiles(
+    '''
 #include <Symtab.h>
 void test() {
   Dyninst::SymtabAPI::Symtab sym;
   sym.getContainingModule(42);
 }
 ''',
-      name: 'Dyninst::SymtabAPI::Symtab uses getContainingModule()',
-      dependencies: dyninst_dep)
+    name: 'Dyninst::SymtabAPI::Symtab uses getContainingModule()',
+    dependencies: dyninst_dep,
+  )
     add_project_arguments('-DUSE_GET_CONTAINING_MODULE', language: ['c', 'cpp'])
   endif
   if cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general', dependencies: dyninst_dep)
     add_project_arguments('-DDYNINST_SUPPORTS_INTEL_GPU', language: ['c', 'cpp'])
   endif
-  if cpp.compiles('''
+  if cpp.compiles(
+    '''
 #include <Symtab.h>
 void test() {
   (void)Dyninst::Arch_cuda;
 }
 ''',
-      name: 'Dyninst has Arch_cuda',
-      dependencies: dyninst_dep)
+    name: 'Dyninst has Arch_cuda',
+    dependencies: dyninst_dep,
+  )
     add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
   endif
 endif
@@ -264,7 +322,14 @@ if get_option('hpcprof_mpi').allowed()
   if not mpi_dep.found()
     _mpicxx = find_program('mpicxx', 'mpic++', required: false)
     if _mpicxx.found()
-      _decoded_mpi = run_command(python, files('meson/decode-mpi'), '--machine-readable', _mpicxx, check: false, capture: true)
+      _decoded_mpi = run_command(
+        python,
+        files('meson/decode-mpi'),
+        '--machine-readable',
+        _mpicxx,
+        check: false,
+        capture: true,
+      )
       if _decoded_mpi.returncode() == 0 and _decoded_mpi.stdout() != ''
         _mpi_parts = _decoded_mpi.stdout().split('\0\0')
         mpi_dep = declare_dependency(
@@ -273,7 +338,9 @@ if get_option('hpcprof_mpi').allowed()
         )
 
         # Sanity check that the flags we get from the script do in fact work like they should.
-        assert(cpp.links('''
+        assert(
+          cpp.links(
+            '''
         #include <mpi.h>
         int main() {
           MPI_Init(nullptr, nullptr);
@@ -282,7 +349,11 @@ if get_option('hpcprof_mpi').allowed()
           MPI_Finalize();
           return 0;
         }
-        ''', name: 'MPI sanity check', dependencies: mpi_dep))
+        ''',
+            name: 'MPI sanity check',
+            dependencies: mpi_dep,
+          ),
+        )
       endif
     endif
   endif
@@ -316,13 +387,23 @@ endif
 # There are a couple different Meson bugs and antifeatures at play here to cause this, but it works.
 nvdisasm = find_program('nvdisasm', '/usr/local/cuda/bin/nvdisasm', required: get_option('cuda'))
 if nvdisasm.found()
-  add_project_arguments('-DCUDA_NVDISASM_PATH="@0@"'.format(nvdisasm.full_path().replace('\\', '\\\\').replace('"', '\\"')), language: ['c', 'cpp'])
+  add_project_arguments(
+    '-DCUDA_NVDISASM_PATH="@0@"'.format(
+      nvdisasm.full_path().replace('\\', '\\\\').replace('"', '\\"'),
+    ),
+    language: ['c', 'cpp'],
+  )
 endif
 cupti_dep = dependency('', required: false)
 if get_option('cuda').allowed()
   cupti_dep = dependency('CUDA', modules: ['cupti'], required: false, version: '>=11.2')
   if not cupti_dep.found()
-    cupti_dep = dependency('CUDAToolkit', components: ['cupti'], modules: ['CUDA::cupti'], required: get_option('cuda'))
+    cupti_dep = dependency(
+      'CUDAToolkit',
+      components: ['cupti'],
+      modules: ['CUDA::cupti'],
+      required: get_option('cuda'),
+    )
   endif
   cupti_dep = cupti_dep.partial_dependency(compile_args: true, includes: true)
 endif
@@ -332,7 +413,8 @@ if cupti_dep.found()
     '-DENABLE_CUDA',
     '-DHPCRUN_SS_NVIDIA',
     '-DCUPTI_INSTALL_PREFIX="/nonexistent"',  # TODO
-    language: ['c', 'cpp'])
+    language: ['c', 'cpp'],
+  )
 endif
 if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
   add_project_arguments('-DHPCRUN_SS_PAPI_C_CUPTI', language: ['c', 'cpp'])
@@ -343,23 +425,33 @@ endif
 has_cuda = false
 if cupti_dep.found()
   has_cuda = add_languages('cuda', native: false, required: get_option('extended_tests'))
-
   if has_cuda
-    # When we compile a CUDA kernel, we want to compile code for every available architecture the
-    # compiler can support, plus PTX.
     cuda_cc = meson.get_compiler('cuda')
     if cuda_cc.get_id() == 'nvcc'
       _arches = 'All'
       unstable_cuda = import('unstable-cuda')
-      message('Building for CUDA architectures: ' + ' '.join(unstable_cuda.nvcc_arch_readable(cuda_cc.version(), _arches)))
-      add_project_arguments(unstable_cuda.nvcc_arch_flags(cuda_cc.version(), _arches), language: 'cuda')
+      message(
+        'Building for CUDA architectures: ' + ' '.join(
+          unstable_cuda.nvcc_arch_readable(cuda_cc.version(), _arches),
+        ),
+      )
+      add_project_arguments(
+        unstable_cuda.nvcc_arch_flags(cuda_cc.version(), _arches),
+        language: 'cuda',
+      )
     endif
   endif
 endif
 
 
 # Find support for ROCm performance monitoring
-hip_dep = dependency('hip', method: 'cmake', modules: ['hip::amdhip64'], required: get_option('rocm'), version: '>=5.1')
+hip_dep = dependency(
+  'hip',
+  method: 'cmake',
+  modules: ['hip::amdhip64'],
+  required: get_option('rocm'),
+  version: '>=5.1',
+)
 hsa_dep = dependency('hsa-runtime64', method: 'cmake', required: get_option('rocm'))
 
 # Technically, ROCtracer and ROCprofiler don't ship any dependency files. It is extremely rare to
@@ -367,15 +459,32 @@ hsa_dep = dependency('hsa-runtime64', method: 'cmake', required: get_option('roc
 # hardness we also support getting them via compiler checks.
 roctracer_dep = dependency('', required: false)
 if get_option('rocm').allowed()
-  roctracer_dep = dependency('ROCtracer', method: 'cmake', cmake_module_path: 'cmake', required: false)
+  roctracer_dep = dependency(
+    'ROCtracer',
+    method: 'cmake',
+    cmake_module_path: 'cmake',
+    required: false,
+  )
   if not roctracer_dep.found()
-    _roctracer_lib = cc.find_library('roctracer64', has_headers: ['roctracer/roctracer_hip.h'], required: false)
+    _roctracer_lib = cc.find_library(
+      'roctracer64',
+      has_headers: ['roctracer/roctracer_hip.h'],
+      required: false,
+    )
     if _roctracer_lib.found()
       roctracer_dep = declare_dependency(
         dependencies: _roctracer_lib,
         version: '@0@.@1@'.format(
-          cc.get_define('ROCTRACER_VERSION_MAJOR', prefix: '#include <roctracer/roctracer.h>', dependencies: _roctracer_lib),
-          cc.get_define('ROCTRACER_VERSION_MINOR', prefix: '#include <roctracer/roctracer.h>', dependencies: _roctracer_lib)
+          cc.get_define(
+            'ROCTRACER_VERSION_MAJOR',
+            prefix: '#include <roctracer/roctracer.h>',
+            dependencies: _roctracer_lib,
+          ),
+          cc.get_define(
+            'ROCTRACER_VERSION_MINOR',
+            prefix: '#include <roctracer/roctracer.h>',
+            dependencies: _roctracer_lib,
+          ),
         ),
       )
     endif
@@ -387,16 +496,28 @@ endif
 
 rocprofiler_dep = dependency('', required: false)
 if get_option('rocm').allowed()
-  rocprofiler_dep = dependency('ROCprofiler', method: 'cmake', cmake_module_path: 'cmake', required: false)
+  rocprofiler_dep = dependency(
+    'ROCprofiler',
+    method: 'cmake',
+    cmake_module_path: 'cmake',
+    required: false,
+  )
   if not rocprofiler_dep.found()
-    _rocprofiler_lib = cc.find_library('rocprofiler64', has_headers: ['rocprofiler/rocprofiler.h'], required: false)
+    _rocprofiler_lib = cc.find_library(
+      'rocprofiler64',
+      has_headers: ['rocprofiler/rocprofiler.h'],
+      required: false,
+    )
     if _rocprofiler_lib.found()
+
       # As a very special case, we also need the path to a metrics.xml file in the ROCprofiler
       # installation. We don't have any paths at hand to find it otherwise, so we require the user
       # to specify the path via a project option. (We use an option to match the `c*_args` used for
       # the compiler checks, usually one would add these options to a machine file.)
       if get_option('rocprofiler_metrics_xml') == ''
-        error('-Drocprofiler_metrics_xml option must be set to use compiler fallback for ROCprofiler')
+        error(
+          '-Drocprofiler_metrics_xml option must be set to use compiler fallback for ROCprofiler',
+        )
       endif
       _metrics_xml = fs.expanduser(get_option('rocprofiler_metrics_xml'))
       if not fs.exists(_metrics_xml)
@@ -406,8 +527,16 @@ if get_option('rocm').allowed()
         dependencies: _rocprofiler_lib,
         variables: {'metrics_xml': _metrics_xml},
         version: '@0@.@1@'.format(
-          cc.get_define('ROCPROFILER_VERSION_MAJOR', prefix: '#include <rocprofiler/rocprofiler.h>', dependencies: _rocprofiler_lib),
-          cc.get_define('ROCPROFILER_VERSION_MINOR', prefix: '#include <rocprofiler/rocprofiler.h>', dependencies: _rocprofiler_lib)
+          cc.get_define(
+            'ROCPROFILER_VERSION_MAJOR',
+            prefix: '#include <rocprofiler/rocprofiler.h>',
+            dependencies: _rocprofiler_lib,
+          ),
+          cc.get_define(
+            'ROCPROFILER_VERSION_MINOR',
+            prefix: '#include <rocprofiler/rocprofiler.h>',
+            dependencies: _rocprofiler_lib,
+          ),
         ),
       )
     endif
@@ -418,10 +547,8 @@ if get_option('rocm').allowed()
 endif
 
 _rocm_subdeps = [rocprofiler_dep, roctracer_dep, hip_dep, hsa_dep]
-rocm_dep = declare_dependency(
-  dependencies: _rocm_subdeps,
-  version: hip_dep.version(),
-).partial_dependency(compile_args: true, includes: true)
+rocm_dep = declare_dependency(dependencies: _rocm_subdeps, version: hip_dep.version())
+rocm_dep = rocm_dep.partial_dependency(compile_args: true, includes: true)
 rocprofiler_path = disabler()
 foreach dep : _rocm_subdeps
   if not dep.found()
@@ -430,14 +557,18 @@ foreach dep : _rocm_subdeps
   endif
 endforeach
 if rocm_dep.found()
-  add_project_arguments(
-    '-DUSE_ROCM',
-    '-DHPCRUN_SS_AMD',
-    language: ['c', 'cpp'])
-  if cc.has_member('roctracer_record_t', 'kernel_name', prefix: '#include <roctracer/roctracer_hip.h>', dependencies: rocm_dep)
+  add_project_arguments('-DUSE_ROCM', '-DHPCRUN_SS_AMD', language: ['c', 'cpp'])
+  if cc.has_member(
+    'roctracer_record_t',
+    'kernel_name',
+    prefix: '#include <roctracer/roctracer_hip.h>',
+    dependencies: rocm_dep,
+  )
     add_project_arguments('-DHAVE_ROCM_ACTIVITY_KERNEL_NAME', language: ['c', 'cpp'])
   endif
-  rocprofiler_path = fs.parent(rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML', internal: 'metrics_xml'))
+  rocprofiler_path = fs.parent(
+    rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML', internal: 'metrics_xml'),
+  )
 endif
 if false  # get_option('papi_rocm')  # --enable-papi-c-rocm
   add_project_arguments('-DHPCRUN_SS_PAPI_C_ROCM', language: ['c', 'cpp'])
@@ -451,17 +582,33 @@ has_hip = false
 if rocm_dep.found()
   _hip_cc = find_program('hip', 'hipcc', required: get_option('extended_tests'))
   has_hip = _hip_cc.found()
-
   if has_hip
-    # For compilation:
     hip = generator(
       _hip_cc,
-      arguments: [get_option('cpp_args'), get_option('hip_args'), '-MD', '-MQ', '@OUTPUT@', '-MF', '@DEPFILE@', '-o', '@OUTPUT@', '-c', '@INPUT@'],
+      arguments: [
+        get_option('cpp_args'),
+        get_option('hip_args'),
+        '-MD',
+        '-MQ',
+        '@OUTPUT@',
+        '-MF',
+        '@DEPFILE@',
+        '-o',
+        '@OUTPUT@',
+        '-c',
+        '@INPUT@',
+      ],
       output: '@PLAINNAME@.o',
       depfile: '@PLAINNAME@.o.d',
     )
-    # For linking (to be used with custom_target()):
-    hip_ld = [_hip_cc, get_option('cpp_link_args'), get_option('hip_link_args'), '-o', '@OUTPUT0@', '@INPUT@']
+    hip_ld = [
+      _hip_cc,
+      get_option('cpp_link_args'),
+      get_option('hip_link_args'),
+      '-o',
+      '@OUTPUT0@',
+      '@INPUT@',
+    ]
   endif
 endif
 
@@ -477,22 +624,22 @@ if get_option('opencl').allowed()
   #   the headers can be accessed via CMake as OpenCLHeaders-config.cmake.
   opencl_dep = dependency('OpenCL-Headers', 'OpenCLHeaders', required: false, version: _opencl_ver)
 
+  # For older distros, CMake >=3.1 ships a FindOpenCL.cmake script, but it requires a full OpenCL
+  # installation and not just the headers. If that's all we got, use it and cut out the link
+  # flags so we only get the headers.
   if not opencl_dep.found()
-    # For older distros, CMake >=3.1 ships a FindOpenCL.cmake script, but it requires a full OpenCL
-    # installation and not just the headers. If that's all we got, use it and cut out the link
-    # flags so we only get the headers.
-    opencl_dep = (dependency('OpenCL', required: false, version: _opencl_ver)
-      .partial_dependency(includes: true, compile_args: true))
+    opencl_dep = dependency('OpenCL', required: false, version: _opencl_ver)
+    opencl_dep = opencl_dep.partial_dependency(includes: true, compile_args: true)
   endif
 
+  # For Spack builds and partial system installations, we also support the case where the header
+  # is already available on the standard include paths.
   if not opencl_dep.found() and cc.has_header('CL/cl.h', required: false)
-    # For Spack builds and partial system installations, we also support the case where the header
-    # is already available on the standard include paths.
     opencl_dep = declare_dependency()
   endif
 
+  # Fall back to dependency() to get a good error message and enable wrap fallbacks.
   if not opencl_dep.found()
-    # Fall back to dependency() to get a good error message and enable wrap fallbacks.
     opencl_dep = dependency('OpenCL-Headers', required: get_option('opencl'))
   endif
 endif
@@ -503,7 +650,11 @@ endif
 # Find a full OpenCL installation. We need this to run some of the tests.
 opencl_full_dep = dependency('', required: false)
 if opencl_dep.found()
-  opencl_full_dep = dependency('OpenCL', required: get_option('extended_tests'), version: _opencl_ver)
+  opencl_full_dep = dependency(
+    'OpenCL',
+    required: get_option('extended_tests'),
+    version: _opencl_ver,
+  )
 endif
 
 
@@ -512,6 +663,7 @@ level0_dep = dependency('', required: false)
 if get_option('level0').allowed()
   level0_dep = dependency('level-zero', required: false, version: '>=1.0')
   if level0_dep.found() and level0_dep.type_name() != 'internal'
+
     # Level Zero ships a pkg-config file, but it's untrustworthy due to a bug
     # present since 1.0: https://github.com/oneapi-src/level-zero/issues/131.
     # We try to reconstruct what the library path "should have been" here, using
@@ -525,10 +677,11 @@ if get_option('level0').allowed()
     if _l0_libdir != '' and _l0_prefix != ''
       _l0_new_libdir = _l0_prefix / get_option('libdir')
       if _l0_libdir != _l0_new_libdir and fs.exists(_l0_new_libdir)
-        # We use find_library here to produce an rpath for the build tree.
         _l0_lib = cc.find_library('ze_loader', dirs: [_l0_libdir, _l0_new_libdir], required: false)
         if _l0_lib.found()
-          message('Replacing Level Zero libdir: \'@0@\' -> \'@1@\''.format(_l0_libdir, _l0_new_libdir))
+          message(
+            'Replacing Level Zero libdir: \'@0@\' -> \'@1@\''.format(_l0_libdir, _l0_new_libdir),
+          )
           level0_dep = declare_dependency(
             dependencies: [level0_dep, _l0_lib],
             link_args: ['-L@0@'.format(_l0_new_libdir)],
@@ -539,29 +692,41 @@ if get_option('level0').allowed()
     endif
 
     # Sanity-check the modified dependency before calling it done.
-    if not cc.links('''
+    if not cc.links(
+      '''
       #include <ze_api.h>
       int main() {
         zeInit(0);
         return 0;
       }
-      ''', name: 'Level Zero sanity check', dependencies: level0_dep)
-      error('''Failed to reconstruct usable Level Zero dependency! This could be for many reasons, consider:
+      ''',
+      name: 'Level Zero sanity check',
+      dependencies: level0_dep,
+    )
+      error(
+        '''Failed to reconstruct usable Level Zero dependency! This could be for many reasons, consider:
 - Checking meson-logs/meson-log.txt for the compiler error, and
 - Manually fixing the libdir variable in the pkg-config file shipped by Level Zero (pkg-config --path level-zero), or
 - Appending the flags to use Level Zero to (c|cpp)(_link)?_args, or
-- Removing Level Zero from your PKG_CONFIG_PATH.''')
+- Removing Level Zero from your PKG_CONFIG_PATH.''',
+      )
     endif
   endif
 
   if not level0_dep.found()
+
     # To work around certain incomplete modulefiles, we also support the case
     # where the library and headers are already available in compiler flags.
     _l0_lib = cc.find_library('ze_loader', has_headers: ['ze_api.h'], required: false)
     if _l0_lib.found()
-      _l0_ver = cc.compute_int('ZE_API_VERSION_CURRENT',
-        prefix: '#include <ze_api.h>', dependencies: _l0_lib,
-        low: 0x10000, guess: 0x10008, high: 0x30000)
+      _l0_ver = cc.compute_int(
+        'ZE_API_VERSION_CURRENT',
+        prefix: '#include <ze_api.h>',
+        dependencies: _l0_lib,
+        low: 0x10000,
+        guess: 0x10008,
+        high: 0x30000,
+      )
       level0_dep = declare_dependency(
         dependencies: _l0_lib,
         version: '@0@.@1@'.format(_l0_ver / 0x10000, _l0_ver % 0x10000),
@@ -569,42 +734,49 @@ if get_option('level0').allowed()
     endif
   endif
 
+  # Fall back to dependency() to get a good error message and enable wrap fallbacks
   if not level0_dep.found()
-    # Fall back to dependency() to get a good error message and enable wrap fallbacks
     level0_dep = dependency('level-zero', required: get_option('level0'), version: '>=1.0')
   endif
 endif
 if level0_dep.found()
-  add_project_arguments(
-    '-DUSE_LEVEL0',
-    '-DHPCRUN_SS_LEVEL0',
-    language: ['c', 'cpp'])
+  add_project_arguments('-DUSE_LEVEL0', '-DHPCRUN_SS_LEVEL0', language: ['c', 'cpp'])
 endif
 
 # Find support for instruction level collection, which requires IGC and IGA
-_gtpin_f = get_option('gtpin').require(level0_dep.found(), error_message: 'gtpin is only available with level0')
+_gtpin_f = get_option('gtpin').require(
+  level0_dep.found(),
+  error_message: 'gtpin is only available with level0',
+)
 
 igc_dep = dependency('', required: false)
 if _gtpin_f.allowed()
   igc_dep = dependency('igc-opencl', required: false)
 
   if not igc_dep.found()
+
     # To work around certain incomplete deployments/modulefiles, we also support
     # the case where the headers are already available by full path in the
     # compiler flags. In this case IGC_INCLUDE_FULL_PATH is #defined and
     # downstream sources #include a longer header path when this is set.
-    if (cc.has_header('igc/igc.opencl.h')
-        and cc.has_header('igc/ocl_igc_shared/executable_format/patch_list.h')
-        and cc.has_header('igc/ocl_igc_shared/device_enqueue/DeviceEnqueueInternalTypes.h'))
-      igc_dep = declare_dependency(
-        compile_args: ['-DIGC_INCLUDE_FULL_PATH'],
-        version: 'unknown',
-      )
+    _ok = true
+    foreach _hdr : [
+      'igc.opencl.h',
+      'ocl_igc_shared/executable_format/patch_list.h',
+      'ocl_igc_shared/device_enqueue/DeviceEnqueueInternalTypes.h',
+    ]
+      if not cc.has_header(_hdr)
+        _ok = false
+        break
+      endif
+    endforeach
+    if _ok
+      igc_dep = declare_dependency(compile_args: ['-DIGC_INCLUDE_FULL_PATH'], version: 'unknown')
     endif
   endif
 
+  # Fall back to dependency() to get a good error message and enable wrap fallbacks
   if not igc_dep.found()
-    # Fall back to dependency() to get a good error message and enable wrap fallbacks
     igc_dep = dependency('igc-opencl', required: _gtpin_f)
   endif
 endif
@@ -614,10 +786,10 @@ endif
 
 iga_dep = dependency('', required: false)
 if _gtpin_f.allowed()
-  # IGA doesn't ship any dependency files, so we use a custom CMake script for the usual case.
   iga_dep = dependency('IGA', method: 'cmake', cmake_module_path: 'cmake', required: false)
 
   if not iga_dep.found()
+
     # To work around certain incomplete modulefiles, we also support the case where the
     # headers and library are already available in the compiler flags.
     _iga_lib = cc.find_library('iga64', has_headers: ['iga/iga.h'], required: false)
@@ -626,8 +798,8 @@ if _gtpin_f.allowed()
     endif
   endif
 
+  # Fall back to dependency() to get a good error message and enable wrap fallbacks
   if not iga_dep.found()
-    # Fall back to dependency() to get a good error message and enable wrap fallbacks
     iga_dep = dependency('IGA', method: 'cmake', cmake_module_path: 'cmake', required: _gtpin_f)
   endif
 endif
@@ -639,16 +811,12 @@ endif
 # when the feature is explicitly requested.
 gtpin_dep = cpp.find_library('gtpin', has_headers: ['api/gtpin_api.h', 'ged.h'], required: false)
 if gtpin_dep.found()
-  # Wrap the result of find_library() as a dependency so we can query the nonexistent version later
   gtpin_dep = declare_dependency(dependencies: gtpin_dep, version: 'unknown')
 else
   gtpin_dep = dependency('gtpin', method: 'system', required: get_option('gtpin'))
 endif
 if gtpin_dep.found()
-  add_project_arguments(
-    '-DENABLE_GTPIN',
-    '-DUSE_GTPIN',
-    language: ['c', 'cpp'])
+  add_project_arguments('-DENABLE_GTPIN', '-DUSE_GTPIN', language: ['c', 'cpp'])
 endif
 
 # Find SYCL, the language we use to test Level Zero support. Meson doesn't support it as a language,
@@ -656,6 +824,7 @@ endif
 # Similar to CUDA, we combine cpp_*args and hip_*args for the command lines here.
 has_sycl = false
 if level0_dep.found() and get_option('extended_tests').allowed()
+
   # Path 1: If "sycl" has been registered as a binary in the machine file, use that.
   _sycl_cc = find_program('sycl', required: false)
   _sycl_args = []
@@ -690,9 +859,17 @@ if level0_dep.found() and get_option('extended_tests').allowed()
   if not has_sycl
     _icpx = find_program('icpx', required: false)
     if _icpx.found()
-      run_command(python, files('meson/in-tmpdir.py'),
-        _icpx, '-fsycl', '-c', '-o', 'sanity.sycl.cpp.o', files('meson/sanity.sycl.cpp'),
-        check: true)
+      run_command(
+        python,
+        files('meson/in-tmpdir.py'),
+        _icpx,
+        '-fsycl',
+        '-c',
+        '-o',
+        'sanity.sycl.cpp.o',
+        files('meson/sanity.sycl.cpp'),
+        check: true,
+      )
       _sycl_cc = _icpx
       _sycl_args = ['-fsycl']
       _sycl_link_args = ['-fsycl']
@@ -702,9 +879,16 @@ if level0_dep.found() and get_option('extended_tests').allowed()
   if not has_sycl
     _dpcpp = find_program('dpcpp', required: false)
     if _dpcpp.found()
-      run_command(python, files('meson/in-tmpdir.py'),
-        _dpcpp, '-c', '-o', 'sanity.sycl.cpp.o', files('meson/sanity.sycl.cpp'),
-        check: true)
+      run_command(
+        python,
+        files('meson/in-tmpdir.py'),
+        _dpcpp,
+        '-c',
+        '-o',
+        'sanity.sycl.cpp.o',
+        files('meson/sanity.sycl.cpp'),
+        check: true,
+      )
       _sycl_cc = _dpcpp
       _sycl_args = []
       _sycl_link_args = []
@@ -718,15 +902,34 @@ if level0_dep.found() and get_option('extended_tests').allowed()
   endif
 
   if has_sycl and not sycl_is_cpp
-    # For compilation:
     sycl = generator(
       _sycl_cc,
-      arguments: [_sycl_args, get_option('cpp_args'), get_option('sycl_args'), '-MD', '-MQ', '@OUTPUT@', '-MF', '@DEPFILE@', '-o', '@OUTPUT@', '-c', '@INPUT@'],
+      arguments: [
+        _sycl_args,
+        get_option('cpp_args'),
+        get_option('sycl_args'),
+        '-MD',
+        '-MQ',
+        '@OUTPUT@',
+        '-MF',
+        '@DEPFILE@',
+        '-o',
+        '@OUTPUT@',
+        '-c',
+        '@INPUT@',
+      ],
       output: '@PLAINNAME@.o',
       depfile: '@PLAINNAME@.o.d',
     )
-    # For linking (to be used with custom_target()):
-    sycl_ld = [_sycl_cc, _sycl_link_args, get_option('cpp_link_args'), get_option('sycl_link_args'), '-o', '@OUTPUT0@', '@INPUT@']
+    sycl_ld = [
+      _sycl_cc,
+      _sycl_link_args,
+      get_option('cpp_link_args'),
+      get_option('sycl_link_args'),
+      '-o',
+      '@OUTPUT0@',
+      '@INPUT@',
+    ]
   endif
 endif
 
@@ -770,7 +973,7 @@ endif
 # Enable a handful of useful non-default warnings
 foreach lang : ['c', 'cpp']
   _warnings = meson.get_compiler(lang).get_supported_arguments(
-      '-Wstack-usage=65536',  # Warn if any functions use a lot or unbounded stack
+    '-Wstack-usage=65536',  # Warn if any functions use a lot or unbounded stack
   )
   set_variable(f'_@lang@_warnings', _warnings)
   add_project_arguments(_warnings, language: lang)
@@ -778,7 +981,10 @@ endforeach
 
 
 # Expose the results of various compile-time checks
-add_project_arguments('-DSIZEOF_VOIDP=@0@'.format(cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8)), language: ['c', 'cpp'])
+add_project_arguments(
+  '-DSIZEOF_VOIDP=@0@'.format(cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8)),
+  language: ['c', 'cpp'],
+)
 
 if host_machine.cpu_family() == 'x86'
   add_project_arguments('-DHOST_CPU_x86', language: ['c', 'cpp'])
@@ -801,18 +1007,33 @@ endif
 if cc.has_header_symbol('byteswap.h', 'bswap_64')
   add_project_arguments('-DUSE_SYSTEM_BYTESWAP', language: ['c', 'cpp'])
 endif
-if cc.has_header_symbol('linux/futex.h', 'SYS_futex', prefix: ['#include <sys/syscall.h>', '#include <unistd.h>'])
+if cc.has_header_symbol(
+  'linux/futex.h',
+  'SYS_futex',
+  prefix: ['#include <sys/syscall.h>', '#include <unistd.h>'],
+)
   add_project_arguments('-DHAVE_FUTEX_H', language: ['c', 'cpp'])
 endif
 
-if cc.has_header_symbol('time.h', 'CLOCK_REALTIME') and cc.has_header_symbol('signal.h', 'SIGEV_THREAD_ID')
+if cc.has_header_symbol('time.h', 'CLOCK_REALTIME') and cc.has_header_symbol(
+  'signal.h',
+  'SIGEV_THREAD_ID',
+)
   add_project_arguments('-DENABLE_CLOCK_REALTIME', language: ['c', 'cpp'])
   if cc.has_header_symbol('time.h', 'CLOCK_THREAD_CPUTIME_ID')
     add_project_arguments('-DENABLE_CLOCK_CPUTIME', language: ['c', 'cpp'])
   endif
 endif
 
-has_perf_events = cc.has_type('struct perf_event_attr', prefix: ['#include <linux/perf_event.h>', '#include <linux/hw_breakpoint.h>', '#include <sys/syscall.h>', '#include <unistd.h>'])
+has_perf_events = cc.has_type(
+  'struct perf_event_attr',
+  prefix: [
+    '#include <linux/perf_event.h>',
+    '#include <linux/hw_breakpoint.h>',
+    '#include <sys/syscall.h>',
+    '#include <unistd.h>',
+  ],
+)
 if has_perf_events
   add_project_arguments('-DHPCRUN_SS_LINUX_PERF', language: ['c', 'cpp'])
 endif
@@ -820,8 +1041,11 @@ endif
 
 # Inject some strings into the build
 add_project_arguments(
-  '-DHPCTOOLKIT_INSTALL_PREFIX="@0@"'.format(get_option('prefix').replace('\\', '\\\\').replace('"', '\\"')),
-  language: ['c', 'cpp'])
+  '-DHPCTOOLKIT_INSTALL_PREFIX="@0@"'.format(
+    get_option('prefix').replace('\\', '\\\\').replace('"', '\\"'),
+  ),
+  language: ['c', 'cpp'],
+)
 
 
 subdir('doc')

@@ -5,12 +5,15 @@
 
 common_lean_srcs = files(
   'BalancedTree.c',
+  'OSUtil.c',
   'bichannel.c',
   'binarytree.c',
   'bistack.c',
+  'compress_lzma.c',
   'cpuset_hwthreads.c',
   'crypto-hash.c',
   'cskiplist.c',
+  'demangle.c',
   'elf-extract.c',
   'elf-hash.c',
   'elf-helper.c',
@@ -37,17 +40,9 @@ common_lean_srcs = files(
   'spinlock.c',
   'splay-uint64.c',
   'stacks.c',
+  'timer.c',
   'urand.c',
   'usec_time.c',
   'vdso.c',
-  'timer.c',
-  'OSUtil.c',
-  'compress_lzma.c',
-  'demangle.c',
 )
-common_lean_deps = [
-  libelf_dep,
-  libiberty_dep,
-  lzma_dep,
-  threads_dep,
-]
+common_lean_deps = [libelf_dep, libiberty_dep, lzma_dep, threads_dep]
