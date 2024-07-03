@@ -6,13 +6,10 @@
 // The following code implements a "heart" or "double-diamond" recursion pattern: two recursive
 // loops sharing a call edge.
 
-__attribute__((noinline))
-static void top1(volatile double* x, int i);
-__attribute__((noinline))
-static void top2(volatile double* x, int i);
+__attribute__((noinline)) static void top1(volatile double* x, int i);
+__attribute__((noinline)) static void top2(volatile double* x, int i);
 
-__attribute__((noinline))
-static void common2(volatile double* x, int i) {
+__attribute__((noinline)) static void common2(volatile double* x, int i) {
   if (i < 1) {
     x[i] *= 2;
   } else if (i < 3) {
@@ -22,20 +19,17 @@ static void common2(volatile double* x, int i) {
   }
 }
 
-__attribute__((noinline))
-static void common1(volatile double* x, int i) {
+__attribute__((noinline)) static void common1(volatile double* x, int i) {
   x[i] += 1;
   common2(x, i);
 }
 
-__attribute__((noinline))
-static void top1(volatile double* x, int i) {
+__attribute__((noinline)) static void top1(volatile double* x, int i) {
   x[i] *= 3;
   common1(x, i);
 }
 
-__attribute__((noinline))
-static void top2(volatile double* x, int i) {
+__attribute__((noinline)) static void top2(volatile double* x, int i) {
   x[i] /= 3;
   common1(x, i);
 }

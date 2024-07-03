@@ -19,6 +19,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     clang-13 \
     clang-14 \
     clang-15 \
+    clang-format \
+    clang-tidy \
     cmake \
     g++ \
     g++-10 \
