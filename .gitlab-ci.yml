@@ -686,7 +686,7 @@ compiler clang10:
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   variables:
     JOB_CC: clang10
-compiler clang16:
+compiler clang17:
   extends: .compiler compat test job
   needs: ['predeps: [fedora39-amd64]']
   image: $PREDEPS_IMAGE_FEDORA39_AMD64
@@ -841,6 +841,7 @@ reuse:
 # Run clang-format 18.x across the respository, via the Meson convenience target.
 clang-format:
   stage: code quality
+  tags: [saas-linux-small-amd64]
   needs: ['predeps: [ubuntu24.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
   script:
@@ -854,6 +855,31 @@ clang-format:
     - clang-format.patch
     when: always
     expire_in: 5 days
+
+
+# Lint the codebase with clang-tidy, to identify various common code issues that are more expensive
+# to produce and aren't suitable for compiler warnings. Fixing issues identified here isn't and
+# never will be enforced, but it does give rich insight into the quality of the code itself.
+clang-tidy:
+  stage: code quality
+  tags: [saas-linux-medium-amd64]
+  needs: ['predeps: [ubuntu24.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  before_script:
+  - >-
+    python3 -m pip install --break-system-packages
+    git+https://github.com/yuriisk/clang-tidy-converter@7bb2b20a24540d777cc91fd27b58c26105c0e698
+  script:
+  - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
+  - ninja -C builddir/ clang-tidy > clang-tidy.raw.txt || true
+  - >-
+    python3 -m clang_tidy_converter --project_root "$CI_PROJECT_DIR"
+    cc --use_location_lines --as_json_array
+    < clang-tidy.raw.txt > clang-tidy.cq.json
+  - python3 -m json.tool --compact --sort-keys clang-tidy.cq.json clang-tidy.cq.min.json
+  artifacts:
+    reports:
+      codequality: clang-tidy.cq.min.json
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.

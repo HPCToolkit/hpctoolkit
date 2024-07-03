@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+Checks: >-
+  -*
+  ,bugprone-*
+  ,clang-analyzer-*
+  ,cppcoreguidlines-*
+  ,modernize-*
+  ,performance-*
+  ,portability-*
+  ,readability-*'
+  ,-bugprone-unchecked-optional-access
+# bugprone-unchecked-optional-access is disabled because it tends to crash in complex OpenMP cases.
+
+# Format to use for fix-its, stay consistent with the clang-format style
+FormatStyle: file
