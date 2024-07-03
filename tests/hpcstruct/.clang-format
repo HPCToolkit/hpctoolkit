@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+BasedOnStyle: InheritParentConfig
+
+CommentPragmas: '^ (CHECK|DECLARE|DEFINE|ENDDEFINE):'
+AlignTrailingComments:
+  Kind: Never

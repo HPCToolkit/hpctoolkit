@@ -23,6 +23,7 @@ stages:
 - individual tests
 - semi-fresh tests
 - configuration tests
+- code quality
 - pre-deploy checks
 - artifacts
 - deploy
@@ -74,6 +75,8 @@ default:
 include:
 # All code should pass pre-commit without error.
 - component: gitlab.com/blue42u/ci.pre-commit/lite@0.2.0
+  inputs:
+    job_stage: code quality
 
 # These images are based on classic distributions and contain no vendor software
 - component: &ci_predeps gitlab.com/blue42u/ci.predeps/buildah@1
@@ -286,24 +289,6 @@ include:
     <<: *ci_predeps_shared
     name: docs
     containerfile: .ci.predeps/Containerfile.docs
-
-
-# The repository follows the REUSE specification v3.x for representing copyright and licencing
-# information on a per-file basis. This job checks for compliance using the REUSE helper tool.
-#
-# NB: This could be done via pre-commit, but unfortunately the `reuse` tool does not check the Git
-# index and thus often errors on uncommitted files. While temporary files should in general be
-# guarded against accidental inclusion, it's also a surprise to the casual developer.
-# So for now we opt to use a separate CI job instead.
-reuse:
-  stage: .pre
-  image:
-    name: docker.io/fsfe/reuse:3
-    entrypoint: [""]
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
-  script:
-  - reuse --include-submodules --include-meson-subprojects lint
 
 
 # The vast majority of jobs in this sequence do a build and then run some tests. This is the base
@@ -832,6 +817,43 @@ compiler icx:
     SETUP_ARGS: >-
       --native-file hpctoolkit-ci.ini
       --wrap-mode=forcefallback
+
+
+# The repository follows the REUSE specification v3.x for representing copyright and licencing
+# information on a per-file basis. This job checks for compliance using the REUSE helper tool.
+#
+# NB: This could be done via pre-commit, but unfortunately the `reuse` tool does not check the Git
+# index and thus often errors on uncommitted files. While temporary files should in general be
+# guarded against accidental inclusion, it's also a surprise to the casual developer.
+# So for now we opt to use a separate CI job instead.
+reuse:
+  stage: code quality
+  needs: []
+  image:
+    name: docker.io/fsfe/reuse:3
+    entrypoint: [""]
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  script:
+  - reuse --include-submodules --include-meson-subprojects lint
+
+
+# Run clang-format 18.x across the respository, via the Meson convenience target.
+clang-format:
+  stage: code quality
+  needs: ['predeps: [ubuntu24.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  script:
+  - meson setup --backend=ninja builddir
+  - if ninja -C builddir/ clang-format-check; then exit 0; fi
+  - ninja -C builddir/ clang-format
+  - git diff > clang-format.patch
+  - exit 1
+  artifacts:
+    paths:
+    - clang-format.patch
+    when: always
+    expire_in: 5 days
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
