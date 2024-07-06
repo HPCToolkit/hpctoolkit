@@ -3111,7 +3111,7 @@ AC_SUBST([TBB_LIB_DIR])
 # Now require static (.a) archive + fPIC for all cases in order to
 # hide the xed symbols.
 
-XED2_INC=
+XED2_IFLAGS=
 XED2_LIB_DIR=no
 XED2_LIB_FLAGS=
 XED2_HPCRUN_LIBS=
@@ -3134,13 +3134,16 @@ AC_MSG_CHECKING([for xed2])
 xed2_avail=no
 case "$XED2" in
   /* )
-    if test ! -f "${XED2}/include/xed-interface.h" ; then
+    if test -f "${XED2}/include/xed-interface.h" ; then
+      XED2_IFLAGS="-I${XED2}/include"
+    elif test -f "${XED2}/include/xed/xed-interface.h" ; then
+      XED2_IFLAGS="-I${XED2}/include -I${XED2}/include/xed"
+    else
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
     if test ! -f "${XED2}/lib/libxed.a" ; then
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
-    XED2_INC="${XED2}/include"
     XED2_LIB_DIR="${XED2}/lib"
     xed2_avail=yes
     num_pkgs=`expr 1 + $num_pkgs`
@@ -3167,7 +3170,7 @@ if test "$xed2_avail" = yes ; then
   if test -f "${XED2}/lib/libxed.a" ; then
     ORIG_CFLAGS="$CFLAGS"
     ORIG_LIBS="$LIBS"
-    CFLAGS="-shared -fPIC -I${XED2}/include"
+    CFLAGS="-shared -fPIC ${XED2_IFLAGS}"
     LIBS="${XED2}/lib/libxed.a"
     AC_LANG_PUSH([C])
     AC_MSG_CHECKING([if libxed.a was compiled with -fPIC])
@@ -3188,7 +3191,7 @@ int my_xed_init(void)
     # Test for xed_operand_values_get_branch_displacement_int64().
     # XED <= 2023.07.09 uses _int32, and >= 2023.08.21 uses _int64.
     #
-    CFLAGS="-I${XED2}/include"
+    CFLAGS="${XED2_IFLAGS}"
     AC_MSG_CHECKING([if xed uses xed_operand_values_get_branch_displacement_int64])
     AC_LINK_IFELSE([
     AC_LANG_SOURCE([[
@@ -3226,7 +3229,7 @@ if test "$xed_displacement_int64" = yes ; then
       [xed uses xed_operand_values_get_branch_displacement_int64])
 fi
 
-AC_SUBST([XED2_INC])
+AC_SUBST([XED2_IFLAGS])
 AC_SUBST([XED2_LIB_DIR])
 AC_SUBST([XED2_LIB_FLAGS])
 AC_SUBST([XED2_HPCRUN_LIBS])
