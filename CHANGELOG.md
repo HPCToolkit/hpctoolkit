@@ -1,4 +1,17 @@
-## Release Notes 2024.01.0
+<!--
+SPDX-FileCopyrightText: 2003-2024 Rice University
+SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
+# Changelog
+
+All notable changes and releases to this project will be documented in this file.
+
+Recent releases are formatted loosely based on [Common Changelog](https://common-changelog.org/), a more restrictive subset of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [2024.01.1] - 2024-03-28
 
 ### Changed
 
@@ -72,10 +85,9 @@
 * All tools may now be run without installation ([#781](https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/781), [!991](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/991)) (Jonathon Anderson)
 * Add more tests for itimer and perf events and support testing in VMs ([!977](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/977), [!988](https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/988)) (Jonathon Anderson)
 
-----------------------------------------
-HPCToolkit 2023.08.0
-----------------------------------------
+## [2023.08.0] - 2023-08-12
 
+```
 HPCToolkit Release Notes
 
 Enhancements
@@ -214,11 +226,11 @@ Enhancements
         to that part of the build system. You can, for now, build "raw" with
        Autotools and get a working HPCToolkit, but Meson is recommended.
    - Fetch default compilers from Spack
+```
 
-----------------------------------------
-HPCToolkit 2023.03.01
-----------------------------------------
+## [2023.03.01] - 2023-02-28
 
+```
 HPCToolkit Release Notes
 
 Enhancements:
@@ -378,12 +390,11 @@ Bug fixes:
 - Fix Java exception when filtering metric column and then adding a new
   derived metric
 - Fix bug when hpcviewer doesn't render the last real trace entry correctly
+```
 
+## [2022.10.01] - 2022-10-06
 
-----------------------------------------
-HPCToolkit 2022.10.01
-----------------------------------------
-
+```
 HPCToolkit Release Notes
 
 Enhancements:
@@ -467,24 +478,22 @@ Bug fixes:
 - Cleared memory used in a pointer-based data structure when filtering tree
   nodes to enable garbage collection to avoid a JVM out of memory error
 - Fixed resizing of table rows in filter dialog box
+```
 
+## [2022.05.15] - 2022-05-16
 
-----------------------------------------
-HPCToolkit 2022.05.15
-----------------------------------------
-
+```
 Bugfixes since 2022.04.15
 
 - hide the symbols from XED, this avoid a problem interfering with
   symbols from Intel gtpin
 - fix a typo in renamestruct.sh script
 - fix a problem with fork() on Cray
+```
 
+## [2022.04.15] - 2022-04-22
 
-----------------------------------------
-HPCToolkit 2022.04.15
-----------------------------------------
-
+```
 HPCToolkit Release Notes
 
 Enhancements:
@@ -587,13 +596,11 @@ Bug fixes:
 - Fix "Apply to all views" option in the metric view for a merged database
 - Fix an error in the preference window
 - Fix row resizing in the statistic view
+```
 
+## [2022.01.15] - 2022-01-18
 
-
-----------------------------------------
-HPCToolkit 2022.01.10
-----------------------------------------
-
+```
 Bug fixes
   - fix thread memory pool for amd gpus
   - fix hpcrun use of ignore thread
@@ -627,12 +634,11 @@ hpcviewer
   Issue #141: ensure consistency between metric view and thread view
   Issue #143: fix support for ISO 8859 character set
   Issue #145: fix the column width when resizing the window or the table
+```
 
+## [2021.05.15] - 2021-06-09
 
-----------------------------------------
-HPCToolkit 2021.05.15
-----------------------------------------
-
+```
 Bug fixes
 
   hpcrun
@@ -697,12 +703,11 @@ Improvements
 
   dotgraph
     - enhance dotgraph to dump control flow graphs for GPU binaries
+```
 
+## [2021.03.01] - 2021-03-01
 
-----------------------------------------
-HPCToolkit 2021.03.01
-----------------------------------------
-
+```
 The principal objective of this release was to support profiling for
 various GPU-based applications, under a variety of programming methods,
 and for a variety of GPUs.
@@ -862,13 +867,11 @@ Improved Installation, Configuration, and Build
     spack conflicts with other packages.
 - Update Build of hpcviewer to use Maven
   - Build can now be done from the command line.
+```
 
+## [2019.08] - 2019-08-14
 
-
-----------------------------------------
-HPCToolkit 2019.08 + some earlier
-----------------------------------------
-
+```
 Enhancements
 
 Build
@@ -946,11 +949,11 @@ viewer.
 Merged the 'perf-datacentric' branch into master.  This adds support
 for the perf family of events as a way of accessing the hardware
 performance counters without using PAPI.
+```
 
-----------------------------------------
-HPCToolkit Version 2017.06, June 2017
-----------------------------------------
+## [2017.06] - 2017-06-29
 
+```
 Updated the 'ompt' branch and merged master into ompt.  This improves
 scalability of the ompt support to large thread counts, as found on
 KNL and Power8. The ompt branch, together with the LLVM OpenMP runtime
@@ -1036,11 +1039,11 @@ and the LLVM OpenMP runtime to the new OMPT ABI designed for OpenMP
 meantime, there is nothing wrong with the quality of the information
 collected. The only problem is HPCToolkit's measurements reveal more of
 an implementation-level view of OpenMP than intended.
+```
 
-----------------------------------------
-HPCToolkit Version 2016.12, Dec 2016
-----------------------------------------
+## [2016.12] - 2016-12-28
 
+```
 Added preliminary measurement, analysis, attribution, and GUI support
 for Power8/LE.
 
@@ -1084,12 +1087,11 @@ switch tables. This has several effects.
     enclosing routine.
 (2) Loops in code regions that are overlooked will not be reported in
     hpcviewer.
+```
 
+## 5.4.x - 2015-12
 
-----------------------------------------
-HPCToolkit Version 5.4.x, Dec 2015
-----------------------------------------
-
+```
 Merged the hpctoolkit-parseapi branch into trunk.  Overhaul hpcstruct
 and banal code to use ParseAPI to parse functions, blocks and loops.
 Rework how hpcstruct identifies loop headers to use a top-down search
@@ -1104,11 +1106,11 @@ Support for filtering nodes in the viewer, allows hiding a subset of
 the CCT nodes according to some pattern.
 
 Move repository to github.
+```
 
-----------------------------------------
-HPCToolkit Version 5.3.2 [2012.09.21]
-----------------------------------------
+## 5.3.2 - 2012-09-21
 
+```
 Fix a few show-stopper problems related to recent upgrades on jaguarpf
 (interlagos) at ORNL since 5.3.1.
 
@@ -1121,12 +1123,11 @@ Fix a few show-stopper problems related to recent upgrades on jaguarpf
 - externals
   - fixed symtabAPI to handle the new STT_GNU_IFUNC symbols in the
     latest glibc.  this was breaking hpclink on jaguarpf.
+```
 
+## 5.3.1 - 2012-08-27
 
-----------------------------------------
-HPCToolkit Version 5.3.1 [2012.08.27]
-----------------------------------------
-
+```
 - hpcrun
   - add documentation about environment variable HPCTOOLKIT, needed for
     use on Cray XE6/XK6
@@ -1164,11 +1165,11 @@ HPCToolkit Version 5.3.1 [2012.08.27]
   - added support to disable thread tracking (needed for CUDA support)
 
 - update documentation
+```
 
-----------------------------------------
-HPCToolkit Version 5.3.0 [2012.06.25]
-----------------------------------------
+## 5.3.0 - 2012-06-25
 
+```
 - hpcrun
   - add an IO sample source to count the number of bytes read and written
   - add a Global Arrays sample source
@@ -1190,12 +1191,11 @@ HPCToolkit Version 5.3.0 [2012.06.25]
   - symtabAPI: fix an off-by-one error that sometimes caused a
     segfault (thanks to Gary Mohr at Bull)
   - xerces: fix a compilation bug on BlueGene
+```
 
+## 5.2.1 - 2011-12-30
 
-----------------------------------------
-HPCToolkit Version 5.2.1: [2011.12.30]
-----------------------------------------
-
+```
 A performance enhancement and maintenance release.
 
 - hpcrun
@@ -1218,12 +1218,11 @@ A performance enhancement and maintenance release.
 - hpctraceviewer
   - significantly enhance rendering performance
   - several bug fixes
+```
 
+## 5.1.0 - 2011-05-27
 
-----------------------------------------
-HPCToolkit Version 5.1.0: [2011.05.27]
-----------------------------------------
-
+```
 - Full support for analyzing 64-bit Linux-POWER7 binaries [hpcprof, hpcstruct]
 
 - To profile/trace large-scale executions, add support for sampling
@@ -1247,12 +1246,11 @@ HPCToolkit Version 5.1.0: [2011.05.27]
   - upgrade to Symtab API 7.0.1
   - upgrade to libelf 0.8.13
   - upgrade to libdwarf-20110113
+```
 
+## 5.0.0 - 2011-02-15
 
-----------------------------------------
-HPCToolkit Version 5.0.0: [2011.02.15]
-----------------------------------------
-
+```
 - HPCToolkit supports Cray XT, IBM BG/P, generic Linux-x86_64 and Linux-86
 
 - Major overhaul of hpcrun:
@@ -1289,12 +1287,11 @@ HPCToolkit Version 5.0.0: [2011.02.15]
   - performance-patched binutils 2.20.1 (from 2.17)
   - xerces 3.1.1 (from 2.8)
   - libmonitor r116
+```
 
+## 4.9.9 - 2009-08-29
 
-----------------------------------------
-HPCToolkit Version 4.9.9: [2009.08.29]
-----------------------------------------
-
+```
 - Rewrite hpcrun (nee csprof)
 - Support monitoring statically linked applications using hpclink
 - Rename hpcrun to hpcrun-flat
@@ -1305,63 +1302,58 @@ HPCToolkit Version 4.9.9: [2009.08.29]
 - Rewrite externals manager
 - Move source code to SciDAC Outreach
 - Web page: www.hpctoolkit.org
+```
 
-----------------------------------------
-HPCToolkit Version 4.2.1: [2006.06.17]
-----------------------------------------
+## 4.2.1 - 2006-06-17
 
+```
 - Use binutils 2.16.1
+```
 
+## 4.2.0 - 2006-04-07
 
-----------------------------------------
-HPCToolkit Version 4.2.0: [2006.04.07]
-----------------------------------------
-
+```
 - Add csprof to source tree
 - Integrate separate version of xcsprof into source tree
 - Integrate csprof viewer into source tree
+```
 
-----------------------------------------
-HPCToolkit Version 4.1.3: [2006.01.09]
-----------------------------------------
+## 4.1.3 - 2006-01-09
 
+```
 - Split code for hpcrun and hpcprof.
 - Automake 1.9.5; Libtool 1.5.20 (still Autoconf 2.59)
+```
 
+## 4.1.2 - 2005-08-15
 
-----------------------------------------
-HPCToolkit Version 4.1.2: [2005.08.15]
-----------------------------------------
-
+```
 - Merge 'lump' (load module dumper) into source tree.  Build when
   configured with --enable-devtools.
 - Automake 1.9.5; Libtool 1.5.18 (still Autoconf 2.59)
+```
 
+## 4.1.1 - 2005-04-21
 
-----------------------------------------
-HPCToolkit Version 4.1.1: [2005.04.21]
-----------------------------------------
-
+```
 - Add support for Group scopes
 - hpcquick produces hpcviewer output by default
+```
 
+## 4.1.0 - 2005-03-18
 
-----------------------------------------
-HPCToolkit Version 4.1.0: [2005.03.18]
-----------------------------------------
-
+```
 - HPCToolkitRoot
   - Improve sub-repository checkout
   - Improve building by determining and propagating compiler
     optimization and develop options when building external
     repositories (OA, xerces, binutils)
 - OpenAnalysis is now 'NewOA'
+```
 
+## 4.0.5 - 2005-01-20
 
-----------------------------------------
-HPCToolkit Version 4.0.5: [2005.01.20]
-----------------------------------------
-
+```
 - Binutils performance tuning:
   - Replace binutils' DWARF2 linear-time line-lookup algorithm with
     binary search.
@@ -1372,12 +1364,11 @@ HPCToolkit Version 4.0.5: [2005.01.20]
   archives), and Linux (missing .so).
 - Upgrade xercesc from 2.3.0 to 2.6.0
 - hpcrun/hpcquick: minor fixes
+```
 
+## 4.0.0 - 2004-11-06
 
-----------------------------------------
-HPCToolkit Version 4.0.0: [2004.11.06]
-----------------------------------------
-
+```
 - Create HPCToolkitRoot, a shell repository to make obtaining sources,
   building and installation easier.
 - Autoconf HPCToolkitRoot and hpcviewer.
@@ -1411,12 +1402,11 @@ HPCToolkit Version 4.0.0: [2004.11.06]
 - hpcview and hpcquick handle multiple structure files
 - Port HPCToolkit to opteron-Linux.
 - Update documentation accordingly.
+```
 
+## 3.7.0 - 2004-03-12
 
-----------------------------------------
-HPCToolkit Version 3.7.0: [2004.03.12]
-----------------------------------------
-
+```
 - Replace make system with Autoconf/Automake make system
 - Update code so it can be compiled by GCC 3.3.2
 - hpcview:
@@ -1431,11 +1421,11 @@ HPCToolkit Version 3.7.0: [2004.03.12]
     - Enable reading of profile data from stdin or file
     - Add basic support for processing Alpha relocated shared libraries
     - Enable support of long option switches; improve option parsing.
+```
 
-----------------------------------------
-HPCToolkit Version 3.6.0: [2003.07.05]
-----------------------------------------
+## 3.6.0 - 2003-07-05
 
+```
 - Extend xprof to compute derived metrics from DCPI profiles.  In the
   process, significantly revise/rewrite most existing xprof code and
   extend ISA and AlphaISA class.
@@ -1449,21 +1439,19 @@ HPCToolkit Version 3.6.0: [2003.07.05]
 - Update HPCToolkit tests for ISA changes and new xprof.
 - Update to binutils 2.13.92 (snapshot) and then 2.14 (official release).
 - Update to xercesc 2.3.0.
+```
 
+## 3.5.2 - 2003-03-28
 
-----------------------------------------
-HPCToolkit Version 3.5.2: [2003.03.28]
-----------------------------------------
-
+```
 - Rename from HPCTools to HPCToolkit to distinguish from others' use of
   the name.
 - Convert from RCS to CVS.
+```
 
+## 3.5.1 - 2003-03-07
 
-----------------------------------------
-HPCTools Version 3.5.1: [2003.03.07]
-----------------------------------------
-
+```
 - Update PGM and PROFILE formats to support load modules; other minor
   tweaks.  Update hpcview, bloop, xprof and ptran to use the new formats.
 - Add initial DSO support to LoadModule classes.
@@ -1479,12 +1467,11 @@ HPCTools Version 3.5.1: [2003.03.07]
     switched on/off.
   - Update alpha macros to support alpha GCC compiler
   - hpcquick now supports recursive paths to option -I.
+```
 
+## 3.5.0 - 2003-02-24
 
-----------------------------------------
-HPCTools Version 3.5.0: [2003.02.24]
-----------------------------------------
-
+```
 - Merge HPCView 3.1 and HPCTools 1.20 into one distribution
   - eliminate code duplication (support library, DTDs)
   - port HPCView to ANSI/ISO style C includes (<cheader>; all functions in
@@ -1495,10 +1482,11 @@ HPCTools Version 3.5.0: [2003.02.24]
 - Improve code organization (rename 'libs' to 'lib'; rename and cleanup
   bloop's scope tree files; move general types files to 'src/include')
 - Improve and test hvprof with PAPI 2.3.1
+```
 
-[see below for HPCView revision history]
+## 1.2.0 - 2002-10-11
 
-
+```
 ----------------------------------------
 HPCTools Version 1.20: (bloop 1.20, xprof 1.20) [2002.10.11]
 ----------------------------------------
@@ -1509,8 +1497,11 @@ HPCTools Version 1.20: (bloop 1.20, xprof 1.20) [2002.10.11]
   out-of-order line sequences of Intel's 6.0 compiler.  (The patch is
   faster, slightly more accurate, and makes GNU happy.)
 - Change the method of preventing conflict between GNU and Sun's demangler.
+```
 
+## 1.1.0 - 2002-08-30
 
+```
 ----------------------------------------
 HPCTools Version 1.10: (bloop 1.10, xprof 1.10) [2002.08.30]
 ----------------------------------------
@@ -1520,8 +1511,11 @@ HPCTools Version 1.10: (bloop 1.10, xprof 1.10) [2002.08.30]
   new style is now default.
 - Improve error and exception handling.  Detect memory allocation errors.
 - Fix bug in GNU-binutils ECOFF reader.
+```
 
+## 1.0.5 - 2002-08-23
 
+```
 ----------------------------------------
 HPCTools Version 1.05: (bloop 1.05, xprof 1.05) [2002.08.23]
 ----------------------------------------
@@ -1531,8 +1525,11 @@ HPCTools Version 1.05: (bloop 1.05, xprof 1.05) [2002.08.23]
   operation index interface for instructions.  Now, many comments are
   not lies!)
 - Miscellaneous fixes and cleanup.
+```
 
+## 1.0.0 - 2002-08-16
 
+```
 ----------------------------------------
 HPCTools Version 1.00: (bloop 1.00, xprof 1.00) [2002.08.16]
 ----------------------------------------
@@ -1556,8 +1553,11 @@ HPCTools Version 1.00: (bloop 1.00, xprof 1.00) [2002.08.16]
 - Remove (outdated) backwards compatibility for non-standard STL headers
 
 - Add hvprof to HPCTools/tools/hvprof
+```
 
+## 0.9.0 - 2001-09
 
+```
 ----------------------------------------
 HPCTools Version 0.90 (bloop 0.90, xprof 0.90) [2001.09]
 ----------------------------------------
@@ -1571,8 +1571,11 @@ HPCTools Version 0.90 (bloop 0.90, xprof 0.90) [2001.09]
 - Bring code into compliance with ANSI/ISO C++
   - Remove STLPort and use standard STL
 - Bug fixes
+```
 
+## 0.8.0 - 2001-02-01
 
+```
 ----------------------------------------
 HPCTools Version 0.80 [2001.02]
 ----------------------------------------
@@ -1581,16 +1584,22 @@ HPCTools Version 0.80 [2001.02]
   - Port EEL to IRIX64
   - Fix binutils 2.10 DWARF2 support
 - Bug fixes
+```
 
+## 0.4.0
 
+```
 ----------------------------------------
 HPCTools Initial Version
 ----------------------------------------
 - Support for processing sparc-SunOS binaries compiled with GCC
   - Use EEL to read binaries and find loops
 - Update EEL to use binutils 2.10
+```
 
+## 0.3.1 - 2003-01-01
 
+```
 ----------------------------------------
 HPCView Version 3.1: [2003.01]
 ----------------------------------------
@@ -1602,8 +1611,11 @@ HPCView Version 3.1: [2003.01]
   generates valid HTML 4.0 Transitional/Frameset and CSS1/2 style
   sheets.
 - Update to use Xerces 2.1.0
+```
 
+## 0.3.0
 
+```
 ----------------------------------------
 HPCView Version 3.0 []
 ----------------------------------------
@@ -1621,8 +1633,11 @@ HPCView Version 3.0 []
 - More run-time assertion exits have been replaced with informative
   error messages.
 - Update to use Xerces 1.7.0
+```
 
+## 0.2.1
 
+```
 ----------------------------------------
 HPCView Version 2.01 []
 ----------------------------------------
@@ -1636,8 +1651,11 @@ HPCView Version 2.01 []
   or missing inputs to computed metrics (among other metric errors) cause
   an error message to be printed and execution to halt.
 - Separated out and removed dead code.
+```
 
+## 0.2.0
 
+```
 ----------------------------------------
 HPCView Version 2.0 []
 ----------------------------------------
@@ -1659,3 +1677,17 @@ HPCView Version 2.0 []
 - Generated HTML and JavaScript now works with Internet Explorer 5.5
   as well as Netscape Navigator 4.x.
 - Sources adjusted to use standard STL.
+```
+
+[2016.12]: https://gitlab.com/hpctoolkit/hpctoolkit/-/releases/release-2016.12
+[2017.06]: https://gitlab.com/hpctoolkit/hpctoolkit/-/releases/release-2017.06
+[2019.08]: https://gitlab.com/hpctoolkit/hpctoolkit/-/commits/6ea44ed3f93ede2d0a48937f288a2d41188a277c
+[2021.03.01]: https://gitlab.com/hpctoolkit/hpctoolkit/-/commits/68a051044c952f0f4dac459d9941875c700039e7
+[2021.05.15]: https://gitlab.com/hpctoolkit/hpctoolkit/-/releases/release-2021.05
+[2022.01.15]: https://gitlab.com/hpctoolkit/hpctoolkit/-/commit/0238e9a052a696707e4e65b2269f342baad728ae
+[2022.04.15]: https://gitlab.com/hpctoolkit/hpctoolkit/-/releases/release-2022.04
+[2022.05.15]: https://gitlab.com/hpctoolkit/hpctoolkit/-/releases/release-2022.05.15
+[2022.10.01]: https://gitlab.com/hpctoolkit/hpctoolkit/-/releases/release-2022.10.01
+[2023.03.01]: https://gitlab.com/hpctoolkit/hpctoolkit/-/tags/2023.03.01
+[2023.08.0]: https://gitlab.com/hpctoolkit/hpctoolkit/-/releases/2023.08.0
+[2024.01.1]: https://gitlab.com/hpctoolkit/hpctoolkit/-/releases/2024.01.1

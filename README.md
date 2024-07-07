@@ -9,7 +9,7 @@ SPDX-License-Identifier: CC-BY-4.0
 
 HPCToolkit is an integrated suite of tools for measurement and
 analysis of program performance on computers ranging from multicore
-desktop systems to the nation's largest supercomputers. HPCToolkit
+desktop systems to GPU-accelerated supercomputers. HPCToolkit
 provides accurate measurements of a program's work, resource
 consumption, and inefficiency, correlates these metrics with the
 program's source code, works with multilingual, fully optimized
@@ -18,8 +18,17 @@ parallel systems. HPCToolkit's measurements provide support for
 analyzing a program execution cost, inefficiency, and scaling
 characteristics both within and across nodes of a parallel system.
 
-HPCToolkit is released under the 3-clause BSD license.
-See the file LICENSE for details.
+## Supported platforms
+
+HPCToolkit is supported on GNU/Linux for the following architectures:
+
+|   Architecture | GCC           | DPKG (Debian/Ubuntu) | RPM (Fedora/RHEL/SUSE) |
+| -------------: | ------------- | -------------------- | ---------------------- |
+|   Intel x86-64 | `x86_64`      | `amd64`              | `x86_64`               |
+|     ARM 64-bit | `aarch64`     | `arm64`              | `aarch64`              |
+| IBM Power (LE) | `powerpc64le` | `ppc64el`            | `ppc64le`              |
+
+The sibling HPCViewer graphical explorer supports a wider range of platforms, see [the HPCViewer repository](https://gitlab.com/hpctoolkit/hpcviewer) for details.
 
 ## Getting HPCToolkit via Spack (recommended for users)
 
@@ -153,16 +162,16 @@ pipx install 'meson>=1.3.2'
 Note that some dependencies may be [built from wraps](#wraps-no-root-required) by default, either because they aren't packaged in Debian/Ubuntu (e.g. Dyninst) or because the version is too old.
 Additional packages can be installed for optional features:
 
-| Package | Feature option | Notes |
-| --- | --- | --- |
-| `mpi-default-dev` | `-Dhpcprof_mpi=enabled` |
-| `libpapi-dev` | `-Dpapi=enabled` |
-| `nvidia-cuda-toolkit` | `-Dcuda=enabled` |
-| [`level-zero-dev`](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps) | `-Dlevel0=enabled` |
-| `libigdfcl-dev` | `-Dlevel0=enabled` |
-| `libigc-dev` | `-Dgtpin=enabled` |
-| `opencl-headers` | `-Dopencl=enabled` | [Optional, available as wrap](#wraps-no-root-required) |
-| [`rocm-hip-libraries`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html) | `-Drocm=enabled` |
+| Package                                                                                          | Feature option          | Notes                                                  |
+| ------------------------------------------------------------------------------------------------ | ----------------------- | ------------------------------------------------------ |
+| `mpi-default-dev`                                                                                | `-Dhpcprof_mpi=enabled` |                                                        |
+| `libpapi-dev`                                                                                    | `-Dpapi=enabled`        |                                                        |
+| `nvidia-cuda-toolkit`                                                                            | `-Dcuda=enabled`        |                                                        |
+| [`level-zero-dev`](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps)    | `-Dlevel0=enabled`      |                                                        |
+| `libigdfcl-dev`                                                                                  | `-Dlevel0=enabled`      |                                                        |
+| `libigc-dev`                                                                                     | `-Dgtpin=enabled`       |                                                        |
+| `opencl-headers`                                                                                 | `-Dopencl=enabled`      | [Optional, available as wrap](#wraps-no-root-required) |
+| [`rocm-hip-libraries`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html) | `-Drocm=enabled`        |                                                        |
 
 #### Fedora/RHEL and derivatives
 
@@ -191,15 +200,15 @@ pipx install 'meson>=1.3.2'  # Optional but recommended
 Note that some dependencies may be [built from wraps](#wraps-no-root-required) by default, either because they aren't packaged in Fedora/RHEL (e.g. Xed) or because the version is too old.
 Additional packages can be installed for optional features:
 
-| Package | Feature option | Notes |
-| --- | --- | --- |
-| `openmpi-devel` or `mpich-devel` or `mvapich2-devel` | `-Dhpcprof_mpi=enabled` |
-| `papi-devel` | `-Dpapi=enabled` |
-| `cuda-toolkit` | `-Dcuda=enabled` |
-| [`level-zero-devel`](https://dgpu-docs.intel.com/driver/installation.html#red-hat-enterprise-linux-install-steps) | `-Dlevel0=enabled` |
-| `intel-igc-opencl-devel` | `-Dlevel0=enabled` |
-| `opencl-headers` | `-Dopencl=enabled` | [Optional, available as wrap](#wraps-no-root-required) |
-| [`rocm`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html) | `-Drocm=enabled` |
+| Package                                                                                                           | Feature option          | Notes                                                  |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------ |
+| `openmpi-devel` or `mpich-devel` or `mvapich2-devel`                                                              | `-Dhpcprof_mpi=enabled` |                                                        |
+| `papi-devel`                                                                                                      | `-Dpapi=enabled`        |                                                        |
+| `cuda-toolkit`                                                                                                    | `-Dcuda=enabled`        |                                                        |
+| [`level-zero-devel`](https://dgpu-docs.intel.com/driver/installation.html#red-hat-enterprise-linux-install-steps) | `-Dlevel0=enabled`      |                                                        |
+| `intel-igc-opencl-devel`                                                                                          | `-Dlevel0=enabled`      |                                                        |
+| `opencl-headers`                                                                                                  | `-Dopencl=enabled`      | [Optional, available as wrap](#wraps-no-root-required) |
+| [`rocm`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html)                                | `-Drocm=enabled`        |                                                        |
 
 #### SUSE Leap/SLES 15 and derivatives
 
@@ -212,15 +221,15 @@ pipx install 'meson>=1.3.2'
 Note that some dependencies may be [built from wraps](#wraps-no-root-required) by default, either because they aren't packaged in SUSE Leap (e.g. Xed) or because the version is too old.
 Additional packages can be installed for optional features:
 
-| Package | Feature option | Notes |
-| --- | --- | --- |
-| `openmpi-devel` or `mpich-devel` | `-Dhpcprof_mpi=enabled` |
-| `papi-devel` | `-Dpapi=enabled` |
-| `cuda-toolkit` | `-Dcuda=enabled` |
-| [`level-zero-devel`](https://dgpu-docs.intel.com/driver/installation.html#red-hat-enterprise-linux-install-steps) | `-Dlevel0=enabled` |
-| `intel-igc-opencl-devel` | `-Dlevel0=enabled` |
-| `opencl-headers` | `-Dopencl=enabled` | [Optional, available as wrap](#wraps-no-root-required) |
-| [`rocm`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html) | `-Drocm=enabled` |
+| Package                                                                                                           | Feature option          | Notes                                                  |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------ |
+| `openmpi-devel` or `mpich-devel`                                                                                  | `-Dhpcprof_mpi=enabled` |                                                        |
+| `papi-devel`                                                                                                      | `-Dpapi=enabled`        |                                                        |
+| `cuda-toolkit`                                                                                                    | `-Dcuda=enabled`        |                                                        |
+| [`level-zero-devel`](https://dgpu-docs.intel.com/driver/installation.html#red-hat-enterprise-linux-install-steps) | `-Dlevel0=enabled`      |                                                        |
+| `intel-igc-opencl-devel`                                                                                          | `-Dlevel0=enabled`      |                                                        |
+| `opencl-headers`                                                                                                  | `-Dopencl=enabled`      | [Optional, available as wrap](#wraps-no-root-required) |
+| [`rocm`](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/index.html)                                | `-Drocm=enabled`        |                                                        |
 
 #### Wraps (no root required)
 
@@ -326,27 +335,6 @@ http://hpctoolkit.org/index.html
 In particular, there is a PDF User's Manual at:
 
 http://hpctoolkit.org/manual/HPCToolkit-users-manual.pdf
-
-## Bug Reports and Questions
-
-The best way to contact us for bug reports or questions is via the
-mailing list hpctoolkit-forum =at= rice.edu.  The mailman list is
-technically members-only, but you don't really need to be a member.
-Just send mail to this address and then we can white-list you.
-
-If reporting a problem, be sure to include sufficient information
-about your system, what you tried, what went wrong, etc, to allow us
-follow your steps.
-
-- type of system, architecture, linux distribution and version,
-  compiler version, glibc version.
-
-- hpctoolkit version.
-
-- if a build failure, then the `config.log` file from the build
-  directory and the output from `make`.
-
-- if a run failure, then what command you ran and how it failed.
 
 [meson]: https://mesonbuild.com/
 [meson native file]: https://mesonbuild.com/Native-environments.html

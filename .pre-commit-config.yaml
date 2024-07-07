@@ -68,13 +68,30 @@ repos:
   hooks:
   # Format CommonMark (Markdown) files to have a consistent style.
   - id: mdformat
-    # Currently only limited to the README
-    files: ^README\.md$
+    exclude: ^(doc/src/|doc/FORMATS\.md$|LICENSE\.md$|\.gitlab/)
+    additional_dependencies:
+    - mdformat-tables ==0.4.1
+  # FORMATS.md is carefully crafted for viewing in a terminal (i.e. unrendered)
+  - id: mdformat
+    files: ^doc/FORMATS\.md$
+    args: [--wrap=80, --number]
+    additional_dependencies:
+    - mdformat-tables ==0.4.1
+  # LICENSE.md is a pure-CommonMark format with full numbering in the source
+  - id: mdformat
+    files: ^LICENSE\.md$
+    args: [--number]
+  # Format MyST (CommonMark for Sphinx) files to have a consistent style.
   - id: mdformat
     files: ^doc/src/
     additional_dependencies:
     - mdformat-myst ==0.1.4
     - mdformat-deflist ==0.1.2
+  # Format GFM (CommmonMark for GitHub/GitLab) files to have a consistent style.
+  - id: mdformat
+    files: ^\.gitlab/
+    additional_dependencies:
+    - mdformat-gfm ==0.3.6
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.6.0
