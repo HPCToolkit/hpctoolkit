@@ -1051,15 +1051,3 @@ add_project_arguments(
 subdir('doc')
 subdir('src')
 subdir('tests')
-
-
-# Install a few files from this directory
-install_data(
-  'README.md',
-  'README.Acknowledgments',
-  'README.Install',
-  'README.ReleaseNotes',
-  'LICENSE',
-  install_dir: docdir,
-  install_tag: 'docs',
-)
