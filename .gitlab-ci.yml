@@ -569,16 +569,15 @@ rocm6.1 amd64:
 
 intel amd64:
   extends: .individual test job std
-  tags: [rice-linux-large-amd64-gpu-intel]
-  rules: *only_runner_privileged
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
+    # FIXME: Tests that use Level Zero fail on systems that don't have a suitable GPU attached.
+    # This should be fixed, but for now don't try to run any of the affected tests.
     # FIXME: Intel MPI doesn't work on a single node, it tries to ssh to localhost and doesn't get
     # very far as a result. Don't try to run the MPI tests here.
     TEST_ARGS: >-
-      --suite opencl
-      --suite level0
+      --no-suite level0
       --no-suite mpi
 
 
@@ -704,15 +703,17 @@ compiler clang18:
     JOB_CC: clang
 compiler icx:
   extends: .compiler compat test job
-  tags: [rice-linux-large-amd64-gpu-intel]
-  rules: *only_runner_privileged
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     JOB_CC: icx
+    # FIXME: Tests that use Level Zero fail on systems that don't have a suitable GPU attached.
+    # This should be fixed, but for now don't try to run any of the affected tests.
     # FIXME: Intel MPI doesn't work on a single node, it tries to ssh to localhost and doesn't get
     # very far as a result. Don't try to run the MPI tests here.
-    TEST_ARGS: --no-suite mpi
+    TEST_ARGS: >-
+      --no-suite level0
+      --no-suite mpi
 
 
 # Non-default option checks. There are a small number of options that users/packagers can
@@ -782,8 +783,6 @@ compiler icx:
       TEST_ARGS: --suite none
 'option: [intel amd64]':
   extends: .option test job
-  tags: [rice-linux-large-amd64-gpu-intel]
-  rules: *only_runner_privileged
   needs: ['predeps: [intel-amd64]']
   image: $PREDEPS_IMAGE_INTEL_AMD64
   parallel:
@@ -791,8 +790,6 @@ compiler icx:
     - SETUP_ARGS:
       - -Dlevel0=disabled
       - -Dgtpin=disabled
-      TEST_ARGS: --suite hpcrun
-    - SETUP_ARGS:
       - -Dextended_tests=disabled
       TEST_ARGS: --suite none
 
