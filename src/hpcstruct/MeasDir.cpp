@@ -178,7 +178,7 @@ endif
 #-------------------------------------------------------------------------------
 $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 	@cpubin_name=`basename -s x $<`
-	@input_name=`cat $(MEAS_DIR)/all.lm | grep $$cpubin_name`
+	@input_name=`cat $(MEAS_DIR)/all.lm | grep "/$$cpubin_name$$"`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$cpubin_name.warnings
 	# @echo  DEBUG cpubin = $$cpu_bin_name
@@ -227,7 +227,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 #-------------------------------------------------------------------------------
 $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 	@gpubin_name=`basename -s x $<`
-	@input_name=`cat $(MEAS_DIR)/all.lm | grep $$gpubin_name`
+	@input_name=`cat $(MEAS_DIR)/all.lm | grep "/$$gpubin_name$$"`
 	struct_name=$@
 	rm -f $(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG_ALT).hpcstruct
 	rm -f $(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG_ALT).warnings
