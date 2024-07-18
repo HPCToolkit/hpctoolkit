@@ -862,21 +862,13 @@ clang-tidy:
   tags: [saas-linux-medium-amd64]
   needs: ['predeps: [ubuntu24.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
-  before_script:
-  - >-
-    python3 -m pip install --break-system-packages
-    git+https://github.com/yuriisk/clang-tidy-converter@7bb2b20a24540d777cc91fd27b58c26105c0e698
   script:
   - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
   - ninja -C builddir/ clang-tidy > clang-tidy.raw.txt || true
-  - >-
-    python3 -m clang_tidy_converter --project_root "$CI_PROJECT_DIR"
-    cc --use_location_lines --as_json_array
-    < clang-tidy.raw.txt > clang-tidy.cq.json
-  - python3 -m json.tool --compact --sort-keys clang-tidy.cq.json clang-tidy.cq.min.json
+  - ./ci/cc-diagnostics.py clang-tidy.cq.json clang-tidy.raw.txt
   artifacts:
     reports:
-      codequality: clang-tidy.cq.min.json
+      codequality: clang-tidy.cq.json
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
