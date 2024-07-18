@@ -845,7 +845,7 @@ clang-format:
   - meson setup --backend=ninja builddir
   - if ninja -C builddir/ clang-format-check; then exit 0; fi
   - ninja -C builddir/ clang-format
-  - git diff > clang-format.patch
+  - git diff --full-index > clang-format.patch
   - exit 1
   artifacts:
     paths:
@@ -857,26 +857,42 @@ clang-format:
 # Lint the codebase with clang-tidy, to identify various common code issues that are more expensive
 # to produce and aren't suitable for compiler warnings. Fixing issues identified here isn't and
 # never will be enforced, but it does give rich insight into the quality of the code itself.
-clang-tidy:
+.clang-tidy:
   stage: code quality
-  tags: [saas-linux-medium-amd64]
   needs: ['predeps: [ubuntu24.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
-  before_script:
-  - >-
-    python3 -m pip install --break-system-packages
-    git+https://github.com/yuriisk/clang-tidy-converter@7bb2b20a24540d777cc91fd27b58c26105c0e698
+  rules: *only_runner_privileged
+  cache:
+    key: ccache-clang-tidy
+    when: always
+    paths:
+    - .ccache
+  variables:
+    CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
+clang-tidy:
+  extends: .clang-tidy
+  tags: [saas-linux-xlarge-amd64]
   script:
   - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
+  - ninja -C builddir/
   - ninja -C builddir/ clang-tidy > clang-tidy.raw.txt || true
-  - >-
-    python3 -m clang_tidy_converter --project_root "$CI_PROJECT_DIR"
-    cc --use_location_lines --as_json_array
-    < clang-tidy.raw.txt > clang-tidy.cq.json
-  - python3 -m json.tool --compact --sort-keys clang-tidy.cq.json clang-tidy.cq.min.json
+  - ./ci/cc-diagnostics.py clang-tidy.cq.json clang-tidy.raw.txt
   artifacts:
     reports:
-      codequality: clang-tidy.cq.min.json
+      codequality: clang-tidy.cq.json
+# Same as clang-tidy, but this time apply the fix-its and produce a patch for human review.
+clang-tidy-fix:
+  extends: .clang-tidy
+  tags: [saas-linux-xlarge-amd64]
+  script:
+  - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
+  - ninja -C builddir/
+  - ninja -C builddir/ clang-tidy-fix > /dev/null || true
+  - git diff --full-index > clang-tidy-fixits.patch
+  - if ! test -s clang-tidy-fixits.patch; then rm clang-tidy-fixits.patch; fi
+  artifacts:
+    paths:
+    - clang-tidy-fixits.patch
 
 
 # Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
