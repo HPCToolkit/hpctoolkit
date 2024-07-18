@@ -861,6 +861,7 @@ clang-format:
   stage: code quality
   needs: ['predeps: [ubuntu24.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  rules: *only_runner_privileged
   cache:
     key: ccache-clang-tidy
     when: always
@@ -870,7 +871,7 @@ clang-format:
     CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
 clang-tidy:
   extends: .clang-tidy
-  tags: [saas-linux-medium-amd64]
+  tags: [saas-linux-xlarge-amd64]
   script:
   - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
   - ninja -C builddir/
@@ -882,7 +883,7 @@ clang-tidy:
 # Same as clang-tidy, but this time apply the fix-its and produce a patch for human review.
 clang-tidy-fix:
   extends: .clang-tidy
-  tags: [saas-linux-medium-amd64]
+  tags: [saas-linux-xlarge-amd64]
   script:
   - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
   - ninja -C builddir/
