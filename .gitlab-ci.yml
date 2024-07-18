@@ -857,13 +857,23 @@ clang-format:
 # Lint the codebase with clang-tidy, to identify various common code issues that are more expensive
 # to produce and aren't suitable for compiler warnings. Fixing issues identified here isn't and
 # never will be enforced, but it does give rich insight into the quality of the code itself.
-clang-tidy:
+.clang-tidy:
   stage: code quality
-  tags: [saas-linux-medium-amd64]
   needs: ['predeps: [ubuntu24.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  cache:
+    key: ccache-clang-tidy
+    when: always
+    paths:
+    - .ccache
+  variables:
+    CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
+clang-tidy:
+  extends: .clang-tidy
+  tags: [saas-linux-medium-amd64]
   script:
   - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
+  - ninja -C builddir/
   - ninja -C builddir/ clang-tidy > clang-tidy.raw.txt || true
   - ./ci/cc-diagnostics.py clang-tidy.cq.json clang-tidy.raw.txt
   artifacts:
@@ -871,12 +881,11 @@ clang-tidy:
       codequality: clang-tidy.cq.json
 # Same as clang-tidy, but this time apply the fix-its and produce a patch for human review.
 clang-tidy-fix:
-  stage: code quality
+  extends: .clang-tidy
   tags: [saas-linux-medium-amd64]
-  needs: ['predeps: [ubuntu24.04-amd64]']
-  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
   script:
   - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
+  - ninja -C builddir/
   - ninja -C builddir/ clang-tidy-fix > /dev/null || true
   - git diff > clang-tidy-fixits.patch
   - if ! test -s clang-tidy-fixits.patch; then rm clang-tidy-fixits.patch; fi
