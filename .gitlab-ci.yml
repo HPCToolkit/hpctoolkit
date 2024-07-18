@@ -845,7 +845,7 @@ clang-format:
   - meson setup --backend=ninja builddir
   - if ninja -C builddir/ clang-format-check; then exit 0; fi
   - ninja -C builddir/ clang-format
-  - git diff > clang-format.patch
+  - git diff --full-index > clang-format.patch
   - exit 1
   artifacts:
     paths:
@@ -888,7 +888,7 @@ clang-tidy-fix:
   - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
   - ninja -C builddir/
   - ninja -C builddir/ clang-tidy-fix > /dev/null || true
-  - git diff > clang-tidy-fixits.patch
+  - git diff --full-index > clang-tidy-fixits.patch
   - if ! test -s clang-tidy-fixits.patch; then rm clang-tidy-fixits.patch; fi
   artifacts:
     paths:
