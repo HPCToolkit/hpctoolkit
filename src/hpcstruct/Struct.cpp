@@ -71,7 +71,7 @@
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
 
-#include "gpu/GPUCFG_Cuda.hpp"
+#include "gpu/CudaCFG.hpp"
 
 #ifdef USE_XED_FOR_GAPS
 extern "C" {
@@ -84,7 +84,7 @@ extern "C" {
 #endif
 
 #ifdef ENABLE_IGC
-#include "gpu/GPUCFG_Intel.hpp"
+#include "intel/GPUCFG_Intel.hpp"
 #endif // ENABLE_IGC
 
 #ifdef ENABLE_OPENMP
@@ -764,6 +764,7 @@ makeStructure(string absfilepath,
 
     CodeSource *code_src = NULL;
     CodeObject *code_obj = NULL;
+    CFGFactory *code_factory = NULL;
 
 #ifdef ENABLE_OPENMP
     omp_set_num_threads(opts.jobs_parse);
@@ -772,26 +773,12 @@ makeStructure(string absfilepath,
     bool intel_file = elfFile->isIntelGPUFile();
     bool has_calls;
 
-    if (cuda_file) { // don't run parseapi on cuda binary
-      cuda_arch = elfFile->getArch();
-      cubin_size = elfFile->getLength();
-      if (structOpts.compute_gpu_cfg) {
-#ifdef OPT_HAVE_CUDA
-        buildCudaGPUCFG(search_path, elfFile, the_symtab, &code_src, &code_obj);
-        parsable = true;
-        has_calls = true;
-#else
-        DIAG_EMsg("CFG requested for CUDA binary " << inputFile.fileName() << " but hpcstruct was not built with CUDA support");
-        throw 1;
-#endif
-      } else {
-        code_src = new SymtabCodeSource(the_symtab);
-        code_obj = new CodeObject(code_src, NULL, NULL, false, true);
-        parsable = false;
-        has_calls = false;
-      }
-    }
-    else if (intel_file) { // don't run parseapi on intel binary
+    intel_gpu_arch = 0;
+    cuda_arch = 0;
+    cubin_size = 0;
+    has_calls = false;
+
+    if (intel_file) { // don't run parseapi on intel binary
       intel_gpu_arch = 1;
 #ifdef ENABLE_IGC
       bool compute_intel_gpu_cfg = true;
@@ -802,20 +789,39 @@ makeStructure(string absfilepath,
 #else
       has_calls = false;
 #endif  // ENABLE_IGC
-    }
-    else {
-      code_src = new SymtabCodeSource(symtab);
-      code_obj = new CodeObject(code_src);
-      code_obj->parse();
-      intel_gpu_arch = 0;
-      cuda_arch = 0;
-      cubin_size = 0;
-      has_calls = false;
+    } else {
+      if (cuda_file) {
+        cuda_arch = elfFile->getArch();
+        cubin_size = elfFile->getLength();
+        if (structOpts.compute_gpu_cfg) {
+#ifdef OPT_HAVE_CUDA
+          code_src = new gpu::CudaCFG::CudaCodeSource(elfFile->getFileName(), elfFile->getArch(), *symtab);
+          code_factory = new gpu::CudaCFG::CudaFactory();
+          parsable = true;
+          has_calls = true;
+#else
+          DIAG_EMsg("CFG requested for CUDA binary " << inputFile.fileName() << " but hpcstruct was not built with CUDA support");
+          throw 1;
+#endif
+        } else {
+          code_src = new SymtabCodeSource(symtab);
+          parsable = false;
+          has_calls = false;
+        }
+      } else {
+        code_src = new SymtabCodeSource(symtab);
+        parsable = true;
+        has_calls = false;
+      }
+      code_obj = new CodeObject(code_src, code_factory, NULL, false, true);
     }
     if (has_calls) {
       // for GPU code, report call sites in structure output to support
       // static call graph reconstruction
       Output::enableCallTags();
+    }
+    if (parsable) {
+      code_obj->parse();
     }
 
     if (opts.show_time) {
@@ -886,6 +892,7 @@ makeStructure(string absfilepath,
       }
 
       delete code_obj;
+      delete code_factory;
       Inline::closeSymtab();
     }
   }

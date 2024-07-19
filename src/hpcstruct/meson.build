@@ -15,12 +15,11 @@ _srcs = files(
   'Struct-Output.cpp',
   'Struct.cpp',
   'VMAInterval.cpp',
-  'gpu/CudaCFGParser.cpp',
-  'gpu/GPUBlock.cpp',
-  'gpu/GPUCFG.cpp',
-  'gpu/GPUCFGFactory.cpp',
-  'gpu/GPUCodeSource.cpp',
-  'gpu/GPUFunction.cpp',
+  'intel/GPUBlock.cpp',
+  'intel/GPUCFG.cpp',
+  'intel/GPUCFGFactory.cpp',
+  'intel/GPUCodeSource.cpp',
+  'intel/GPUFunction.cpp',
   'intel/IntelGPUBinutils.cpp',
   'xml.cpp',
 )
@@ -42,11 +41,11 @@ _srcs += [
 ]
 
 if nvdisasm.found()
-  _srcs += files('gpu/GPUCFG_Cuda.cpp', 'gpu/GraphReader.cpp')
+  _srcs += files('gpu/CudaCFG.cpp')
 endif
 
 if igc_dep.found()
-  _srcs += files('gpu/GPUCFG_Intel.cpp')
+  _srcs += files('intel/GPUCFG_Intel.cpp')
 endif
 
 _deps = [boost_dep, dyninst_dep, iga_dep, igc_dep, libdw_dep, libelf_dep, openmp_dep, xed_dep]

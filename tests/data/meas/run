@@ -51,7 +51,6 @@ fi
 rm -rf \
   "$output"/cpubins/ \
   "$output"/gpubins-used/ \
-  "$output"/structs/nvidia/ \
   # END
 rm -f \
   "$output"/*.log \
