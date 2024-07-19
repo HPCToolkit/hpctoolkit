@@ -6,6 +6,7 @@
 // -*-Mode: C++;-*-
 
 #include "../common/hpctoolkit-version.h"
+#include "hpcrun-install-prefixes.h"
 
 #include <cstdlib>
 #include <deque>
@@ -256,11 +257,6 @@ int main(int argc, char* argv[]) {
   // apply them at the very end.
   std::unordered_map<std::string, std::string> env;
 
-  fs::path prefix = HPCTOOLKIT_INSTALL_PREFIX;
-
-  // Paths are relative to HPCTOOLKIT (root install dir)
-  fs::path hpcrun_dir = "lib/hpctoolkit";
-
   // On Cray Slingshot 11 systems, there is not yet complete support for demand paging on the
   // Cassini NIC. As a result, when using pinned memory with Cray MPI, fork and system aren't
   // allowed to return because forking a process using pinned memory is unsupported. As a result,
@@ -279,40 +275,6 @@ int main(int argc, char* argv[]) {
   // program. We can't allow UCX to do that since hpcrun may encounter a SEGV as part of its
   // operation and want to drop a sample rather than terminate the program.
   env["UCX_ERROR_SIGNALS"] = "ILL,FPE,BUS";
-
-  // Find the path to this launch executable
-  fs::path HPCTOOLKIT;
-  fs::path here = argc > 0 ? fs::canonical("/proc/self/exe").parent_path() : fs::path();
-  if (!here.empty() && fs::exists(here / "libhpcrun.so")) {
-    // This is (almost certainly) the build directory, not the installed version.
-    // In this case, we don't have HPCTOOLKIT, and hpcrun_dir is where the libs are built.
-    hpcrun_dir = here;
-  } else {
-    // Use the usual method based around the install prefix.
-    //
-    // NB: The original version of this code (config/export-hpctoolkit) tries other paths,
-    // each of which is tested via the content of a "hash file" placed in the install prefix.
-    // The tests here were to try and detect cases where the whole install prefix was moved
-    // post-installation, the "hash file" serving as a way to ensure the bits all came from the
-    // same build. This use case was a poor replacement for DESTDIR (circa. 1996), and more recent
-    // changes to the build system have dropped this file entirely. The logic that depends on this
-    // "hash file" has been dropped and only the final fallbacks below retained.
-    if (fs::exists(prefix / "lib/hpctoolkit")) {
-      HPCTOOLKIT = prefix;
-    } else {
-      auto hpct = fetchenv("HPCTOOLKIT");
-      if (hpct && fs::exists(fs::path(hpct.value()) / "lib/hpctoolkit")) {
-        HPCTOOLKIT = hpct.value();
-      } else {
-        std::cerr << "hpcrun: Unable to find the hpctoolkit install directory.\n"
-          "Set HPCTOOLKIT in the environment and try again.\n";
-        return 1;
-      }
-    }
-  }
-
-  if (hpcrun_dir.is_relative())
-    hpcrun_dir = HPCTOOLKIT / hpcrun_dir;
 
   // Handle "early" version arguments
   if (argc > 1 && strmatch(argv[1], {"-V", "-version", "--version"})) {
@@ -381,23 +343,23 @@ int main(int argc, char* argv[]) {
     } else if (strmatch(arg, {"-e", "--event"})) {
       auto ev = popvalue();
       if (strstartswith(ev, "GA")) {
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_ga.so");
+        preload_list.emplace_back("libhpcrun_ga.so");
       } else if (strstartswith(ev, "IO")) {
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_io.so");
+        preload_list.emplace_back("libhpcrun_io.so");
       } else if (strstartswith(ev, "MEMLEAK")) {
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_memleak.so");
+        preload_list.emplace_back("libhpcrun_memleak.so");
       } else if (strstartswith(ev, "DATACENTRIC")) {
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_datacentric.so");
+        preload_list.emplace_back("libhpcrun_datacentric.so");
       } else if (strstartswith(ev, "PTHREAD_WAIT")) {
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_pthread.so");
+        preload_list.emplace_back("libhpcrun_pthread.so");
       } else if (strstartswith(ev, "CPU_GPU_IDLE")) {
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_gpu.so");
+        preload_list.emplace_back("libhpcrun_gpu.so");
       } else if (strstartswith(ev, "MPI")) {
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_mpi.so");
+        preload_list.emplace_back("libhpcrun_mpi.so");
       } else if (ev == "gpu=amd" || strstartswith(ev, "rocprof::")) {
 #ifdef USE_ROCM
         env["HSA_ENABLE_INTERRUPTS"] = "0";
-        env["ROCP_TOOL_LIB"] = (hpcrun_dir / "libhpcrun.so").native();
+        env["ROCP_TOOL_LIB"] = "libhpcrun.so";
         env["ROCP_HSA_INTERCEPT"] = "1";
         env["AMD_DIRECT_DISPATCH"] = "0";
 #else
@@ -411,14 +373,14 @@ int main(int argc, char* argv[]) {
 #endif
       } else if (ev == "gpu=opencl") {
 #ifdef ENABLE_OPENCL
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_opencl.so");
+        preload_list.emplace_back("libhpcrun_opencl.so");
 #else
         std::cerr << "hpcrun: HPCToolkit was not compiled with OpenCL support enabled" << diemsg;
         return 1;
 #endif
       } else if (ev == "gpu=level0") {
 #ifdef USE_LEVEL0
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_level0.so");
+        preload_list.emplace_back("libhpcrun_level0.so");
 #else
         std::cerr << "hpcrun: HPCToolkit was not compiled with Level0 support enabled" << diemsg;
         return 1;
@@ -428,7 +390,7 @@ int main(int argc, char* argv[]) {
 #ifdef USE_GTPIN
         env["ZET_ENABLE_PROGRAM_INSTRUMENTATION"] = "1";
         env["ZE_ENABLE_TRACING_LAYER"] = "1";
-        preload_list.emplace_back(hpcrun_dir / "libhpcrun_level0.so");
+        preload_list.emplace_back("libhpcrun_level0.so");
         env["HPCRUN_AUDIT_FAKE_AUDITOR"] = "1";
         namespace_default = NsDefault::single_if_auditing;
 #else
@@ -443,7 +405,7 @@ int main(int argc, char* argv[]) {
       env["HPCRUN_EVENT_LIST"] += std::string(env["HPCRUN_EVENT_LIST"].empty() ? "" : " ") + ev;
     } else if (strmatch(arg, {"-L", "-l", "--list-events"})) {
 #ifdef USE_ROCM
-      env["ROCP_TOOL_LIB"] = (hpcrun_dir / "libhpcrun.so").native();
+      env["ROCP_TOOL_LIB"] = "libhpcrun.so";
 #endif
       env["HPCRUN_EVENT_LIST"] = "LIST";
     } else if (strmatch(arg, {"-ds", "--delay-sampling"})) {
@@ -472,7 +434,7 @@ int main(int argc, char* argv[]) {
     } else if (strmatch(arg, {"--rocprofiler-path"})) {
       rocm_envs_rocprofiler_path = popvalue();
     } else if (strmatch(arg, {"--disable-gprof"})) {
-      preload_list.emplace_back(hpcrun_dir / "libhpcrun_gprof.so");
+      preload_list.emplace_back("libhpcrun_gprof.so");
     } else if (strmatch(arg, {"--omp-serial-only"})) {
       env["HPCRUN_OMP_SERIAL_ONLY"] = "1";
     } else if (strmatch(arg, {"--namespace-multiple"})) {
@@ -541,7 +503,7 @@ int main(int argc, char* argv[]) {
   }
   if (!namespace_multiple) {
     if (namespace_default == NsDefault::single || namespace_single) {
-      preload_list.emplace_front(hpcrun_dir / "libhpcrun_dlmopen.so");
+      preload_list.emplace_front("libhpcrun_dlmopen.so");
     }
   }
 
@@ -596,13 +558,13 @@ int main(int argc, char* argv[]) {
   // A better check would dlsym() in libhpcrun.so instead of unportable mess in the wrapper script.
 
   // Inject the main libhpcrun.so with LD_PRELOAD
-  preload_list.emplace_front(hpcrun_dir / "libhpcrun.so");
+  preload_list.emplace_front("libhpcrun.so");
 
   // Set up the auditor or fake auditor, depending on what's configured.
   if (env["HPCRUN_AUDIT_FAKE_AUDITOR"] == "1") {
-    preload_list.emplace_front(hpcrun_dir / "libhpcrun_fake_audit.so");
+    preload_list.emplace_front("libhpcrun_fake_audit.so");
   } else {
-    audit_list.emplace_front(hpcrun_dir / "libhpcrun_audit.so");
+    audit_list.emplace_front("libhpcrun_audit.so");
   }
 
   if (!preload_list.empty()) {
@@ -627,6 +589,16 @@ int main(int argc, char* argv[]) {
     if (auto oldaudit = fetchenv("LD_AUDIT"))
       ss << ':' << oldaudit.value();
     env["LD_AUDIT"] = ss.str();
+  }
+
+  // Extend LD_LIBRARY_PATH with the path to the libhpcrun libraries. We append here so that the
+  // hardcoded path used here can be overridden by users with ease.
+  {
+    std::ostringstream ss;
+    if (auto oldldpath = fetchenv("LD_LIBRARY_PATH"))
+      ss << oldldpath.value() << ':';
+    ss << HPCRUN_INSTALL_LIBDIR;
+    env["LD_LIBRARY_PATH"] = ss.str();
   }
 
   // Apply the environment we've been collecting all this time, and exec
