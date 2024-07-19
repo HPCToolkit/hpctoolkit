@@ -605,8 +605,6 @@ int main(int argc, char* argv[]) {
     audit_list.emplace_front(hpcrun_dir / "libhpcrun_audit.so");
   }
 
-  env["HPCRUN_AUDIT_MAIN_LIB"] = hpcrun_dir / "libhpcrun.so";
-
   if (!preload_list.empty()) {
     std::ostringstream ss;
     bool first = true;
