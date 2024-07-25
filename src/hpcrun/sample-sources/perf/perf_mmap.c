@@ -164,36 +164,45 @@ perf_read_u64(u64 data_head, u64 *data_tail,
 // special mmap buffer reading for PERF_SAMPLE_READ
 //----------------------------------------------------------
 static void
-handle_struct_read_format(u64 data_head, u64 *data_tail, pe_mmap_t *perf_mmap, int read_format)
+handle_struct_read_format(
+    u64 data_head,
+    u64 *data_tail,
+    pe_mmap_t *perf_mmap,
+    int read_format,
+    perf_mmap_data_t *mmap_info)
 {
-  u64 value, id, nr, time_enabled, time_running;
-
   if (read_format & PERF_FORMAT_GROUP) {
-    perf_read_u64(data_head, data_tail, perf_mmap, &nr);
+    perf_read_u64(data_head, data_tail, perf_mmap, &mmap_info->samples.nr);
   } else {
-    perf_read_u64(data_head, data_tail, perf_mmap, &value);
+    mmap_info->samples.nr = 1;
+    perf_read_u64(data_head, data_tail, perf_mmap, &mmap_info->samples.values[0].value);
   }
 
   if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
-    perf_read_u64(data_head, data_tail, perf_mmap, &time_enabled);
+    perf_read_u64(data_head, data_tail, perf_mmap, &mmap_info->samples.time_enabled);
   }
   if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-    perf_read_u64(data_head, data_tail, perf_mmap, &time_running);
+    perf_read_u64(data_head, data_tail, perf_mmap, &mmap_info->samples.time_running);
   }
 
   if (read_format & PERF_FORMAT_GROUP) {
     int i;
-    for(i=0;i<nr;i++) {
-      perf_read_u64(data_head, data_tail, perf_mmap, &value);
+    for(i=0;i<mmap_info->samples.nr;i++) {
+      perf_read_u64(data_head, data_tail, perf_mmap, &mmap_info->samples.values[i].value);
 
       if (read_format & PERF_FORMAT_ID) {
-        perf_read_u64(data_head, data_tail, perf_mmap, &id);
+        perf_read_u64(data_head, data_tail, perf_mmap, &mmap_info->samples.values[i].id);
       }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0)
+      if (read_format & PERF_FORMAT_LOST) {
+        perf_read_u64(data_head, data_tail, perf_mmap, &mmap_info->samples.values[i].lost);
+      }
+#endif
     }
   }
   else {
     if (read_format & PERF_FORMAT_ID) {
-      perf_read_u64(data_head, data_tail, perf_mmap, &id);
+      perf_read_u64(data_head, data_tail, perf_mmap, &mmap_info->samples.values[0].id);
     }
   }
 }
@@ -294,7 +303,7 @@ parse_record_buffer(u64 data_head, u64 *data_tail,
         if (sample_type & PERF_SAMPLE_READ) {
           // to be used by datacentric event
           handle_struct_read_format(data_head, data_tail, current_perf_mmap,
-              attr->read_format);
+              attr->read_format, mmap_info);
           data_read++;
         }
         if (sample_type & PERF_SAMPLE_CALLCHAIN) {
@@ -331,7 +340,7 @@ parse_record_buffer(u64 data_head, u64 *data_tail,
         }
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0)
-        // only available since kernel 3.19
+        // only available since kernel 3.13
         if (sample_type & PERF_SAMPLE_TRANSACTION) {
           data_read++;
         }
@@ -346,7 +355,7 @@ parse_record_buffer(u64 data_head, u64 *data_tail,
 }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
-// special parser for smaple_id
+// special parser for sample_id
 // any event that used sample_id_all or perf_record_misc_switch
 // needs to be parsed here
 static int

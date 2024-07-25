@@ -242,6 +242,7 @@ endif
 if has_perf_events
   _my_base_files += files(
     'sample-sources/perf/event_custom.c',
+    'sample-sources/perf/event_name_parser.c',
     'sample-sources/perf/linux_perf.c',
     'sample-sources/perf/perf-util.c',
     'sample-sources/perf/perf_event_open.c',

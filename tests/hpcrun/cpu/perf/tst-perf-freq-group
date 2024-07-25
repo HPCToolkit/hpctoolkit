@@ -1,0 +1,25 @@
+#!/bin/sh -ex
+
+# SPDX-FileCopyrightText: 2024 Rice University
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+hpcproftt="$1"
+hpcrun="$2"
+tstexe_1loop="$3"
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -ge 3 ]; then exit 77; fi
+
+"$hpcrun" -o "$tmpdir"/m -e '{perf::cpu-clock,perf::task-clock}'@f100 "$tstexe_1loop"
+
+for hpcfile in ${tmpdir}/m/*.hpcrun; do
+    echo "Checking $hpcfile with $hpcproftt"
+    num_metrics=$("$hpcproftt" -g $hpcfile  | grep "val-fmt" | wc -l)
+    if [ "$num_metrics" -ne 2 ]; then
+        exit 78
+    fi
+done

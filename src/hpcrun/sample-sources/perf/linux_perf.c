@@ -84,12 +84,11 @@
 #include "perf_mmap.h"        // api for parsing mmapped buffer
 #include "perf_skid.h"
 #include "perf_event_open.h"
-
+#include "event_name_parser.h"
 #include "event_custom.h"     // api for pre-defined events
+#include "kernel_blocking.h"  // api for predefined kernel blocking event
 
 #include "../display.h" // api to display available events
-
-#include "kernel_blocking.h"  // api for predefined kernel blocking event
 
 #include "../../../common/lean/compress.h"
 
@@ -149,7 +148,7 @@ struct event_threshold_s {
 //******************************************************************************
 
 static bool
-perf_thread_init(event_info_t *event, event_thread_t *et);
+perf_thread_init(event_info_t *event, event_thread_t *et, int groupd_fd);
 
 static void
 perf_thread_fini(int nevents, event_thread_t *event_thread);
@@ -173,7 +172,7 @@ static const struct timespec nowait = {0, 0};
 
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
-static event_info_t  *event_desc = NULL;
+static event_info_t  event_desc[MAX_EVENTS];
 
 static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
 
@@ -207,7 +206,7 @@ perf_was_finalized
  * Enable all the counters
  */
 static void
-perf_start_all(int nevents, event_thread_t *event_thread)
+perf_start_all(int nevents, event_thread_t *event_thread, bool need_reset)
 {
   int i, ret;
 
@@ -215,6 +214,9 @@ perf_start_all(int nevents, event_thread_t *event_thread)
     int fd = event_thread[i].fd;
     if (fd<0)
       continue;
+
+    if (need_reset)
+      ioctl(fd, PERF_EVENT_IOC_RESET, 0);
 
     ret = ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
 
@@ -342,8 +344,6 @@ perf_init()
 }
 
 
-
-
 //----------------------------------------------------------
 // initialize an event
 //  event_num: event number
@@ -351,28 +351,32 @@ perf_init()
 //  threshold: sampling threshold
 //----------------------------------------------------------
 static bool
-perf_thread_init(event_info_t *event, event_thread_t *et)
+perf_thread_init(event_info_t *event, event_thread_t *et, int group_fd)
 {
   et->event = event;
+
   // ask sys to "create" the event
   // it returns -1 if it fails.
   et->fd = perf_event_open(&event->attr,
-            THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
-  TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: %d, type: %d, period: %d, freq: %d",
+            THREAD_SELF, CPU_ANY, group_fd, PERF_FLAGS);
+  TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: 0x%x, type: %d, period: %d, freq: %d, group: %d",
         et->fd, event->attr.precise_ip, event->attr.config,
-        event->attr.type, event->attr.sample_freq, event->attr.freq);
+        event->attr.type, event->attr.sample_freq, event->attr.freq, group_fd);
 
   // check if perf_event_open is successful
   if (et->fd < 0) {
     EMSG("Linux perf event open failed"
          " id: %d, fd: %d, skid: %d,"
-         " config: %d, type: %d, sample_freq: %d,"
-         " freq: %d, error: %s",
-         event->id, et->fd, event->attr.precise_ip,
-         event->attr.config, event->attr.type, event->attr.sample_freq,
-         event->attr.freq, strerror(errno));
+         " type: %d, sample_freq: %d,"
+         " freq: %d, group: %d, error: %d %s",
+         event->attr.config, et->fd, event->attr.precise_ip,
+         event->attr.type, event->attr.sample_freq,
+         event->attr.freq, group_fd, errno, strerror(errno));
     return false;
   }
+  // store the id of this event.
+  // This is only useful if the event is within a group of events
+  ioctl(et->fd, PERF_EVENT_IOC_ID, &et->id);
 
   // create mmap buffer for this file
   et->mmap = set_mmap(et->fd);
@@ -382,7 +386,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   int ret  = fcntl(et->fd, F_SETFL, flag | O_ASYNC );
   if (ret == -1) {
     EMSG("Can't set notification for event %d, fd: %d: %s",
-      event->id, et->fd, strerror(errno));
+      event->attr.config, et->fd, strerror(errno));
   }
 
   // need to set PERF_SIGNAL to this file descriptor
@@ -390,7 +394,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   ret = fcntl(et->fd, F_SETSIG, PERF_SIGNAL);
   if (ret == -1) {
     EMSG("Can't set signal for event %d, fd: %d: %s",
-      event->id, et->fd, strerror(errno));
+      event->attr.config, et->fd, strerror(errno));
   }
 
   // set file descriptor owner to this specific thread
@@ -400,13 +404,13 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   ret = fcntl(et->fd, F_SETOWN_EX, &owner);
   if (ret == -1) {
     EMSG("Can't set thread owner for event %d, fd: %d: %s",
-      event->id, et->fd, strerror(errno));
+      event->attr.config, et->fd, strerror(errno));
   }
 
   ret = ioctl(et->fd, PERF_EVENT_IOC_RESET, 0);
   if (ret == -1) {
     EMSG("Can't reset event %d, fd: %d: %s",
-      event->id, et->fd, strerror(errno));
+      event->attr.config, et->fd, strerror(errno));
   }
   return (ret >= 0);
 }
@@ -468,27 +472,34 @@ get_fd_index(int nevents, int fd, event_thread_t *event_thread)
 }
 
 
-static sample_val_t*
-record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
-    void* context, sample_val_t* sv)
+static event_thread_t*
+perf_get_event_thread_from_id(int id, event_thread_t *event_thread, int nevents)
 {
-  if (current == NULL || current->event == NULL || current->event->perf_metric_id < 0)
-    return NULL;
+  for(int i=0; i<nevents; i++) {
+    if (event_thread[i].id == id)
+      return &event_thread[i];
+  }
+  return NULL;
+}
 
-  // ----------------------------------------------------------------------------
-  // for event with frequency, we need to increase the counter by its period
-  // sampling taken by perf event kernel
-  // ----------------------------------------------------------------------------
-  uint64_t metric_inc = 1;
-  if (current->event->attr.freq==1 && mmap_data->period > 0)
-    metric_inc = mmap_data->period;
+
+static sample_val_t*
+record_sample(
+  event_thread_t *events,
+  int num_events,
+  perf_mmap_data_t *mmap_data,
+  void* context,
+  sample_val_t* sv)
+{
+  if (events == NULL)
+    return NULL;
 
   // ----------------------------------------------------------------------------
   // record time enabled and time running
   // if the time enabled is not the same as running time, then it's multiplexed
   // ----------------------------------------------------------------------------
-  u64 time_enabled = current->mmap->time_enabled;
-  u64 time_running = current->mmap->time_running;
+  u64 time_enabled = mmap_data->samples.time_enabled;
+  u64 time_running = mmap_data->samples.time_running;
 
   // ----------------------------------------------------------------------------
   // the estimate count = raw_count * scale_factor
@@ -496,49 +507,72 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // ----------------------------------------------------------------------------
   double scale_f = (double) time_enabled / time_running;
 
-  // for period-based sampling with no multiplexing, there is no need to adjust
-  // the scale. Also for software event. For them, the value of time_enabled
-  //  and time_running are incorrect (the ratio is less than 1 which doesn't make sense)
-
-  if (scale_f < 1.0)
-    scale_f = 1.0;
-
-  double counter = scale_f * metric_inc;
-
   // ----------------------------------------------------------------------------
-  // set additional information for the metric description
+  // For every members of the group: update the cct and add callchain if necessary
   // ----------------------------------------------------------------------------
-  metric_desc_t *m = hpcrun_id2metric_linked(current->event->hpcrun_metric_id);
-  metric_aux_info_t *info_aux = &m->aux_info;
+  int num_records = mmap_data->samples.nr;
 
-  // check if this event is multiplexed. we need to notify the user that a multiplexed
-  //  event is not accurate at all.
-  // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
-  //       we need to use a range of value to see if it's multiplexed or not
-  info_aux->is_multiplexed    |= (scale_f>PERF_MULTIPLEX_RANGE);
+  for (int i=0; i<num_records; i++) {
+    int id = mmap_data->samples.values[i].id;
+    event_thread_t* current = perf_get_event_thread_from_id(id, events, num_events);
+    if (current == NULL) {
+      EEMSG("Invalid perf_event sampling id: %d", id);
+    }
 
-  // case of multiplexed or frequency-based sampling, we need to store the mean and
-  // the standard deviation of the sampling period
-  info_aux->num_samples++;
-  const double delta    = counter - info_aux->threshold_mean;
-  info_aux->threshold_mean += delta / info_aux->num_samples;
+    // for period-based sampling with no multiplexing, there is no need to adjust
+    // the scale. Also for software event. For them, the value of time_enabled
+    //  and time_running are incorrect (the ratio is less than 1 which doesn't make sense)
 
-  // ----------------------------------------------------------------------------
-  // update the cct and add callchain if necessary
-  // ----------------------------------------------------------------------------
-  int time_based_metric = (hpcrun_cycles_metric_id == current->event->hpcrun_metric_id) ? 1 : 0;
-  sampling_info_t info = {
-    .sample_clock = 0,
-    .sample_data = mmap_data,
-    .sampling_period = hpcrun_cycles_cmd_period,
-    .is_time_based_metric = time_based_metric
-  };
-  *sv = hpcrun_sample_callpath(context, current->event->hpcrun_metric_id,
-        (hpcrun_metricVal_t) {.r=counter},
-        0/*skipInner*/, 0/*isSync*/, &info);
+    if (scale_f < 1.0)
+      scale_f = 1.0;
 
-  blame_shift_apply(current->event->hpcrun_metric_id, sv->sample_node,
-                    counter /*metricIncr*/);
+    // since Linux perf_events store the aggregate value instead of the new one,
+    // we have to subtract it with the previous value:
+    //      metric value = the current aggregate value - previous aggregate one
+    u64 value = mmap_data->samples.values[i].value - current->old_value;
+    double counter = scale_f * (double) value;
+
+    // store the current value for the next sample usage
+    current->old_value = mmap_data->samples.values[i].value;
+
+    // ----------------------------------------------------------------------------
+    // set additional information for the metric description
+    // ----------------------------------------------------------------------------
+    metric_desc_t *m = hpcrun_id2metric_linked(current->event->hpcrun_metric_id);
+    metric_aux_info_t *info_aux = &m->aux_info;
+
+    // check if this event is multiplexed. we need to notify the user that a multiplexed
+    //  event is not accurate at all.
+    // Note: perf event can report the scale to be close to 1 (like 1.02 or 0.99).
+    //       we need to use a range of value to see if it'sp u multiplexed or not
+    info_aux->is_multiplexed    |= (scale_f>PERF_MULTIPLEX_RANGE);
+
+    // case of multiplexed or frequency-based sampling, we need to store the mean and
+    // the standard deviation of the sampling period
+    info_aux->num_samples++;
+    const double delta = counter - info_aux->threshold_mean;
+    info_aux->threshold_mean += delta / info_aux->num_samples;
+
+    int time_based_metric = (hpcrun_cycles_metric_id == current->event->hpcrun_metric_id) ? 1 : 0;
+
+    sampling_info_t info = {
+      .sample_clock = 0,
+      .sample_data = mmap_data,
+      .sampling_period = hpcrun_cycles_cmd_period,
+      .is_time_based_metric = time_based_metric
+    };
+    // when i > 0, we store the value of the members of the group
+    int metric_id = current->event->hpcrun_metric_id ;
+
+    *sv = hpcrun_sample_callpath(context, metric_id,
+          (hpcrun_metricVal_t) {.r=counter},
+          0/*skipInner*/, 0/*isSync*/, &info);
+
+    blame_shift_apply(metric_id, sv->sample_node,
+                      counter /*metricIncr*/);
+
+    TMSG(LINUX_PERF, "metric %d: %f  =  %d  x %f", metric_id, counter, value, scale_f);
+  }
 
   return sv;
 }
@@ -644,12 +678,11 @@ METHOD_FN(start)
   // must unblock it when starting.
   auditor_exports->pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 
-
   int nevents        = (self->evl).nevents;
   event_thread_t *et = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
 
   //  enable all perf_events
-  perf_start_all(nevents, et);
+  perf_start_all(nevents, et, true);
 
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
@@ -751,28 +784,22 @@ METHOD_FN(supports_event, const char *ev_str)
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
   }
-
-  // extract the event name and the threshold (unneeded in this phase)
-  long thresh;
-  char *ev_tmp;
-
-  // check if the user specifies explicitly precise event
-  perf_skid_parse_event(ev_str, &ev_tmp);
-
-  hpcrun_extract_ev_thresh(ev_tmp, strlen(ev_tmp), ev_tmp, &thresh, 0) ;
-
-  // check if the event is a predefined event
-  if (event_custom_find(ev_tmp) != NULL) {
-    free(ev_tmp);
+  if (event_custom_find(ev_str) != NULL)
     return true;
+
+  // not a custom event, check if it's a perf_event or group of perf_events
+  perf_event_name_t perf_obj;
+  int num_events = perf_util_parse_eventname(ev_str, &perf_obj);
+
+  for (int i=0; i<num_events; i++) {
+    if (!pfmu_isSupported(perf_obj.event_names[i])) {
+      return false;
+    }
   }
+  perf_util_free_eventname(&perf_obj);
 
-  // this is not a predefined event, we need to consult to perfmon (if enabled)
-  bool retval = pfmu_isSupported(ev_tmp) >= 0;
-  free(ev_tmp);
-  return retval;
+  return true;
 }
-
 
 
 // --------------------------------------------------------------------------
@@ -787,24 +814,14 @@ METHOD_FN(process_event_list, int lush_metrics)
   char *event;
 
   char *evlist = METHOD_CALL(self, get_event_str);
-  int num_events = 0;
-
-  // TODO: stupid way to count the number of events
-
-  for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
 
   // setup all requested events
 
-  size_t size = sizeof(event_info_t) * num_events;
-  event_desc = (event_info_t*) hpcrun_malloc(size);
-  if (event_desc == NULL) {
-          EMSG("Unable to allocate %d bytes", size);
-          return;
-  }
+  const size_t size = sizeof(event_info_t) * MAX_EVENTS;
   memset(event_desc, 0, size);
 
   lnux_kind = hpcrun_metrics_new_kind();
-  int i=0;
+  int num_events = 0;
 
   set_default_threshold();
 
@@ -812,7 +829,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   // for each perf's event, create the metric descriptor which will be used later
   // during thread initialization for perf event creation
   // ----------------------------------------------------------------------
-  for (event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
+  for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char *name;
     long threshold = 1;
 
@@ -826,91 +843,104 @@ METHOD_FN(process_event_list, int lush_metrics)
     // need a special case if we have our own customized  predefined  event
     // This "customized" event will use one or more perf events
     // ------------------------------------------------------------
-    event_desc[i].metric_custom = event_custom_find(name);
-    event_desc[i].perf_metric_id = i;
+    event_desc[num_events].metric_custom = event_custom_find(name);
 
-    if (event_desc[i].metric_custom != NULL) {
-      if (event_desc[i].metric_custom->register_fn != NULL) {
+    if (event_desc[num_events].metric_custom != NULL) {
+      if (event_desc[num_events].metric_custom->register_fn != NULL) {
         // special registration for customized event
-        event_desc[i].metric_custom->register_fn( lnux_kind, &event_desc[i] );
-        METHOD_CALL(self, store_event, event_desc[i].attr.config, threshold);
+        event_desc[num_events].metric_custom->register_fn( lnux_kind, &event_desc[num_events] );
+        METHOD_CALL(self, store_event, event_desc[num_events].attr.config, threshold);
         continue;
       }
     }
 
-    struct perf_event_attr *event_attr = &(event_desc[i].attr);
+    // we need to tokenize this group and ensure the first event is the leader
+    // the first event to appear in the group is the leader
+    // if we have:
+    //     -e cycles,instructions,cs
+    // then the leader is cycles
+    perf_event_name_t perf_obj;
+    int num_events_in_group = perf_util_parse_eventname(name, &perf_obj);
 
-    int isPMU = perf_get_pmu_support(name, event_attr);
-    if (isPMU < 0)
-      // case for unknown event
-      // it is impossible to be here, unless the code is buggy
-      continue;
+    int leader = num_events;
 
-    bool is_period = (period_type == 1);
+    for(int i=0; i<num_events_in_group; i++) {
+      struct perf_event_attr *event_attr = &(event_desc[num_events].attr);
 
-    // ------------------------------------------------------------
-    // initialize the generic perf event attributes for this event
-    // all threads and file descriptor will reuse the same attributes.
-    // ------------------------------------------------------------
-    perf_util_attr_init(event, event_attr, is_period, threshold, 0);
-
-    // ------------------------------------------------------------
-    // initialize the property of the metric
-    // if the metric's name has "CYCLES" it mostly a cycle metric
-    //  this assumption is not true, but it's quite closed
-    // ------------------------------------------------------------
-
-    //TODO: what about CYCLES_NOT_IN_HALT?
-    int isCycles = 0;
-    if (strcasestr(name, "CYCLES") != NULL) {
-      prop = metric_property_cycles;
-      blame_shift_source_register(bs_type_cycles);
-      isCycles = 1;
-    } else {
-      prop = metric_property_none;
-    }
-
-    char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
-                                   // since the OS will free it, we don't have to do it in hpcrun
-    const char *desc = pfmu_getEventDescription(name);
-
-    // ------------------------------------------------------------
-    // if we use frequency (event_type=1) then the period is not deterministic,
-    // it can change dynamically. In this case, the period is 1
-    // ------------------------------------------------------------
-    int metric_period = 1;
-    if (is_period) {
-      // using frequency : the threshold is always 1,
-      //                   since the period is determine dynamically
-      metric_period = threshold;
-    }
-
-    // set the metric for this perf event
-    event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
-            desc, MetricFlags_ValFmt_Real, metric_period, prop);
-
-    if (isCycles) {
-      hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_FLAG);
-      hpcrun_cycles_metric_id = event_desc[i].hpcrun_metric_id;
-      if (is_period) {
-        // period is specified in the number of cycles per sample
-        hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 * threshold / HPCRUN_CPU_FREQUENCY);
-      } else {
-        // default is frequency
-        // frequency is specified in samples per second
-        hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 / threshold);
+      int isPMU = perf_get_pmu_support(perf_obj.event_names[i], event_attr);
+      if (isPMU < 0) {
+        // case for unknown event
+        // it is impossible to be here, unless the code is buggy
+        TMSG(LINUX_PERF,"process_event_list: unknown event = %s", perf_obj.event_names[i]);
+        continue;
       }
+
+      bool is_period = (period_type == 1);
+
+      // ------------------------------------------------------------
+      // initialize the generic perf event attributes for this event
+      // all threads and file descriptor will reuse the same attributes.
+      // ------------------------------------------------------------
+      if (leader == num_events)
+        // initialize the leader
+        perf_util_attr_init(event, event_attr, is_period, threshold, 0);
+      else
+        // member of group init
+        perf_util_attr_group_init(event_attr);
+
+      // ------------------------------------------------------------
+      // initialize the property of the metric
+      // if the metric's name has "CYCLES" it mostly a cycle metric
+      //  this assumption is not true, but it's quite closed
+      // ------------------------------------------------------------
+
+      //TODO: what about CYCLES_NOT_IN_HALT?
+      int isCycles = 0;
+      if (strcasestr(perf_obj.event_names[i], "CYCLES") != NULL) {
+        prop = metric_property_cycles;
+        blame_shift_source_register(bs_type_cycles);
+        isCycles = 1;
+      } else {
+        prop = metric_property_none;
+      }
+
+      const char *desc = pfmu_getEventDescription(perf_obj.event_names[i]);
+
+      // ------------------------------------------------------------
+      // if we use frequency (event_type=1) then the period is not deterministic,
+      // it can change dynamically. In this case, the period is 1
+      // ------------------------------------------------------------
+      int metric_period = 1;
+
+      // set the metric for this perf event
+      int metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, perf_obj.event_names[i],
+              desc, MetricFlags_ValFmt_Real, metric_period, prop);
+      event_desc[num_events].hpcrun_metric_id = metric_id;
+
+      if (isCycles) {
+        hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_FLAG);
+        hpcrun_cycles_metric_id = metric_id;
+        if (is_period) {
+          // period is specified in the number of cycles per sample
+          hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 * threshold / HPCRUN_CPU_FREQUENCY);
+        } else {
+          // default is frequency
+          // frequency is specified in samples per second
+          hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 / threshold);
+        }
+      }
+      metric_desc_t *m = hpcrun_id2metric_linked(metric_id);
+
+      m->is_frequency_metric = (event_desc[num_events].attr.freq == 1);
+      event_desc[num_events].metric_desc  = m;
+      event_desc[num_events].leader_index = leader;
+
+      METHOD_CALL(self, store_event, event_attr->config, metric_period);
+
+      num_events++;
     }
-
-    METHOD_CALL(self, store_event, event_attr->config, metric_period);
-    free(name);
   }
-  while (i--) {
-    metric_desc_t *m = hpcrun_id2metric_linked(event_desc[i].hpcrun_metric_id);
 
-    m->is_frequency_metric = (event_desc[i].attr.freq == 1);
-    event_desc[i].metric_desc = m;
-  }
   hpcrun_close_kind(lnux_kind);
 
   if (num_events > 0)
@@ -938,7 +968,9 @@ METHOD_FN(gen_event_set, int lush_metrics)
   // -------------------------------------------------------------------------
 
   // a list of event information, private for each thread
-  event_thread_t  *event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);
+  size_t size = sizeof(event_thread_t) * nevents;
+  event_thread_t  *event_thread = (event_thread_t*) hpcrun_malloc(size);
+  memset(event_thread, 0, size);
 
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_info[self->sel_idx].ptr = event_thread;
@@ -950,10 +982,19 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
   for (int i=0; i<nevents; i++)
   {
+    event_info_t *ev_info = &event_desc[i];
+    event_thread_t *ev_thread = &event_thread[i];
+
+    int group_fd = -1;
+    if (ev_info->leader_index != i)
+      group_fd = event_thread[ev_info->leader_index].fd;
+
     // initialize this event. If it's valid, we set the metric for the event
-    if (!perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) {
-      EEMSG("Failed to initialize the %s event.: %s", event_desc[i].metric_desc->name,
-             strerror(errno));
+    if (!perf_thread_init( ev_info, ev_thread, group_fd) ) {
+      if (errno == EINVAL)
+        EEMSG("Error to initialize %s: Too many events or %s", event_desc[i].metric_desc->name, strerror(errno));
+      else
+        EEMSG("Error to initialize %s: %s", event_desc[i].metric_desc->name, strerror(errno));
       exit(1);
     }
   }
@@ -995,7 +1036,6 @@ read_fd(int fd)
   }
   return -1;
 }
-
 
 
 /***************************************************************************
@@ -1064,7 +1104,7 @@ perf_event_handler(
   if (siginfo->si_code < 0  ||  siginfo->si_fd < 0) {
     TMSG(LINUX_PERF, "signal si_code %d < 0 indicates not from kernel",
          siginfo->si_code);
-    perf_start_all(nevents, event_thread);
+    perf_start_all(nevents, event_thread, false);
     hpcrun_safe_exit();
 
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
@@ -1077,13 +1117,12 @@ perf_event_handler(
   // if sampling disabled explicitly for this thread, skip all processing
   // ----------------------------------------------------------------------------
   if (hpcrun_suppress_sample()) {
-    perf_start_all(nevents, event_thread);
+    perf_start_all(nevents, event_thread, false);
     hpcrun_safe_exit();
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor that the signal has been handled
   }
-
   int fd = siginfo->si_fd;
 
   // ----------------------------------------------------------------------------
@@ -1100,7 +1139,7 @@ perf_event_handler(
     TMSG(LINUX_PERF, "signal si_code %d with fd %d: unknown perf event",
        siginfo->si_code, fd);
 
-    perf_start_all(nevents, event_thread);
+    perf_start_all(nevents, event_thread, false);
     hpcrun_safe_exit();
 
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
@@ -1111,7 +1150,7 @@ perf_event_handler(
 
   if (current == NULL || current->mmap == NULL || current->fd < 0) {
     TMSG(LINUX_PERF, "Corrupt data for fd: %d, current->fd: %d", fd, current->fd);
-    perf_start_all(nevents, event_thread);
+    perf_start_all(nevents, event_thread, false);
     hpcrun_safe_exit();
 
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
@@ -1137,13 +1176,13 @@ perf_event_handler(
     memset(&sv, 0, sizeof(sample_val_t));
 
     if (mmap_data.header_type == PERF_RECORD_SAMPLE)
-      record_sample(current, &mmap_data, context, &sv);
+      record_sample(event_thread, nevents, &mmap_data, context, &sv);
 
     kernel_block_handler(current, sv, &mmap_data);
 
   } while (more_data);
 
-  perf_start_all(nevents, event_thread);
+  perf_start_all(nevents, event_thread, false);
 
   hpcrun_safe_exit();
 
