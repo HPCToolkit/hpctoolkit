@@ -20,7 +20,6 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_opencl, 'gpu=opencl', ''],
   suite: ['hpcrun', 'opencl'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 test(
   'Measurement of tstexe-vecadd-opencl with tracing produces profiles',
@@ -28,7 +27,6 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_opencl, 'gpu=opencl', '-t'],
   suite: ['hpcrun', 'opencl'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 test(
   'Measurement of tstexe-vecadd-opencl with boosted tracing produces profiles',
@@ -36,5 +34,4 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_opencl, 'gpu=opencl', '-tt'],
   suite: ['hpcrun', 'opencl'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )

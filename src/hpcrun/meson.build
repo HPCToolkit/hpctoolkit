@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-subdir('fnbounds-server')
-
 _hpcrun_libs = []
 
 _unw_common_files = files(
@@ -272,8 +270,9 @@ endif
 
 _my_dynamic_files = files(
   'custom-init-dynamic.c',
-  'fnbounds/fnbounds_client.c',
+  'fnbounds/fnbounds.c',
   'fnbounds/fnbounds_dynamic.c',
+  'fnbounds/scan.c',
   'foil/hpctoolkit-preload.c',
   'foil/mpi-preload.c',
   'foil/ompt-preload.c',
@@ -288,8 +287,9 @@ _my_dynamic_files = files(
 )
 _my_linux_dynamic_files = files(
   'custom-init-dynamic.c',
-  'fnbounds/fnbounds_client.c',
+  'fnbounds/fnbounds.c',
   'fnbounds/fnbounds_dynamic.c',
+  'fnbounds/scan.c',
   'foil/hpctoolkit-preload.c',
   'foil/mpi-preload.c',
   'foil/ompt-preload.c',
@@ -504,6 +504,7 @@ _hpcrun_libs += shared_module(
     rt_dep,
     lzma_dep,
     libelf_dep,
+    libdw_dep,
     perfmon_dep,
     xed_dep,
     papi_dep,
@@ -640,12 +641,6 @@ hpcrun = executable(
   install: true,
 )
 
-# Make sure the hpcrun launcher is available in devenv
-_devenv = environment()
-_devenv.prepend('PATH', meson.current_build_dir())
-_devenv.set('HPCRUN_FNBOUNDS_CMD', hpcfnbounds.full_path())
-meson.add_devenv(_devenv)
-
 # Build and install the client API
 install_headers('hpctoolkit.h')
 hpctoolkit_client_lib = library(
@@ -656,10 +651,5 @@ hpctoolkit_client_lib = library(
 )
 
 # Settings needed for dependencies
-hpcrun_test_depends = [hpcfnbounds] + _hpcrun_libs
+hpcrun_test_depends = _hpcrun_libs
 test_depends += hpcrun_test_depends
-_env = {'HPCRUN_FNBOUNDS_CMD': hpcfnbounds.full_path()}
-hpcrun_test_env = environment(_env)
-foreach k, v : _env
-  test_env.set(k, v)
-endforeach

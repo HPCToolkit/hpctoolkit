@@ -13,7 +13,6 @@
 #include "cct/cct.h"
 #include "loadmap.h"
 #include "fnbounds/fnbounds_interface.h"
-#include "fnbounds/fnbounds_file_header.h"
 #include "hpcrun_stats.h"
 #include "sample_event.h"
 #include "epoch.h"
@@ -101,8 +100,7 @@ hpcrun_dso_new()
 
 
 dso_info_t*
-hpcrun_dso_make(const char* name, void** table,
-                struct fnbounds_file_header* fh,
+hpcrun_dso_make(const char* name, const FnboundsResponse* fnbres,
                 void* startaddr, void* endaddr)
 {
   dso_info_t* x = hpcrun_dso_new();
@@ -113,22 +111,22 @@ hpcrun_dso_make(const char* name, void** table,
   x->name = (char*) malloc(namelen);
   strcpy(x->name, name);
 
-  x->table = table;
   x->nsymbols = 0;
   x->start_to_ref_dist = 0;
   x->start_addr = startaddr;
   x->end_addr = endaddr;
 
-  if (fh) {
-    x->nsymbols = (unsigned long)fh->num_entries;
-    x->is_relocatable = fh->is_relocatable;
+  if (fnbres != NULL) {
+    x->table = fnbres->entries;
+    x->nsymbols = (unsigned long)fnbres->num_entries;
+    x->is_relocatable = fnbres->is_relocatable;
 
     // Cf. hpcrun_normalize_ip(): Given ip, compute lm_ip:
     //   lm_ip = (ip - lm_mapped_start) + lm_ip_ref
     //         = ip - (lm_mapped_start - lm_ip_ref)
     //         = ip - start_to_ref_dist
-    if (fh->is_relocatable) {
-      x->start_to_ref_dist = (uintptr_t)startaddr - fh->reference_offset;
+    if (fnbres->is_relocatable) {
+      x->start_to_ref_dist = (uintptr_t)startaddr - fnbres->reference_offset;
     }
   }
   x->next = NULL;

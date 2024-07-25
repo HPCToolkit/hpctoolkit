@@ -22,7 +22,6 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_hip, ''] + _preargs,
   suite: ['hpcrun', 'rocm'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 test(
   'Measurement of tstexe-vecadd-hip with tracing produces profiles',
@@ -30,7 +29,6 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_hip, '-t'] + _preargs,
   suite: ['hpcrun', 'rocm'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 test(
   'Measurement of tstexe-vecadd-hip with boosted tracing produces profiles',
@@ -38,5 +36,4 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_hip, '-tt'] + _preargs,
   suite: ['hpcrun', 'rocm'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )

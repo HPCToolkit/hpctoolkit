@@ -52,8 +52,7 @@
 //*********************************************************************
 
 #include "fnbounds_interface.h"
-#include "fnbounds_file_header.h"
-#include "client.h"
+#include "fnbounds.h"
 
 #include "../main.h"
 #include "../hpcrun_stats.h"
@@ -134,8 +133,6 @@ fnbounds_init(const char *executable_name)
 {
   if (hpcrun_get_disabled()) return 0;
 
-  hpcrun_syserv_init();
-
   return 0;
 }
 
@@ -203,8 +200,6 @@ void
 fnbounds_fini()
 {
   if (hpcrun_get_disabled()) return;
-
-  hpcrun_syserv_fini();
 }
 
 
@@ -241,9 +236,7 @@ fnbounds_fetch_executable_table(void)
 static dso_info_t*
 fnbounds_compute(const char* incoming_filename, void* start, void* end)
 {
-  struct fnbounds_file_header fh;
   char filename[PATH_MAX + 1];
-  void** nm_table;
 
   // typically, we use the filename for the query to the system server. however,
   // for [vdso], the filename will be the name of a file in the measurements
@@ -283,25 +276,25 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
     pathname_for_query = filename;
   }
 
-  nm_table = (void**) hpcrun_syserv_query(pathname_for_query, &fh);
-  if (nm_table == NULL) {
-    return hpcrun_dso_make(filename, NULL, NULL, start, end);
+  FnboundsResponse fnbres = fnb_get_funclist(pathname_for_query);
+  if (fnbres.entries == NULL) {
+    return hpcrun_dso_make(filename, NULL, start, end);
   }
 
-  if (fh.num_entries < 1) {
+  if (fnbres.num_entries < 1) {
     EMSG("fnbounds returns no symbols for file %s, (all intervals poisoned)", filename);
-    return hpcrun_dso_make(filename, NULL, NULL, start, end);
+    return hpcrun_dso_make(filename, NULL, start, end);
   }
 
   //
   // Note: we no longer care if binary is stripped.
   //
-  if (fh.is_relocatable) {
-    if (nm_table[0] >= start && nm_table[0] <= end) {
+  if (fnbres.is_relocatable) {
+    if (fnbres.entries[0] >= start && fnbres.entries[0] <= end) {
       // segment loaded at its preferred address
-      fh.is_relocatable = 0;
+      fnbres.is_relocatable = 0;
     }
   }
 
-  return hpcrun_dso_make(filename, nm_table, &fh, start, end);
+  return hpcrun_dso_make(filename, &fnbres, start, end);
 }

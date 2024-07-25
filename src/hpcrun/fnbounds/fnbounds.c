@@ -11,6 +11,7 @@
 #include  "scan.h"
 
 #include "../../common/hpctoolkit-version.h"
+#include "../messages/messages.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -19,12 +20,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-
-// HACK
-#define ENABLED(x) (1)
-#define TMSG(f, ...) do { fprintf(stderr, #f ": " __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
-#define ETMSG(f, ...) do { fprintf(stderr, #f ": " __VA_ARGS__); fprintf(stderr, "\n"); } while (0)
-#define hpcrun_abort(...) do { fprintf(stderr, __VA_ARGS__); exit(1); } while(0)
 
 #define MAX_FUNC          (65536)
 #define TB_SIZE                 (512)

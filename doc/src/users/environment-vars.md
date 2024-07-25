@@ -286,9 +286,3 @@ report when problems arise.
   Caution: for a large-scale parallel execution, this might cause a
   core dump for each process, depending upon the settings for your
   system. Be careful!
-
-`HPCRUN_FNBOUNDS_CMD`
-
-: For dynamically-linked executables, this environment variable must
-  be set to the full path of a copy of HPCToolkit's hpcfnbounds
-  utility. There are presently two versions of this utility. One, known as `hpcfnbounds`, analyzes program load modules (the executable and shared libraries) using Dyninst to recover a table of addresses that represent the beginning of each function. A second version of the tool, known as `hpcfnbounds2`, was designed to compute the same set of addresses for a load module using only a lightweight inspection of the load module's symbol table and DWARF information. `hpcfnbounds2` is over a factor of ten faster and uses over a factor of 10 less memory than the original. `hpcfnbounds2` is the default. If `hpcfnbounds2` delivers an unsatisfactory result, a user can employ `hpcfnbounds` instead by setting this environment variable using the `--fnbounds` command line argument to `hpcrun`.

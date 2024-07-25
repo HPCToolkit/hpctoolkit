@@ -11,7 +11,6 @@ test(
   args: [hpctesttool, hpcrun, _example_tstexe],
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 test(
   'Pthread-blame event measures on @0@ w/o auditor'.format(_example_tstexe.name()),
@@ -19,5 +18,4 @@ test(
   args: [hpctesttool, hpcrun, _example_tstexe],
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )

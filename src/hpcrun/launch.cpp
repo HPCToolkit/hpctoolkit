@@ -190,16 +190,6 @@ Options to consider only when hpcrun causes an application to fail:
                        it is believed that the rewriting is causing the
                        application to fail.
 
-  --fnbounds-eager-shutdown
-                       Hpcrun uses a helper process 'hpcfnbounds' to calculate
-                       function bounds in each load module at runtime.  By
-                       default, hpcfnbounds is live throughout a program
-                       execution.  If your application runs out of memory when
-                       using hpcrun, you can use this option to have hpcrun shut
-                       down hpcfnbounds after analyzing an application's initial
-                       load modules and each dynamically-loaded shared library.
-                       Using this option will likely increase runtime overhead.
-
   --namespace-single   dlmopen may load a shared library into an alternate
                        namespace.  Use of dlmopen to create multiple namespaces
                        can cause an application to crash when using glibc < 2.32
@@ -269,7 +259,6 @@ int main(int argc, char* argv[]) {
   fs::path prefix = HPCTOOLKIT_INSTALL_PREFIX;
 
   // Paths are relative to HPCTOOLKIT (root install dir)
-  fs::path hpcfnbounds_dir = "libexec/hpctoolkit";
   fs::path hpcrun_dir = "lib/hpctoolkit";
 
   // On Cray Slingshot 11 systems, there is not yet complete support for demand paging on the
@@ -296,14 +285,8 @@ int main(int argc, char* argv[]) {
   fs::path here = argc > 0 ? fs::canonical("/proc/self/exe").parent_path() : fs::path();
   if (!here.empty() && fs::exists(here / "libhpcrun.so")) {
     // This is (almost certainly) the build directory, not the installed version.
-    // In this case, we don't have HPCTOOLKIT, HPCRUN_FNBOUNDS_CMD needs to be set,
-    // and hpcrun_dir is where the libs are built.
+    // In this case, we don't have HPCTOOLKIT, and hpcrun_dir is where the libs are built.
     hpcrun_dir = here;
-    hpcfnbounds_dir = "/nonexistent";
-    if (!fetchenv("HPCRUN_FNBOUNDS_CMD")) {
-      std::cerr << "hpcrun: Detected as in build directory, must have HPCRUN_FNBOUNDS_CMD set\n";
-      return 2;
-    }
   } else {
     // Use the usual method based around the install prefix.
     //
@@ -328,8 +311,6 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  if (hpcfnbounds_dir.is_relative())
-    hpcfnbounds_dir = HPCTOOLKIT / hpcfnbounds_dir;
   if (hpcrun_dir.is_relative())
     hpcrun_dir = HPCTOOLKIT / hpcrun_dir;
 
@@ -481,8 +462,6 @@ int main(int argc, char* argv[]) {
         return 1;
       }
       env["HPCRUN_TRACE"] = "2";
-    } else if (strmatch(arg, {"--fnbounds-eager-shutdown"})) {
-      env["HPCRUN_FNBOUNDS_SHUTDOWN"] = "1";
     } else if (strmatch(arg, {"-js", "--jobs-symtab"})) {
       // Deprecated
       popvalue();
@@ -625,12 +604,6 @@ int main(int argc, char* argv[]) {
   } else {
     audit_list.emplace_front(hpcrun_dir / "libhpcrun_audit.so");
   }
-
-  // Allow fnbounds command relative to hpcfnbounds_dir.
-  fs::path hpcfnbounds = fetchenv("HPCRUN_FNBOUNDS_CMD").value_or("hpcfnbounds");
-  if (hpcfnbounds.is_relative())
-    hpcfnbounds = hpcfnbounds_dir / hpcfnbounds;
-  env["HPCRUN_FNBOUNDS_CMD"] = hpcfnbounds.native();
 
   env["HPCRUN_AUDIT_MAIN_LIB"] = hpcrun_dir / "libhpcrun.so";
 

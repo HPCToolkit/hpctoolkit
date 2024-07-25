@@ -9,7 +9,6 @@ test(
   args: [hpcproftt, hpcrun, simple_tstexe],
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 
 test(
@@ -18,7 +17,6 @@ test(
   args: [hpcproftt, hpcrun, simple_tstexe],
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 
 test(
@@ -27,7 +25,6 @@ test(
   args: [hpctesttool, hpcrun, simple_tstexe],
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 
 test(
@@ -36,7 +33,6 @@ test(
   args: [hpctesttool, hpcrun, simple_tstexe],
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 
 test(
@@ -45,7 +41,6 @@ test(
   args: [hpctesttool, hpcrun, simple_tstexe],
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 test(
   'Perf frequency sampling measures on @0@ w/o auditor'.format(simple_tstexe.name()),
@@ -53,5 +48,4 @@ test(
   args: [hpctesttool, hpcrun, simple_tstexe],
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )

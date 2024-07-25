@@ -30,7 +30,7 @@
 #include <atomic>
 #endif
 
-#include "fnbounds/fnbounds_file_header.h"
+#include "fnbounds/fnbounds.h"
 
 #include <link.h>
 
@@ -72,8 +72,7 @@ hpcrun_dso_new();
 
 // Allocates and initializes a dso_info_t
 dso_info_t*
-hpcrun_dso_make(const char* name, void** table,
-                struct fnbounds_file_header* fh,
+hpcrun_dso_make(const char* name, const FnboundsResponse* fnbres,
                 void* startaddr, void* endaddr);
 
 
