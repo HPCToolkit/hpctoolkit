@@ -103,7 +103,7 @@ hpcrun_dso_new()
 dso_info_t*
 hpcrun_dso_make(const char* name, void** table,
                 struct fnbounds_file_header* fh,
-                void* startaddr, void* endaddr, unsigned long map_size)
+                void* startaddr, void* endaddr)
 {
   dso_info_t* x = hpcrun_dso_new();
 
@@ -114,7 +114,6 @@ hpcrun_dso_make(const char* name, void** table,
   strcpy(x->name, name);
 
   x->table = table;
-  x->map_size = map_size;
   x->nsymbols = 0;
   x->start_to_ref_dist = 0;
   x->start_addr = startaddr;
@@ -381,7 +380,6 @@ hpcrun_loadmap_dump_dso_info_t(dso_info_t* x)
     fprintf(stderr, "\t\t name %s\n", x->name);
     fprintf(stderr, "\t\t start_addr %p\n", x->start_addr);
     fprintf(stderr, "\t\t end_addr %p\n", x->end_addr);
-    fprintf(stderr, "\t\t map_size %lu\n", x->map_size);
     fprintf(stderr, "\t\t nsymbols %lu\n", x->nsymbols);
     fprintf(stderr, "\t\t is_relocatable %d\n", x->is_relocatable);
   }

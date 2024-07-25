@@ -50,7 +50,6 @@ typedef struct dso_info_t {
   void* end_addr;
   uintptr_t start_to_ref_dist;
   void** table;
-  unsigned long map_size;
   unsigned long nsymbols;
   int  is_relocatable;
 
@@ -75,7 +74,7 @@ hpcrun_dso_new();
 dso_info_t*
 hpcrun_dso_make(const char* name, void** table,
                 struct fnbounds_file_header* fh,
-                void* startaddr, void* endaddr, unsigned long map_size);
+                void* startaddr, void* endaddr);
 
 
 // ---------------------------------------------------------

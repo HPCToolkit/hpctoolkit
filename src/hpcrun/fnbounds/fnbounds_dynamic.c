@@ -244,7 +244,6 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   struct fnbounds_file_header fh;
   char filename[PATH_MAX + 1];
   void** nm_table;
-  long map_size;
 
   // typically, we use the filename for the query to the system server. however,
   // for [vdso], the filename will be the name of a file in the measurements
@@ -286,13 +285,12 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
 
   nm_table = (void**) hpcrun_syserv_query(pathname_for_query, &fh);
   if (nm_table == NULL) {
-    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
+    return hpcrun_dso_make(filename, NULL, NULL, start, end);
   }
-  map_size = fh.mmap_size;
 
   if (fh.num_entries < 1) {
     EMSG("fnbounds returns no symbols for file %s, (all intervals poisoned)", filename);
-    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
+    return hpcrun_dso_make(filename, NULL, NULL, start, end);
   }
 
   //
@@ -305,5 +303,5 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
     }
   }
 
-  return hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
+  return hpcrun_dso_make(filename, nm_table, &fh, start, end);
 }

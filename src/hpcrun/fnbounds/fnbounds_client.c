@@ -619,7 +619,6 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   fh->num_entries = fnb_info.num_entries;
   fh->reference_offset = fnb_info.reference_offset;
   fh->is_relocatable = fnb_info.is_relocatable;
-  fh->mmap_size = mmap_size;
 
   if (ENABLED(FNBOUNDS_CLIENT)) {
     gettimeofday(&now, NULL);
@@ -673,10 +672,6 @@ query_loop(void)
       fprintf(outf, "num symbols = %ld, offset = 0x%lx, reloc = %d\n",
              fnb_hdr.num_entries, fnb_hdr.reference_offset,
              fnb_hdr.is_relocatable);
-
-      if (munmap(addr, fnb_hdr.mmap_size) != 0) {
-        err(1, "munmap failed");
-      }
     }
   }
 }

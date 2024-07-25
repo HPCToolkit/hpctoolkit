@@ -18,7 +18,6 @@ struct fnbounds_file_header {
   unsigned long  num_entries;
   unsigned long  reference_offset;
   int     is_relocatable;
-  size_t  mmap_size;
 };
 
 #endif
