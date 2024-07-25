@@ -5,10 +5,8 @@
 
 // -*-Mode: C++;-*- // technically C99
 
-/***
- *** The code in this file is mainly taken from
- *** https://github.com/deater/perf_event_tests/blob/master/include/perf_barrier.h
- ***/
+/// ** The code in this file is mainly taken from
+/// ** https://github.com/deater/perf_event_tests/blob/master/include/perf_barrier.h
 
 #ifndef HPCRUN_SAMPLE_SOURCES_PERF_PERF_BARRIER_H
 #define HPCRUN_SAMPLE_SOURCES_PERF_PERF_BARRIER_H

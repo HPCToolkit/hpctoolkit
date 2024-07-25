@@ -249,7 +249,10 @@ perf_util_get_max_sample_rate()
     FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
 
     if (perf_rate_file != NULL) {
-      fscanf(perf_rate_file, "%d", &max_sample_rate);
+      int sample_Rate = 0;
+      int items = fscanf(perf_rate_file, "%d", &sample_Rate);
+      if (items == 1)
+        max_sample_rate = sample_Rate;
       fclose(perf_rate_file);
     }
     initialized = 1;
@@ -349,7 +352,7 @@ perf_util_attr_init(
   // For instance, IDLE-CYCLES-BACKEND will fail if we set PERF_SAMPLE_ADDR.
   // By default, we need to initialize sample_type as minimal as possible.
   unsigned int sample_type = sampletype
-                             | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME;
+                             | PERF_SAMPLE_PERIOD | PERF_SAMPLE_READ;
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->freq   = (usePeriod ? 0 : 1);
@@ -403,7 +406,24 @@ perf_util_attr_init(
             precise_ip = precise_ip_type;
   }
 
-  attr->precise_ip    = precise_ip;
+  attr->precise_ip  = precise_ip;
+  attr->read_format = PERF_FORMAT_GROUP
+                      | PERF_FORMAT_ID
+                      | PERF_FORMAT_TOTAL_TIME_ENABLED
+                      | PERF_FORMAT_TOTAL_TIME_RUNNING;
 
   return true;
 }
+
+void
+perf_util_attr_group_init(struct perf_event_attr *attr)
+{
+  attr->size = sizeof(struct perf_event_attr);
+  attr->sample_type = PERF_SAMPLE_READ;
+  attr->read_format = PERF_FORMAT_GROUP
+                      | PERF_FORMAT_ID
+                      | PERF_FORMAT_TOTAL_TIME_ENABLED
+                      | PERF_FORMAT_TOTAL_TIME_RUNNING;
+  attr->exclude_kernel = EXCLUDE;
+  attr->exclude_hv = EXCLUDE;
+ }

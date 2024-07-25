@@ -11,20 +11,18 @@
 #include <sys/syscall.h>
 
 #include <unistd.h>
+#include <linux/version.h>
 #include <linux/types.h>
 #include <linux/perf_event.h>
 
 #include "../../../common/lean/hpcrun-fmt.h"
 #include "../../sample_event.h"
+#include "../../evlist.h"
 
 #include "perf_constants.h"
 #include "event_custom.h"
 
-/******************************************************************************
- * macros
- *****************************************************************************/
-
-
+/// macros
 
 // the number of maximum frames (call chains)
 // For kernel only call chain, I think 32 is a good number.
@@ -32,9 +30,20 @@
 #define MAX_CALLCHAIN_FRAMES 32
 
 
-/******************************************************************************
- * Data types
- *****************************************************************************/
+/// Data types
+
+typedef struct read_format_s {
+                  u64 nr;            /* The number of events */
+                  u64 time_enabled;  /* if PERF_FORMAT_TOTAL_TIME_ENABLED */
+                  u64 time_running;  /* if PERF_FORMAT_TOTAL_TIME_RUNNING */
+                  struct values_s {
+                      u64 value;     /* The value of the event */
+                      u64 id;        /* if PERF_FORMAT_ID */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0)
+                      u64 lost;      /* if PERF_FORMAT_LOST */
+#endif
+                  } values[MAX_EVENTS];
+} read_format_t;
 
 // data from perf's mmap. See perf_event_open man page
 typedef struct perf_mmap_data_s {
@@ -48,6 +57,7 @@ typedef struct perf_mmap_data_s {
   u64    stream_id;  /* if PERF_SAMPLE_STREAM_ID */
   u32    cpu, res;   /* if PERF_SAMPLE_CPU */
   u64    period;     /* if PERF_SAMPLE_PERIOD */
+  read_format_t samples;
                      /* if PERF_SAMPLE_READ */
   u64    nr;         /* if PERF_SAMPLE_CALLCHAIN */
   u64    ips[MAX_CALLCHAIN_FRAMES];       /* if PERF_SAMPLE_CALLCHAIN */
@@ -83,18 +93,19 @@ typedef struct perf_mmap_data_s {
 // this code doesn't work if the number of events change dynamically.
 // --------------------------------------------------------------
 typedef struct event_info_s {
-  int    id;
-  struct perf_event_attr attr; // the event attribute
-  int    perf_metric_id;
+  int    leader_index;         // the index of the leader if it's a group of event
+
+  struct perf_event_attr attr; // the perf_event attribute
+
   int    hpcrun_metric_id;
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
 
   // predefined metric
-  event_custom_t *metric_custom;        // pointer to the predefined metric
-
+  event_custom_t *metric_custom;  // pointer to the predefined metric
 } event_info_t;
 
 
+// hpcrun wrapper for Linux struct perf_event_mmap_page
 typedef struct perf_event_mmap_page pe_mmap_t;
 
 
@@ -103,18 +114,18 @@ typedef struct perf_event_mmap_page pe_mmap_t;
 // this data is designed to be used within a thread
 // --------------------------------------------------------------
 typedef struct event_thread_s {
+  u64 id;    // the id of this event, useful in a group
 
   pe_mmap_t    *mmap;  // mmap buffer
   int          fd;     // file descriptor of the event
   event_info_t *event; // pointer to main event description
 
+  u64 old_value;
 } event_thread_t;
 
 
 
-/******************************************************************************
- * Interfaces
- *****************************************************************************/
+/// Interfaces
 
 void
 perf_util_init();
@@ -126,6 +137,9 @@ perf_util_attr_init(
   bool usePeriod, u64 threshold,
   u64  sampletype
 );
+
+void
+perf_util_attr_group_init(struct perf_event_attr *attr);
 
 bool
 perf_util_is_ksym_available();

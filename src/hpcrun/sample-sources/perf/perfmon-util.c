@@ -159,19 +159,14 @@ test_pmu(char *evname)
  *   1 otherwise
  ******************/
 static int
-show_event_info(pfm_event_info_t *info)
+show_event_info(pfm_event_info_t *event_info)
 {
-  pfm_event_attr_info_t ainfo;
-  pfm_pmu_info_t pinfo;
-  int i, ret;
+  pfm_pmu_info_t pmu_info;
 
-  memset(&ainfo, 0, sizeof(ainfo));
-  memset(&pinfo, 0, sizeof(pinfo));
+  memset(&pmu_info, 0, sizeof(pmu_info));
+  pmu_info.size = sizeof(pmu_info);
 
-  pinfo.size = sizeof(pinfo);
-  ainfo.size = sizeof(ainfo);
-
-  ret = pfm_get_pmu_info(info->pmu, &pinfo);
+  int ret = pfm_get_pmu_info(event_info->pmu, &pmu_info);
   if (ret) {
     EMSG( "cannot get pmu info: %s", pfm_strerror(ret));
     return EVENT_FATAL_ERROR;
@@ -180,34 +175,43 @@ show_event_info(pfm_event_info_t *info)
   char buffer[MAX_EVENT_NAME_CHARS];
   char buffer_desc[MAX_EVENT_DESC_CHARS];
 
-  sprintf(buffer, "%s::%s", pinfo.name, info->name);
+  sprintf(buffer, "%s::%s", pmu_info.name, event_info->name);
   int profilable = test_pmu(buffer);
 
   display_line_single(stdout);
 
   if (profilable == EVENT_IS_PROFILABLE) {
-    display_event_info(stdout, buffer, info->desc);
+    display_event_info(stdout, buffer, event_info->desc);
   } else {
-    sprintf(buffer_desc, "%s (*)", info->desc);
+    sprintf(buffer_desc, "%s (*)", event_info->desc);
     display_event_info(stdout, buffer, buffer_desc);
   }
 
-  pfm_for_each_event_attr(i, info) {
-    ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
+  int i;
+
+  // print all the sub-events, attributes, modifiers, umasks of this event.
+  // also check if the attribute is "profileable" or not.
+
+  pfm_for_each_event_attr(i, event_info) {
+    pfm_event_attr_info_t attr_info;
+    memset(&attr_info, 0, sizeof(attr_info));
+    attr_info.size = sizeof(attr_info);
+
+    ret = pfm_get_event_attr_info(event_info->idx, i, PFM_OS_NONE, &attr_info);
     if (ret == PFM_SUCCESS)
     {
       memset(buffer, 0, MAX_EVENT_NAME_CHARS);
-      sprintf(buffer, "%s::%s:%s", pinfo.name, info->name, ainfo.name);
+      sprintf(buffer, "%s::%s:%s", pmu_info.name, event_info->name, attr_info.name);
 
       if (test_pmu(buffer) == 0) {
-        display_event_info(stdout, buffer, ainfo.desc);
+        display_event_info(stdout, buffer, attr_info.desc);
         continue;
       }
 
       // the counter may not be profilable. Perhaps requires more attributes/masks
       // or higher user privilege (like super user)
       // add a sign to users so they know the event may not be profilable
-      sprintf(buffer_desc, "%s (*)", ainfo.desc);
+      sprintf(buffer_desc, "%s (*)", attr_info.desc);
       display_event_info(stdout, buffer, buffer_desc);
 
       profilable = EVENT_MAY_NOT_PROFILABLE;
@@ -269,7 +273,20 @@ show_info(char *event )
 // Supported operations
 //******************************************************************************
 
-
+/****
+ * Try to retrieve the description of an event or a sub-event.
+ * This routine depends on the result of libpfm4, and if the library doesn't
+ * have the answer, it will return the event's name itself.
+ *
+ * @note This routine doesn't recognize events with umasks or modifiers.
+ *  So if the event_name contains umasks like XXX:u=4, then it will return
+ *  the description of event XXX.
+ *
+ * @param event_name
+ *          The name of the event (or sub-event)
+ * @return
+ *          The description of the event (or sub-event)
+ */
 const char *
 pfmu_getEventDescription(const char *event_name)
 {
@@ -286,23 +303,48 @@ pfmu_getEventDescription(const char *event_name)
   arg.attr = &attr;
   int ret = pfm_get_os_event_encoding(event_name, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT_EXT, &arg);
 
-  if (ret == PFM_SUCCESS) {
-    pfm_event_info_t info;
-    memset(&info, 0, sizeof(info));
-    info.size = sizeof(info);
+  if (ret != PFM_SUCCESS)
+    return event_name;
 
-    ret = pfm_get_event_info(arg.idx, PFM_OS_NONE, &info);
+  pfm_event_info_t info;
+  memset(&info, 0, sizeof(info));
+  info.size = sizeof(info);
 
-    if (ret == PFM_SUCCESS) {
-      return info.desc;
-    }
+  ret = pfm_get_event_info(arg.idx, PFM_OS_NONE, &info);
+  if (ret != PFM_SUCCESS)
+    return event_name;
+
+  int i;
+
+  // fix hpctoolkit issue #850: iterate all attributes to get the correct description
+  // if the PMU has no attribute, it skips the loop and return the parent's description.
+  pfm_for_each_event_attr(i, &info) {
+    pfm_event_attr_info_t attr_info;
+    memset(&attr_info, 0, sizeof(attr_info));
+
+    attr_info.size = sizeof(attr_info);
+
+    ret = pfm_get_event_attr_info(arg.idx, i, PFM_OS_NONE, &attr_info);
+
+    // Only consider sub-event (PFM_ATTR_UMASK) in the event description.
+    // For other attributes (such as modifier), it returns the description of the event
+    if (ret == PFM_SUCCESS &&
+        attr_info.type == PFM_ATTR_UMASK &&
+        strstr(event_name, attr_info.name) != NULL)
+      return attr_info.desc;
   }
-  return event_name;
+  return info.desc;
 }
 
 
 /**
  * get the complete perf event attribute for a given pmu
+ *
+ * @param eventname
+ *        (input) The name of the event.
+ * @param event_attr
+ *        (output) the attribute for perf_event
+ *
  * @return 1 if successful
  * -1 otherwise
  */
@@ -327,8 +369,23 @@ pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr
   return -1;
 }
 
-// return 0 or positive if the event exists, -1 otherwise
-// if the event exist, code and type are the code and type of the event
+/**
+ * Get the perf_event's code and type of an event.
+ *
+ * @param eventname
+ *        (input) the name of the perf event
+ *
+ * @param code
+ *        (output) the perf_event's code (aka config)
+ *
+ * @param type
+ *        (output) the perf_event's type
+ *
+ * @return 0 or positive if the event exists, -1 otherwise
+ *
+ * @note if the event exists, code and type are the code and type of the event.
+ * Otherwise, the output is undefined.
+ */
 int
 pfmu_getEventType(const char *eventname, u64 *code, u64 *type)
 {
@@ -352,11 +409,14 @@ pfmu_getEventType(const char *eventname, u64 *code, u64 *type)
 }
 
 
-/*
+/**
  * interface to check if an event is "supported"
  * "supported" here means, it matches with the perfmon PMU event
  *
- * return 0 or positive if the event exists, -1 otherwise
+ * @param eventname
+ *        (input) the name of the event
+ *
+ * @return 0 or positive if the event exists, -1 otherwise
  */
 int
 pfmu_isSupported(const char *eventname)
@@ -368,7 +428,7 @@ pfmu_isSupported(const char *eventname)
 
 /**
  * Initializing perfmon
- * return 1 if the initialization passes successfully
+ * @return 1 if the initialization passes successfully
  **/
 int
 pfmu_init()
@@ -394,14 +454,13 @@ pfmu_fini()
 }
 
 /*
- * interface function to print the list of supported PMUs
+ * Print to the standard output ALL supported events.
+ * This means we use ".*" filter to include all events with no restriction.
  */
-int
+void
 pfmu_showEventList()
 {
   static char *argv_all =  ".*";
 
   show_info(argv_all);
-
-  return 0;
 }

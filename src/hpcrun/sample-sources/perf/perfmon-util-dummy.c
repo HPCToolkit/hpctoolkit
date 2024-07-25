@@ -86,3 +86,22 @@ pfmu_showEventList()
 {
   return -1;
 }
+
+/****
+ * Try to retrieve the description of an event or a sub-event.
+ * This routine depends on the result of libpfm4, and if the library doesn't
+ * have the answer, it will return the event's name itself.
+ *
+ * @note This routine doesn't recognize events with umasks or modifiers.
+ *  So if the event_name contains umasks like XXX:u=4, then it will return
+ *  the description of event XXX.
+ *
+ * @param event_name
+ *          The name of the event (or sub-event)
+ * @return
+ *          The description of the event (or sub-event)
+ */
+const char* pfmu_getEventDescription(const char *event_name)
+{
+  return "";
+}
