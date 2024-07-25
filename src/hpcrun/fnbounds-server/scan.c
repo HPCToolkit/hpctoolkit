@@ -7,9 +7,106 @@
 
 // This file contains the routines that scan instructions to identify functions
 
-#include "fnbounds.h"
 #include "scan.h"
+
 #include <endian.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <dwarf.h>
+#include <string.h>
+
+// HACK
+#define ENABLED(x) (1)
+#define TMSG(f, ...) do { fprintf(stderr, #f ": " __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
+#define ETMSG(f, ...) do { fprintf(stderr, #f ": " __VA_ARGS__); fprintf(stderr, "\n"); } while (0)
+#define hpcrun_abort(...) do { fprintf(stderr, __VA_ARGS__); exit(1); } while(0)
+
+// Defines
+#define EHF_MAX_CIE       (64)
+#define EHF_CIE_TRUE      (1)
+#define EHF_CIE_FALSE     (0)
+#define EHF_CIE_EXTREC    (0xfffffffful)
+#define EHF_FDE_DMASK     (0x0f)
+#define EHF_FDE_OMASK     (0xf0)
+#define EHF_CF_DONE           (0)
+#define EHF_CF_CONT           (1)
+#define EHF_WO_TYPE           (1)
+#define EHF_WO_FS               (2)
+#define EHF_TP_CIE            (0)
+#define EHF_SLEB128_ERROR (-1)
+#define EHF_ULEB128_ERROR (0xffffffffffffffffull)
+#define EHF_DECDWRF_ERROR (0xffffffffffffffffull)
+
+#define EHF_CIE_BO_VER    (8)
+#define EHF_CIE_BO_AUSTR  (9)
+
+#define EHF_CIE_VER_1     (1)
+#define EHF_CIE_VER_3     (3)
+
+// some dwarf.h may not have DW_EH_PE_indirect, needed for personality fn
+// there is also a combo type
+//
+#ifndef DW_EH_PE_indirect
+#define DW_EH_PE_indirect (0x80)
+#endif
+// this might also be a personality decode op
+#define DW_EH_PE_indpcrel (DW_EH_PE_indirect | DW_EH_PE_pcrel)
+// sign values for unalignedEndianAddr, which returns unsigned
+#define EHF_UER_SIGNED    (1)
+#define EHF_UER_UNSIGNED  (0)
+
+// in case someone produces a eh_frame stream that is in big endian order, change the define below
+// this is only supported on a big endian order core.
+#define EHF_STREAM_LE     (1)
+#define EHF_STREAM_BE     (0)
+#define EHF_STREAM_ORDER  (EHF_STREAM_LE)
+// #define EHF_STREAM_ORDER  (EHF_STREAM_BE)
+
+// determine the stack offset for CIE's with 'S'.  In practice
+// this seems independent of instruction word size, but might not be
+// on some architectures.  if funnies are produced, this is where to fix
+// it.  If there is a macro that gives the minimum instruction word size, this is
+// where to put it.
+#define EHF_FOLLOW_IWS    (0)
+#if EHF_FOLLOW_IWS
+#if defined ( __x86_64__ ) || defined ( __i386__ )
+#define EHF_FORWARD_OFF   (1)
+#else
+#define EHF_FORWARD_OFF   (4)
+#endif
+#else
+#define EHF_FORWARD_OFF   (1)
+#endif
+
+typedef struct __ehFDEAddrType {
+  uint8_t R;
+  uint8_t P;
+  uint8_t L;
+} ehFDEAddrType_t;
+
+typedef struct __ehCIERecord {
+  uint64_t cieBaseAddress;
+  uint64_t cieSize;
+  uint64_t cieAugDataOffset;
+  uint8_t * cieAugData;
+  uint64_t cieAddressOffset;  // stack offset
+  ehFDEAddrType_t cieContainsType;
+  ehFDEAddrType_t cieFDEEncType;
+} ehCIERecord_t;
+
+typedef struct __ehDecodeRecord {
+  uint64_t ehSecAddr;
+  uint64_t textSecAddr;
+  uint64_t dataSecAddr;
+  uint64_t totalOffset;  // record offset + interior offset
+  uint8_t fdeEnc;
+} ehDecodeRecord_t;
+
+static uint64_t  decodeULEB128(uint8_t *input, uint64_t *sizeInBytes);
+static int64_t   decodeSLEB128(uint8_t *input, uint64_t *sizeInBytes);
+static uint64_t  decodeDwarfAddress(uint8_t *, ehDecodeRecord_t *, uint64_t *, char *);
+static uint64_t  unalignedEndianRead(uint8_t *, size_t, uint64_t);
 
 uint64_t
 decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t *adv, char *errString)
@@ -23,7 +120,7 @@ decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t 
   fdeAddrOpType = (decodeRecord->fdeEnc) & EHF_FDE_OMASK;
 
   if ( (fdeAddrOpType == DW_EH_PE_omit) || (fdeAddrDecodeType == DW_EH_PE_omit)) {
-    fprintf(stderr, "FNB2: Warning in eh_frame %s, omit found\n",errString);
+    ETMSG(FNBOUNDS, "Warning in eh_frame %s, omit found",errString);
     return EHF_DECDWRF_ERROR;
   }
 
@@ -52,7 +149,7 @@ decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t 
                 case DW_EH_PE_funcrel:
                 case DW_EH_PE_aligned:
                 default:
-                        fprintf(stderr, "FNB2: Error in eh_frame %s, unsupported address operation type %.2x\n",
+                        ETMSG(FNBOUNDS, "Error in eh_frame %s, unsupported address operation type %.2x",
                                         errString, fdeAddrOpType);
       *adv = 0;
                         return EHF_DECDWRF_ERROR;
@@ -110,7 +207,7 @@ decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t 
                         unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
       advance += sizeof(uint64_t);
                 default:
-                        fprintf(stderr, "FNB2: Error in eh_frame %s, unsupported address decode type %.2x\n",
+                        ETMSG(FNBOUNDS, "Error in eh_frame %s, unsupported address decode type %.2x",
         errString, fdeAddrDecodeType);
       *adv = 0;
                         return EHF_DECDWRF_ERROR;
@@ -195,35 +292,25 @@ decodeULEB128(uint8_t *input, uint64_t *adv)
   }
 }
 
-uint64_t
-skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag)
+bool
+fnb_doSectionScan(Elf *e, GElf_Shdr secHead, const char* xname)
 {
   size_t secHeadStringIndex;
   char *secName;
 
   if (elf_getshdrstrndx(e, &secHeadStringIndex) != 0) {
-    fprintf (stderr, "FNB2: Warning, libelf error %s in scan check for %s\n",elf_errmsg(-1),xname);
-    return SC_SKIP;
+    ETMSG(FNBOUNDS, "Warning, libelf error %s in scan check for %s",elf_errmsg(-1),xname);
+    return false;
   }
 
   secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
   if (secName == NULL) {
-    fprintf (stderr, "FNB2: Warning, libelf error %s in scan check for %s\n",elf_errmsg(-1),xname);
-    return SC_SKIP;
+    ETMSG(FNBOUNDS, "Warning, libelf error %s in scan check for %s",elf_errmsg(-1),xname);
+    return false;
   }
 
-  if (secFlag == SC_SKIP) {
-    if(verbose> 1) {
-      fprintf (stderr, "FNB2: Skipping scanning %s instructions\n",secName);
-    }
-    return SC_SKIP;
-  } else {
-    if(verbose> 1) {
-      fprintf (stderr, "FNB2: Processing functions from scanning %s instructions\n",secName);
-    }
-  }
-
-  return SC_DONE;
+  TMSG(FNBOUNDS_EXT, "Processing functions from scanning %s instructions",secName);
+  return true;
 }
 
 //
@@ -333,16 +420,14 @@ unalignedEndianRead(uint8_t *stream, size_t size, uint64_t sign)
 }
 // scan the .plt section
 //
-uint64_t
-pltscan(Elf *e, GElf_Shdr secHead)
+bool
+fnb_pltscan(FnboundsResponse* resp, Elf *e, GElf_Shdr secHead, const char* xname)
 {
   uint64_t ii;
   uint64_t startAddr, endAddr, pltEntrySize;
-  char nameBuff[TB_SIZE];
-  char *vegamite;
 
-  if (skipSectionScan(e, secHead, pltscan_f) == SC_SKIP) {
-    return SC_SKIP;
+  if (!fnb_doSectionScan(e, secHead, xname)) {
+    return false;
   }
 
   startAddr = secHead.sh_addr;
@@ -353,30 +438,26 @@ pltscan(Elf *e, GElf_Shdr secHead)
   // the entry size may be zero.  If so, just skip the section for now.
   //
   if ( pltEntrySize == 0 ) {
-    return SC_DONE;
+    return true;
   }
 
   for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
-    sprintf(nameBuff,"stripped_0x%lx",ii);
-    vegamite = strdup(nameBuff);
-    add_function(ii, vegamite, SC_FNTYPE_PLT, FR_YES);
+    fnb_add_function(resp, (void*)ii);
   }
 
-  return SC_DONE;
+  return true;
 }
 
 // scan the .pltsec section
 //
-uint64_t
-pltsecscan(Elf *e, GElf_Shdr secHead)
+bool
+fnb_pltsecscan(FnboundsResponse* resp, Elf *e, GElf_Shdr secHead, const char* xname)
 {
   uint64_t ii;
   uint64_t startAddr, endAddr, pltEntrySize;
-  char nameBuff[TB_SIZE];
-  char *vegamite;
 
-  if (skipSectionScan(e, secHead, pltsecscan_f) == SC_SKIP) {
-    return SC_SKIP;
+  if (!fnb_doSectionScan(e, secHead, xname)) {
+    return false;
   }
 
   startAddr = secHead.sh_addr;
@@ -387,88 +468,74 @@ pltsecscan(Elf *e, GElf_Shdr secHead)
   // the entry size may be zero.  If so, just skip the section for now.
   //
   if ( pltEntrySize == 0 ) {
-    return SC_DONE;
+    return true;
   }
 
   for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
-    sprintf(nameBuff,"stripped_0x%lx",ii);
-    vegamite = strdup(nameBuff);
-    add_function(ii, vegamite, SC_FNTYPE_PLTSEC, FR_YES);
+    fnb_add_function(resp, (void*)ii);
   }
 
-  return SC_DONE;
+  return true;
 }
 
 // scan the .init section
-uint64_t
-initscan(Elf *e, GElf_Shdr secHead)
+bool
+fnb_initscan(FnboundsResponse* resp, Elf *e, GElf_Shdr secHead, const char* xname)
 {
-  if (skipSectionScan(e, secHead, initscan_f) == SC_SKIP) {
-    return SC_SKIP;
+  if (!fnb_doSectionScan(e, secHead, xname)) {
+    return false;
   }
 
   // NOT YET IMPLEMENTED
-  if(verbose> 1) {
-    fprintf (stderr, "FNB2: \tscanning .init instructions not yet implemented\n");
-  }
-  // use SC_FNTYPE_INIT as source string in add_function() calls
-  return SC_SKIP;
+  TMSG(FNBOUNDS_EXT, "scanning .init instructions not yet implemented");
+  return false;
 }
 
 // scan the .text section
-uint64_t
-textscan(Elf *e, GElf_Shdr secHead)
+bool
+fnb_textscan(FnboundsResponse* resp, Elf *e, GElf_Shdr secHead, const char* xname)
 {
-  if (skipSectionScan(e, secHead, textscan_f) == SC_SKIP) {
-    return SC_SKIP;
+  if (!fnb_doSectionScan(e, secHead, xname)) {
+    return false;
   }
 
   // NOT YET IMPLEMENTED
-  if(verbose> 1) {
-    fprintf (stderr, "FNB2: \tscanning .text instructions not yet implemented\n");
-  }
-  // use SC_FNTYPE_TEXT as source string in add_function() calls
-  return SC_SKIP;
+  TMSG(FNBOUNDS_EXT, "scanning .text instructions not yet implemented");
+  return false;
 }
 
 // scan the .fini section
-uint64_t
-finiscan(Elf *e, GElf_Shdr secHead)
+bool
+fnb_finiscan(FnboundsResponse* resp, Elf *e, GElf_Shdr secHead, const char* xname)
 {
-  if (skipSectionScan(e, secHead, finiscan_f) == SC_SKIP) {
-    return SC_SKIP;
+  if (!fnb_doSectionScan(e, secHead, xname)) {
+    return false;
   }
 
   // NOT YET IMPLEMENTED
-  if(verbose> 1) {
-    fprintf (stderr, "FNB2: \tscanning .fini instructions not yet implemented\n");
-  }
-  // use SC_FNTYPE_FINI as source string in add_function() calls
-  return SC_SKIP;
+  TMSG(FNBOUNDS_EXT, "scanning .fini instructions not yet implemented");
+  return false;
 }
 
 // scan the .fini section
-uint64_t
-altinstr_replacementscan(Elf *e, GElf_Shdr secHead)
+bool
+fnb_altinstr_replacementscan(FnboundsResponse* resp, Elf *e, GElf_Shdr secHead, const char* xname)
 {
-  if (skipSectionScan(e, secHead, altinstr_replacementscan_f) == SC_SKIP) {
-    return SC_SKIP;
+  if (!fnb_doSectionScan(e, secHead, xname)) {
+    return false;
   }
 
   // NOT YET IMPLEMENTED
-  if(verbose> 1) {
-    fprintf (stderr, "\tFNB2: scanning .altinstr_replacement instructions not yet implemented\n");
-  }
-  // use SC_FNTYPE_ALTINSTR as source string in add_function() calls
-  return SC_SKIP;
+  TMSG(FNBOUNDS_EXT, "scanning .altinstr_replacement instructions not yet implemented");
+  return false;
 }
 
 // scan the .eh_frame section
 // For now, we will ignore the eh_frame_hdr, though it is possible to
 // speed processing if it exists (it might not)
 //
-uint64_t
-ehframescan(Elf *e, ehRecord_t *ehRecord)
+bool
+fnb_ehframescan(FnboundsResponse* resp, Elf *e, ehRecord_t *ehRecord, const char* xname)
 {
   GElf_Shdr ehSecHead,textSecHead,dataSecHead;
   Elf_Data *data;
@@ -478,8 +545,6 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   uint8_t *pb;
   uint32_t *pw;
   uint32_t kc, kf, recType, recLen, cf, kk, curCIE;
-  char nameBuff[TB_SIZE];
-  char *promite;  // mmmm
   uint8_t cieVersion;
   char *augString;
   uint64_t codeAlign;
@@ -498,16 +563,16 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
   // don't process non-existent section
   if (ehRecord->ehFrameSection == NULL) {
-    return SC_SKIP;
+    return false;
   }
 
   if (gelf_getshdr(ehRecord->ehFrameSection, &ehSecHead) != &ehSecHead) {
-    fprintf(stderr, "FNB2: %s %s\n", elfFailMess, elf_errmsg(-1));
-    return SC_SKIP;
+    ETMSG(FNBOUNDS, "%s %s", elfFailMess, elf_errmsg(-1));
+    return false;
   }
 
-  if (skipSectionScan(e, ehSecHead, ehframeread_f) == SC_SKIP) {
-    return SC_SKIP;
+  if (!fnb_doSectionScan(e, ehSecHead, xname)) {
+    return false;
   }
   //
   // we may need these depending on the FDE encode field.
@@ -517,8 +582,8 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   decodeRecord.textSecAddr = 0ull;
   if (ehRecord->textSection != NULL) {
     if (gelf_getshdr(ehRecord->textSection, &textSecHead) != &textSecHead) {
-      fprintf(stderr, "FNB2: %s %s\n", elfFailMess, elf_errmsg(-1));
-      return SC_SKIP;
+      ETMSG(FNBOUNDS, "%s %s", elfFailMess, elf_errmsg(-1));
+      return false;
     }
     decodeRecord.textSecAddr = textSecHead.sh_addr;
   }
@@ -526,8 +591,8 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   decodeRecord.dataSecAddr = 0ull;
   if (ehRecord->dataSection != NULL) {
     if (gelf_getshdr(ehRecord->dataSection, &dataSecHead) != &dataSecHead) {
-      fprintf(stderr, "FNB2: %s %s\n", elfFailMess, elf_errmsg(-1));
-      return SC_SKIP;
+      ETMSG(FNBOUNDS, "%s %s", elfFailMess, elf_errmsg(-1));
+      return false;
     }
     decodeRecord.dataSecAddr = dataSecHead.sh_addr;
   }
@@ -537,13 +602,13 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   data = NULL;
   data = elf_getdata(ehRecord->ehFrameSection,data);
   if (data == NULL) {
-    fprintf(stderr, "FNB2: %s %s\n", elfFailMess, elf_errmsg(-1));
-    return SC_SKIP;
+    ETMSG(FNBOUNDS, "%s %s", elfFailMess, elf_errmsg(-1));
+    return false;
   }
 
   dataSize = data->d_size;  // for clarity later
   if ((dataSize == 0) || (data->d_buf == NULL)) {
-    return SC_SKIP;
+    return false;
   }
 
   kc = 0; // cie count
@@ -554,8 +619,8 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   cieTableSize = EHF_MAX_CIE;
   cieTable = (ehCIERecord_t *) malloc (cieTableSize * sizeof(ehCIERecord_t));
   if (cieTable == NULL) {
-    fprintf(stderr, "FNB2: Fatal error in eh_frame handler, cannot allocate cieTable.  Aborting.\n");
-    return SC_SKIP;
+    ETMSG(FNBOUNDS, "Fatal error in eh_frame handler, cannot allocate cieTable.  Aborting.");
+    return false;
   }
 
   recordOffset = 0;
@@ -576,8 +641,8 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
     // support extended record lengths here if required
     if (recLen == EHF_CIE_EXTREC) {
-      fprintf(stderr, "FNB2: Fatal error in eh_frame handling, extended records not supported, aborting\n");
-      return SC_SKIP;
+      ETMSG(FNBOUNDS, "Fatal error in eh_frame handling, extended records not supported, aborting");
+      return false;
     }
 
     //
@@ -609,7 +674,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       // set the cieSize to 0, and skip any FDE associated with it.
       //
       if (augString[0] != 'z') {
-        fprintf(stderr, "FNB2: Warning in eh_frame handling, unsupported augmentation string %s found in %s\n",
+        ETMSG(FNBOUNDS, "Warning in eh_frame handling, unsupported augmentation string %s found in %s",
             augString, xname);
         cieTable[kc].cieSize = 0;
         goto nextRecord;
@@ -645,7 +710,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
         }
       }
       else {
-        fprintf(stderr, "FNB2: Warning in eh_frame handling, unsupported CIE version %d found in %s\n",
+        ETMSG(FNBOUNDS, "Warning in eh_frame handling, unsupported CIE version %d found in %s",
             (uint32_t)cieVersion, xname);
         cieTable[kc].cieSize = 0;
         goto nextRecord;
@@ -715,7 +780,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
           // This is an error condition, and should never happen
           //
           default:
-            fprintf(stderr, "FNB2: Error in eh_frame handling, unsupported augmentation character %c found in %s\n",
+            ETMSG(FNBOUNDS, "Error in eh_frame handling, unsupported augmentation character %c found in %s",
                 augString[b],  xname);
             cieTable[kc].cieSize = 0;
             goto nextRecord;
@@ -734,9 +799,9 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
         cieTableSize += EHF_MAX_CIE;
         cieTable = (ehCIERecord_t *) realloc ((void *)cieTable, cieTableSize * sizeof(ehCIERecord_t));
         if (cieTable == NULL) {
-          fprintf(stderr, "FNB2: Fatal error in eh_frame handler, cannot re-allocate cieTable at size %ld.  Aborting.\n",
+          ETMSG(FNBOUNDS, "Fatal error in eh_frame handler, cannot re-allocate cieTable at size %ld.  Aborting.",
               cieTableSize);
-          return SC_SKIP;
+          return false;
         }
       }
 
@@ -765,8 +830,8 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       // Fatal error if the CIE wasn't found
       //
       if (kk == kc) {
-        fprintf(stderr, "FNB2: Fatal error in eh_frame handling, FDE without associated CIE in %s\n", xname);
-        return SC_SKIP;
+        ETMSG(FNBOUNDS, "Fatal error in eh_frame handling, FDE without associated CIE in %s", xname);
+        return false;
       }
 
       fdeRefCIE = &cieTable[curCIE];
@@ -775,7 +840,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       // verify that the CIE parsed correctly
       //
       if ((fdeRefCIE -> cieSize) == 0) {
-        fprintf(stderr, "FNB2: Warning in eh_frame handling, FDE references unparsed CIE 0x%lx in %s, skipping\n",
+        ETMSG(FNBOUNDS, "Warning in eh_frame handling, FDE references unparsed CIE 0x%lx in %s, skipping",
             fdeRefCIE -> cieBaseAddress, xname);
         goto nextRecord;
       }
@@ -799,9 +864,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
         // we don't increase fdeOffset
         //
         if (personalityFunctionAddr != EHF_DECDWRF_ERROR) {
-          sprintf(nameBuff,"personality_0x%lx", personalityFunctionAddr);
-          promite = strdup(nameBuff);
-          add_function(personalityFunctionAddr, promite, SC_FNTYPE_EH_FRAME, FR_YES);
+          fnb_add_function(resp, (void*)personalityFunctionAddr);
         }
 
       }
@@ -820,9 +883,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
         //
         if (calculatedAddr64 != EHF_DECDWRF_ERROR) {
           calculatedAddr64 += fdeRefCIE -> cieAddressOffset; // adjust pointer if S
-          sprintf(nameBuff,"stripped_0x%lx",calculatedAddr64);
-          promite = strdup(nameBuff);
-          add_function(calculatedAddr64, promite, SC_FNTYPE_EH_FRAME, FR_YES);
+          fnb_add_function(resp, (void*)calculatedAddr64);
         }
         else {
           goto nextRecord;
@@ -846,7 +907,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       if ( (fdeRefCIE -> cieContainsType.L) == EHF_CIE_TRUE) {
         augDataLen = decodeULEB128(pb+fdeOffset, &a);
         if (augDataLen == EHF_ULEB128_ERROR) {
-          fprintf(stderr, "FNB2: Warning in eh_frame handling, cannot decode LSDA aug data len in %s\n", xname);
+          ETMSG(FNBOUNDS, "Warning in eh_frame handling, cannot decode LSDA aug data len in %s", xname);
           goto nextRecord;
         }
         fdeOffset += a;
@@ -859,9 +920,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
           // add the lsda function
           //
           if (landingFunctionAddr != EHF_DECDWRF_ERROR) {
-            sprintf(nameBuff,"LSDA_0x%lx",landingFunctionAddr);
-            promite = strdup(nameBuff);
-            add_function(landingFunctionAddr, promite, SC_FNTYPE_EH_FRAME, FR_YES);
+            fnb_add_function(resp, (void*)landingFunctionAddr);
           }
           fdeOffset += a;
 
@@ -892,9 +951,7 @@ nextRecord:
 
   free ( cieTable );
 
-  if(verbose> 1) {
-    fprintf (stderr, "FNB2: scanning .eh_frame, found %d CIE and %d FDE records\n", kc, kf);
-    }
+  TMSG(FNBOUNDS_EXT, "scanning .eh_frame, found %d CIE and %d FDE records", kc, kf);
 
-  return SC_DONE;
+  return true;
 }

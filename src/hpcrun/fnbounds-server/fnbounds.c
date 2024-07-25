@@ -8,287 +8,112 @@
 // funclist.c - program to print the function list from its load-object arguments
 
 #include  "fnbounds.h"
-#include  "code-ranges.h"
-#include  "server.h"
 #include  "scan.h"
 
 #include "../../common/hpctoolkit-version.h"
 
-int verbose = 0;
-int scan_code = 1;
-int no_dwarf = 0;
-int outputmode = OM_TEXT;
+#include <errno.h>
+#include <stdio.h>
+#include <sys/auxv.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <fcntl.h>
 
-size_t  maxfunc = 0;
-size_t  nfunc = 0;
-Function_t *farray = NULL;
+// HACK
+#define ENABLED(x) (1)
+#define TMSG(f, ...) do { fprintf(stderr, #f ": " __VA_ARGS__); fprintf(stderr, "\n"); } while(0)
+#define ETMSG(f, ...) do { fprintf(stderr, #f ": " __VA_ARGS__); fprintf(stderr, "\n"); } while (0)
+#define hpcrun_abort(...) do { fprintf(stderr, __VA_ARGS__); exit(1); } while(0)
 
-
-int dynsymread_f = SC_DONE;
-int symtabread_f = SC_DONE;
-int ehframeread_f = SC_DONE;
-int pltscan_f = SC_DONE;
-int pltsecscan_f = SC_DONE;
-int initscan_f = SC_DONE;
-int textscan_f = SC_DONE;
-int finiscan_f = SC_DONE;
-int altinstr_replacementscan_f = SC_DONE;
-
-int is_dotso;
-int server_mode = 0;
-
-static char ebuf[1024];
-static char ebuf2[1024];
-
-uint64_t refOffset;
-uint64_t sr;
-char  *xname;
+#define MAX_FUNC          (65536)
+#define TB_SIZE                 (512)
+#define MAX_SYM_SIZE        (TB_SIZE)
 
 // external strings containing the function sources
 //
-const char __null_[] = {""};
-const char __p_[] = {"p"};
-const char __q_[] = {"q"};
-const char __d_[] = {"d"};
-const char __s_[] = {"s"};
-const char __i_[] = {"i"};
-const char __t_[] = {"t"};
-const char __f_[] = {"f"};
-const char __a_[] = {"a"};
-const char __e_[] = {"e"};
-static char elfGenericErr[] = {"libelf error in fnbounds:"};
+static char elfGenericErr[] = "libelf error in fnbounds:";
 
-int
-main(int argc, char **argv, char **envp)
-{
-  int i;
-  char  **p;
-  char  *ret;
+static FnboundsResponse process_vdso();
+static FnboundsResponse process_mapped_header(Elf *e, const char* xname);
+static int     func_cmp(const void *a, const void *b);
 
-  int disable_init = 0;
-  p = argv;
-  p++;
-  for (i = 1; i < argc; i ++) {
-    if ( strcmp (*p, "-V") == 0 || strcmp (*p, "--version") == 0 ) {
-      // print version and exit
-      hpctoolkit_print_version("hpcfnbounds");
-      exit(0);
-    }
-    if( strncmp (*p, "-v", 2) == 0 ) {
-      // set verbose
-      char *type = *p+2;
-      if ( (strcmp(type, "") == 0) || (strcmp (type, "1") == 0 ) ) {
-        verbose = 1;
-        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds, verbose mode\n" );
-      } else if (strcmp (type,"2") == 0 ) {
-        verbose = 2;
-        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds, extended verbose mode\n" );
-      } else {
-        verbose = 2;
-        fprintf (stderr, "\nFNB2: unexpected verbose parameter `%s'\n", type);
-        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds, extended verbose mode\n" );
-      }
-      p++;
-      continue;
-    }
-    if ( strcmp (*p, "-t") == 0 ) {
-      // Write output in text mode
-      outputmode = OM_TEXT;
-      p++;
-      continue;
-    }
-    if ( strcmp (*p, "-c") == 0 ) {
-      // write output in C-compilable format
-      outputmode = OM_CC;
-      p++;
-      continue;
-    }
-    if ( strcmp (*p, "-d") == 0 ) {
-      // treat as an alias for "-n itfa"
-      disable_sources ("itfa");
-      scan_code = 0;
-      p++;
-      continue;
-    }
-    if ( strcmp (*p, "-n") == 0 ) {
-      p++;
-      disable_sources(*p);
-      i++;
-      p++;
-      continue;
-    }
-    if ( strcmp (*p, "-h") == 0 ) {
-      usage();
-      exit(0);
-    }
-    if ( strcmp (*p, "-s") == 0 ) {
-      // code to initialize as a server  "-s <infd> <outfd>"
-      if ((i+2) > argc) {
-        // argument count is wrong
-        fprintf (stderr, "FNB2: hpcfnbounds server invocation too few arguments\n" );
-        exit(1);
-      }
-     p++;
-     int _infd = atoi (*p);
-     p++;
-     int _outfd = atoi (*p);
-     server_mode = 1;
-     if (scan_code == 1) {
-       // aggressively search for stripped functions
-       sr = init_server(DiscoverFnTy_Aggressive, _infd, _outfd);
-     } else {
-       // conservatively search for stripped functions
-       sr = init_server(DiscoverFnTy_Conservative, _infd, _outfd);
-     }
-     // init_server returns 0 when done.  If it has finished, us too.
-     // if an error in init_server is reported, we report it here too.
-     return sr;
-    }
-    // any other arguments must be the name of a load objects to process
-    // First, check to see if environment varirable HPCFNBOUNDS_NO_USE is set
-    if (disable_init == 0 ) {
-      char *str = getenv( "HPCFNBOUNDS_NO_USE" );
-      if (str != NULL) {
-         disable_sources (str);
-       }
-       disable_init = 1;
-    }
 
-    // Process the next argument
-     if (verbose) {
-       fprintf(stderr, "\nFNB2: Begin processing load-object %s\n", *p);
-     }
-     ret = get_funclist (*p);
-     if ( ret != NULL) {
-       fprintf(stderr, "\nFNB2: Failure processing load-object %s: %s\n", *p, ret );
-     } else {
-       if (verbose) {
-         fprintf(stderr, "\nFNB2: Success processing load-object %s\n", *p);
-       }
-     }
-     p ++;
-  }
+// Methods for the various sources of functions
+static uint64_t        dynsymread(FnboundsResponse*, Elf *e, GElf_Shdr sh, const char* xname);
+static uint64_t        symtabread(FnboundsResponse*, Elf *e, GElf_Shdr sh, const char* xname);
+static uint64_t  symsecread(FnboundsResponse*, Elf *e, GElf_Shdr sechdr);
 
-  return 0;
-}
-
-char *
-get_funclist(char *name)
+FnboundsResponse
+fnb_get_funclist(const char *name)
 {
   int fd;
-  char  *ret = NULL;
-  uint64_t k;
   Elf   *e;
-
-  refOffset = 0;
-
-  // Make sure function list array is allocated
-  // And that initial values are set to something reasonable in case of early exit
-  //
-  if ( farray == NULL) {
-    farray = (Function_t*) valloc(MAX_FUNC * sizeof(Function_t) );
-    maxfunc = MAX_FUNC;
-    nfunc = 0;
-    //
-    // This is a "safe" initialization.  If it causes extra memory to be
-    // mapped (i.e. memory usage increases markedly, it could be removed.
-    //
-    for (k = 0; k < maxfunc; k++) {
-      farray[k].fadd = 0ull;
-      farray[k].fnam = NULL;
-      farray[k].src = SC_FNTYPE_NONE;
-      farray[k].fr_fnam = FR_NO;
-    }
-    if ( verbose > 1) {
-      fprintf(stderr, "FNB2: Initial farray allocated for %ld functions\n", maxfunc);
-    }
-  }
-  xname = name;
+  FnboundsResponse ret = {
+    .entries = NULL,
+    .num_entries = 0,
+    .max_entries = 0,
+    .is_relocatable = 0,
+    .reference_offset = 0,
+  };
 
   // Special-case the name "[vdso]"
   if (strcmp (name, "[vdso]") == 0 ) {
-    ret = process_vdso();
-    cleanup();
-    return ret;
+    return process_vdso();
   }
 
   // open the file
   fd = open(name, O_RDONLY);
   if (fd == -1) {
     // the open failed
-    sprintf( ebuf, "open failed -- %s", strerror(errno) );
-    cleanup();  // ensure farray freed in case of error
-    return ebuf;
+    ETMSG(FNBOUNDS, "Server failure processing %s: open failed -- %s", name, strerror(errno) );
+    return ret;
   }
 
   if (elf_version(EV_CURRENT) == EV_NONE) {
-    sprintf( ebuf, "%s", elf_errmsg(-1));
+    ETMSG(FNBOUNDS, "Server failure processing %s: %s", name, elf_errmsg(-1));
     close (fd);
-    return ebuf;
+    return ret;
   }
 
   e = elf_begin(fd,ELF_C_READ, NULL);
   if (e == NULL) {
-    sprintf( ebuf, "%s", elf_errmsg(-1));
+    ETMSG(FNBOUNDS, "Server failure processing %s: %s", name, elf_errmsg(-1));
     close (fd);
-    cleanup();  // ensure farray freed in case of error
-    return ebuf;
+    return ret;
   }
 
   // process the mapped header
   // ret points to either a char error buffer or is NULL,
   // in which case just return it to indicate success
   //
-  ret = process_mapped_header(e);
+  ret = process_mapped_header(e, name);
 
-  cleanup();
   (void) elf_end(e);
   close (fd);
   return ret;
 }
 
-void
-cleanup()
-{
-  uint64_t i;
-  //
-  // clean up
-  //
-  if (farray != NULL) {
-    for (i=0; i<nfunc; i++) {
-      if (farray[i].fr_fnam == FR_YES) {
-        free(farray[i].fnam);
-      }
-    }
-    free(farray);
-    farray = NULL;
-    nfunc = 0;
- }
-
-  refOffset = 0;
-}
-
-char  *
+FnboundsResponse
 process_vdso()
 {
   Elf *e = (Elf *)getauxval(AT_SYSINFO_EHDR);
 #if 1
   Elf_Kind ek = elf_kind(e);
   if (ek != ELF_K_ELF) {
-    sprintf( ebuf2, "Warning, vdso is not elf_kind" );
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing [vdso]: Warning, vdso is not elf_kind");
+    return (FnboundsResponse){NULL, 0, 0, 0, 0};
   } else {
-    sprintf( ebuf2, "Warning, vdso IS elf_kind" );
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing [vdso]: Warning, vdso IS elf_kind");
+    return (FnboundsResponse){NULL, 0, 0, 0, 0};
   }
 #endif
-  char* ret = process_mapped_header(e);
-  return ret;
+  return process_mapped_header(e, "[vdso]");
 }
 
 // process_mapped_header -- verify the header, and read the functions
-char *
-process_mapped_header(Elf *lelf)
+FnboundsResponse
+process_mapped_header(Elf *lelf, const char* xname)
 {
   int i;
   size_t secHeadStringIndex,nsec;
@@ -296,52 +121,50 @@ process_mapped_header(Elf *lelf)
   Elf_Scn *section;
   GElf_Ehdr ehdr;
   char *secName;
-  char foo[TB_SIZE];
-  char *fn;
   size_t j,jn;
   GElf_Phdr progHeader;
   ehRecord_t ehInfo;
   uint64_t rf;
-  uint32_t symTabPresent;
-  uint32_t dynSymIssue;
   char elfclass;
+
+  FnboundsResponse response = {
+    .entries = NULL,
+    .num_entries = 0,
+    .max_entries = 0,
+    .is_relocatable = 0,
+    .reference_offset = 0,
+  };
 
   // verify the header is as it should be
 
   if (gelf_getehdr(lelf, &ehdr) == NULL) {
-    sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing %s: %s %s", xname, elfGenericErr, elf_errmsg(-1));
+    return response;
   }
 
   if (    (ehdr.e_ident[EI_MAG0] != ELFMAG0) ||
           (ehdr.e_ident[EI_MAG1] != ELFMAG1) ||
           (ehdr.e_ident[EI_MAG2] != ELFMAG2) ||
           (ehdr.e_ident[EI_MAG3] != ELFMAG3) ) {
-    sprintf( ebuf2, "incorrect elf header magic numbers" );
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing %s: incorrect elf header magic numbers", xname);
+    return response;
   }
   elfclass = ehdr.e_ident[EI_CLASS];
 
   if( elfclass != ELFCLASS64 ) {
-    sprintf( ebuf2, "incorrect elfclass -- 0x%x", elfclass );
-    return ebuf2;
-  }
-
-  if (verbose > 1) {
-    print_elf_header64(&ehdr);
-    print_program_headers64(lelf);
-    print_section_headers64(lelf);
+    ETMSG(FNBOUNDS, "Server failure processing %s: incorrect elfclass -- 0x%x", xname, elfclass);
+    return response;
   }
 
   if (ehdr.e_type == ET_EXEC) {
-    is_dotso = 0;
+    response.is_relocatable = 0;
   }
   else if (ehdr.e_type == ET_DYN) {
-    is_dotso = 1;
+    response.is_relocatable = 1;
   } else {
     // we should not see this
-    sprintf( ebuf2, "Filetype is neither ET_EXEC nor ET_DYN" );
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing %s: Filetype is neither ET_EXEC nor ET_DYN", xname);
+    return response;
   }
 
   //
@@ -349,34 +172,41 @@ process_mapped_header(Elf *lelf)
   // header marked PT_LOAD, with the execute flag set
   //
   if (elf_getphdrnum(lelf,&jn) != 0) {
-    sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing %s: %s %s", xname, elfGenericErr, elf_errmsg(-1));
+    return response;
   }
   for (j=0; j<jn; j++) {
     if (gelf_getphdr(lelf,j,&progHeader) != &progHeader) {
-      sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
-      return ebuf2;
+      ETMSG(FNBOUNDS, "Server failure processing %s: %s %s", xname, elfGenericErr, elf_errmsg(-1));
+      return response;
     }
     if ( (progHeader.p_type == PT_LOAD) && ((progHeader.p_flags & PF_X) == PF_X ) ) {
-      refOffset = progHeader.p_vaddr;
+      response.reference_offset = progHeader.p_vaddr;
       break;
     }
   }
 
   if (j == jn) {
-    sprintf( ebuf2, "no executable PT_LOAD program header found of %ld headers\n",jn);
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing %s: no executable PT_LOAD program header found of %ld headers", xname, jn);
+    return response;
   }
 
   if (elf_getshdrnum(lelf, &nsec) != 0) {
-    sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing %s: %s %s", xname, elfGenericErr, elf_errmsg(-1));
+    return response;
   }
 
   if (elf_getshdrstrndx(lelf, &secHeadStringIndex) != 0) {
-    sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
-    return ebuf2;
+    ETMSG(FNBOUNDS, "Server failure processing %s: %s %s", xname, elfGenericErr, elf_errmsg(-1));
+    return response;
   }
+
+  // Allocate an initial FunctionVector to start filling
+  // This is a "safe" initialization.  If it causes extra memory to be
+  // mapped (i.e. memory usage increases markedly, it could be removed.
+  response.entries = calloc(MAX_FUNC, sizeof response.entries[0]);
+  response.max_entries = MAX_FUNC;
+  TMSG(FNBOUNDS_EXT, "Initial farray allocated for %ld functions", response.max_entries);
 
   // initialize ehRecord
   ehInfo.ehHdrSection = NULL;
@@ -388,8 +218,8 @@ process_mapped_header(Elf *lelf)
 
   section = NULL;
 
-  symTabPresent = FR_NO;
-  dynSymIssue = FR_NO;
+  bool symTabPresent = false;
+  bool dynSymIssue = false;
   //
   // This is the main loop for traversing the sections.
   // NB section numbering starts at 1, not 0.
@@ -397,66 +227,69 @@ process_mapped_header(Elf *lelf)
   for(i=1; i < nsec; i++) {
     section = elf_nextscn(lelf, section);
     if (section == NULL) {
-      sprintf( ebuf2, "section count mismatch, expected %d but got %d\n", (uint32_t)nsec, i);
-      return ebuf2;
+      ETMSG(FNBOUNDS, "Server failure processing %s: section count mismatch, expected %d but got %d", xname, (uint32_t)nsec, i);
+      free(response.entries);
+      response.entries = NULL;
+      response.max_entries = 0;
+      return response;
     }
 
     if (gelf_getshdr(section, &secHead) != &secHead) {
-      sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
-      return ebuf2;
+      ETMSG(FNBOUNDS, "Server failure processing %s: %s %s", xname, elfGenericErr, elf_errmsg(-1));
+      free(response.entries);
+      response.entries = NULL;
+      response.max_entries = 0;
+      return response;
     }
     secName = elf_strptr(lelf, secHeadStringIndex, secHead.sh_name);
     if (secName == NULL) {
-      sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
-      return ebuf2;
+      ETMSG(FNBOUNDS, "Server failure processing %s: %s %s", xname, elfGenericErr, elf_errmsg(-1));
+      free(response.entries);
+      response.entries = NULL;
+      response.max_entries = 0;
+      return response;
     }
     if (secHead.sh_flags == (SHF_ALLOC|SHF_EXECINSTR)) {
-
-      sprintf(foo, "start %s section", secName);
-      fn = strdup(foo);
-      add_function (secHead.sh_addr, fn, SC_FNTYPE_NONE, FR_YES);
-
-      sprintf(foo, "end %s section", secName);
-      fn = strdup(foo);
-      add_function(secHead.sh_addr+secHead.sh_size, fn, SC_FNTYPE_NONE, FR_YES);
+      fnb_add_function (&response, (void*)secHead.sh_addr);
+      fnb_add_function(&response, (void*)(secHead.sh_addr+secHead.sh_size));
     }
 
     if (secHead.sh_type == SHT_SYMTAB) {
-      rf = symtabread(lelf, secHead);
+      rf = symtabread(&response, lelf, secHead, xname);
       // only skip eh_frame if symtabread was successful
-      if ((rf == SC_DONE) && (symtabread_f == SC_DONE) && (dynSymIssue == FR_NO)){
-        symTabPresent = FR_YES;
+      if (rf && !dynSymIssue){
+        symTabPresent = true;
       }
     }
     else if (secHead.sh_type == SHT_DYNSYM) {
-      rf = dynsymread(lelf, secHead);
+      rf = dynsymread(&response, lelf, secHead, xname);
       // force eh_frame read if something went wrong
-      if ((rf == SC_SKIP) && (dynsymread_f == SC_DONE)) {
-        dynSymIssue = FR_YES;
-        symTabPresent = FR_NO;
+      if (!rf) {
+        dynSymIssue = true;
+        symTabPresent = false;
       }
     }
 
     else if (secHead.sh_type == SHT_PROGBITS) {
       if (!strcmp(secName,".plt")) {
-        pltscan(lelf, secHead);
+        fnb_pltscan(&response, lelf, secHead, xname);
       }
       else if (!strcmp(secName,".plt.sec")) {
-        pltsecscan(lelf, secHead);
+        fnb_pltsecscan(&response, lelf, secHead, xname);
       }
       else if (!strcmp(secName,".init")) {
-        initscan(lelf, secHead);
+        fnb_initscan(&response, lelf, secHead, xname);
       }
       else if (!strcmp(secName,".text")) {
-        textscan(lelf, secHead);
+        fnb_textscan(&response, lelf, secHead, xname);
         ehInfo.textSection = section;  // may be needed for eh_frame scan
       }
       else if (!strcmp(secName,".data")) {
-        textscan(lelf, secHead);
+        fnb_textscan(&response, lelf, secHead, xname);
         ehInfo.dataSection = section;  // may be needed for eh_frame scan
       }
       else if (!strcmp(secName,".fini")) {
-        finiscan(lelf, secHead);
+        fnb_finiscan(&response, lelf, secHead, xname);
       }
       else if (!strcmp(secName,".eh_frame_hdr")) {
         ehInfo.ehHdrIndex = elf_ndxscn(section);
@@ -467,7 +300,7 @@ process_mapped_header(Elf *lelf)
         ehInfo.ehFrameSection = section;
       }
       else if (!strcmp(secName,".altinstr_replacement")) {
-        altinstr_replacementscan(lelf, secHead);
+        fnb_altinstr_replacementscan(&response, lelf, secHead, xname);
       }
     }
   }
@@ -483,104 +316,62 @@ process_mapped_header(Elf *lelf)
   // again here.  effectively we might have gotten plenty of good addresses
   // from the scan, even if there were errors.
   //
-  if (symTabPresent == FR_NO) {
-    (void)ehframescan(lelf, &ehInfo);
+  if (!symTabPresent) {
+    (void)fnb_ehframescan(&response, lelf, &ehInfo, xname);
   }
 
-  if (verbose > 1) {
-    fprintf(stderr, "\n");
-  }
-
-  // We have the complete function table, now sort it
-  qsort( (void *)farray, nfunc, sizeof(Function_t), &func_cmp );
-
-  // output the result
-  if (server_mode != 0) {
-    // send list to server
-    send_funcs();
-  } else {
-    // Print the function list
-    print_funcs();
-  }
-  return NULL;
-}
-
-void
-disable_sources(char *str)
-{
-  if (verbose) {
-    fprintf(stderr, "FNB2: Disabling sources \"%s\"\n", str);
-  }
-  int i;
-  for (i = 0; ; i++) {
-    switch (str[i]) {
-      case 'd':
-        dynsymread_f = SC_SKIP;
-        break;
-      case 's':
-        symtabread_f = SC_SKIP;
-        break;
-      case 'e':
-        ehframeread_f = SC_SKIP;
-        break;
-      case 'p':
-        pltscan_f = SC_SKIP;
-        break;
-      case 'q':
-        pltsecscan_f = SC_SKIP;
-        break;
-      case 'i':
-        initscan_f = SC_SKIP;
-        break;
-      case 't':
-        textscan_f = SC_SKIP;
-        break;
-      case 'f':
-        finiscan_f = SC_SKIP;
-        break;
-      case 'a':
-        altinstr_replacementscan_f = SC_SKIP;
-        break;
-      default:
-        return;
+  // We have the complete function table, now sort it and remove duplicates
+  qsort(response.entries, response.num_entries, sizeof response.entries[0], func_cmp);
+  size_t oldnfunc = response.num_entries;
+  if (response.num_entries > 0) {
+    size_t lastunique = 0;
+    for (size_t i = 1; i < response.num_entries; ++i) {
+      if (response.entries[lastunique] != response.entries[i]) {
+        lastunique++;
+        response.entries[lastunique] = response.entries[i];
       }
+    }
+    response.num_entries = lastunique + 1;
   }
+  TMSG(FNBOUNDS, "%s = %ld (%ld) -- %s", strrchr(xname, '/'), response.num_entries, oldnfunc, xname);
+
+  return response;
 }
 
 // Routines to read the elf sections
 
 uint64_t
-dynsymread(Elf *e, GElf_Shdr sechdr)
+dynsymread(FnboundsResponse* resp, Elf *e, GElf_Shdr sechdr, const char* xname)
 {
   uint64_t rf;
 
-  if (skipSectionScan(e, sechdr, dynsymread_f) == SC_SKIP) {
-    return SC_SKIP;
+  if (!fnb_doSectionScan(e, sechdr, xname)) {
+    return false;
   }
 
-  rf = symsecread (e, sechdr, SC_FNTYPE_DYNSYM);
+  rf = symsecread (resp, e, sechdr);
 
   return rf;
 
 }
 
 uint64_t
-symtabread(Elf *e, GElf_Shdr sechdr)
+symtabread(FnboundsResponse* resp, Elf *e, GElf_Shdr sechdr, const char* xname)
 {
   uint64_t rf;
 
-  if (skipSectionScan(e, sechdr, symtabread_f) == SC_SKIP) {
-      return SC_SKIP;
+  if (!fnb_doSectionScan(e, sechdr, xname)) {
+      return false;
   }
 
-  rf = symsecread (e, sechdr, SC_FNTYPE_SYMTAB);
+  rf = symsecread (resp, e, sechdr);
 
   return rf;
 
 }
 
 uint64_t
-symsecread(Elf *e, GElf_Shdr secHead, char *src)
+symsecread(FnboundsResponse* resp, Elf *e, GElf_Shdr secHead)
 {
   Elf_Data *data;
   char *symName;
@@ -592,157 +383,65 @@ symsecread(Elf *e, GElf_Shdr secHead, char *src)
 
   section = gelf_offscn(e,secHead.sh_offset);  // back read section from header offset
   if (section == NULL) {
-    fprintf(stderr, "FNB2: %s %s\n", elfGenericErr, elf_errmsg(-1));
-    return SC_SKIP;
+    ETMSG(FNBOUNDS, "%s %s", elfGenericErr, elf_errmsg(-1));
+    return false;
   }
   data = elf_getdata(section, NULL);           // use it to get the data
   if (data == NULL) {
-    fprintf(stderr, "FNB2: %s %s\n", elfGenericErr, elf_errmsg(-1));
-    return SC_SKIP;
+    ETMSG(FNBOUNDS, "%s %s", elfGenericErr, elf_errmsg(-1));
+    return false;
   }
 
 
   count = (secHead.sh_size)/(secHead.sh_entsize);
   for (ii=0; ii<count; ii++) {
     if (gelf_getsym(data, ii, &curSym) != &curSym) {
-      fprintf(stderr, "FNB2: %s %s\n", elfGenericErr, elf_errmsg(-1));
-      return SC_SKIP;
+      ETMSG(FNBOUNDS, "%s %s", elfGenericErr, elf_errmsg(-1));
+      return false;
     }
     symName = elf_strptr(e, secHead.sh_link, curSym.st_name);
     if (symName == NULL) {
-      fprintf(stderr, "FNB2: %s %s\n", elfGenericErr, elf_errmsg(-1));
-      return SC_SKIP;
+      ETMSG(FNBOUNDS, "%s %s", elfGenericErr, elf_errmsg(-1));
+      return false;
     }
     symType = GELF_ST_TYPE(curSym.st_info);
 
     if ( (symType == STT_FUNC) && (curSym.st_value != 0) ) {
-      add_function(curSym.st_value, symName, src, FR_NO);
+      fnb_add_function(resp, (void*)curSym.st_value);
       // this hack in case the symName was going away with the
       // closed elf *, but that doesn't seem to be happening.
       // marmite = strdup(symName);
-      // add_function(curSym.st_value, marmite, src, FR_YES);
+      // fnb_add_function(curSym.st_value, marmite, src, FR_YES);
     }
   }
 
-  return SC_DONE;
+  return true;
 
 }
 
 void
-print_funcs()
+fnb_add_function(FnboundsResponse* resp, void* faddr)
 {
-  int i;
-  if ( verbose) {
-    fprintf(stderr, "FNB2: Writing output in %s mode (%d)\n",
-       (outputmode == OM_TEXT ? "text" : "C-compilable"), outputmode );
-  }
-  if (outputmode == OM_CC ) {
-    write_cc_funcs();
-    return;
-  }
-
-  // Print the function list
-  int np = 0;
-  if (nfunc > 0) {
-    // print the first entry, not beginning with new line
-    printf("0x%lx    %s(%s)", farray[0].fadd, farray[0].fnam, farray[0].src);
-    uint64_t lastaddr = farray[0].fadd;
-    np ++;
-
-    // now do the rest of the list
-    for (i=1; i<nfunc; i ++) {
-      if (farray[i].fadd == lastaddr) {
-        // if at the last address, just add the alias string
-        printf(", %s(%s)", farray[i].fnam, farray[i].src);
-      } else {
-        // terminate previous entry, and start new one
-        printf("\n0x%lx    %s(%s)", farray[i].fadd, farray[i].fnam, farray[i].src);
-        lastaddr = farray[i].fadd;
-        np ++;
-      }
-    }
-  }
-  printf("\nnum symbols = %d, reference offset = 0x%lx, relocatable = %d\n", np,
-      refOffset, is_dotso );
-}
-
-void
-write_cc_funcs()
-{
-  int i;
-  // write the function address list
-  if (nfunc > 0) {
-    // print the header
-    printf("unsigned long hpcrun_nm_addrs[] = {\n" );
-
-    // print the first entry, not beginning with new line
-    // printf("  0x%lx   /* %s(%s)", farray[0].fadd, farray[0].fnam, farray[0].src);
-    printf("  0x%lx  /* %s", farray[0].fadd, farray[0].fnam);
-    uint64_t lastaddr = farray[0].fadd;
-
-    // now do the rest of the list
-    for (i=1; i<nfunc; i ++) {
-      if (farray[i].fadd == lastaddr) {
-        // if at the last address, just add the alias string
-        // printf(", %s(%s)", farray[i].fnam, farray[i].src);
-        printf(", %s", farray[i].fnam);
-      } else {
-        // terminate previous entry, and start new one
-        // printf(" */,\n  0x%lx  /*  %s(%s)", farray[i].fadd, farray[i].fnam, farray[i].src);
-        printf(" */,\n  0x%lx  /* %s", farray[i].fadd, farray[i].fnam);
-        lastaddr = farray[i].fadd;
-      }
-    }
-    // terminate the last entry written, and the table
-    printf(" */\n};\n" );
-  }
-  // print the trailer
-  printf("unsigned long hpcrun_nm_addrs_len = sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n" );
-  printf("unsigned long hpcrun_reference_offset = 0x%lx;\n" , refOffset );
-  printf("int hpcrun_is_relocatable = %d;\n", is_dotso );
-}
-
-void
-add_function(uint64_t faddr, char *fname, char *src, uint8_t freeFlag)
-{
-  Function_t * of;
+  void** of;
   uint64_t k;
 
-  farray[nfunc].fadd = faddr;
-  farray[nfunc].fnam = fname;
-  farray[nfunc].src = src;
-  farray[nfunc].fr_fnam = freeFlag;
-  //
-  // on freeFlag: FR_YES means fname was malloc'd elsewhere and needs freeing
-  // after we're done with the list.  FR_NO means it's a symbol *  from an elf *, so
-  // libelf will take care of it.
-  //
-#if DEBUG
-  fprintf(stderr, "FNB2: Adding: #%6d --0x%08lx\t%s(%s)\n", nfunc, farray[nfunc].fadd,
-      farray[nfunc].fnam, farray[nfunc].src);
-#endif
-  nfunc ++;
-  if (nfunc >= maxfunc) {
+  resp->entries[resp->num_entries] = faddr;
+  resp->num_entries ++;
+  if (resp->num_entries >= resp->max_entries) {
     // current table is full; double its size
-    maxfunc = 2*maxfunc;
-    of = farray;
-    farray = (Function_t *)realloc(farray, maxfunc * sizeof(Function_t) );
-    if ( verbose > 1) {
-      fprintf(stderr, "FNB2: Increasing farray size to %ld functions %s\n",
-         maxfunc, (of == farray ? "(not moved)" : "(moved)") );
-    }
-    if (farray == NULL) {
-      fprintf(stderr, "FNB2: Fatal error: unable to increase function table to %ld functions; exiting", maxfunc);
-      exit(1);
+    resp->max_entries = 2*resp->max_entries;
+    of = resp->entries;
+    resp->entries = realloc(resp->entries, resp->max_entries * sizeof resp->entries[0] );
+    TMSG(FNBOUNDS_EXT, "Increasing farray size to %ld functions %s",
+        resp->max_entries, (of == resp->entries ? "(not moved)" : "(moved)") );
+    if (resp->entries == NULL) {
+      hpcrun_abort("hpcrun: unable to increase function table to %ld functions; exiting", resp->max_entries);
     }
     //
     // initialize the new part of the table.
     //
-    for (k = nfunc; k < maxfunc; k++) {
-      farray[k].fadd = 0ull;
-      farray[k].fnam = NULL;
-      farray[k].src = SC_FNTYPE_NONE;
-      farray[k].fr_fnam = FR_NO;
+    for (k = resp->num_entries; k < resp->max_entries; k++) {
+      resp->entries[k] = 0ull;
     }
   }
 }
@@ -750,47 +449,14 @@ add_function(uint64_t faddr, char *fname, char *src, uint8_t freeFlag)
 int
 func_cmp(const void *a, const void *b)
 {
-  int ret;
+  int ret = 0;
 
-  Function_t fp1 = *((Function_t *) a);
-  Function_t fp2 = *((Function_t *) b);
-  if (fp1.fadd > fp2.fadd ) {
+  uint64_t fp1 = *((const uint64_t *) a);
+  uint64_t fp2 = *((const uint64_t *) b);
+  if (fp1 > fp2 ) {
     ret = 1;
-  } else if (fp1.fadd < fp2.fadd ) {
+  } else if (fp1 < fp2 ) {
     ret = -1;
-  } else {
-    ret = strcmp (fp1.fnam, fp2.fnam);
   }
   return ret;
-}
-
-void
-usage()
-{
-  fprintf(stderr,
-      "Usage: hpcfnbounds [options] object-file\n    options are:\n"
-      "\t-v\tturn on verbose output in hpcfnbounds\n"
-      "\t-v2\tturn on extended verbose output in hpcfnbounds\n"
-      "\t-V, --version\tdisplay version and exit\n"
-      "\t-n <str>\tdon't use functions sources as listed in <str>\n"
-      "\t    characters in <str> are interpreted as follows:\n"
-      "\t\t" "d -- skip reading .dynsym section\n"
-      "\t\t" "s -- skip reading .symtab section\n"
-      "\t\t" "e -- skip reading .eh_frame section\n"
-      "\t\t" "p -- skip scanning instructions from .plt section\n"
-      "\t\t" "q -- skip scanning instructions from .plt.sec section\n"
-      "\t\t" "i -- skip scanning instructions from .init section\n"
-      "\t\t" "t -- skip scanning instructions from .text section\n"
-      "\t\t" "f -- skip scanning instructions from .fini section\n"
-      "\t\t" "a -- skip scanning instructions from .altinstr_replacement section\n"
-      "\t     also can be specified with environment variable HPCFNBOUNDS_NO_USE\n"
-      "\t-d\tdon't perform function discovery on stripped code\n"
-      "\t\t    eguivalent to -n itfa\n"
-      "\t-s fdin fdout\t" "run in server mode\n"
-      "\t-c\twrite output in C source code\n"
-      "\t-t\twrite output in text format (default)\n"
-      "\t\tIf no format is specified, then text mode is used.\n"
-      "\t-h\tprint this help message and exit\n"
-      "\n"
-  );
 }

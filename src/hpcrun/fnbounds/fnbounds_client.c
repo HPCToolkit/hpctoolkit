@@ -327,22 +327,6 @@ hpcfnbounds_grandchild(void* fds_vp)
 
   int j = 0;
   arglist[j++] = server;
-#ifdef STAND_ALONE_CLIENT
-  if (serv_verbose) {
-    arglist[j++] = "-v";
-  }
-  if (noscan) {
-    arglist[j++] = "-d";
-  }
-#else
-  // verbose options from hpcrun -dd vars
-  if (ENABLED(FNBOUNDS)) {
-    arglist[j++] = "-v";
-  }
-  if (ENABLED(FNBOUNDS_EXT)) {
-    arglist[j++] = "-v2";
-  }
-#endif
   arglist[j++] = "-s";
   arglist[j++] = fdin_str;
   arglist[j++] = fdout_str;

@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-_srcs = files('debug_fn.c', 'fnbounds.c', 'scan.c', 'server.c')
+_srcs = files('fnbounds.c', 'scan.c', 'server.c')
 
 hpcfnbounds = executable(
   'hpcfnbounds',
