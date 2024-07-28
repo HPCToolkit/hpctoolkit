@@ -26,7 +26,6 @@ foreach _threadmodel, _tstexe : _threadmodels
     args: [hpctesttool, hpcrun, _tstexe],
     suite: 'hpcrun',
     depends: hpcrun_test_depends,
-    env: hpcrun_test_env,
     should_fail: _should_fail,
   )
   test(
@@ -35,7 +34,6 @@ foreach _threadmodel, _tstexe : _threadmodels
     args: [hpctesttool, hpcrun, _tstexe],
     suite: 'hpcrun',
     depends: hpcrun_test_depends,
-    env: hpcrun_test_env,
     should_fail: _should_fail,
   )
 endforeach

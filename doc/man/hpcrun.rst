@@ -213,10 +213,6 @@ These options are intended for use by the HPCToolkit team, but could be helpful 
 ``-md``, ``--monitor-debug``
   Enable debug tracing of libmonitor, the hpcrun subsystem which implements process/thread control.
 
---fnbounds-eager-shutdown
-  Terminate the hpcfnbounds server when it goes idle.
-  By default, it is kept alive during the entire run.
-
 ENVIRONMENT VARIABLES
 =====================
 

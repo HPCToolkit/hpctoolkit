@@ -30,7 +30,7 @@
 #include <atomic>
 #endif
 
-#include "fnbounds/fnbounds_file_header.h"
+#include "fnbounds/fnbounds.h"
 
 #include <link.h>
 
@@ -50,7 +50,6 @@ typedef struct dso_info_t {
   void* end_addr;
   uintptr_t start_to_ref_dist;
   void** table;
-  unsigned long map_size;
   unsigned long nsymbols;
   int  is_relocatable;
 
@@ -73,9 +72,8 @@ hpcrun_dso_new();
 
 // Allocates and initializes a dso_info_t
 dso_info_t*
-hpcrun_dso_make(const char* name, void** table,
-                struct fnbounds_file_header* fh,
-                void* startaddr, void* endaddr, unsigned long map_size);
+hpcrun_dso_make(const char* name, const FnboundsResponse* fnbres,
+                void* startaddr, void* endaddr);
 
 
 // ---------------------------------------------------------

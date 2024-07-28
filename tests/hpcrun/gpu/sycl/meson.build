@@ -28,7 +28,6 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_sycl, 'gpu=level0', ''],
   suite: ['hpcrun', 'level0'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 test(
   'Measurement of tstexe-vecadd-sycl with tracing produces profiles',
@@ -36,7 +35,6 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_sycl, 'gpu=level0', '-t'],
   suite: ['hpcrun', 'level0'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 test(
   'Measurement of tstexe-vecadd-sycl with boosted tracing produces profiles',
@@ -44,7 +42,6 @@ test(
   args: [hpctesttool, hpcrun, _tstexe_vecadd_sycl, 'gpu=level0', '-tt'],
   suite: ['hpcrun', 'level0'],
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 
 if gtpin_dep.found()
@@ -57,7 +54,6 @@ if gtpin_dep.found()
   #   args: [hpctesttool, hpcrun, _tstexe_vecadd_sycl, 'gpu=level0,inst=count', ''],
   #   suite: ['hpcrun', 'level0'],
   #   depends: hpcrun_test_depends,
-  #   env: hpcrun_test_env,
   # )
 
 endif

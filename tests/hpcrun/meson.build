@@ -14,10 +14,9 @@ test(
   args: ['-L'] + _args,
   suite: 'hpcrun',
   depends: hpcrun_test_depends,
-  env: hpcrun_test_env,
 )
 
-_env = hpcrun_test_env
+_env = environment()
 _env.prepend('PATH', fs.parent(hpcrun.full_path()))
 test(
   'Listing metrics as "hpcrun" does not error',
