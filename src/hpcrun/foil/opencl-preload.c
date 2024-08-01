@@ -9,7 +9,8 @@
 
 #include "foil.h"
 #include "../gpu/api/opencl/opencl-api-wrappers.h"
-#include "../../common/lean/hpcrun-opencl.h"
+
+#include <CL/cl.h>
 
 
 FOIL_DLSYM_FUNC(clGetKernelInfo);

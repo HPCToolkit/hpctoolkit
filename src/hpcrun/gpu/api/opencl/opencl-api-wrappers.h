@@ -10,7 +10,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../../common/lean/hpcrun-opencl.h"
+#include <CL/cl.h>
 
 
 

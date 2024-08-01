@@ -714,7 +714,13 @@ if get_option('opencl').allowed()
   endif
 endif
 if opencl_dep.found()
-  add_project_arguments('-DENABLE_OPENCL', '-DHPCRUN_SS_OPENCL', language: ['c', 'cpp'])
+  add_project_arguments(
+    '-DENABLE_OPENCL',
+    '-DHPCRUN_SS_OPENCL',
+    '-DCL_TARGET_OPENCL_VERSION=210',
+    '-DCL_USE_DEPRECATED_OPENCL_1_2_APIS',
+    language: ['c', 'cpp'],
+  )
 endif
 
 # Find a full OpenCL installation. We need this to run some of the tests.

@@ -49,7 +49,6 @@
 #include "../../../utilities/hpcrun-nanotime.h"
 #include "../../../../common/lean/crypto-hash.h"
 #include "../../../../common/lean/elf-extract.h"
-#include "../../../../common/lean/hpcrun-opencl.h"
 #include "../../../../common/lean/spinlock.h"
 #include "../../../../common/lean/splay-uint64.h"
 #include <stdatomic.h>
@@ -65,6 +64,7 @@
 #include "opencl-kernel-loadmap-map.h"
 #include "intel/optimization-check.h"
 
+#include <CL/cl.h>
 
 
 //******************************************************************************

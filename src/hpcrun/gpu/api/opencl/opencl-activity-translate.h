@@ -15,7 +15,8 @@
 //******************************************************************************
 
 #include "../../activity/gpu-activity.h"
-#include "../../../../common/lean/hpcrun-opencl.h"
+
+#include <CL/cl.h>
 
 
 

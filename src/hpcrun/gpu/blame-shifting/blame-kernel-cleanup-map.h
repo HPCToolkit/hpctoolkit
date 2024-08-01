@@ -18,7 +18,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../common/lean/hpcrun-opencl.h"      // cl_event
+#include <CL/cl.h>
 
 
 
