@@ -66,7 +66,6 @@ static execve_fcn_t  *real_execve = NULL;
 static sigaction_fcn_t    *real_sigaction = NULL;
 static sigprocmask_fcn_t  *real_sigprocmask = NULL;
 static system_fcn_t  *real_system = NULL;
-static malloc_fcn_t  *real_malloc = NULL;
 
 static char *newenv_array[MONITOR_INIT_ENVIRON_SIZE];
 
@@ -435,6 +434,7 @@ monitor_system(const char *command, int callback)
         (*real_execve)(SHELL, arglist,
                        callback ? environ : monitor_copy_environ(environ));
         auditor_exports->exit(127);
+        __builtin_unreachable();
     }
     else {
         /* Parent process. */

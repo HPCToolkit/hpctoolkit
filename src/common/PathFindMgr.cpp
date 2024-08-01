@@ -168,10 +168,11 @@ PathFindMgr::pathfind_slow(const char* pathList, const char* name,
   int first_nr = 1;
   while (aPath != NULL) {
     if (PathFindMgr::isRecursivePath(aPath)) {
-      // copy to recursive path list (Do not copy trailing '/*' )
-      int l = strlen(aPath);
-      strncat(pathList_r, aPath, l - RecursivePathSfxLn);
-      strcat(pathList_r, ":"); // will have a trailing ':' for 'strchr'
+      // copy to recursive path list (overwrite trailing '/*' )
+      strcat(pathList_r, aPath);
+      char* trailing = pathList_r + strlen(pathList_r) - RecursivePathSfxLn;
+      trailing[0] = ':';
+      trailing[1] = '\0';
     }
     else {
       // copy to non-recurisve path list

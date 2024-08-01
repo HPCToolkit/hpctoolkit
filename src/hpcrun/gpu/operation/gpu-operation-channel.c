@@ -101,7 +101,6 @@ gpu_operation_channel_get_local
     *channel = (gpu_operation_channel_t) {
       .mpsc_queue = MPSC_QUEUE_INITIALIZER,
       .on_send_arg = NULL,
-      .on_send_arg = NULL,
       .on_receive_fn = NULL,
       .on_receive_arg = NULL
     };

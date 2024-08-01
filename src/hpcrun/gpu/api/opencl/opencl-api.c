@@ -592,7 +592,7 @@ opencl_subscriber_callback
   // Init operations
   atomic_fetch_add(obj->pending_operations, 1);
 
-  gpu_placeholder_type_t placeholder_type;
+  gpu_placeholder_type_t placeholder_type = gpu_placeholder_type_count;
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
 
   switch (obj->kind) {
@@ -776,12 +776,12 @@ foilbase_clBuildProgram
 {
   ETMSG(OPENCL, "inside clBuildProgram_wrapper");
   // XXX(Aaron): Caution, what's the maximum length of options?
-  int len_options = options == NULL ? 0 : strlen(options);
-  int len_flag = strlen(LINE_TABLE_FLAG);
-  char *options_with_debug_flags = (char *)malloc((len_options + len_flag + 1) * sizeof(char));
-  memset(options_with_debug_flags, 0, (len_options + len_flag + 1));
-  if (len_options != 0) {
-    strncat(options_with_debug_flags, options, len_options);
+  size_t len_options = options == NULL ? 0 : strlen(options);
+  size_t len_flag = strlen(LINE_TABLE_FLAG);
+  char *options_with_debug_flags = malloc(len_options + len_flag + 1);
+  memset(options_with_debug_flags, 0, len_options + len_flag + 1);
+  if (options != NULL) {
+    strcat(options_with_debug_flags, options);
   }
   cl_int ret = pfn_real(program, num_devices, device_list,
                         options_with_debug_flags, clBuildProgramCallback,

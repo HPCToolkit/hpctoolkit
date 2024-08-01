@@ -20,7 +20,7 @@ FENCE_ENUMS
 } fence_enum_t;
 
 static const char* fence_enum_names[] = {
-#define _MM(a) [FENCE_ ## a] = "FENCE_" #a,
+#define _MM(a) "FENCE_" #a,
 FENCE_ENUMS
 #undef _MM
 };

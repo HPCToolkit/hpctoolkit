@@ -791,8 +791,7 @@ event_is_derived(int ev_code)
 
   // "Is derived" is kind of a bad thing, so if any unexpected failure
   // occurs, we'll return the "bad" answer.
-  if (PAPI_get_event_info(ev_code, &info) != PAPI_OK
-      || info.derived == NULL) {
+  if (PAPI_get_event_info(ev_code, &info) != PAPI_OK) {
     return 1;
   }
   if (info.count == 1

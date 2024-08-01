@@ -263,9 +263,9 @@ public:
     return &instance;
   }
 
-  void OnKernelBuild(IGtKernelInstrument &);
-  void OnKernelRun(IGtKernelDispatch &);
-  void OnKernelComplete(IGtKernelDispatch &);
+  void OnKernelBuild(IGtKernelInstrument &) override;
+  void OnKernelRun(IGtKernelDispatch &) override;
+  void OnKernelComplete(IGtKernelDispatch &) override;
 };
 
 
@@ -751,7 +751,7 @@ Instruction::Instruction
   uint32_t execSize = ins.ExecSize();
   GED_OPCODE opcode = ins.Opcode();
   this->execSize = execSize;
-  isPredictable = opcode < GED_OPCODE_send && opcode > GED_OPCODE_sendsc;
+  isPredictable = opcode < GED_OPCODE_send || opcode > GED_OPCODE_sendsc;
   isComplex = opcode == GED_OPCODE_math;
   latency = 0;
 }

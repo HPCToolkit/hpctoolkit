@@ -112,13 +112,11 @@ xml::UnEscapeStr(const char* str)
 static string
 xml::substitute(const char* str, const string* fromStrs, const string* toStrs)
 {
-  string newStr = string("", 512);
-
   string retStr = str;
   if (!str) { return retStr; }
 
   // Iterate over 'str' and substitute patterns
-  newStr = "";
+  string newStr;
   int strLn = strlen(str);
   for (int i = 0; str[i] != '\0'; /* */) {
 

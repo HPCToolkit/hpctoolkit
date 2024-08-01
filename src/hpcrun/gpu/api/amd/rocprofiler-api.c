@@ -39,6 +39,7 @@
 #include "../../../audit/audit-api.h"
 #include "../../../thread_data.h"
 #include "../../../sample-sources/libdl.h"
+#include "../../../main.h"
 
 #include "../../../utilities/hpcrun-nanotime.h"
 
@@ -301,23 +302,6 @@ ROCPROFILER_FN
 //******************************************************************************
 // private operations
 //******************************************************************************
-
-static void
-dump_counter_info
-(
-  counter_info_t *ctrs,
-  int n,
-  const char *label
-)
-{
-  printf("--------------------------------------------------\n");
-  printf("%s\n",label);
-  printf("--------------------------------------------------\n");
-  for(int i=0; i<n; i++) {
-    printf("%-29s %s\n", ctrs[i].name, ctrs[i].desc);
-  }
-  printf("\n");
-}
 
 // Depending on the `kind`, access to the corresponding union field
 // to extract the value of the counter.  Cast the value to the

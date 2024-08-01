@@ -14,12 +14,13 @@
 
 typedef struct gpu_activity_t gpu_activity_t;
 typedef struct cct_node_t cct_node_t;
+typedef struct gpu_instrumentation_t gpu_instrumentation_t;
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-void level0_init();
+void level0_init(gpu_instrumentation_t *inst_options);
 void level0_fini();
 void level0_flush();
 int level0_bind();

@@ -217,8 +217,10 @@ int main(int argc, char* const argv[]) {
     // Load in a copy of all the finalizers.
     finalizers::LogicalFile lf;
     pipelineB2 << lf;
-    for(auto& sp: args.ksyms)
+    for(auto& sp: args.ksyms) {
+      (void)sp;
       pipelineB2 << std::make_unique<finalizers::KernelSymbols>();
+    }
     for(auto& sp: args.structs){
       assert(sp.second.parent_path().filename() == "structs");
       // FIXME: the hacky ugly measurement directory

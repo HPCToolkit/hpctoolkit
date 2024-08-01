@@ -295,7 +295,7 @@ void MetaDB::write() try {
       auto scopes_f = [&l, &scopeIdxs]() -> auto {
         std::deque<fmt_metadb_propScope_t> scopes;
         for(MetricScope ms: MetricScopeSet(MetricScopeSet::all)) {
-          fmt_metadb_propScope_t scope;
+          fmt_metadb_propScope_t scope = {};
           scope.propagationIndex = 255;
           switch(ms) {
           case MetricScope::point:

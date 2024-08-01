@@ -105,13 +105,6 @@ static int monitor_extra_list[] = {
     SIGUSR2, SIGUSR1, SIGPWR, SIGURG, SIGPIPE, -1
 };
 
-/*  Locks for the monitor_signal_array[].
- */
-#define MONITOR_SIGNAL_LOCK    spinlock_lock(&monitor_signal_lock)
-#define MONITOR_SIGNAL_UNLOCK  spinlock_unlock(&monitor_signal_lock)
-
-static spinlock_t monitor_signal_lock = SPINLOCK_UNLOCKED;
-
 static int last_resort_signal = SIGWINCH;
 static int shootdown_signal = -1;
 

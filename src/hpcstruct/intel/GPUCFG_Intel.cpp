@@ -772,21 +772,6 @@ addrToOffset
 }
 
 
-static uint32_t
-addrToOffset
-(
-  Address function_start,
-  int32_t addr
-)
-{
-  uint32_t function_start_lower_bits = function_start;
-  uint32_t addr_lower_bits = addr;
-  uint32_t offset = addr_lower_bits - function_start_lower_bits;
-
-  return offset;
-}
-
-
 static void
 getJumpTargetOffsets
 (

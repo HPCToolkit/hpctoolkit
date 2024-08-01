@@ -64,21 +64,13 @@ typedef struct binarytree_s {
 // private operations
 //******************************************************************************
 
-// hide the length of a fixed length string from the caller to prevent compiler
-// whining
-static char *
-vlen_str(char *fixed_length_string)
-{
-  return fixed_length_string;
-}
-
 static void
 subtree_tostr2(binarytree_t *subtree, val_tostr tostr, char valstr[],
-               char* left_lead, char result[])
+               char* left_lead, char result[MAX_TREE_STR])
 {
   if (subtree) {
-    char Left_subtree_buff[MAX_SUBTREE_STR + 1];
-    char Right_subtree_buff[MAX_SUBTREE_STR + 1];
+    char Left_subtree_buff[MAX_TREE_STR];
+    char Right_subtree_buff[MAX_TREE_STR];
     char Left_lead_buff[MAX_LEFT_LEAD_STR + 1];
 
     size_t new_left_lead_size = strlen(left_lead) + strlen("|  ") + 1;
@@ -89,12 +81,13 @@ subtree_tostr2(binarytree_t *subtree, val_tostr tostr, char valstr[],
     binarytree_t * right = {subtree->right};
     subtree_tostr2(right, tostr, valstr, Left_lead_buff, Right_subtree_buff);
     tostr(subtree->val, valstr);
+
     snprintf(result, MAX_TREE_STR, "%s%s%s%s%s%s%s%s%s%s%s%s",
              "|_ ", valstr, "\n",
              left_lead, "|\n",
-             left_lead, vlen_str(Left_subtree_buff), "\n",
+             left_lead, Left_subtree_buff, "\n",
              left_lead, "|\n",
-             left_lead, vlen_str(Right_subtree_buff));
+             left_lead, Right_subtree_buff);
   }
   else {
     strcpy(result, "|_ {}");
@@ -243,32 +236,33 @@ binarytree_find(binarytree_t * root, val_cmp matches, void *val)
 
 void
 binarytree_tostring(binarytree_t * tree, val_tostr tostr, char valstr[],
-  char result[])
+  char result[MAX_TREE_STR])
 {
   binarytree_tostring_indent(tree, tostr, valstr, "", result);
 }
 
 void
 binarytree_tostring_indent(binarytree_t * root, val_tostr tostr,
-  char valstr[], char* indents, char result[])
+  char valstr[], char* indents, char result[MAX_TREE_STR])
 {
   if (root) {
-    char Left_subtree_buff[MAX_SUBTREE_STR + 1];
-    char Right_subtree_buff[MAX_SUBTREE_STR + 1];
+    char Left_subtree_buff[MAX_TREE_STR];
+    char Right_subtree_buff[MAX_TREE_STR];
     char newindents[MAX_INDENTS+5];
-    snprintf(newindents, MAX_INDENTS+4, "%s%s", indents, "|  ");
+    snprintf(newindents, MAX_INDENTS+4, "%s|  ", indents);
     subtree_tostr2(root->left, tostr, valstr, newindents, result);
     snprintf(Left_subtree_buff, MAX_SUBTREE_STR, "%s", result);
-    snprintf(newindents, MAX_INDENTS+4, "%s%s", indents, "   ");
+    snprintf(newindents, MAX_INDENTS+4, "%s   ", indents);
     subtree_tostr2(root->right, tostr, valstr, newindents, result);
     snprintf(Right_subtree_buff, MAX_SUBTREE_STR, "%s", result);
     tostr(root->val, valstr);
+
     snprintf(result, MAX_TREE_STR, "%s%s%s%s%s%s%s%s%s%s%s",
              valstr, "\n",
              indents,"|\n",
-             indents, vlen_str(Left_subtree_buff), "\n",
+             indents, Left_subtree_buff, "\n",
              indents, "|\n",
-             indents, vlen_str(Right_subtree_buff));
+             indents, Right_subtree_buff);
   }
   else {
     strcpy(result, "{}");
