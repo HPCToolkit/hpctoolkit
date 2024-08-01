@@ -1069,16 +1069,6 @@ if not get_option('valgrind_annotations')
 endif
 
 
-# Enable a handful of useful non-default warnings
-foreach lang : ['c', 'cpp']
-  _warnings = meson.get_compiler(lang).get_supported_arguments(
-    '-Wstack-usage=65536',  # Warn if any functions use a lot or unbounded stack
-  )
-  set_variable(f'_@lang@_warnings', _warnings)
-  add_project_arguments(_warnings, language: lang)
-endforeach
-
-
 # Expose the results of various compile-time checks
 add_project_arguments(
   '-DSIZEOF_VOIDP=@0@'.format(cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8)),
