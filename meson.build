@@ -25,6 +25,18 @@ cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 
 
+# FIXME: -Wunused-result reports warnings all over the codebase. Until this can be fixed, prevent
+# it from causing complete compilation failure when running with -Werror.
+if get_option('werror')
+  foreach _lang : ['c', 'cpp']
+    add_project_arguments(
+      meson.get_compiler(_lang).first_supported_argument('-Wno-error=unused-result'),
+      language: _lang,
+    )
+  endforeach
+endif
+
+
 # Find Python.
 python = find_program('python3', 'python', version: '>=3.8', required: false)
 if not python.found()
