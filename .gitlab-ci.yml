@@ -354,7 +354,7 @@ include:
     echo "      $CI_JOB_IMAGE"
     echo 'and repeat the commands listed in the job log above, with $BUILD_DIRECTORY replaced with /tmp/builddir.'
     echo "If using VSCode, you may also try using the appropriate devcontainer."
-  - if [ -f compile.log ]; then ./ci/cc-diagnostics.py cq.json compile.log; fi
+  - if [ -f compile.log ]; then ./ci/cc-diagnostics.py cc cq.json compile.log; fi
   artifacts:
     reports:
       codequality: cq.json
@@ -927,7 +927,7 @@ clang-tidy:
   - meson setup --native-file=hpctoolkit-ci.ini --backend=ninja builddir
   - ninja -C builddir/
   - ninja -C builddir/ clang-tidy > clang-tidy.raw.txt || true
-  - ./ci/cc-diagnostics.py clang-tidy.cq.json clang-tidy.raw.txt
+  - ./ci/cc-diagnostics.py clang-tidy clang-tidy.cq.json clang-tidy.raw.txt
   artifacts:
     reports:
       codequality: clang-tidy.cq.json
