@@ -341,8 +341,29 @@ include:
     - if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt 1 ]; then echo 1 > /proc/sys/kernel/perf_event_paranoid; fi
     # We also want kernel symbols available (kallsyms), so enable that too.
     - if [ "$(cat /proc/sys/kernel/kptr_restrict)" -gt 0 ]; then echo 0 > /proc/sys/kernel/kptr_restrict; fi
-    # Usual sequence from here: setup, build and test
-    - meson setup $SETUP_ARGS "$BUILD_DIRECTORY"
+    # Usual sequence from here: setup, build and test. In CI warnings are errors if they don't come
+    # from subprojects.
+    - >-
+      meson setup
+      -Dwerror=true
+      -Dbzip2:werror=false
+      -Ddyninst:werror=false
+      -Delfutils:werror=false
+      -Dgtpin:werror=false
+      -Dlibiberty:werror=false
+      -Dliblzma:werror=false
+      -Dlibpfm:werror=false
+      -Dlibunwind:werror=false
+      -Dopencl-headers:werror=false
+      -Dtbb:werror=false
+      -Dxed:werror=false
+      -Dxerces-c:werror=false
+      -Dxxhash:werror=false
+      -Dyaml-cpp:werror=false
+      -Dzlib:werror=false
+      -Dzstd:werror=false
+      $SETUP_ARGS
+      "$BUILD_DIRECTORY"
   - meson compile -C "$BUILD_DIRECTORY" 2>&1 | tee compile.log
   - if [ "$TEST_ARGS" = "SKIP" ]; then echo "Skipping meson test"; exit 0; fi
   - meson test -C "$BUILD_DIRECTORY" -j $(nproc) --maxfail 3 --repeat 7 --print-errorlogs $TEST_ARGS 'hpctoolkit:*'
@@ -749,6 +770,15 @@ compiler icx:
   image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     JOB_CC: icx
+    # FIXME: Meson's OpenMP dependency uses -fopenmp, but the newer Intel compilers prefer -qopenmp
+    # and will produce a compiler warning because of it.
+    # See https://github.com/mesonbuild/meson/issues/13516.
+    # Until this is fixed, disable werror for this compiler specifically.
+    SETUP_ARGS: >-
+      -Dwerror=false
+      --native-file hpctoolkit-ci.ini
+      --native-file $JOB_CC.ini
+      --wrap-mode=forcefallback
     # FIXME: Tests that use Level Zero fail on systems that don't have a suitable GPU attached.
     # This should be fixed, but for now don't try to run any of the affected tests.
     # FIXME: Intel MPI doesn't work on a single node, it tries to ssh to localhost and doesn't get
