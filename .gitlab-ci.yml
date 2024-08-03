@@ -921,8 +921,8 @@ clang-format:
 # never will be enforced, but it does give rich insight into the quality of the code itself.
 .clang-tidy:
   stage: code quality
-  needs: ['predeps: [ubuntu24.04-amd64]']
-  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  needs: ['predeps: [dev-amd64]']
+  image: $PREDEPS_IMAGE_DEV_AMD64
   rules: *only_runner_privileged
   cache:
     key: ccache-clang-tidy
