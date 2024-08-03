@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+Types: deb
+Architectures: amd64
+URIs: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/
+Suites: /
+Signed-By: /usr/share/keyrings/cuda.gpg
+
+Types: deb
+Architectures: arm64
+URIs: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/sbsa/
+Suites: /
+Signed-By: /usr/share/keyrings/cuda.gpg
