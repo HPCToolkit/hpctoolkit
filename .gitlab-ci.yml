@@ -501,7 +501,7 @@ bare ppc64le:
 
 .individual test job cuda:
   extends: .individual test job
-  tags: [rice-linux-large-amd64-gpu-p100]
+  tags: [saas-linux-medium-amd64-gpu-standard]
   rules: *only_runner_privileged
   variables:
     TEST_ARGS: >-
@@ -513,50 +513,23 @@ dev cuda amd64:
   needs: ['predeps: [dev-amd64]']
   image: $PREDEPS_IMAGE_DEV_AMD64
   variables: &cuda_variables
-    # These variables are necessary to request a GPU from the (legacy) Nvidia container runtime.
-    # Values are taken from the nvidia/cuda:12.4.0-devel-ubuntu22.04 image.
+    # These variables must be set for compatibility with legacy (non-CDI) nvidia-container-toolkit
     NVIDIA_VISIBLE_DEVICES: all
     NVIDIA_DRIVER_CAPABILITIES: compute,utility
-    NVIDIA_REQUIRE_CUDA: >-
-      cuda>=12.4
-      brand=tesla,driver>=470,driver<471
-      brand=unknown,driver>=470,driver<471
-      brand=nvidia,driver>=470,driver<471
-      brand=nvidiartx,driver>=470,driver<471
-      brand=geforce,driver>=470,driver<471
-      brand=geforcertx,driver>=470,driver<471
-      brand=quadro,driver>=470,driver<471
-      brand=quadrortx,driver>=470,driver<471
-      brand=titan,driver>=470,driver<471
-      brand=titanrtx,driver>=470,driver<471
-      brand=tesla,driver>=525,driver<526
-      brand=unknown,driver>=525,driver<526
-      brand=nvidia,driver>=525,driver<526
-      brand=nvidiartx,driver>=525,driver<526
-      brand=geforce,driver>=525,driver<526
-      brand=geforcertx,driver>=525,driver<526
-      brand=quadro,driver>=525,driver<526
-      brand=quadrortx,driver>=525,driver<526
-      brand=titan,driver>=525,driver<526
-      brand=titanrtx,driver>=525,driver<526
-      brand=tesla,driver>=535,driver<536
-      brand=unknown,driver>=535,driver<536
-      brand=nvidia,driver>=535,driver<536
-      brand=nvidiartx,driver>=535,driver<536
-      brand=geforce,driver>=535,driver<536
-      brand=geforcertx,driver>=535,driver<536
-      brand=quadro,driver>=535,driver<536
-      brand=quadrortx,driver>=535,driver<536
-      brand=titan,driver>=535,driver<536
-      brand=titanrtx,driver>=535,driver<536
+  before_script: &cuda_before_script
+  # These paths need to be set for compatibility with nvidia-docker v1
+  - export PATH="$PATH":/usr/local/nvidia/bin
+  - export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}"/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 ubuntu22.04 cuda amd64:
   extends: .individual test job cuda
   needs: ['predeps: [ubuntu22.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU22_04_AMD64
+  before_script: *cuda_before_script
 ubuntu24.04 cuda amd64:
   extends: .individual test job cuda
   needs: ['predeps: [ubuntu24.04-amd64]']
   image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  before_script: *cuda_before_script
 cuda12.0 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda12.0-amd64]']
@@ -573,6 +546,9 @@ cuda12.3 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda12.3-amd64]']
   image: $PREDEPS_IMAGE_CUDA12_3_AMD64
+  # FIXME: For unknown reasons some tests fail when running in the GitLab VMs on this particular
+  # version of CUPTI with CUPTI_ERROR_INVALID_PARAMETER, but pass on the custom runners.
+  tags: [rice-linux-large-amd64-gpu-p100]
 cuda12.4 amd64:
   extends: .individual test job cuda
   needs: ['predeps: [cuda12.4-amd64]']
@@ -681,7 +657,8 @@ semifresh nvidia sw-cuda:
   extends: .semifresh test job
   needs: ['predeps: [cuda12.5-amd64]']
   image: $PREDEPS_IMAGE_CUDA12_5_AMD64
-  tags: [rice-linux-large-amd64-gpu-p100]
+  tags: [saas-linux-medium-amd64-gpu-standard]
+  before_script: *cuda_before_script
   variables:
     REGEN_SUITES: nvidia sw-cuda
 semifresh amd:
@@ -986,7 +963,7 @@ spack:
   - key: spack-src
     paths:
     - .cache/spack-src/
-  before_script:
+  script:
   # Update to the latest Spack. We fiddle with the Git repository some to get access to the entire
   # commit history with tags, without downloading all the diffs and stuff.
   - |
@@ -1020,7 +997,6 @@ spack:
   # Pad the install paths to make sure the generated buildcache binaries are compatible across
   # multiple systems and environments.
   - spack config --scope=site add config:install_tree:padded_length:256
-  script:
   - |
     ci/spack/run.sh -d env/ -c @DEVELOP_SNAPSHOT -c @GIT_HPCTOOLKIT -j spack.junit.xml -k \
       -b '--unsigned --type binary shared oci://"$CI_REGISTRY_IMAGE"/ci.spack-buildcache' \
@@ -1054,7 +1030,12 @@ spack:
     when: always
 spack +cuda:
   extends: spack
-  tags: [rice-linux-large-amd64-gpu-p100]
+  tags: [saas-linux-medium-amd64-gpu-standard]
+  before_script:
+  # These library search paths are needed to support nvidia-docker v1.
+  # Spack wipes LD_LIBRARY_PATH so we use ldconfig instead.
+  - printf '/usr/local/nvidia/lib\n/usr/local/nvidia/lib64' >> /etc/ld.so.conf.d/nvidia.conf
+  - ldconfig
   variables:
     <<: *cuda_variables
     ENABLE_CUDA: 1
