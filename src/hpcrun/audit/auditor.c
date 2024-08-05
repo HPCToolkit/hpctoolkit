@@ -89,7 +89,6 @@ typedef struct object_t {
 //******************************************************************************
 
 static bool verbose = false;
-static char* mainlib = NULL;
 static bool disable_plt_call_opt = false;
 static ElfW(Addr) dl_runtime_resolver_ptr = 0;
 
@@ -448,10 +447,6 @@ unsigned int la_version(unsigned int version) {
     }
   }
 
-  mainlib = realpath(getenv("HPCRUN_AUDIT_MAIN_LIB"), NULL);
-  if(verbose)
-    fprintf(stderr, "[audit] Awaiting mainlib `%s'\n", mainlib);
-
   // Generate the purified environment before the app changes it
   // NOTE: Consider removing only ourselves to allow for Spindle-like optimizations.
   {
@@ -500,18 +495,14 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
   };
 
   // If we haven't found it already, check if this is libhpcrun.so.
-  if(mainlib_cookie == NULL && mainlib != NULL) {
+  if(mainlib_cookie == NULL) {
     // NOTE: libhpcrun.so is always PIC, so we don't need special cases here
-    obj->entry.path = realpath(map->l_name, NULL);
-    if(obj->entry.path != NULL) {
-      if(strcmp(obj->entry.path, mainlib) == 0) {
-        free(mainlib);
-        mainlib = NULL;
-        mainlib_cookie = cookie;
-        pfn_attach = get_symbol(map, "hpcrun_auditor_attach");
-        if(verbose)
-          fprintf(stderr, "[audit] Located libhpcrun.so, attach hook is: %p\n", pfn_attach);
-      }
+    const char* basenm = strrchr(map->l_name, '/');
+    if(basenm != NULL && strcmp(basenm + 1, "libhpcrun.so") == 0) {
+      mainlib_cookie = cookie;
+      pfn_attach = get_symbol(map, "hpcrun_auditor_attach");
+      if(verbose)
+        fprintf(stderr, "[audit] Located libhpcrun.so, attach hook is: %p\n", pfn_attach);
     }
   }
 

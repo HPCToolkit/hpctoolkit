@@ -36,22 +36,6 @@ report when problems arise.
 
 ## Environment Variables for Users
 
-`HPCTOOLKIT`
-
-: Under normal circumstances, there is no need to use this environment variable.
-  However, there are two situations where `hpcrun`
-  *must* consult the `HPCTOOLKIT` environment variable to determine the location
-  of HPCToolkit's top-level installation directory to find libraries
-  and utilities that it needs at runtime.
-
-  - If you launch the `hpcrun` script via a file system link,
-    you must set the `HPCTOOLKIT` environment variable to
-    HPCToolkit's top-level installation directory.
-
-  - Some parallel job launchers (e.g., Cray's aprun) may *copy* the
-    `hpcrun` script to a different location. If this is the case, you will need to set the `HPCTOOLKIT` environment variable to
-    HPCToolkit's top-level installation directory.
-
 `HPCRUN_EVENT_LIST`
 
 : This environment variable is used provide a set of (event, period)

@@ -70,13 +70,15 @@ _measurements += {
 }
 
 
+_env = test_env
+_env.prepend('LD_LIBRARY_PATH', meson.project_build_root() / 'src' / 'hpcrun')
 foreach name, spec : _measurements
   _stamp = custom_target(
     output: f'@name@.m.fresh',
     build_by_default: false,
     console: true,
     command: [_run, spec.get('minsamples', 100).to_string(), '@OUTPUT@'] + spec['tail'],
-    env: test_env,
+    env: _env,
     depends: test_depends,
   )
   testdata_meas += {

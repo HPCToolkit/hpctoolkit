@@ -322,6 +322,7 @@ include:
     CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
     SETUP_ARGS: '--native-file hpctoolkit-ci.ini'
     TEST_ARGS: ''
+    BUILD_DIRECTORY: builddir/
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
@@ -333,9 +334,9 @@ include:
     # We also want kernel symbols available (kallsyms), so enable that too.
     - if [ "$(cat /proc/sys/kernel/kptr_restrict)" -gt 0 ]; then echo 0 > /proc/sys/kernel/kptr_restrict; fi
     # Usual sequence from here: setup, build and test
-    - meson setup $SETUP_ARGS builddir
-  - meson compile -C builddir 2>&1 | tee compile.log
-  - meson test -C builddir -j $(nproc) --maxfail 3 --repeat 7 --print-errorlogs $TEST_ARGS
+    - meson setup $SETUP_ARGS "$BUILD_DIRECTORY"
+  - meson compile -C "$BUILD_DIRECTORY" 2>&1 | tee compile.log
+  - meson test -C "$BUILD_DIRECTORY" -j $(nproc) --maxfail 3 --repeat 7 --print-errorlogs $TEST_ARGS
   after_script:
   - |
     echo "To reproduce this build, run:"
@@ -343,13 +344,13 @@ include:
     echo "      -e OMPI_ALLOW_RUN_AS_ROOT=1 -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \\"
     echo "      -e SETUP_ARGS='$SETUP_ARGS' -e TEST_ARGS='$TEST_ARGS'$EXTRA_ENVS \\"
     echo "      $CI_JOB_IMAGE"
-    echo "and repeat the commands listed in the job log above, with builddir replaced with /tmp/builddir."
+    echo 'and repeat the commands listed in the job log above, with $BUILD_DIRECTORY replaced with /tmp/builddir.'
     echo "If using VSCode, you may also try using the appropriate devcontainer."
   - if [ -f compile.log ]; then ./ci/cc-diagnostics.py cq.json compile.log; fi
   artifacts:
     reports:
       codequality: cq.json
-      junit: builddir/meson-logs/testlog.junit.xml
+      junit: $BUILD_DIRECTORY/meson-logs/testlog.junit.xml
     when: always
 
 
@@ -648,24 +649,24 @@ intel amd64:
     REGEN_SUITES: ''
   script:
   - *test_job_setup
-  - meson compile -C builddir $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
+  - meson compile -C "$BUILD_DIRECTORY" $(printf 'regen-testdata-%s\n' $REGEN_SUITES)
   - git add --intent-to-add tests/data/
-  - meson compile -C builddir $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
+  - meson compile -C "$BUILD_DIRECTORY" $(printf 'patches-testdata-%s\n' $REGEN_SUITES)
   - mkdir testdata-patches/
-  - cp -t testdata-patches/ builddir/tests/data/*.patch
+  - cp -t testdata-patches/ "$BUILD_DIRECTORY"/tests/data/*.patch
   - find testdata-patches/ -type f -size 0 -delete
   # Make sure we run the tests once in the same build directory that generated them
-  - meson test -C builddir -j $(nproc) --maxfail 3 --print-errorlogs $TEST_ARGS
+  - meson test -C "$BUILD_DIRECTORY" -j $(nproc) --maxfail 3 --print-errorlogs $TEST_ARGS
   # Then wipe the build directory and re-test against a "sterilized" build
-  - meson setup --wipe builddir
-  - meson test -C builddir -j $(nproc) --maxfail 3 --repeat 6 --print-errorlogs $TEST_ARGS
+  - meson setup --wipe "$BUILD_DIRECTORY"
+  - meson test -C "$BUILD_DIRECTORY" -j $(nproc) --maxfail 3 --repeat 6 --print-errorlogs $TEST_ARGS
   after_script:
   - EXTRA_ENVS=" -e REGEN_SUITES='$REGEN_SUITES'"
   - !reference [.test job, after_script]
   artifacts:
     expire_in: 1 day
     reports:
-      junit: builddir/meson-logs/testlog.junit.xml
+      junit: $BUILD_DIRECTORY/meson-logs/testlog.junit.xml
     paths:
     - testdata-patches/
     when: always
@@ -869,6 +870,16 @@ compiler icx:
     SETUP_ARGS: >-
       --native-file hpctoolkit-ci.ini
       --wrap-mode=forcefallback
+'setup: [long build dir]':  # https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/825
+  extends: .test job
+  stage: configuration tests
+  needs: ['predeps: [ubuntu24.04-amd64]']
+  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  variables:
+    BUILD_DIRECTORY: builddir/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/long_path_segment__/
+    # FIXME: MPI tends to fail in this setup. Unsure why.
+    TEST_ARGS: >-
+      --no-suite mpi
 
 
 # The repository follows the REUSE specification v3.x for representing copyright and licencing
@@ -1008,7 +1019,7 @@ spack:
   - spack config --scope=site add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src || true
   # Pad the install paths to make sure the generated buildcache binaries are compatible across
   # multiple systems and environments.
-  - spack config --scope=site add config:install_tree:padded_length:64
+  - spack config --scope=site add config:install_tree:padded_length:256
   script:
   - |
     ci/spack/run.sh -d env/ -c @DEVELOP_SNAPSHOT -c @GIT_HPCTOOLKIT -j spack.junit.xml -k \

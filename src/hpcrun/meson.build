@@ -383,7 +383,6 @@ if opencl_dep.found()
     implicit_include_directories: false,
     dependencies: [opencl_dep, dl_dep],
     install: true,
-    install_dir: 'lib' / meson.project_name(),
   )
 endif
 _my_include_dirs_deps = [
@@ -416,7 +415,6 @@ if gtpin_dep.found()
       threads_dep,
     ],
     install: true,
-    install_dir: 'lib' / meson.project_name(),
   )
 endif
 
@@ -457,7 +455,6 @@ if level0_dep.found()
     implicit_include_directories: false,
     dependencies: level0_dep,
     install: true,
-    install_dir: 'lib' / meson.project_name(),
   )
 endif
 
@@ -517,10 +514,7 @@ _hpcrun_libs += shared_module(
     opencl_dep,
     level0_dep.partial_dependency(compile_args: true, includes: true),
   ],
-  build_rpath: '$ORIGIN',
-  install_rpath: '$ORIGIN',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 
 _hpcrun_libs += shared_library(
@@ -531,7 +525,6 @@ _hpcrun_libs += shared_library(
   dependencies: [libunwind_dep],
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 _hpcrun_libs += shared_module(
   'hpcrun_fake_audit',
@@ -539,11 +532,8 @@ _hpcrun_libs += shared_module(
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep, threads_dep],
-  build_rpath: '$ORIGIN',
-  install_rpath: '$ORIGIN',
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 _hpcrun_libs += shared_library(
   'hpcrun_private_ns',
@@ -552,11 +542,8 @@ _hpcrun_libs += shared_library(
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep, threads_dep],
-  build_rpath: '$ORIGIN',
-  install_rpath: '$ORIGIN',
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 _hpcrun_libs += shared_library(
   'hpcrun_audit',
@@ -565,11 +552,8 @@ _hpcrun_libs += shared_library(
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep, threads_dep],
-  build_rpath: '$ORIGIN',
-  install_rpath: '$ORIGIN',
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 _hpcrun_libs += shared_library(
   'hpcrun_dlmopen',
@@ -579,7 +563,6 @@ _hpcrun_libs += shared_library(
   dependencies: [dl_dep],
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 
 _hpcrun_libs += shared_module(
@@ -590,7 +573,6 @@ _hpcrun_libs += shared_module(
   dependencies: [dl_dep],
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 _hpcrun_libs += shared_module(
   'hpcrun_gprof',
@@ -599,7 +581,6 @@ _hpcrun_libs += shared_module(
   implicit_include_directories: false,
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 _hpcrun_libs += shared_module(
   'hpcrun_io',
@@ -609,7 +590,6 @@ _hpcrun_libs += shared_module(
   dependencies: [dl_dep],
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 _hpcrun_libs += shared_module(
   'hpcrun_memleak',
@@ -618,7 +598,6 @@ _hpcrun_libs += shared_module(
   implicit_include_directories: false,
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 _hpcrun_libs += shared_module(
   'hpcrun_pthread',
@@ -628,27 +607,18 @@ _hpcrun_libs += shared_module(
   dependencies: [dl_dep],
   link_language: 'c',
   install: true,
-  install_dir: 'lib' / meson.project_name(),
 )
 
 
 # Configure and install the hpcrun launcher
-hpcrun = executable(
-  'hpcrun',
-  version_cpp,
-  'launch.cpp',
-  implicit_include_directories: false,
-  install: true,
-)
+_prefixes_cfg = configuration_data()
+_prefixes_cfg.set_quoted('HPCRUN_INSTALL_LIBDIR', get_option('prefix') / get_option('libdir'))
+_prefixes_h = configure_file(output: 'hpcrun-install-prefixes.h', configuration: _prefixes_cfg)
+hpcrun = executable('hpcrun', 'launch.cpp', version_cpp, _prefixes_h, install: true)
 
 # Build and install the client API
 install_headers('hpctoolkit.h')
-hpctoolkit_client_lib = library(
-  'hpctoolkit',
-  'hpctoolkit.c',
-  install: true,
-  install_dir: 'lib' / meson.project_name(),
-)
+hpctoolkit_client_lib = library('hpctoolkit', 'hpctoolkit.c', install: true)
 
 # Settings needed for dependencies
 hpcrun_test_depends = _hpcrun_libs
