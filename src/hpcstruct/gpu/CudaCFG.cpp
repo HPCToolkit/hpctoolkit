@@ -206,8 +206,8 @@ void CudaFactory::set_call_target(const std::string& function, Dyninst::ParseAPI
 static const std::regex REGEX_DOT_LINE(
   "(?:<[^>]*>)?"  // Port declarations
   "((?:[^\\\\]|\\\\.)*?)"  // Line content (normal character or \-escape), non-greedy
-  "(?:[|{}]|\\\\[lrn]|$)",  // Line separator, newline \-escape or end-of-line
-  std::regex::ECMAScript | std::regex_constants::multiline);
+  "(?:[|{}]|\\\\[lrn]|\\n|\\r|$)",  // End-of-line or end-of-input
+  std::regex::ECMAScript);
 
 // Regex and replacement string for a backslash-escape.
 static const std::regex REGEX_BS_ESC("\\\\(.)", std::regex::ECMAScript);
