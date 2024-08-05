@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+Types: deb
+Architectures: amd64
+URIs: https://repo.radeon.com/amdgpu/6.2/ubuntu
+Suites: noble
+Components: main
+Signed-By: /usr/share/keyrings/rocm.gpg
+
+Types: deb
+Architectures: amd64
+URIs: https://repo.radeon.com/rocm/apt/6.2
+Suites: noble
+Components: main
+Signed-By: /usr/share/keyrings/rocm.gpg

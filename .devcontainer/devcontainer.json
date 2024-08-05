@@ -1,0 +1,40 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "capAdd": [
+    "SYS_ADMIN"
+  ],
+  "containerEnv": {
+    "OMPI_ALLOW_RUN_AS_ROOT": "1",
+    "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mesonbuild.mesonbuild"
+      ],
+      "settings": {
+        "clangd.arguments": [
+          "--compile-commands-dir=${config:mesonbuild.buildFolder}"
+        ],
+        "mesonbuild.buildFolder": ".devcontainer/builddir-${devcontainerId}",
+        "mesonbuild.configureOnOpen": true,
+        "mesonbuild.configureOptions": [
+          "--native-file=hpctoolkit-all-features.ini"
+        ]
+      }
+    }
+  },
+  "mounts": [
+    {
+      "source": "ccache-${devcontainerId}",
+      "target": "/root/.ccache",
+      "type": "volume"
+    }
+  ],
+  "remoteEnv": {
+    "BUILDDIR": "${containerWorkspaceFolder}/.devcontainer/builddir-${devcontainerId}",
+    "builddir": "${containerWorkspaceFolder}/.devcontainer/builddir-${devcontainerId}"
+  }
+}

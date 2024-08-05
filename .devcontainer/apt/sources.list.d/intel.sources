@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+Types: deb
+Architectures: amd64
+URIs: https://repositories.intel.com/gpu/ubuntu
+Suites: noble
+Components: unified
+Signed-By: /usr/share/keyrings/intel-graphics.gpg
+
+Types: deb
+Architectures: amd64
+URIs: https://apt.repos.intel.com/oneapi
+Suites: all
+Components: main
+Signed-By: /usr/share/keyrings/intel-oneapi.gpg

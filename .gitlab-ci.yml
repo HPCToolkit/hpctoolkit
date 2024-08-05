@@ -78,11 +78,19 @@ include:
   inputs:
     job_stage: code quality
 
-# These images are based on classic distributions and contain no vendor software
+# Build the development "ubercontainer"
 - component: &ci_predeps gitlab.com/blue42u/ci.predeps/buildah@1
   inputs:
     <<: &ci_predeps_shared
       fallback_registry: registry.gitlab.com/hpctoolkit/hpctoolkit/ci.predeps
+    name: dev-amd64
+    context_dir: .devcontainer/
+    containerfile: Dockerfile
+
+# These images are based on classic distributions and contain no vendor software
+- component: *ci_predeps
+  inputs:
+    <<: *ci_predeps_shared
     name: rhel8-amd64
     containerfile: .ci.predeps/Containerfile.rhel8
 - component: *ci_predeps
@@ -283,13 +291,6 @@ include:
     name: libintl-amd64
     containerfile: .ci.predeps/Containerfile.libintl
 
-# Image(s) containing bare + extra software for documentation generation
-- component: *ci_predeps
-  inputs:
-    <<: *ci_predeps_shared
-    name: docs
-    containerfile: .ci.predeps/Containerfile.docs
-
 
 # The vast majority of jobs in this sequence do a build and then run some tests. This is the base
 # job spec for such jobs, configurable via a small number of variables.
@@ -359,6 +360,15 @@ include:
 .individual test job std:
   extends: .individual test job
   tags: [saas-linux-medium-amd64]
+dev amd64:
+  extends: .individual test job std
+  needs: ['predeps: [dev-amd64]']
+  image: $PREDEPS_IMAGE_DEV_AMD64
+  variables:
+    # FIXME: The CUDA-enabled tests FAIL instead of SKIP if the CUDA driver is unavailable on the
+    # system. For now, disable these tests to allow the CI job to pass.
+    # FIXME: Same for LevelZero-enabled tests.
+    TEST_ARGS: --no-suite cuda --no-suite level0
 ubuntu20.04 amd64:
   extends: .individual test job std
   needs: ['predeps: [ubuntu20.04-amd64]']
@@ -497,6 +507,47 @@ bare ppc64le:
       --suite opencl
       --suite cuda
       --suite hpcstruct
+dev cuda amd64:
+  extends: .individual test job cuda
+  needs: ['predeps: [dev-amd64]']
+  image: $PREDEPS_IMAGE_DEV_AMD64
+  variables: &cuda_variables
+    # These variables are necessary to request a GPU from the (legacy) Nvidia container runtime.
+    # Values are taken from the nvidia/cuda:12.4.0-devel-ubuntu22.04 image.
+    NVIDIA_VISIBLE_DEVICES: all
+    NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    NVIDIA_REQUIRE_CUDA: >-
+      cuda>=12.4
+      brand=tesla,driver>=470,driver<471
+      brand=unknown,driver>=470,driver<471
+      brand=nvidia,driver>=470,driver<471
+      brand=nvidiartx,driver>=470,driver<471
+      brand=geforce,driver>=470,driver<471
+      brand=geforcertx,driver>=470,driver<471
+      brand=quadro,driver>=470,driver<471
+      brand=quadrortx,driver>=470,driver<471
+      brand=titan,driver>=470,driver<471
+      brand=titanrtx,driver>=470,driver<471
+      brand=tesla,driver>=525,driver<526
+      brand=unknown,driver>=525,driver<526
+      brand=nvidia,driver>=525,driver<526
+      brand=nvidiartx,driver>=525,driver<526
+      brand=geforce,driver>=525,driver<526
+      brand=geforcertx,driver>=525,driver<526
+      brand=quadro,driver>=525,driver<526
+      brand=quadrortx,driver>=525,driver<526
+      brand=titan,driver>=525,driver<526
+      brand=titanrtx,driver>=525,driver<526
+      brand=tesla,driver>=535,driver<536
+      brand=unknown,driver>=535,driver<536
+      brand=nvidia,driver>=535,driver<536
+      brand=nvidiartx,driver>=535,driver<536
+      brand=geforce,driver>=535,driver<536
+      brand=geforcertx,driver>=535,driver<536
+      brand=quadro,driver>=535,driver<536
+      brand=quadrortx,driver>=535,driver<536
+      brand=titan,driver>=535,driver<536
+      brand=titanrtx,driver>=535,driver<536
 ubuntu22.04 cuda amd64:
   extends: .individual test job cuda
   needs: ['predeps: [ubuntu22.04-amd64]']
@@ -538,6 +589,10 @@ cuda12.5 amd64:
     TEST_ARGS: >-
       --suite opencl
       --suite rocm
+dev rocm amd64:
+  extends: .individual test job rocm
+  needs: ['predeps: [dev-amd64]']
+  image: $PREDEPS_IMAGE_DEV_AMD64
 rocm5.3 amd64:
   extends: .individual test job rocm
   needs: ['predeps: [rocm5.3-amd64]']
@@ -859,8 +914,8 @@ clang-format:
 # never will be enforced, but it does give rich insight into the quality of the code itself.
 .clang-tidy:
   stage: code quality
-  needs: ['predeps: [ubuntu24.04-amd64]']
-  image: $PREDEPS_IMAGE_UBUNTU24_04_AMD64
+  needs: ['predeps: [dev-amd64]']
+  image: $PREDEPS_IMAGE_DEV_AMD64
   rules: *only_runner_privileged
   cache:
     key: ccache-clang-tidy
@@ -990,50 +1045,15 @@ spack +cuda:
   extends: spack
   tags: [rice-linux-large-amd64-gpu-p100]
   variables:
+    <<: *cuda_variables
     ENABLE_CUDA: 1
-    # These variables are necessary to request a GPU from the (legacy) Nvidia container runtime.
-    # Values are taken from the nvidia/cuda:12.4.0-devel-ubuntu22.04 image.
-    NVIDIA_VISIBLE_DEVICES: all
-    NVIDIA_DRIVER_CAPABILITIES: compute,utility
-    NVIDIA_REQUIRE_CUDA: >-
-      cuda>=12.4
-      brand=tesla,driver>=470,driver<471
-      brand=unknown,driver>=470,driver<471
-      brand=nvidia,driver>=470,driver<471
-      brand=nvidiartx,driver>=470,driver<471
-      brand=geforce,driver>=470,driver<471
-      brand=geforcertx,driver>=470,driver<471
-      brand=quadro,driver>=470,driver<471
-      brand=quadrortx,driver>=470,driver<471
-      brand=titan,driver>=470,driver<471
-      brand=titanrtx,driver>=470,driver<471
-      brand=tesla,driver>=525,driver<526
-      brand=unknown,driver>=525,driver<526
-      brand=nvidia,driver>=525,driver<526
-      brand=nvidiartx,driver>=525,driver<526
-      brand=geforce,driver>=525,driver<526
-      brand=geforcertx,driver>=525,driver<526
-      brand=quadro,driver>=525,driver<526
-      brand=quadrortx,driver>=525,driver<526
-      brand=titan,driver>=525,driver<526
-      brand=titanrtx,driver>=525,driver<526
-      brand=tesla,driver>=535,driver<536
-      brand=unknown,driver>=535,driver<536
-      brand=nvidia,driver>=535,driver<536
-      brand=nvidiartx,driver>=535,driver<536
-      brand=geforce,driver>=535,driver<536
-      brand=geforcertx,driver>=535,driver<536
-      brand=quadro,driver>=535,driver<536
-      brand=quadrortx,driver>=535,driver<536
-      brand=titan,driver>=535,driver<536
-      brand=titanrtx,driver>=535,driver<536
 
 
 # Generate just the documentation, and expose all the possible formats as artifacts.
 documentation:
   stage: artifacts
-  image: $PREDEPS_IMAGE_DOCS
-  needs: ['predeps: [docs]']
+  image: $PREDEPS_IMAGE_DEV_AMD64
+  needs: ['predeps: [dev-amd64]']
   tags: [saas-linux-small-amd64]
   script:
   - meson setup -Dmanual=enabled -Dmanual_pdf=enabled builddir/
