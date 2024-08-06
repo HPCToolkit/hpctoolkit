@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: CC-BY-4.0
 
 - e4s_product: hpctoolkit
-  docs:  [README.md, README.ReleaseNotes, LICENSE]
+  docs:  [README.md, CHANGELOG.md, LICENSE.md, GOVERNANCE.md]
   Area: "Development tools"
   Description: "Performance analysis tools."
   MemberProduct: True
