@@ -1394,7 +1394,7 @@ A performance enhancement and maintenance release.
   - recognize one-bundle loops on IA64 (PC-relative target is 0)
   - classify return instructions in IA64, x86 and Sparc ISAs classify,
     ensuring that in CFG construction no fallthru edge is placed
-    between the return and possible subsequent (error handlin) code.
+    between the return and possible subsequent (error handling) code.
     On Itanium with Intel's compiler, this can have drastic effects.
     Make necessary changes to GNU binutils to propagate this information.
   - Add options to treat irreducible intervals as loops and to turn

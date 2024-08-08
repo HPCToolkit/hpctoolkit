@@ -83,7 +83,7 @@ PathReplacementMgr::replace(const string& path) const
 //
 // @param a: The first pair object to compare.
 // @param b: The second pair object to compare.
-// return:   A bool indicatin if a.first.size() < b.first.size().
+// return:   A bool indicating if a.first.size() < b.first.size().
 static bool
 compare_as_strings(const PathReplacementMgr::StringPair& a,
                    const PathReplacementMgr::StringPair& b)

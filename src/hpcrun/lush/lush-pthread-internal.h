@@ -117,7 +117,7 @@ typedef struct lushPthr {
   // -------------------------------------------------------
   bool is_working; // thread is working (not blocked for any reason)
   int  num_locks;  // number of thread's locks (including a cond-var lock)
-  int  cond_lock;  // 0 or the lock number on entry to cond-var critial region
+  int  cond_lock;  // 0 or the lock number on entry to cond-var critical region
 
   uint64_t doIdlenessCnt;
   uint64_t begIdleness; // begin idleness 'timestamp'

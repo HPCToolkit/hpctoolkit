@@ -69,8 +69,8 @@
 void
 pfq_rwlock_init(pfq_rwlock_t *l)
 {
-  atomic_init(&l->rin, 0);
-  atomic_init(&l->rout, 0);
+  atomic_init(&l->r_in, 0);
+  atomic_init(&l->r_out, 0);
   atomic_init(&l->last, 0);
   atomic_init(&l->writer_blocking_readers[0].bit, false);
   atomic_init(&l->writer_blocking_readers[1].bit, false);
@@ -81,7 +81,7 @@ pfq_rwlock_init(pfq_rwlock_t *l)
 void
 pfq_rwlock_read_lock(pfq_rwlock_t *l)
 {
-  uint32_t ticket = atomic_fetch_add_explicit(&l->rin, READER_INCREMENT, memory_order_acq_rel);
+  uint32_t ticket = atomic_fetch_add_explicit(&l->r_in, READER_INCREMENT, memory_order_acq_rel);
 
   if (ticket & WRITER_PRESENT) {
     uint32_t phase = ticket & PHASE_BIT;
@@ -93,7 +93,7 @@ pfq_rwlock_read_lock(pfq_rwlock_t *l)
 void
 pfq_rwlock_read_unlock(pfq_rwlock_t *l)
 {
-  uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_acq_rel);
+  uint32_t ticket = atomic_fetch_add_explicit(&l->r_out, READER_INCREMENT, memory_order_acq_rel);
 
   if (ticket & WRITER_PRESENT) {
     //----------------------------------------------------------------------------
@@ -126,18 +126,18 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   //--------------------------------------------------------------------
   // set writer_blocking_readers to block any readers in the next batch
   //--------------------------------------------------------------------
-  uint32_t phase = atomic_load_explicit(&l->rin, memory_order_relaxed) & PHASE_BIT;
+  uint32_t phase = atomic_load_explicit(&l->r_in, memory_order_relaxed) & PHASE_BIT;
   atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_release);
 
   //----------------------------------------------------------------------------
-  // store to writer_blocking_headers bit must complete before incrementing rin
+  // store to writer_blocking_headers bit must complete before incrementing r_in
   //----------------------------------------------------------------------------
 
   //--------------------------------------------------------------------
   // acquire an "in" sequence number to see how many readers arrived
   // set the WRITER_PRESENT bit so subsequent readers will wait
   //--------------------------------------------------------------------
-  uint32_t in = atomic_fetch_or_explicit(&l->rin, WRITER_PRESENT, memory_order_acq_rel);
+  uint32_t in = atomic_fetch_or_explicit(&l->r_in, WRITER_PRESENT, memory_order_acq_rel);
 
   //--------------------------------------------------------------------
   // save the ticket that the last reader will see
@@ -145,12 +145,12 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   atomic_store_explicit(&l->last, in - READER_INCREMENT + WRITER_PRESENT, memory_order_release);
 
   //-------------------------------------------------------------
-  // update to 'last' must complete before others see changed value of rout.
+  // update to 'last' must complete before others see changed value of r_out.
   // acquire an "out" sequence number to see how many readers left
   // set the WRITER_PRESENT bit so the last reader will know to signal
   // it is responsible for signaling the waiting writer
   //-------------------------------------------------------------
-  uint32_t out = atomic_fetch_or_explicit(&l->rout, WRITER_PRESENT, memory_order_acq_rel);
+  uint32_t out = atomic_fetch_or_explicit(&l->r_out, WRITER_PRESENT, memory_order_acq_rel);
 
   //--------------------------------------------------------------------
   // if any reads are active, wait for last reader to signal me
@@ -171,23 +171,23 @@ void
 pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
 {
   //--------------------------------------------------------------------
-  // toggle phase and clear WRITER_PRESENT in rin. No synch issues
+  // toggle phase and clear WRITER_PRESENT in r_in. No synch issues
   // since there are no concurrent updates of the low-order byte
   //--------------------------------------------------------------------
-  unsigned char *lsb = LSB_PTR(&l->rin);
+  unsigned char *lsb = LSB_PTR(&l->r_in);
   uint32_t phase = *lsb & PHASE_BIT;
   *lsb ^= WRITER_MASK;
 
   //--------------------------------------------------------------------
-  // toggle phase and clear WRITER_PRESENT in rout. No synch issues
+  // toggle phase and clear WRITER_PRESENT in r_out. No synch issues
   // since the low-order byte modified here isn't modified again until
   // another writer has the mcs_lock.
   //--------------------------------------------------------------------
-  lsb = LSB_PTR(&l->rout);
+  lsb = LSB_PTR(&l->r_out);
   *lsb ^= WRITER_MASK;
 
   //----------------------------------------------------------------------------
-  // clearing writer present in rin can be reordered with writer_blocking_readers set below
+  // clearing writer present in r_in can be reordered with writer_blocking_readers set below
   // because any arriving reader will see the cleared writer_blocking_readers and proceed.
   //----------------------------------------------------------------------------
 
