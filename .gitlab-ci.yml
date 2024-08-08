@@ -968,7 +968,7 @@ spack:
       ERRORS_REPORTED_EXIT_CODE: 1  # Fail on real errors
   - when: on_success
   cache:
-  - key: spack-src
+  - key: spack-src-$CI_JOB_NAME_SLUG
     paths:
     - .cache/spack-src/
   script:
@@ -999,8 +999,11 @@ spack:
     echo "Identified ref as hpctoolkit@git.${CI_COMMIT_SHA}=${ver}"
   # Save the location of the stages directory to a file, for the after_script.
   - spack location --stages > spack-stages
-  # Link in a cache for files that get pulled in from the network. Not absolutely required for
-  # correct operation so push past any errors.
+  # We keep a cache for files that Spack pulls in from the network. To keep it small, we only retain
+  # and push files that were used in this build.
+  - mv -T .cache/spack-src .cache/spack-src-pull || true
+  - mkdir -p .cache/spack-src
+  - spack mirror add --scope=site gitlab-local "$CI_PROJECT_DIR"/.cache/spack-src-pull || true
   - spack config --scope=site add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src || true
   # Pad the install paths to make sure the generated buildcache binaries are compatible across
   # multiple systems and environments.
