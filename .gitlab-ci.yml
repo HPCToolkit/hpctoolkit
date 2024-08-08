@@ -52,8 +52,16 @@ default:
     when:
     - unknown_failure
     - api_failure
-    - stuck_or_timeout_failure
     - runner_system_failure
+    - runner_unsupported
+    - unmet_prerequisites
+    - data_integrity_failure
+    exit_codes: 68
+  hooks:
+    pre_get_sources_script:
+    - >-
+      GIT_TERMINAL_PROMPT=0 git ls-remote --quiet "$CI_REPOSITORY_URL" NONEXTISTENT_REF
+      || exit 68
 
 .not external mr:
   # Some jobs require specialized hardware that isn't generally available to the average GitLab user,
