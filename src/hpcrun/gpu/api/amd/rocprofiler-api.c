@@ -421,7 +421,7 @@ rocprofiler_context_handler
   // waits on the `entry->valid`, so I added it just in case.
   // Although not declared as the atomic boolean,
   // the example considers it as the atomic_bool.
-  // We should consider using the atomic_bool instea.
+  // We should consider using the atomic_bool instead.
   context_entry_t *entry = (context_entry_t *) arg;
   while (entry->valid == false) sched_yield();
 

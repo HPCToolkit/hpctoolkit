@@ -238,16 +238,16 @@ repos:
     args: ['--schemafile', 'https://raw.githubusercontent.com/devcontainers/spec/d424cc157e9a110f3bf67d311b46c7306d5a465d/schemas/devContainer.base.schema.json']
 
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.2.6
+  rev: v2.3.0
   hooks:
   # Identify common spelling mistakes in code and comments
   - id: codespell
     stages: [pre-commit, commit-msg]
     args:
     # HSA is part of the ROCm software stack. codespell mistakes it for "has".
-    # deques is the plural of "deque" (doubly-ended queue). codespell mistakes it for "dequeues".
     # InsId is a type name from GTPin. codespell mistakes it for "inside".
-    - --ignore-words-list=hsa,deques,insid
+    # "copyin" is a shorthand used in the GPU bits. codespell considers it a typo.
+    - --ignore-words-list=hsa,insid,copyin
     # Wil Phan is one of our staff members. codespell mistakes it for "will/well".
     - --ignore-regex=\b(Wil\s+Phan)\b
     exclude: |

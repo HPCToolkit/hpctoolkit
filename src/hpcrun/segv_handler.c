@@ -150,7 +150,7 @@ hpcrun_setup_segv()
 // Returns: 0 if the function is already registered,
 //      1 if the function is now added to the list
 //      -1 if there's something wrong
-// Warnning: this function is not thread safe.
+// Warning: this function is not thread safe.
 
 int
 hpcrun_segv_register_cb( hpcrun_sig_callback_t cb )

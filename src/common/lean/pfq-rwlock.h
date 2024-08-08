@@ -74,11 +74,11 @@ typedef struct {
 #ifdef __cplusplus
   std::
 #endif
-  atomic_uint_least32_t rin cache_aligned;  // = 0
+  atomic_uint_least32_t r_in cache_aligned;  // = 0
 #ifdef __cplusplus
   std::
 #endif
-  atomic_uint_least32_t rout cache_aligned;  // = 0
+  atomic_uint_least32_t r_out cache_aligned;  // = 0
 #ifdef __cplusplus
   std::
 #endif
