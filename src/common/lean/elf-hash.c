@@ -93,33 +93,3 @@ elf_hash
 
   return hash_string;
 }
-
-
-
-//******************************************************************************
-// unit test
-//******************************************************************************
-
-#ifdef UNIT_TEST
-
-#include <stdio.h>
-
-#define FILENAME "/bin/ls"
-
-int
-main
-(
- int argc,
- char **argv
-)
-{
-  char *h = elf_hash(FILENAME);
-  if (h) {
-    printf("hash string: %s %s\n", h, FILENAME);
-    free(h);
-    return 0;
-  }
-  return -1;
-}
-
-#endif

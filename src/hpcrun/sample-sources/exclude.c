@@ -20,7 +20,7 @@ static const int numEventsToExclude = 2;
  * @param event
  * @return true if the event has to be excluded, false otherwise
  */
-bool is_event_to_exclude(char *event)
+bool is_event_to_exclude(const char *event)
 {
   for(int i=0; i<numEventsToExclude ; i++) {
     if (strcmp(event, eventsToExclude[i]) == 0) {
@@ -29,15 +29,3 @@ bool is_event_to_exclude(char *event)
   }
   return false;
 }
-
-#ifdef UNIT_TEST_THIS
-#include <stdio.h>
-
-int main() {
-  char *events[] = { "re", "realtime", "ret", "retcnt", "", "//" };
-
-  for(int i=0; i<6; i++) {
-    printf("check %s : %d\n", events[i], is_event_to_exclude(events[i]));
-  }
-}
-#endif

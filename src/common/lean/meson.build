@@ -46,3 +46,22 @@ common_lean_srcs = files(
   'vdso.c',
 )
 common_lean_deps = [libelf_dep, libiberty_dep, lzma_dep, threads_dep]
+
+test_srcs = files(
+  'compress_lzma_test.cpp',
+  'crypto-hash-test.cpp',
+  'elf-hash-test.cpp',
+  'randomizer-test.cpp',
+)
+
+test(
+  'common-lean',
+  executable(
+    'common-lean-test',
+    test_srcs,
+    common_lean_srcs,
+    dependencies: [threads_dep, gmock_dep, common_lean_deps],
+  ),
+  args: [files('elf-hash-example')],
+  protocol: 'gtest',
+)

@@ -4,5 +4,6 @@
 
 # FIXME: Autoformatting is currently only enabled for the file globs listed below.
 meson/**/*
+src/**/*[-_]test.cpp
 src/hpcrun/foil/**/*
 tests/**/*

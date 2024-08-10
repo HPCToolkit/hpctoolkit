@@ -20,6 +20,8 @@
 #ifndef _HPCTOOLKIT_CRYPTO_HASH_H_
 #define _HPCTOOLKIT_CRYPTO_HASH_H_
 
+#include <stddef.h>
+
 #define MD5_HASH_NBYTES 16
 
 #define CRYPTO_HASH_LENGTH MD5_HASH_NBYTES
