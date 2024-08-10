@@ -1,0 +1,44 @@
+From b87dfac1c56501a6c24dd52c98b5a55dda48d2c1 Mon Sep 17 00:00:00 2001
+From: Jonathon Anderson <anderson.jonathonm@gmail.com>
+Date: Sat, 14 Sep 2024 00:37:58 -0500
+Subject: [PATCH] Update XED_NORETURN to support modern C standards
+
+The `XED_NORETURN` macro is incompatible with software using C11. This
+commit updates the macro logic to use `[[noreturn]]` (C23) or
+`_Noreturn` (C11) when the given standard is supported. The original
+`__attribute__` syntax is kept, it now uses `__noreturn__` to avoid
+conflicts if/when `noreturn` is a macro.
+
+Signed-off-by: Jonathon Anderson <anderson.jonathonm@gmail.com>
+---
+ include/public/xed/xed-portability.h | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/include/public/xed/xed-portability.h b/include/public/xed/xed-portability.h
+index 65a1e12f43168f4cf5d006374cbb7279e2a83fed..8c573d6c66da92bf1b083ba8102f12d15fc0b1f9 100644
+--- a/include/public/xed/xed-portability.h
++++ b/include/public/xed/xed-portability.h
+@@ -158,7 +158,6 @@ XED_DLL_EXPORT int xed_strncat(char* dst, const char* src,  int len);
+ #       define XED_INLINE inline
+ #    endif
+ # endif
+-# define XED_NORETURN __attribute__ ((noreturn))
+ # if __GNUC__ == 2
+ #   define XED_NOINLINE 
+ # else
+@@ -171,6 +170,15 @@ XED_DLL_EXPORT int xed_strncat(char* dst, const char* src,  int len);
+ # else
+ #   define XED_NOINLINE __declspec(noinline)
+ # endif
++#endif
++
++#if __STDC_VERSION__ >= 202311L
++# define XED_NORETURN [[noreturn]]
++#elif __STDC_VERSION__ >= 201112L
++# define XED_NORETURN _Noreturn
++#elif defined(__GNUC__)
++# define XED_NORETURN __attribute__ ((__noreturn__))
++#else
+ # define XED_NORETURN __declspec(noreturn)
+ #endif
+ 
