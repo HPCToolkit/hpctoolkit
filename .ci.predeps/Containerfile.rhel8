@@ -89,7 +89,7 @@ COPY \
 RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
   && echo "[built-in options]" >> "$t" \
   && echo "wrap_mode = 'nofallback'" >> "$t" \
-  && echo "force_fallback_for = ['dyninst', 'libunwind', 'xed']" >> "$t" \
+  && echo "force_fallback_for = ['dyninst', 'libunwind', 'xed', 'gtest']" >> "$t" \
   && echo "" >> "$t" \
   && echo "[project options]" >> "$t" \
   && echo "auto_features = 'enabled'" >> "$t" \

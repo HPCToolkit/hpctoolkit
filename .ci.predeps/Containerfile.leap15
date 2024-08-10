@@ -18,6 +18,8 @@ RUN \
     gcc12 \
     gcc12-c++ \
     git \
+    gmock \
+    gtest \
     libbz2-devel \
     libomp-devel \
     libpfm-devel \

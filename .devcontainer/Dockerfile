@@ -56,6 +56,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libbz2-dev \
     libdw-dev \
     libelf-dev \
+    libgmock-dev \
+    libgtest-dev \
     libiberty-dev \
     liblzma-dev \
     libomp-dev \

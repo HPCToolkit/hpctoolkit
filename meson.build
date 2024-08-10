@@ -368,6 +368,14 @@ add_project_arguments(
 )
 
 
+# Find GoogleTest which is used as a test harness and framework. GoogleMock is a bundled library
+# with extra features that extend the base GoogleTest experience.
+gtest_dep = dependency('gtest', version: '>=1.8.1')
+gtest_main_dep = dependency('gtest_main', version: '>=1.8.1')
+gmock_dep = dependency('gmock', version: '>=1.8.1')
+gmock_main_dep = dependency('gmock_main', version: '>=1.8.1')
+
+
 # Find rst2man, which is used to generate the man pages from source
 rst2man = find_program('rst2man', 'rst2man.py', required: get_option('manpages'))
 
