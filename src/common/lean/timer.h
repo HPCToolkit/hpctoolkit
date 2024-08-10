@@ -143,7 +143,15 @@ time_getTSC()
   tsc = (((uint64_t)hi) << 32) | ((uint64_t)lo);
 
 #else
-# warning "lib/support-lean/timer.h: time_getTSC()"
+
+  // Fall back to clock_gettime
+  struct timespec ts;
+  long ret = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+  if (ret != 0) {
+    abort();
+  }
+  tsc = ts.tv_sec * 1000000000 + ts.tv_nsec;
+
 #endif
 
   return tsc;
