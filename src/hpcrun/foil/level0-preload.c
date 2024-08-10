@@ -22,7 +22,7 @@
 HPCRUN_EXPOSED ze_result_t
 zeInit
 (
-  ze_init_flag_t flag
+  ze_init_flags_t flag
 )
 {
   LOOKUP_FOIL_BASE(base, zeInit);
