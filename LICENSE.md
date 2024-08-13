@@ -1,9 +1,3 @@
-This source distribution follows the [REUSE Specification] Version 3 to declare copyright and licensing for individual files. License texts applying to individual files are provided in the `LICENSES/` subdirectory.
-
-The BSD-3-Clause license text below applies to this source distribution as a whole.
-
-______________________________________________________________________
-
 Copyright (c) 2002-2024, Rice University
 Copyright (c) 2024 Contributors to the HPCToolkit Project
 
@@ -33,7 +27,3 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-______________________________________________________________________
-
-[reuse specification]: https://reuse.software/spec/
