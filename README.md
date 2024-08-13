@@ -336,11 +336,16 @@ In particular, there is a PDF User's Manual at:
 
 http://hpctoolkit.org/manual/HPCToolkit-users-manual.pdf
 
+## License
+
+This source distribution as a whole is licensed under the [`LICENSE.md`](./LICENSE.md). This source distribution follows [REUSE Specification] Version 3 to declare copyright and licensing at file granularity, the individual license texts are provided in the `LICENSES/` subdirectory.
+
 [meson]: https://mesonbuild.com/
 [meson native file]: https://mesonbuild.com/Native-environments.html
 [meson subprojects]: https://mesonbuild.com/Subprojects.html
 [meson wraps]: https://mesonbuild.com/Wrap-dependency-system-manual.html
 [meson's `dependency()` docs]: https://mesonbuild.com/Reference-manual_functions.html#dependency
+[reuse specification]: https://reuse.software/spec/
 [spack]: https://spack.io/
 [spack user's manual]: https://spack.readthedocs.io/
 [`doc/developers/meson.ini`]: /doc/developers/meson.ini
