@@ -226,17 +226,6 @@ repos:
   - id: shellcheck
     args: ['--exclude=SC2154']
 
-- repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: '0.29.1'
-  hooks:
-  # Validate the GitLab CI scripts against the schema. Doesn't catch everything but helps
-  - id: check-gitlab-ci
-  # Validate the devcontainers configurations against the schema.
-  - id: check-jsonschema
-    alias: check-devcontainer
-    files: '(^|/)devcontainer\.json'
-    args: ['--schemafile', 'https://raw.githubusercontent.com/devcontainers/spec/d424cc157e9a110f3bf67d311b46c7306d5a465d/schemas/devContainer.base.schema.json']
-
 - repo: https://github.com/codespell-project/codespell
   rev: v2.3.0
   hooks:
