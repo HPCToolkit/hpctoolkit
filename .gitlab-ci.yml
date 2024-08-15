@@ -69,13 +69,13 @@ default:
   # These jobs should never run in scenarios where said runners may not be available.
   rules: &only_runner_privileged
   - &never_if_runner_unprivileged
-    # Never run in merge request (but not merged results) pipelines from external projects (forks)
+    # This pipeline is in an external project if this pipeline is for an MR and the MR project is
+    # different from the pipeline's project. Protected refs are exempt and must run everything.
     if: >-
       ($ENABLE_HPCTOOLKIT_CUSTOM_RUNNERS == "" || $ENABLE_HPCTOOLKIT_CUSTOM_RUNNERS == null)
       && $CI_COMMIT_REF_PROTECTED == "false"
       && $CI_MERGE_REQUEST_IID
-      && ($CI_MERGE_REQUEST_SOURCE_BRANCH_SHA == "" || $CI_MERGE_REQUEST_SOURCE_BRANCH_SHA == null)
-      && $CI_MERGE_REQUEST_SOURCE_PROJECT_ID != $CI_MERGE_REQUEST_PROJECT_ID
+      && $CI_PROJECT_ID != $CI_MERGE_REQUEST_PROJECT_ID
     when: never
   - when: on_success
 
