@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2021 The Meson development team
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: CC0-1.0
 
 [wrap-file]
 directory = xerces-c-3.2.5
@@ -8,8 +8,6 @@ source_url = https://dlcdn.apache.org//xerces/c/3/sources/xerces-c-3.2.5.tar.gz
 source_filename = xerces-c-3.2.5.tar.gz
 source_hash = 545cfcce6c4e755207bd1f27e319241e50e37c0c27250f11cda116018f1ef0f5
 method = cmake
-source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/xerces-c/3.2.5-1-beta.2/xerces-c-3.2.5.tar.gz
-wrapdb_version = 3.2.5-1-beta.2
 
 [provide]
 xerces-c = xerces_c_dep

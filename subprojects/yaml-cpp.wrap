@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2021 The Meson development team
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: CC0-1.0
 
 [wrap-file]
 directory = yaml-cpp-0.8.0
@@ -8,8 +8,6 @@ source_url = https://github.com/jbeder/yaml-cpp/archive/refs/tags/0.8.0.tar.gz
 source_filename = yaml-cpp-0.8.0.tar.gz
 source_hash = fbe74bbdcee21d656715688706da3c8becfd946d92cd44705cc6098bb23b3a16
 method = cmake
-source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/yaml-cpp/0.8.0-1-beta.3/yaml-cpp-0.8.0.tar.gz
-wrapdb_version = 0.8.0-1-beta.3
 
 [provide]
 yaml-cpp = yaml_cpp_dep
