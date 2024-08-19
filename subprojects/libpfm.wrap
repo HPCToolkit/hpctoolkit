@@ -1,7 +1,3 @@
-# SPDX-FileCopyrightText: 2021 The Meson development team
-#
-# SPDX-License-Identifier: MIT
-
 [wrap-file]
 directory = libpfm-4.13.0
 source_url = https://sourceforge.net/projects/perfmon2/files/libpfm4/libpfm-4.13.0.tar.gz/download
