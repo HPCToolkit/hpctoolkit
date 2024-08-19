@@ -878,7 +878,7 @@ reuse:
   stage: code quality
   needs: []
   image:
-    name: docker.io/fsfe/reuse:3
+    name: docker.io/fsfe/reuse:4
     entrypoint: [""]
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
