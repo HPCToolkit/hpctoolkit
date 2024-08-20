@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+version = 1
+
+# Wraps that do not have other annotations are from the Meson WrapDB.
+# See https://github.com/mesonbuild/wrapdb for details.
+[[annotations]]
+path = "*.wrap"
+precedence = "closest"
+SPDX-FileCopyrightText = "2021 The Meson development team"
+SPDX-License-Identifier = "MIT"

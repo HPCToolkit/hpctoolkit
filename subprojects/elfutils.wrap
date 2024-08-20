@@ -1,7 +1,3 @@
-# SPDX-FileCopyrightText: 2021 The Meson development team
-#
-# SPDX-License-Identifier: MIT
-
 [wrap-file]
 directory = elfutils-0.190
 source_url = https://sourceware.org/elfutils/ftp/0.190/elfutils-0.190.tar.bz2

@@ -1,18 +1,14 @@
-# SPDX-FileCopyrightText: 2021 The Meson development team
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: CC0-1.0
 
 [wrap-file]
-directory = libiberty-gcc13.2.0
+directory = libiberty-binutils-2.42
 lead_directory_missing = true
-source_url = https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz
-source_filename = gcc-13.2.0.tar.xz
-source_hash = e275e76442a6067341a27f04c5c6b83d8613144004c0413528863dc6b5c743da
-patch_filename = libiberty-13.2.0-1-beta.1_patch.zip
-patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libiberty/13.2.0-1-beta.1/libiberty-13.2.0-1-beta.1_patch.zip
-patch_hash = ba6450507aba7a413a044c7e59897dc926065d9a8814a3fdacc569492d339458
-source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/libiberty/13.2.0-1-beta.1/gcc-13.2.0.tar.xz
-wrapdb_version = 13.2.0-1-beta.1
+source_url = https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz
+source_filename = binutils-2.42.tar.xz
+source_hash = f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
+patch_directory = libiberty
 
 [provide]
 dependency_names = libiberty

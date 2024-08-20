@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: 2021 The Meson development team
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
 #
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: CC0-1.0
 
 [wrap-file]
 directory = gtpin-4.0
