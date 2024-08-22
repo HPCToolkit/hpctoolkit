@@ -3,12 +3,11 @@ directory = dyninst-13.0.0
 source_url = https://github.com/dyninst/dyninst/archive/refs/tags/v13.0.0.tar.gz
 source_filename = dyninst-13.0.0.tar.gz
 source_hash = 1bc48d26478b677a6c090c25586a447507bd1b4cf88d369bd61820005ce1be39
-patch_filename = dyninst-13.0.0-1-rc.1_patch.zip
-patch_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/13.0.0-1-rc.1/dyninst-13.0.0-1-rc.1_patch.zip
-patch_hash = f2471ab242b96b1f56fb307091d0771fea4dfd3ebb86ff5d7155265a283588e5
-source_fallback_url = https://gitlab.com/api/v4/projects/52719331/packages/generic/dyninst/13.0.0-1-rc.1/dyninst-13.0.0.tar.gz
-wrapdb_version = 13.0.0-1-rc.1
+patch_filename = dyninst_13.0.0-2_patch.zip
+patch_url = https://wrapdb.mesonbuild.com/v2/dyninst_13.0.0-2/get_patch
+patch_hash = f1c0f07eb75ebc84c9c0b1a5d9d39f47cfac7d90c59f1fb6adcf135f75f4ab06
+source_fallback_url = https://github.com/mesonbuild/wrapdb/releases/download/dyninst_13.0.0-2/dyninst-13.0.0.tar.gz
+wrapdb_version = 13.0.0-2
 
 [provide]
-dependency_names = dyninst
 dyninst = dyninst_dep
