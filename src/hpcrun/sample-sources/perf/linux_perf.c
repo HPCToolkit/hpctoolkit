@@ -595,13 +595,13 @@ set_default_threshold()
     if (val_str != NULL) {
       TMSG(LINUX_PERF, "HPCRUN_PERF_COUNT = %s", val_str);
       int res = hpcrun_extract_threshold(val_str, &default_threshold.threshold_val, max_rate_m1);
-      if (res == 1) {
+      if (res == THRESH_VALUE) {
         default_threshold.threshold_type = PERIOD;
       }
     }
     initialized = 1;
   }
-  TMSG(LINUX_PERF, "default threshold = %d", default_threshold.threshold_val);
+  TMSG(LINUX_PERF, "default threshold = %d, type: %d", default_threshold.threshold_val, default_threshold.threshold_type);
 }
 
 /******************************************************************************

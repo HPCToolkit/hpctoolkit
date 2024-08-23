@@ -265,6 +265,15 @@ The command below will sample ``CYCLES`` at 200 samples per second and ``INSTRUC
 
   hpcrun -c f200 -e CYCLES -e INSTRUCTIONS ...
 
+Compatible events can be measured as a group by listing multiple events in one ``-e`` option.
+This affects how the events are measured, see *Grouping hardware counters* for details.
+Note that quotes may be necessary to avoid shell expansion:
+
+.. code:: bash
+
+  hpcrun -e CYCLES,INSTRUCTIONS,CACHE-MISSES -c @f200 ...
+  hpcrun -e '{CYCLES,INSTRUCTIONS,CACHE-MISSES}@f200' ...
+
 EXAMPLES
 ========
 
@@ -374,6 +383,10 @@ Multiplexing
   The number of events that can be monitored in a single execution is only limited by the maximum number of concurrent events that the kernel will allow a user to multiplex using the perf_events interface.
 
   When more events are specified than can be monitored simultaneously using a thread's hardware counters, the kernel will employ multiplexing and divide the set of events to be monitored into groups, monitor only one group of events at a time, and cycle repeatedly through the groups as a program executes.
+
+Grouping hardware counters
+  One can profile using multiple hardware counters grouped together by separating with a comma between counters in hpcrun's ``-e`` option. This feature allows for the collection of several related performance metrics within a single profiling session, ensuring that the counters are accurate and directly comparable. By grouping hardware counters, users can obtain a cohesive set of data that reflects the interactions and dependencies between different performance aspects of their application.
+  The first hardware counter specified in the group acts as the "leader" counter. This leader counter determines the sampling intervals and coordinates the collection of data for the entire group. The rest of the counters in the group are sampled in synchronization with the leader counter, ensuring consistent and reliable data collection.
 
 Thread blocking
   When a program executes, a thread may block waiting for the kernel to complete some operation on its behalf.
