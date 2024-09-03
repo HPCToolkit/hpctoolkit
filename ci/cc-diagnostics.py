@@ -64,7 +64,7 @@ def _cc_to_cq(mode: str, project_root: Path, exclude_dirs: typing.List[Path], li
     # Compiler warning regex:
     #     {path}.{extension}:{line}:{column}: {severity}: {message} [{flag(s)}]
     mat = re.fullmatch(
-        r"^(.*)\.([a-z+]{1,3}):(\d+):(\d+:)?\s+(warning|error):\s+(.*)\s+\[((\w|-|=)*)\]$",
+        r"^(.*)\.([a-z+]{1,3}):(\d+):(\d+:)?\s+(warning|error):\s+(.*)\s+\[([^]]*)\]$",
         line.strip("\n"),
     )
     if not mat:
