@@ -11,7 +11,10 @@ Checks: >-
   ,performance-*
   ,portability-*
   ,readability-*'
+  ,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
   ,-bugprone-unchecked-optional-access
+# DeprecatedOrUnsafeBufferHandling is disabled because the functions it suggests as replacements
+#   are extensions in C11 and many are not implemented in GNU/Linux.
 # bugprone-unchecked-optional-access is disabled because it tends to crash in complex OpenMP cases.
 
 # Format to use for fix-its, stay consistent with the clang-format style
