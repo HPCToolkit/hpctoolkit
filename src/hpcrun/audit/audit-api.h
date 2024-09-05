@@ -56,39 +56,27 @@ typedef struct auditor_hooks_t {
 
 typedef struct auditor_exports_t {
   // Called by the mainlib once it is prepared to receive notifications.
-  void (*mainlib_connected)(const char* vdso_path);
+  void (*mainlib_connected)(const char* vdso_path, const auditor_hooks_t*);
+
   // Called by the mainlib when it no longer wishes to receive notifications.
   void (*mainlib_disconnect)();
-
-  // Purified environment that has our effects (mostly) removed.
-  char** pure_environ;
 
   // Called to load and bind new libraries in the auditor's namespace.
   // Same semantics as #hpcrun_bind_v.
   void (*hpcrun_bind_v)(const char*, va_list);
 
   // Exports from libc to aid in wrapper evasion
-  int (*pipe)(int[2]);
-  int (*close)(int);
-  pid_t (*waitpid)(pid_t, int*, int);
-  int (*clone)(int (*)(void*), void*, int, void*, ...);
-  int (*execve)(const char*, char* const[], char* const[]);
   void (*exit)(int);
   int (*sigprocmask)(int, const sigset_t*, sigset_t*);
   int (*pthread_sigmask)(int, const sigset_t*, sigset_t*);
   int (*sigaction)(int, const struct sigaction* restrict, struct sigaction* restrict);
 } auditor_exports_t;
 
-// Called as early as possible in the process startup, before any static
-// initialization (including libc's). Most things don't work here, so
-// use the `initialize` hook for things after that.
-typedef void (*auditor_attach_pfn_t)(const auditor_exports_t*, auditor_hooks_t*);
-extern void hpcrun_auditor_attach(const auditor_exports_t*, auditor_hooks_t*);
+// Get a pointer to the current set of auditor exports
+extern const auditor_exports_t* auditor_exports();
 
-extern const auditor_exports_t* auditor_exports;
-
-// Called by the mainlib to initialize the fake auditor in the event that
-// one of the other interfaces has been called already.
-extern void hpcrun_init_fake_auditor();
+typedef const auditor_exports_t* (*pfn_connect_to_auditor)();
+__attribute__((visibility("default")))
+const auditor_exports_t* hpcrun_connect_to_auditor();
 
 #endif  // AUDIT_AUDITAPI_H

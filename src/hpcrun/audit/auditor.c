@@ -95,37 +95,18 @@ static ElfW(Addr) dl_runtime_resolver_ptr = 0;
 static object_t* buffer_head = NULL;
 static object_t* buffer_tail = NULL;
 
-static uintptr_t* mainlib_cookie = NULL;
-static auditor_attach_pfn_t pfn_attach = NULL;
-static bool connected = false;
-static auditor_hooks_t hooks;
+static const auditor_hooks_t* hooks;
 
-static void mainlib_connected(const char*);
+static void mainlib_connected(const char*, const auditor_hooks_t*);
 static void mainlib_disconnect();
 
-static auditor_exports_t exports = {
-  .mainlib_connected = mainlib_connected,
-  .mainlib_disconnect = mainlib_disconnect,
-  .hpcrun_bind_v = hpcrun_bind_v,
-  .pipe = pipe, .close = close, .waitpid = waitpid,
-  .clone = clone, .execve = execve,
-  .exit = exit,
-  .sigprocmask = sigprocmask, .pthread_sigmask = pthread_sigmask,
-  .sigaction = sigaction,
-};
-
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
-extern pfn_iterate_phdr_t* hpcrun_iterate_phdr;
+extern pfn_iterate_phdr_t hpcrun_iterate_phdr;
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
-
-__attribute__((constructor))
-static void init() {
-  hpcrun_iterate_phdr = &hooks.dl_iterate_phdr;
-}
 
 // Wrapper for pread that makes multiple calls until everything requested is
 // read. Returns true on success.
@@ -327,28 +308,6 @@ static void complete_object(object_t* obj) {
   }
 }
 
-
-// Search a link_map's (dynamic) symbol table until we find the given symbol.
-static void* get_symbol(struct link_map* map, const char* name) {
-  // Nab the STRTAB and SYMTAB
-  const char* strtab = NULL;
-  ElfW(Sym)* symtab = NULL;
-  for(const ElfW(Dyn)* d = map->l_ld; d->d_tag != DT_NULL; d++) {
-    if(d->d_tag == DT_STRTAB) strtab = (const char*)d->d_un.d_ptr;
-    else if(d->d_tag == DT_SYMTAB) symtab = (ElfW(Sym)*)d->d_un.d_ptr;
-    if(strtab && symtab) break;
-  }
-  if(!strtab || !symtab) abort();  // This should absolutely never happen
-
-  // Hunt down the given symbol. It must exist, or we run off the end.
-  for(ElfW(Sym)* s = symtab; ; s++) {
-    if(ELF64_ST_TYPE(s->st_info) != STT_FUNC) continue;
-    if(strcmp(&strtab[s->st_name], name) == 0)
-      return (void*)(map->l_addr + s->st_value);
-  }
-}
-
-
 static ElfW(Addr)* get_plt_got_start(ElfW(Dyn)* dyn) {
   for(ElfW(Dyn)* d = dyn; d->d_tag != DT_NULL; d++) {
     if(d->d_tag == DT_PLTGOT) {
@@ -447,21 +406,6 @@ unsigned int la_version(unsigned int version) {
     }
   }
 
-  // Generate the purified environment before the app changes it
-  // NOTE: Consider removing only ourselves to allow for Spindle-like optimizations.
-  {
-    size_t envsz = 0;
-    for(char** e = environ; *e != NULL; e++) envsz++;
-    exports.pure_environ = malloc((envsz+1)*sizeof exports.pure_environ[0]);
-    size_t idx = 0;
-    for(char** e = environ; *e != NULL; e++) {
-      if(strncmp(*e, "LD_PRELOAD=", 11) == 0) continue;
-      if(strncmp(*e, "LD_AUDIT=", 9) == 0) continue;
-      exports.pure_environ[idx++] = *e;
-    }
-    exports.pure_environ[idx] = NULL;
-  }
-
   return LAV_CURRENT;
 }
 
@@ -494,18 +438,6 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
     },
   };
 
-  // If we haven't found it already, check if this is libhpcrun.so.
-  if(mainlib_cookie == NULL) {
-    // NOTE: libhpcrun.so is always PIC, so we don't need special cases here
-    const char* basenm = strrchr(map->l_name, '/');
-    if(basenm != NULL && strcmp(basenm + 1, "libhpcrun.so") == 0) {
-      mainlib_cookie = cookie;
-      pfn_attach = get_symbol(map, "hpcrun_auditor_attach");
-      if(verbose)
-        fprintf(stderr, "[audit] Located libhpcrun.so, attach hook is: %p\n", pfn_attach);
-    }
-  }
-
   // Fetch the program headers, we *always* need them. If we can't get them
   // drop the binary on the floor and ignore it completely.
   if(!fetch_hdrs(obj)) {
@@ -516,12 +448,12 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
 
   // If we're connected finalize and notify the new object, otherwise buffer it
   // and wait until we're connected.
-  if(connected) {
+  if(hooks != NULL) {
     complete_object(obj);
     if(verbose)
       fprintf(stderr, "[audit] Delivering objopen for `%s' [%p, %p)\n",
               map->l_name, obj->entry.start, obj->entry.end);
-    hooks.open(&obj->entry);
+    hooks->open(&obj->entry);
   } else {
     if(verbose)
       fprintf(stderr, "[audit] la_objopen: buffering while unconnected: `%s'\n",
@@ -536,11 +468,12 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
 }
 
 
-static void mainlib_connected(const char* vdso_path) {
+static void mainlib_connected(const char* vdso_path, const auditor_hooks_t* new_hooks) {
   // No need to execute this code in a forked child without exec
-  if (connected) return;
+  if (hooks != NULL) return;
 
-  connected = true;
+  hooks = new_hooks;
+  hpcrun_iterate_phdr = hooks->dl_iterate_phdr;
 
   // Finalize and deliver notifications for all the objects we've buffered
   if(verbose)
@@ -564,7 +497,7 @@ static void mainlib_connected(const char* vdso_path) {
       fprintf(stderr, "[audit] Delivering buffered objopen for `%s'\n",
               obj->entry.path);
     }
-    hooks.open(&obj->entry);
+    hooks->open(&obj->entry);
   }
   buffer_tail = NULL;
 
@@ -613,7 +546,7 @@ static void mainlib_connected(const char* vdso_path) {
         complete_object(obj);
         if(verbose)
           fprintf(stderr, "[audit] Delivering synthetic objopen for vDSO...\n");
-        hooks.open(&obj->entry);
+        hooks->open(&obj->entry);
       }
     }
   }
@@ -656,7 +589,7 @@ static void mainlib_connected(const char* vdso_path) {
         if(verbose)
           fprintf(stderr, "[audit] Delivering objopen for auditor `%s'...\n",
                   obj->entry.map->l_name);
-        hooks.open(&obj->entry);
+        hooks->open(&obj->entry);
       }
     }
   }
@@ -665,7 +598,17 @@ static void mainlib_connected(const char* vdso_path) {
     fprintf(stderr, "[audit] Auditor is now connected\n");
 }
 
-
+static const auditor_exports_t* hpcrun_connect_to_auditor_p() {
+  static const auditor_exports_t exports = {
+    .mainlib_connected = mainlib_connected,
+    .mainlib_disconnect = mainlib_disconnect,
+    .hpcrun_bind_v = hpcrun_bind_v,
+    .exit = exit,
+    .sigprocmask = sigprocmask, .pthread_sigmask = pthread_sigmask,
+    .sigaction = sigaction,
+  };
+  return &exports;
+}
 
 __attribute__((visibility("default")))
 uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
@@ -673,6 +616,8 @@ uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
                        unsigned int *flags, const char *symname) {
   if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
     optimize_object_plt((object_t*)*refcook);
+  if(strcmp(symname, "hpcrun_connect_to_auditor") == 0)
+    return (uintptr_t)&hpcrun_connect_to_auditor_p;
   return sym->st_value;
 }
 __attribute__((visibility("default")))
@@ -681,6 +626,8 @@ uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
                        unsigned int *flags, const char *symname) {
   if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
     optimize_object_plt((object_t*)*refcook);
+  if(strcmp(symname, "hpcrun_connect_to_auditor") == 0)
+    return (uintptr_t)&hpcrun_connect_to_auditor_p;
   return sym->st_value;
 }
 
@@ -694,18 +641,12 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
     if(verbose)
       fprintf(stderr, "[audit] la_activity: LA_CONSISTENT\n");
 
-    // If we're not attached to the mainlib yet, do so.
-    if(pfn_attach != NULL) {
-      pfn_attach(&exports, &hooks);
-      pfn_attach = NULL;
-    }
-
     // If we're connected, let the mainlib know about the current stability
-    if(connected) {
+    if(hooks != NULL) {
       if(verbose)
         fprintf(stderr, "[audit] Notifying stability (additive: %s)\n",
                 previous == LA_ACT_ADD ? "yes" : "no");
-      hooks.stable(previous == LA_ACT_ADD);
+      hooks->stable(previous == LA_ACT_ADD);
     }
   } else if(verbose) {
     if(flag == LA_ACT_ADD)
@@ -720,9 +661,7 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
 }
 
 static void mainlib_disconnect() {
-  mainlib_cookie = NULL;
-  pfn_attach = NULL;
-  connected = false;
+  hooks = NULL;
   if(verbose)
     fprintf(stderr, "[audit] Auditor has now disconnected\n");
 }
@@ -735,19 +674,12 @@ unsigned int la_objclose(uintptr_t* cookie) {
   }
   object_t* obj = (void*)*cookie;
 
-  // If the mainlib is disappearing, forcibly disconnect.
-  if(cookie == mainlib_cookie) {
-    if(verbose)
-      fprintf(stderr, "[audit] libhpcrun.so has closed, forcibly disconnecting.\n");
-    mainlib_disconnect();
-  }
-
   // Notify the mainlib about this disappearing binary
-  if(connected) {
+  if(hooks != NULL) {
     if(verbose)
       fprintf(stderr, "[audit] Delivering objclose for `%s'\n",
               obj->entry.map->l_name);
-    hooks.close(&obj->entry);
+    hooks->close(&obj->entry);
   }
 
   // If the object was in the buffer, unlink it before cleaning it up

@@ -104,7 +104,7 @@ METHOD_FN(start)
       !blame_shift_source_available(bs_type_cycles)) {
     STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, "
                "CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
-    auditor_exports->exit(1);
+    auditor_exports()->exit(1);
   }
 }
 
@@ -129,7 +129,7 @@ METHOD_FN(shutdown)
         "idleness and work.\n"
         "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
         "For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
-    auditor_exports->exit(1);
+    auditor_exports()->exit(1);
   }
 
   self->state = UNINIT;

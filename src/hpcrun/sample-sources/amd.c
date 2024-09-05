@@ -164,12 +164,12 @@ METHOD_FN(finalize_event_list)
 {
   if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
 
   if (hip_bind()) {
     EEMSG("hpcrun: unable to bind to HIP AMD library %s\n", dlerror());
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
 
   roctracer_init();

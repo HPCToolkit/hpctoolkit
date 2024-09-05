@@ -433,7 +433,7 @@ monitor_system(const char *command, int callback)
         arglist[3] = NULL;
         (*real_execve)(SHELL, arglist,
                        callback ? environ : monitor_copy_environ(environ));
-        auditor_exports->exit(127);
+        auditor_exports()->exit(127);
         __builtin_unreachable();
     }
     else {
