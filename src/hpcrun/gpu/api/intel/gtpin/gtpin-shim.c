@@ -55,7 +55,7 @@
 //*****************************************************************************
 
 static void my_exit(int status) {
-  auditor_exports->exit(status);
+  auditor_exports()->exit(status);
 }
 
 static gtpin_hpcrun_api_t gtpin_hpcrun_api = {
@@ -101,19 +101,19 @@ static void init()
                                   RTLD_LOCAL | RTLD_LAZY);
   if (hpcrun_gtpinlib == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
 
   void *malloc_lib = dlopen("libtbbmalloc.so.2", RTLD_LAZY | RTLD_GLOBAL);
   if (malloc_lib == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
 
   void (*gtpin_hpcrun_api_set_fn)(gtpin_hpcrun_api_t *) = dlsym(hpcrun_gtpinlib, "gtpin_hpcrun_api_set");
   if (gtpin_hpcrun_api_set_fn == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to connect to HPCToolkit's gtpin support library: %s", dlerror());
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
   gtpin_hpcrun_api_set_fn(&gtpin_hpcrun_api);
 

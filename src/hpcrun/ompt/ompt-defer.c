@@ -79,7 +79,7 @@ merge_metrics
     case MetricFlags_ValFmt_Real: mdata_a->r += mdata_b->r; break;
     default:
       TMSG(DEFER_CTXT, "in merge_op: what's the metric type");
-      auditor_exports->exit(1);
+      auditor_exports()->exit(1);
     }
   }
 }

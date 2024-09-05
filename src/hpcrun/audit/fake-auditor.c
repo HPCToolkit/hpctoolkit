@@ -37,93 +37,13 @@ static shadow_map_entry_t* shadow_map;
 static pthread_mutex_t shadow_lock;
 
 // Storage for all the bits we need
-static auditor_exports_t exports;
-static auditor_hooks_t hooks;
-
-static void mainlib_connected(const char*);
-static void mainlib_disconnect();
-static bool update_shadow();
+static const auditor_hooks_t* hooks = NULL;
 
 static void* (*real_dlopen)(const char*, int) = NULL;
 static int (*real_dlclose)(void*) = NULL;
 static void* private_ns = NULL;
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
 
-
-// Initialization can happen from multiple locations, but always looks like this:
-static bool initialized = false;
-__attribute__((visibility("default")))
-void hpcrun_init_fake_auditor() {
-  if(initialized) return;
-  initialized = true;
-
-  pthread_mutexattr_t mattr;
-  pthread_mutexattr_init(&mattr);
-  pthread_mutexattr_settype(&mattr, PTHREAD_MUTEX_RECURSIVE);
-  pthread_mutex_init(&shadow_lock, &mattr);
-  pthread_mutexattr_destroy(&mattr);
-
-  real_dlopen = dlsym(RTLD_NEXT, "dlopen");
-  real_dlclose = dlsym(RTLD_NEXT, "dlclose");
-
-  // Load the private namespace and get the binding function out of it
-  private_ns = dlmopen(LM_ID_NEWLM, "libhpcrun_private_ns.so", RTLD_NOW);
-  if (private_ns == NULL) {
-    fprintf(stderr, "[fake audit] ERROR: Unable to create private linkage namespace: %s", dlerror());
-    abort();
-  }
-  pfn_iterate_phdr_t** hpcrun_iterate_phdr = dlsym(private_ns, "hpcrun_iterate_phdr");
-  if (hpcrun_iterate_phdr == NULL) {
-    fprintf(stderr, "ERROR: Unable to get private dl_iterate_phdr override: %s", dlerror());
-    abort();
-  }
-  *hpcrun_iterate_phdr = &hooks.dl_iterate_phdr;
-  exports.hpcrun_bind_v = dlsym(private_ns, "hpcrun_bind_v");
-  if (exports.hpcrun_bind_v == NULL) {
-    fprintf(stderr, "ERROR: Unable to get private binding function: %s", dlerror());
-    abort();
-  }
-
-  void (*fill_exports)(auditor_exports_t*) = dlsym(private_ns, "fill_exports");
-  if (exports.hpcrun_bind_v == NULL) {
-    fprintf(stderr, "ERROR: Unable to get private exports function: %s", dlerror());
-    abort();
-  }
-  fill_exports(&exports);
-
-  exports.mainlib_connected = mainlib_connected;
-  exports.mainlib_disconnect = mainlib_disconnect;
-
-  verbose = getenv("HPCRUN_AUDIT_DEBUG");
-  vdso_path = "[vdso]";  // Set later to something more reasonable.
-
-  // Generate the purified environment before the app changes it
-  // NOTE: Consider removing only ourselves to allow for Spindle-like optimizations.
-  // TODO: Export to another file for sharing with auditor.c.
-  {
-    size_t envsz = 0;
-    for(char** e = environ; *e != NULL; e++) envsz++;
-    exports.pure_environ = malloc((envsz+1)*sizeof exports.pure_environ[0]);
-    size_t idx = 0;
-    for(char** e = environ; *e != NULL; e++) {
-      if(strncmp(*e, "LD_PRELOAD=", 11) == 0) continue;
-      if(strncmp(*e, "LD_AUDIT=", 9) == 0) continue;
-      exports.pure_environ[idx++] = *e;
-    }
-    exports.pure_environ[idx] = NULL;
-  }
-
-  // Attach to the rest of the world.
-  if(verbose)
-    fprintf(stderr, "[fake audit] Attaching to mainlib\n");
-  hpcrun_auditor_attach(&exports, &hooks);
-}
-
-// The earliest we can do anything without LD_AUDIT is with the constructor
-__attribute__((constructor))
-static void hpcrun_constructor_init_fake_auditor() {
-  hpcrun_init_fake_auditor();
-}
 
 // Whenever things change, we scan through with dl_iterate_phdr, update the
 // shadow map and call the hook. Note that this is not async-signal-safe.
@@ -145,7 +65,7 @@ bool update_shadow() {
       if(!m->seen) {
         if(verbose)
           fprintf(stderr, "[fake audit] Delivering objclose for `%s'\n", m->entry.path);
-        hooks.close(&m->entry);
+        hooks->close(&m->entry);
         if(p) p->next = m->next;
         else shadow_map = m->next;
         free(m);
@@ -155,7 +75,7 @@ bool update_shadow() {
           fprintf(stderr, "[fake audit] Delivering objopen for `%s' [%p, %p)"
                   " dl_info.dlpi_addr = %p\n", m->entry.path, m->entry.start,
                   m->entry.end, (void *)m->entry.dl_info.dlpi_addr);
-        hooks.open(&m->entry);
+        hooks->open(&m->entry);
         m->new = false;
       }
     }
@@ -219,14 +139,69 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
 }
 
 // Notification from the rest of the world that we have begun!
-static bool connected = false;
-void mainlib_connected(const char* new_vdso_path) {
-  connected = true;
+static void mainlib_connected(const char* new_vdso_path, const auditor_hooks_t* new_hooks) {
+  hooks = new_hooks;
   vdso_path = new_vdso_path;
   update_shadow();
 }
-void mainlib_disconnect() {
-  connected = false;
+
+static void mainlib_disconnect() {
+  hooks = NULL;
+}
+
+static int mainlib_iterate_phdr(int (*cb)(struct dl_phdr_info * info, size_t size, void* data),
+                                void *data) {
+  if (hooks == NULL) abort();
+  return hooks->dl_iterate_phdr(cb, data);
+}
+
+const auditor_exports_t* hpcrun_connect_to_auditor() {
+  static auditor_exports_t exports = {
+    .mainlib_connected = mainlib_connected,
+    .mainlib_disconnect = mainlib_disconnect,
+  };
+  static bool initialized = false;
+  if(initialized) return &exports;
+  initialized = true;
+
+  pthread_mutexattr_t mattr;
+  pthread_mutexattr_init(&mattr);
+  pthread_mutexattr_settype(&mattr, PTHREAD_MUTEX_RECURSIVE);
+  pthread_mutex_init(&shadow_lock, &mattr);
+  pthread_mutexattr_destroy(&mattr);
+
+  real_dlopen = dlsym(RTLD_NEXT, "dlopen");
+  real_dlclose = dlsym(RTLD_NEXT, "dlclose");
+
+  // Load the private namespace and get the binding function out of it
+  private_ns = dlmopen(LM_ID_NEWLM, "libhpcrun_private_ns.so", RTLD_NOW);
+  if (private_ns == NULL) {
+    fprintf(stderr, "[fake audit] ERROR: Unable to create private linkage namespace: %s", dlerror());
+    abort();
+  }
+  pfn_iterate_phdr_t* hpcrun_iterate_phdr = dlsym(private_ns, "hpcrun_iterate_phdr");
+  if (hpcrun_iterate_phdr == NULL) {
+    fprintf(stderr, "ERROR: Unable to get private dl_iterate_phdr override: %s", dlerror());
+    abort();
+  }
+  *hpcrun_iterate_phdr = mainlib_iterate_phdr;
+  exports.hpcrun_bind_v = dlsym(private_ns, "hpcrun_bind_v");
+  if (exports.hpcrun_bind_v == NULL) {
+    fprintf(stderr, "ERROR: Unable to get private binding function: %s", dlerror());
+    abort();
+  }
+
+  void (*export_symbols)(auditor_exports_t*) = dlsym(private_ns, "export_symbols");
+  if (exports.hpcrun_bind_v == NULL) {
+    fprintf(stderr, "ERROR: Unable to get private exports function: %s", dlerror());
+    abort();
+  }
+  export_symbols(&exports);
+
+  verbose = getenv("HPCRUN_AUDIT_DEBUG");
+  vdso_path = "[vdso]";  // Set later to something more reasonable.
+
+  return &exports;
 }
 
 // The remainder here is overloads for dl* that update as per the usual
@@ -235,22 +210,23 @@ void* dlopen(const char* fn, int flags) {
   if(!real_dlopen)
     return ((void*(*)(const char*, int))dlsym(RTLD_NEXT, "dlopen"))(fn, flags);
   void* out = real_dlopen(fn, flags);
-  if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
+  if(hooks != NULL && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
     if(verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
-    hooks.stable(true);
+    hooks->stable(true);
   }
   return out;
 }
+
 __attribute__((visibility("default")))
 int dlclose(void* handle) {
   if(!real_dlclose)
     return ((int(*)(void*))dlsym(RTLD_NEXT, "dlclose"))(handle);
   int out = real_dlclose(handle);
-  if(connected && update_shadow()) {
+  if(hooks != NULL && update_shadow()) {
     if(verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 0)\n");
-    hooks.stable(false);
+    hooks->stable(false);
   }
   return out;
 }

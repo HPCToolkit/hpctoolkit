@@ -653,7 +653,7 @@ cupti_error_callback_dummy // __attribute__((unused))
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
       "function %s failed with error %s", type, fn, error_string);
   EEMSG("See the 'FAQ and Troubleshooting' chapter in the HPCToolkit manual for guidance");
-  auditor_exports->exit(exitcode);
+  auditor_exports()->exit(exitcode);
 }
 
 

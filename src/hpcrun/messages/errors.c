@@ -22,8 +22,8 @@ noreturn void hpcrun_terminate() {
     act.sa_handler = SIG_DFL;
     act.sa_flags = 0;
     sigemptyset(&act.sa_mask);
-    auditor_exports->sigaction(SIGABRT, &act, NULL);
-    auditor_exports->sigprocmask(SIG_SETMASK, &act.sa_mask, NULL);
+    auditor_exports()->sigaction(SIGABRT, &act, NULL);
+    auditor_exports()->sigprocmask(SIG_SETMASK, &act.sa_mask, NULL);
   }
   abort();
 }

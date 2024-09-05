@@ -16,12 +16,7 @@
 #include <signal.h>
 
 __attribute__((visibility("default")))
-void fill_exports(auditor_exports_t* exports) {
-  exports->pipe = pipe;
-  exports->close = close;
-  exports->waitpid = waitpid;
-  exports->clone = clone;
-  exports->execve = execve;
+void export_symbols(auditor_exports_t* exports) {
   exports->exit = exit;
   exports->sigprocmask = sigprocmask;
   exports->pthread_sigmask = pthread_sigmask;

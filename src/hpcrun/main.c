@@ -24,6 +24,7 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -197,6 +198,7 @@ static int monitor_fini_process_how = 0;
 static atomic_int ms_init_started = 0;
 static atomic_int ms_init_completed = 0;
 
+static const auditor_hooks_t auditor_hooks;
 
 //***************************************************************************
 // Interface functions for suppressing samples
@@ -512,7 +514,7 @@ hpcrun_init_internal(bool is_child)
 
     if (monitor_sigaction(SIGSEGV, &dump_interval_handler, 0, NULL)) {
       fprintf(stderr, "Could not install dump interval segv handler\n");
-      auditor_exports->exit(1);
+      auditor_exports()->exit(1);
     }
 
     for (void** e = table.table; e < table.table + table.len - 1; e++) {
@@ -560,7 +562,7 @@ hpcrun_init_internal(bool is_child)
     fprintf(stderr, "Error: Tracing is specified at the command line without a suitable metric for tracing.\n");
     fprintf(stderr, "\tCPU tracing is only meaningful when a time based metric is given, such as REALTIME, CPUTIME, and CYCLES\n");
     fprintf(stderr, "\tGPU tracing is always meaningful.\n");
-    auditor_exports->exit(1);
+    auditor_exports()->exit(1);
   }
 
   // set up initial 'epoch'
@@ -589,7 +591,7 @@ hpcrun_init_internal(bool is_child)
         hpcrun_dump_intervals(addr2);
         fflush(NULL);
       }
-      if (addr1 || addr2) auditor_exports->exit(0);
+      if (addr1 || addr2) auditor_exports()->exit(0);
     }
 #endif
 
@@ -756,7 +758,7 @@ hpcrun_fini_internal()
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(td);
 
-    auditor_exports->mainlib_disconnect();
+    auditor_exports()->mainlib_disconnect();
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -928,9 +930,6 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_wait();
 
-  if(hpcrun_get_env_bool("HPCRUN_AUDIT_FAKE_AUDITOR"))
-    hpcrun_init_fake_auditor();
-
   // We need to initialize the control-knob framework early so we can use it
   // to provide settings just about anywhere.
   control_knob_init();
@@ -989,7 +988,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     // fnbounds must be after module_ignore_map
     fnbounds_init(process_name);
     if (!is_child) {
-      auditor_exports->mainlib_connected(get_saved_vdso_path());
+      auditor_exports()->mainlib_connected(get_saved_vdso_path(), &auditor_hooks);
     }
 
     TMSG(PROCESS, "init process: pid: %d  parent: %d  fork-child: %d",
@@ -1687,12 +1686,29 @@ static void auditor_stable(bool additive) {
   hpcrun_safe_exit();
 }
 
-const auditor_exports_t* auditor_exports;
-__attribute__((visibility("default")))
-void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* hooks) {
-  auditor_exports = exports;
-  hooks->open = auditor_open;
-  hooks->close = auditor_close;
-  hooks->stable = auditor_stable;
-  hooks->dl_iterate_phdr = hpcrun_loadmap_iterate;
+static const auditor_hooks_t auditor_hooks = {
+  .open = auditor_open,
+  .close = auditor_close,
+  .stable = auditor_stable,
+  .dl_iterate_phdr = hpcrun_loadmap_iterate,
+};
+
+static const auditor_exports_t* auditor_exports_cache = NULL;
+
+static void load_exports() {
+  pfn_connect_to_auditor connect = dlsym(RTLD_DEFAULT, "hpcrun_connect_to_auditor");
+  if (connect == NULL) {
+    fprintf(stderr, "hpcrun: unable to connect to auditor: %s\n", dlerror());
+    abort();
+  }
+  auditor_exports_cache = connect();
+}
+
+// This symbol needs to be exposed so that an auditor can intercept the symbol
+const auditor_exports_t* hpcrun_connect_to_auditor() { abort(); }
+
+const auditor_exports_t* auditor_exports() {
+  static once_flag once = ONCE_FLAG_INIT;
+  call_once(&once, load_exports);
+  return auditor_exports_cache;
 }

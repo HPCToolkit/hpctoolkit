@@ -340,7 +340,7 @@ perf_init()
   perf_sigaction.sa_flags = 0;
 
   monitor_sigaction(PERF_SIGNAL, &perf_event_handler, 0, &perf_sigaction);
-  auditor_exports->pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
+  auditor_exports()->pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 }
 
 
@@ -428,7 +428,7 @@ perf_thread_fini(int nevents, event_thread_t *event_thread)
   sigset_t perf_sigset;
   sigemptyset(&perf_sigset);
   sigaddset(&perf_sigset, PERF_SIGNAL);
-  auditor_exports->pthread_sigmask(SIG_BLOCK, &perf_sigset, NULL);
+  auditor_exports()->pthread_sigmask(SIG_BLOCK, &perf_sigset, NULL);
 
   for(int i=0; i<nevents; i++) {
     if (!event_thread) {
@@ -676,7 +676,7 @@ METHOD_FN(start)
 
   // Since we block a thread's timer signal when stopping, we
   // must unblock it when starting.
-  auditor_exports->pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
+  auditor_exports()->pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 
   int nevents        = (self->evl).nevents;
   event_thread_t *et = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
@@ -738,7 +738,7 @@ METHOD_FN(stop)
   // finalization, this can cause a catastrophic error.
   // For that reason, we always block the thread's timer
   // signal when stopping.
-  auditor_exports->pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
+  auditor_exports()->pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents  = (self->evl).nevents;

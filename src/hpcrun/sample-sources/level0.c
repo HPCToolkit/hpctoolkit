@@ -181,7 +181,7 @@ METHOD_FN(finalize_event_list)
 {
   if (level0_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to Level0 library %s\n", dlerror());
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
 
   level0_init(&level0_instrumentation_options);

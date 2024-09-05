@@ -349,12 +349,12 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   if (cuda_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
 
   if (cupti_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
 
   // Register hpcrun callbacks
@@ -369,16 +369,16 @@ METHOD_FN(process_event_list, int lush_metrics)
   // Get control knobs
   int device_buffer_size;
   if (control_knob_value_get_int("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", &device_buffer_size) != 0)
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
 
   // Note: no longer used since CUDA 12.3
   int device_semaphore_size;
   if (control_knob_value_get_int("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", &device_semaphore_size) != 0)
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
 
   char *kernel_serialization = NULL;
   if (control_knob_value_get_string("HPCRUN_CUDA_KERNEL_SERIALIZATION", &kernel_serialization) != 0)
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
 
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
   TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);

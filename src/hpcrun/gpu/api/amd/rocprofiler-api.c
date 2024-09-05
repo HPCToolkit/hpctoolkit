@@ -745,7 +745,7 @@ rocprofiler_init
   if (rocprofiler_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to AMD rocprofiler library: %s\n", dlerror());
     EEMSG("hpcrun: see hpcrun --help message for instruction on how to provide a rocprofiler install");
-    auditor_exports->exit(-1);
+    auditor_exports()->exit(-1);
   }
 
   initialize_counter_information();

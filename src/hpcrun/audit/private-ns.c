@@ -47,12 +47,12 @@ void hpcrun_bind_v(const char* libname, va_list bindings) {
 
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
 __attribute__((visibility("default")))
-pfn_iterate_phdr_t* hpcrun_iterate_phdr = NULL;
+pfn_iterate_phdr_t hpcrun_iterate_phdr = NULL;
 __attribute__((visibility("default")))
 int dl_iterate_phdr(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data) {
   if (hpcrun_iterate_phdr == NULL) {
     assert(false && "dl_iterate_phdr called but hpcrun_iterate_phdr override pointer not yet set!");
     abort();
   }
-  return (*hpcrun_iterate_phdr)(callback, data);
+  return hpcrun_iterate_phdr(callback, data);
 }
