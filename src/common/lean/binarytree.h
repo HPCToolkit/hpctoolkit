@@ -128,11 +128,11 @@ binarytree_find(binarytree_t *tree, val_cmp fn, void *val);
 // caller should provide the appropriate length for treestr.
 void
 binarytree_tostring(binarytree_t *root,
-                                        val_tostr valtostr_fun, char valstr[], char treestr[]);
+                                        val_tostr valtostr_fun, char valstr[], char treestr[MAX_TREE_STR]);
 
 void
 binarytree_tostring_indent(binarytree_t *tree, val_tostr tostr,
-                                                 char valstr[], char* indents, char treestr[]);
+                                                 char valstr[], char* indents, char treestr[MAX_TREE_STR]);
 
 // compute the height of the binary tree.
 // the height of an empty tree is 0.

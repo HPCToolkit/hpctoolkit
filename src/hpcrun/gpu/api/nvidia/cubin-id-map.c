@@ -248,7 +248,7 @@ ip_normalized_t
 cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
 {
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
-  ip_normalized_t ip;
+  ip_normalized_t ip = ip_normalized_NULL;
   TMSG(CUDA_CUBIN, "cubin_id %d", cubin_id);
   if (entry != NULL) {
     uint32_t hpctoolkit_module_id = cubin_id_map_entry_hpctoolkit_id_get(entry);

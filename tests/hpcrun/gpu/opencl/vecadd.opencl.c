@@ -3,7 +3,6 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-#define CL_TARGET_OPENCL_VERSION 200
 #include <CL/cl.h>
 #include <math.h>
 #include <stdbool.h>

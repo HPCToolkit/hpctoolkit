@@ -21,7 +21,7 @@
 // local includes
 //*****************************************************************************
 
-#include "../../../../../../common/lean/hpcrun-opencl.h"  // cl_mem
+#include <CL/cl.h>
 
 
 

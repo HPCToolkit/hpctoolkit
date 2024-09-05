@@ -48,7 +48,7 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 typedef struct cl_basic_callback_t {
   uint32_t correlation_id;
   gpu_activity_kind_t kind;
-  gpu_memcpy_type_t type;
+  gpu_mem_type_t type;
   cct_node_t *cct_node;
 } cl_basic_callback_t;
 

@@ -15,7 +15,6 @@ typedef struct gpu_activity_t gpu_activity_t;
 typedef struct cct_node_t cct_node_t;
 
 void roctracer_init();
-void roctracer_fini();
-
+void roctracer_fini(void *args, int how);
 
 #endif //HPCTOOLKIT_AMD_H

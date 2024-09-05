@@ -71,7 +71,6 @@ static main_fcn_t  *real_main = NULL;
 static exit_fcn_t  *real_exit = NULL;
 static exit_fcn_t  *real_u_exit = NULL;
 static sigprocmask_fcn_t *real_sigprocmask = NULL;
-static fork_fcn_t  *real_fork = NULL;
 
 static int monitor_argc = 0;
 static char **monitor_argv = NULL;

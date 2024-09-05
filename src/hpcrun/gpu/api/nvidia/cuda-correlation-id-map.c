@@ -22,7 +22,7 @@
 // generic code - splay tree
 //******************************************************************************
 
-typedef struct cuda_correlation_id_map_entry_t {
+struct cuda_correlation_id_map_entry_t {
   union {
     SPLAY_TREE_ENTRY_DATA(struct cuda_correlation_id_map_entry_t);
     FREELIST_ENTRY_DATA(struct cuda_correlation_id_map_entry_t);

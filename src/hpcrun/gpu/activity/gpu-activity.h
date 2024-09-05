@@ -442,7 +442,7 @@ gpu_kind_to_string
 const char *
 gpu_type_to_string
 (
- gpu_memcpy_type_t type
+ gpu_mem_type_t type
 );
 
 #endif

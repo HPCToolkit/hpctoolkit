@@ -10,7 +10,7 @@
 // local includes
 //******************************************************************************
 
-#include "../../../../common/lean/hpcrun-opencl.h"      // cl_event, cl_command_queue
+#include <CL/cl.h>
 
 
 

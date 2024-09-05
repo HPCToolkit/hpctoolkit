@@ -563,7 +563,34 @@ convert_memory
   ga->kind = GPU_ACTIVITY_MEMORY;
   // TODO CUPTI_ACTIVITY_KIND_MEMORY record do not have correlation ID field
   // ga->details.memory.correlation_id = host_correlation_id;
-  ga->details.memory.memKind = activity_mem->memoryKind;
+  ga->details.memory.memKind = GPU_MEM_UNKNOWN;
+  switch(activity_mem->memoryKind) {
+  case CUPTI_ACTIVITY_MEMORY_KIND_ARRAY:
+    ga->details.memory.memKind = GPU_MEM_ARRAY;
+    break;
+  case CUPTI_ACTIVITY_MEMORY_KIND_DEVICE:
+    ga->details.memory.memKind = GPU_MEM_DEVICE;
+    break;
+  case CUPTI_ACTIVITY_MEMORY_KIND_MANAGED:
+    ga->details.memory.memKind = GPU_MEM_MANAGED;
+    break;
+  case CUPTI_ACTIVITY_MEMORY_KIND_PAGEABLE:
+    ga->details.memory.memKind = GPU_MEM_PAGEABLE;
+    break;
+  case CUPTI_ACTIVITY_MEMORY_KIND_PINNED:
+    ga->details.memory.memKind = GPU_MEM_PINNED;
+    break;
+  case CUPTI_ACTIVITY_MEMORY_KIND_DEVICE_STATIC:
+    ga->details.memory.memKind = GPU_MEM_DEVICE_STATIC;
+    break;
+  case CUPTI_ACTIVITY_MEMORY_KIND_MANAGED_STATIC:
+    ga->details.memory.memKind = GPU_MEM_MANAGED_STATIC;
+    break;
+  case CUPTI_ACTIVITY_MEMORY_KIND_UNKNOWN:
+  case CUPTI_ACTIVITY_MEMORY_KIND_FORCE_INT:
+    ga->details.memory.memKind = GPU_MEM_UNKNOWN;
+    break;
+  }
   ga->details.memory.bytes = activity_mem->bytes;
   ga->details.memory.device_id = activity_mem->deviceId;
   ga->details.memory.context_id = activity_mem->contextId;

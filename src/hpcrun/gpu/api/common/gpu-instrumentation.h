@@ -22,7 +22,7 @@
 // type declarations
 //******************************************************************************
 
-typedef struct {
+typedef struct gpu_instrumentation_t {
   bool count_instructions;
   bool analyze_simd;
   bool attribute_latency;

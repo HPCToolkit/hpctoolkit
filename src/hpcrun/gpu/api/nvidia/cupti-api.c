@@ -21,6 +21,8 @@
 
 #define _GNU_SOURCE
 
+#include "../../activity/correlation/gpu-correlation-channel.h"
+
 #include "../../../control-knob.h"
 
 #include <sys/stat.h>

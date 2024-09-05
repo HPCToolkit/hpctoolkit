@@ -300,7 +300,7 @@ distribute_blame_to_kernels
   // kernel_nodes : (x11, A1, start), (x12, A1, end), (x21, A2, start), (x22, A2, end), ........, (x01, B, start), (x02, B, end);
   bool inSync = false;
   Node *data = kernel_nodes;
-  unsigned long last_time;
+  unsigned long last_time = 0;
 
   while (data) {
     if (data->id == SYNC) {

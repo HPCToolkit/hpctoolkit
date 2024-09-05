@@ -40,7 +40,7 @@ endif
 python_inst = pymod.find_installation(python.full_path(), required: get_option('python'))
 if python_inst.found()
   assert(python_inst.language_version().version_compare('>=3.8'))
-  _py_dep = python_inst.dependency(required: get_option('python'))
+  _py_dep = python_inst.dependency(required: get_option('python'), include_type: 'system')
   # FIXME: Workaround for https://github.com/mesonbuild/meson/issues/12862
   if not cc.has_header('Python.h', dependencies: _py_dep)
     _py_dep = dependency('', required: false)
@@ -57,34 +57,52 @@ endif
 
 # Find TBB. This is done first before any other subprojects using it to resolve overridden
 # dependencies in the subproject (which does not use the wrap fallback trigger).
-tbb_dep = dependency('tbb', 'TBB', components: ['tbb'], fallback: ['tbb-wrap', 'tbb_dep'])
+# NB: We have to find normal TBB first to enable the tbb-wrap subproject override for Dyninst.
+dependency('tbb', 'TBB', components: ['tbb'], fallback: ['tbb-wrap', 'tbb_dep'])
 tbb_malloc_dep = dependency(
   'tbbmalloc',
   'TBB',
   components: ['tbb', 'tbbmalloc'],
   fallback: ['tbb-wrap', 'tbbmalloc_dep'],
+  include_type: 'system',
 )
 
 # Find Elfutils. We search for libdw first because if libelf is installed but libdw isn't, the
 # dependency('libdw') call will invoke the Elfutils subproject and call meson.override_dependency()
 # for libelf, if we found libelf first this call causes a Meson setup failure.
 # In all major distros you can't install libdw without libelf, so this shouldn't cause problems.
-libdw_dep = dependency('libdw', version: '>=0.186', default_options: ['thread_safety=true'])
-libelf_dep = dependency('libelf', version: '>=0.186', default_options: ['thread_safety=true'])
+libdw_dep = dependency(
+  'libdw',
+  version: '>=0.186',
+  default_options: ['thread_safety=true'],
+  include_type: 'system',
+)
+libelf_dep = dependency(
+  'libelf',
+  version: '>=0.186',
+  default_options: ['thread_safety=true'],
+  include_type: 'system',
+)
 
 # Collect all the dependencies we require for HPCToolkit
-boost_dep = dependency('boost', 'Boost', modules: ['graph'], version: '>=1.66.0')
-bzip_dep = dependency('bzip2', 'BZip2', version: '>=1.0.0')
+boost_dep = dependency(
+  'boost',
+  'Boost',
+  modules: ['graph'],
+  version: '>=1.66.0',
+  include_type: 'system',
+)
 libunwind_dep = dependency(
   'libunwind',
   version: ['>=1.6.2', '!=1.21'],
   default_options: ['minidebuginfo=enabled', 'zlibdebuginfo=enabled'],
+  include_type: 'system',
 )
 _xerces_c_ver = '>=3.2.2'
 if meson.version().version_compare('>=1.4.0')
-  xerces_dep = dependency('xerces-c', version: _xerces_c_ver)
+  xerces_dep = dependency('xerces-c', version: _xerces_c_ver, include_type: 'system')
 else
-  xerces_dep = dependency('xerces-c')
+  xerces_dep = dependency('xerces-c', include_type: 'system')
   if xerces_dep.type_name() != 'internal' and not xerces_dep.version().version_compare(_xerces_c_ver)
     message(
       'Dependency @0@ found @1@ but need: \'@2@\''.format(
@@ -93,17 +111,16 @@ else
         _xerces_c_ver,
       ),
     )
-    xerces_dep = dependency('xerces-c', method: 'system')  # Force fallback to wrap
+    xerces_dep = dependency('xerces-c', method: 'system', include_type: 'system')  # Force fallback to wrap
   endif
 endif
-lzma_dep = dependency('liblzma', version: '>=5.2.0')
-zlib_dep = dependency('zlib')
-xxhash_dep = dependency('libxxhash', version: '>=0.8.1')
+lzma_dep = dependency('liblzma', version: '>=5.2.0', include_type: 'system')
+xxhash_dep = dependency('libxxhash', version: '>=0.8.1', include_type: 'system')
 _yaml_cpp_ver = '>=0.6.2'
 if meson.version().version_compare('>=1.4.0')
-  yaml_cpp_dep = dependency('yaml-cpp', version: _yaml_cpp_ver)
+  yaml_cpp_dep = dependency('yaml-cpp', version: _yaml_cpp_ver, include_type: 'system')
 else
-  yaml_cpp_dep = dependency('yaml-cpp')
+  yaml_cpp_dep = dependency('yaml-cpp', include_type: 'system')
   if yaml_cpp_dep.type_name() != 'internal' and not yaml_cpp_dep.version().version_compare(
     _yaml_cpp_ver,
   )
@@ -114,10 +131,15 @@ else
         _yaml_cpp_ver,
       ),
     )
-    yaml_cpp_dep = dependency('yaml-cpp', method: 'system')  # Force fallback to wrap
+    yaml_cpp_dep = dependency('yaml-cpp', method: 'system', include_type: 'system')  # Force fallback to wrap
   endif
 endif
-papi_dep = dependency('papi', required: get_option('papi'), version: '>=5.6.0')
+papi_dep = dependency(
+  'papi',
+  required: get_option('papi'),
+  version: '>=5.6.0',
+  include_type: 'system',
+)
 papi_has_components = false
 if papi_dep.found()
   add_project_arguments('-DHPCRUN_SS_PAPI', language: ['c', 'cpp'])
@@ -135,7 +157,13 @@ endif
 # These dependencies don't ship any dependency files, so we use CMake by default and fall back to
 # compiler checks as a robustness case. The final fallback to dependency() in each stanza is to
 # provide a better error message and enable wrap fallbacks.
-libiberty_dep = dependency('Libiberty', method: 'cmake', cmake_module_path: 'cmake', required: false)
+libiberty_dep = dependency(
+  'Libiberty',
+  method: 'cmake',
+  cmake_module_path: 'cmake',
+  required: false,
+  include_type: 'system',
+)
 if not libiberty_dep.found()
   if cc.has_header('libiberty/demangle.h') or cc.has_header('demangle.h')
     _libiberty_lib = cc.find_library('iberty', required: false)
@@ -145,7 +173,7 @@ if not libiberty_dep.found()
   endif
 endif
 if not libiberty_dep.found()
-  libiberty_dep = dependency('libiberty', method: 'system')  # Force wrap fallback
+  libiberty_dep = dependency('libiberty', method: 'system', include_type: 'system')  # Force wrap fallback
 endif
 
 xed_dep = dependency('', required: false)
@@ -209,6 +237,7 @@ perfmon_dep = dependency(
   cmake_module_path: 'cmake',
   version: '>=4.0',
   required: false,
+  include_type: 'system',
 )
 if not perfmon_dep.found()
   _perfmon_lib = cc.find_library('pfm', has_headers: ['perfmon/pfmlib.h'], required: false)
@@ -224,7 +253,7 @@ if not perfmon_dep.found()
   endif
 endif
 if not perfmon_dep.found()
-  perfmon_dep = dependency('libpfm', method: 'system', version: '>=4.0')
+  perfmon_dep = dependency('libpfm', method: 'system', version: '>=4.0', include_type: 'system')
 endif
 
 
@@ -239,6 +268,7 @@ dyninst_dep = dependency(
   version: '>=12.3',
   required: false,
   default_options: _dyninst_opts,
+  include_type: 'system',
 )
 if not dyninst_dep.found()
   dyninst_dep = dependency(
@@ -249,6 +279,7 @@ if not dyninst_dep.found()
     modules: ['Dyninst::parseAPI', 'Dyninst::instructionAPI', 'Dyninst::symtabAPI'],
     version: '>=12.3',
     default_options: _dyninst_opts,
+    include_type: 'system',
   )
 endif
 
@@ -404,13 +435,20 @@ if nvdisasm.found()
 endif
 cupti_dep = dependency('', required: false)
 if get_option('cuda').allowed()
-  cupti_dep = dependency('CUDA', modules: ['cupti'], required: false, version: '>=11.2')
+  cupti_dep = dependency(
+    'CUDA',
+    modules: ['cupti'],
+    required: false,
+    version: '>=11.2',
+    include_type: 'system',
+  )
   if not cupti_dep.found()
     cupti_dep = dependency(
       'CUDAToolkit',
       components: ['cupti'],
       modules: ['CUDA::cupti'],
       required: get_option('cuda'),
+      include_type: 'system',
     )
   endif
   cupti_dep = cupti_dep.partial_dependency(compile_args: true, includes: true)
@@ -459,8 +497,14 @@ hip_dep = dependency(
   modules: ['hip::amdhip64'],
   required: get_option('rocm'),
   version: '>=5.1',
+  include_type: 'system',
 )
-hsa_dep = dependency('hsa-runtime64', method: 'cmake', required: get_option('rocm'))
+hsa_dep = dependency(
+  'hsa-runtime64',
+  method: 'cmake',
+  required: get_option('rocm'),
+  include_type: 'system',
+)
 
 # Technically, ROCtracer and ROCprofiler don't ship any dependency files. It is extremely rare to
 # see them outside of a complete "ROCm installation" that also includes hip and hsa (above), but for
@@ -472,6 +516,7 @@ if get_option('rocm').allowed()
     method: 'cmake',
     cmake_module_path: 'cmake',
     required: false,
+    include_type: 'system',
   )
   if not roctracer_dep.found()
     _roctracer_lib = cc.find_library(
@@ -498,7 +543,12 @@ if get_option('rocm').allowed()
     endif
   endif
   if not roctracer_dep.found()
-    roctracer_dep = dependency('ROCtracer', method: 'system', required: get_option('rocm'))
+    roctracer_dep = dependency(
+      'ROCtracer',
+      method: 'system',
+      required: get_option('rocm'),
+      include_type: 'system',
+    )
   endif
 endif
 
@@ -509,6 +559,7 @@ if get_option('rocm').allowed()
     method: 'cmake',
     cmake_module_path: 'cmake',
     required: false,
+    include_type: 'system',
   )
   if not rocprofiler_dep.found()
     _rocprofiler_lib = cc.find_library(
@@ -550,7 +601,12 @@ if get_option('rocm').allowed()
     endif
   endif
   if not rocprofiler_dep.found()
-    rocprofiler_dep = dependency('ROCprofiler', method: 'system', required: get_option('rocm'))
+    rocprofiler_dep = dependency(
+      'ROCprofiler',
+      method: 'system',
+      required: get_option('rocm'),
+      include_type: 'system',
+    )
   endif
 endif
 
@@ -630,13 +686,19 @@ if get_option('opencl').allowed()
   #   be accessed via pkg-config as OpenCL-Headers.pc.
   # - Before that, since OpenCL >=2020.12.18 (found in Debian >=10, Ubuntu >=20.04, and RHEL >=9)
   #   the headers can be accessed via CMake as OpenCLHeaders-config.cmake.
-  opencl_dep = dependency('OpenCL-Headers', 'OpenCLHeaders', required: false, version: _opencl_ver)
+  opencl_dep = dependency(
+    'OpenCL-Headers',
+    'OpenCLHeaders',
+    required: false,
+    version: _opencl_ver,
+    include_type: 'system',
+  )
 
   # For older distros, CMake >=3.1 ships a FindOpenCL.cmake script, but it requires a full OpenCL
   # installation and not just the headers. If that's all we got, use it and cut out the link
   # flags so we only get the headers.
   if not opencl_dep.found()
-    opencl_dep = dependency('OpenCL', required: false, version: _opencl_ver)
+    opencl_dep = dependency('OpenCL', required: false, version: _opencl_ver, include_type: 'system')
     opencl_dep = opencl_dep.partial_dependency(includes: true, compile_args: true)
   endif
 
@@ -648,11 +710,17 @@ if get_option('opencl').allowed()
 
   # Fall back to dependency() to get a good error message and enable wrap fallbacks.
   if not opencl_dep.found()
-    opencl_dep = dependency('OpenCL-Headers', required: get_option('opencl'))
+    opencl_dep = dependency('OpenCL-Headers', required: get_option('opencl'), include_type: 'system')
   endif
 endif
 if opencl_dep.found()
-  add_project_arguments('-DENABLE_OPENCL', '-DHPCRUN_SS_OPENCL', language: ['c', 'cpp'])
+  add_project_arguments(
+    '-DENABLE_OPENCL',
+    '-DHPCRUN_SS_OPENCL',
+    '-DCL_TARGET_OPENCL_VERSION=210',
+    '-DCL_USE_DEPRECATED_OPENCL_1_2_APIS',
+    language: ['c', 'cpp'],
+  )
 endif
 
 # Find a full OpenCL installation. We need this to run some of the tests.
@@ -662,6 +730,7 @@ if opencl_dep.found()
     'OpenCL',
     required: get_option('extended_tests'),
     version: _opencl_ver,
+    include_type: 'system',
   )
 endif
 
@@ -669,7 +738,7 @@ endif
 # Find support for Intel performance monitoring via Level Zero.
 level0_dep = dependency('', required: false)
 if get_option('level0').allowed()
-  level0_dep = dependency('level-zero', required: false, version: '>=1.0')
+  level0_dep = dependency('level-zero', required: false, version: '>=1.0', include_type: 'system')
   if level0_dep.found() and level0_dep.type_name() != 'internal'
 
     # Level Zero ships a pkg-config file, but it's untrustworthy due to a bug
@@ -744,7 +813,12 @@ if get_option('level0').allowed()
 
   # Fall back to dependency() to get a good error message and enable wrap fallbacks
   if not level0_dep.found()
-    level0_dep = dependency('level-zero', required: get_option('level0'), version: '>=1.0')
+    level0_dep = dependency(
+      'level-zero',
+      required: get_option('level0'),
+      version: '>=1.0',
+      include_type: 'system',
+    )
   endif
 endif
 if level0_dep.found()
@@ -759,7 +833,7 @@ _gtpin_f = get_option('gtpin').require(
 
 igc_dep = dependency('', required: false)
 if _gtpin_f.allowed()
-  igc_dep = dependency('igc-opencl', required: false)
+  igc_dep = dependency('igc-opencl', required: false, include_type: 'system')
 
   if not igc_dep.found()
 
@@ -785,7 +859,7 @@ if _gtpin_f.allowed()
 
   # Fall back to dependency() to get a good error message and enable wrap fallbacks
   if not igc_dep.found()
-    igc_dep = dependency('igc-opencl', required: _gtpin_f)
+    igc_dep = dependency('igc-opencl', required: _gtpin_f, include_type: 'system')
   endif
 endif
 if igc_dep.found()
@@ -794,7 +868,13 @@ endif
 
 iga_dep = dependency('', required: false)
 if _gtpin_f.allowed()
-  iga_dep = dependency('IGA', method: 'cmake', cmake_module_path: 'cmake', required: false)
+  iga_dep = dependency(
+    'IGA',
+    method: 'cmake',
+    cmake_module_path: 'cmake',
+    required: false,
+    include_type: 'system',
+  )
 
   if not iga_dep.found()
 
@@ -808,7 +888,13 @@ if _gtpin_f.allowed()
 
   # Fall back to dependency() to get a good error message and enable wrap fallbacks
   if not iga_dep.found()
-    iga_dep = dependency('IGA', method: 'cmake', cmake_module_path: 'cmake', required: _gtpin_f)
+    iga_dep = dependency(
+      'IGA',
+      method: 'cmake',
+      cmake_module_path: 'cmake',
+      required: _gtpin_f,
+      include_type: 'system',
+    )
   endif
 endif
 
@@ -821,7 +907,12 @@ gtpin_dep = cpp.find_library('gtpin', has_headers: ['api/gtpin_api.h', 'ged.h'],
 if gtpin_dep.found()
   gtpin_dep = declare_dependency(dependencies: gtpin_dep, version: 'unknown')
 else
-  gtpin_dep = dependency('gtpin', method: 'system', required: get_option('gtpin'))
+  gtpin_dep = dependency(
+    'gtpin',
+    method: 'system',
+    required: get_option('gtpin'),
+    include_type: 'system',
+  )
 endif
 if gtpin_dep.found()
   add_project_arguments('-DENABLE_GTPIN', '-DUSE_GTPIN', language: ['c', 'cpp'])
@@ -976,16 +1067,6 @@ endif
 if not get_option('valgrind_annotations')
   add_project_arguments('-DNVALGRIND', language: ['c', 'cpp'])
 endif
-
-
-# Enable a handful of useful non-default warnings
-foreach lang : ['c', 'cpp']
-  _warnings = meson.get_compiler(lang).get_supported_arguments(
-    '-Wstack-usage=65536',  # Warn if any functions use a lot or unbounded stack
-  )
-  set_variable(f'_@lang@_warnings', _warnings)
-  add_project_arguments(_warnings, language: lang)
-endforeach
 
 
 # Expose the results of various compile-time checks
