@@ -112,8 +112,6 @@ static bool optimization_check = false;
 static atomic_uint total_num_devices = 0;
 static bool ENABLE_BLAME_SHIFTING = false;
 
-static bool gpu_utilization_enabled = false;
-
 
 //******************************************************************************
 // private operations
@@ -1393,26 +1391,6 @@ opencl_blame_shifting_enable
 }
 
 
-void
-set_gpu_utilization_flag
-(
- void
-)
-{
-  gpu_utilization_enabled = true;
-}
-
-
-bool
-get_gpu_utilization_flag
-(
- void
-)
-{
-  return gpu_utilization_enabled;
-}
-
-
 cct_node_t*
 place_cct_under_opencl_kernel
 (
@@ -1483,9 +1461,6 @@ opencl_api_process_finalize
  int how
 )
 {
-  if (gpu_utilization_enabled) {
-    intel_papi_teardown();
-  }
   if (optimization_check) { // is this the right to do final optimization checks
     // we cannot get cct nodes using gpu_application_thread_correlation_callback inside fini-thread callback
     // monitor_block_shootdown() inside libmonitor blocks this call

@@ -96,9 +96,6 @@ opencl_kernel_prologue
   kernel_cleanup_map_insert(event_id, data);
   cct_node_t *cct = place_cct_under_opencl_kernel(kernel_module_id);
   kernel_prologue(event_id, cct);
-  if (get_gpu_utilization_flag()) {
-    papi_metric_collection_at_kernel_start(event_id, cct, gpu_activity_channel_get_local());
-  }
 
   hpcrun_safe_exit();
 }
@@ -133,9 +130,6 @@ opencl_kernel_epilogue
       printf("bad kernel time\n");
       hpcrun_safe_exit();
       return;
-    }
-    if (get_gpu_utilization_flag()) {
-      papi_metric_collection_at_kernel_end(event_id);
     }
                 kernel_epilogue(event_id, kernel_start, kernel_end);
 

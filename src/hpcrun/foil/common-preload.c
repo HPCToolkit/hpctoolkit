@@ -114,7 +114,7 @@ static void* core_dlsym(void* handle, const char* symbol) {
 
 static void load_core_foil() {
   static void* h = NULL;
-  h = dlopen("libhpcrun.so", RTLD_LAZY | RTLD_LOCAL);
+  h = dlopen("libhpcrun.so", RTLD_NOW | RTLD_LOCAL);
   if (h == NULL) {
     fprintf(stderr, "hpcrun: Error loading libhpcrun.so: %s\n", dlerror());
     abort();
