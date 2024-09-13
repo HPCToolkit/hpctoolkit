@@ -31,6 +31,7 @@
 
 #include "../../../../utilities/linuxtimer.h"
 
+#include "../../../../libmonitor/monitor.h"
 #include "../../../../main.h"
 #include "../../../../memory/hpcrun-malloc.h"
 #include "../../../../sample-sources/libdl.h"
@@ -795,15 +796,17 @@ foilbase_zeInit
   ze_init_flag_t flag
 )
 {
-  // openmp programs can invoke zeInit in constructor
-  // before  the measurement subsystem has been initialized
-  // force initialization here
-  hpcrun_prepare_measurement_subsystem(false);
+  // programs can invoke zeInit in a static constructor before the measurement
+  // subsystem has been initialized. force hpcrun initialization here if it
+  // hasn't already been initialized
+  monitor_initialize(); // early init necessary to set up libunwind
+  hpcrun_prepare_measurement_subsystem(false); // late init for level0
 
   // Entry action
   // Execute the real level0 API
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeInit,(flag));
   level0_check_result(ret, __LINE__);
+
   // Exit action
   get_gpu_driver_and_device();
   return ret;
