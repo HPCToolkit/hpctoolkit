@@ -215,6 +215,11 @@ write_epochs(FILE *fs, core_profile_trace_data_t *cptd, epoch_t *epoch, hpcrun_f
 
     hpcrun_loadmap_t *current_loadmap = s->loadmap;
 
+    if (current_loadmap == 0) {
+      EMSG("HPCToolkit: Unable to write profile data: loadmap is null");
+      return HPCRUN_ERR;
+    }
+
     hpcfmt_int4_fwrite(current_loadmap->size, fs);
 
     // N.B.: Write in reverse order to obtain nicely ascending LM ids.
