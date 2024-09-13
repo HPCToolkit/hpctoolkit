@@ -26,6 +26,7 @@
 #else
 #  error "Unknown architecture (HOST_CPU)!"
 #endif
+        .section .note.GNU-stack,"",@progbits
         .text
         .global hpcrun_trampoline_handler
         .type hpcrun_trampoline_handler,@function
