@@ -1074,6 +1074,12 @@ gtpin_instrumentation_options
     if (instrumentation->silent) {
       SetKnobValue<bool>(true, "silent_warnings");       // don't print GTPin warnings
     }
+
+    // Intel changed the semantics of the GTPin interface to Elf files. Without the
+    // knob below, Elf() returns a INTEL_GT relocatable rather than an executable.
+    // Good grief.
+    SetKnobValue<bool>(true, "debug_info");
+
     SetKnobValue<bool>(true, "no_empty_profile_dir");    // don't create GTPin profile directory
     // SetKnobValue<bool>(true, "xyzzy");                   // enable developer options
     // SetKnobValue<bool>(true, "prefer_lsc_scratch");      // use LSC scratch messages in PVC+
