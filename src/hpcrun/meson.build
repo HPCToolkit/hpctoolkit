@@ -440,6 +440,7 @@ if level0_dep.found()
     'gpu/api/intel/level0/level0-command-process.c',
     'gpu/api/intel/level0/level0-command-queue-map.c',
     'gpu/api/intel/level0/level0-data-node.c',
+    'gpu/api/intel/level0/level0-debug.c',
     'gpu/api/intel/level0/level0-event-map.c',
     'gpu/api/intel/level0/level0-fence-map.c',
     'gpu/api/intel/level0/level0-handle-map.c',
