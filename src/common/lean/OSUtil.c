@@ -58,6 +58,7 @@ struct envvar_rank_entry {
 static const char* const envvars_jobid[] = {
   "LSB_JOBID",  // LSF
   "COBALT_JOBID",  // Cobalt
+  "PBS_JOBID_SHORT",  // PBS
   "PBS_JOBID",  // PBS
   "SLURM_JOB_ID",  // SLURM
   "JOB_ID",  // Sun Grid Engine
