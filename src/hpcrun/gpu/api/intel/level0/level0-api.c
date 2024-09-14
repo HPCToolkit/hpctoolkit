@@ -14,20 +14,23 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
+
 //******************************************************************************
 // local includes
 //******************************************************************************
 
 #include "level0-api.h"
+#include "level0-binary.h"
 #include "level0-command-list-map.h"
 #include "level0-command-list-context-map.h"
+#include "level0-command-queue-map.h"
 #include "level0-event-map.h"
 #include "level0-command-process.h"
 #include "level0-data-node.h"
-#include "level0-binary.h"
-#include "level0-kernel-module-map.h"
+#include "level0-debug.h"
 #include "level0-fence-map.h"
-#include "level0-command-queue-map.h"
+#include "level0-kernel-module-map.h"
 
 #include "../../../../utilities/linuxtimer.h"
 
@@ -43,6 +46,8 @@
 #ifdef ENABLE_GTPIN
 #include "../gtpin/gtpin-instrumentation.h"
 #endif
+
+
 
 //******************************************************************************
 // macros
@@ -89,6 +94,8 @@
 
 #define HPCRUN_LEVEL0_CALL(fn, args) (LEVEL0_FN_NAME(fn) args)
 
+
+
 //******************************************************************************
 // local variables
 //******************************************************************************
@@ -98,6 +105,8 @@ ze_driver_handle_t hDriver = NULL;
 ze_device_handle_t hDevice = NULL;
 
 static bool gtpin_instrumentation = false;
+
+
 
 //----------------------------------------------------------
 // level0 function pointers for late binding
@@ -357,6 +366,8 @@ LEVEL0_FN
   )
 );
 
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -364,28 +375,18 @@ LEVEL0_FN
 static void
 level0_check_result
 (
-  ze_result_t ret,
+  ze_result_t result,
   int lineNo
 )
 {
-  if (ret == ZE_RESULT_SUCCESS) return;
+  if (result == ZE_RESULT_SUCCESS) return;
 
-  #define LEVEL0_ERROR_CASE(x) case x: error = #x; break;
-  const char *error;
-  switch (ret) {
-    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_UNINITIALIZED);
-    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_DEVICE_LOST);
-    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_ENUMERATION);
-    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY);
-    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_NULL_HANDLE);
-    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_SYNCHRONIZATION_OBJECT);
-    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_SIZE);
-    LEVEL0_ERROR_CASE(ZE_RESULT_NOT_READY);
-    default: error = "unknown error"; break;
-  }
-  fprintf(stderr, "Level Zero API failed: %s\n", error);
+  EEMSG("hpcrun: Level Zero API failed: %s",
+        ze_result_to_string(result));
+
   exit(1);
 }
+
 
 static const char *
 level0_path
@@ -397,6 +398,7 @@ level0_path
 
   return path;
 }
+
 
 static void
 get_gpu_driver_and_device
@@ -439,10 +441,11 @@ get_gpu_driver_and_device
   }
 
   if(NULL == hDevice) {
-    fprintf(stderr, "NO GPU Device found\n");
-    exit(0);
+    EEMSG("hpcrun: Level Zero failed: no GPU device found");
+    exit(1);
   }
 }
+
 
 static void
 level0_create_new_event
@@ -471,6 +474,7 @@ level0_create_new_event
   HPCRUN_LEVEL0_CALL(zeEventCreate, (*event_pool_ptr, &event_desc, event_ptr));
 }
 
+
 static void
 level0_attribute_event
 (
@@ -486,7 +490,9 @@ level0_attribute_event
   props.stype = ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES ;
   props.pNext = NULL;
   HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, (hDevice, &props));
-  HPCRUN_LEVEL0_CALL(zeEventQueryStatus, (event));
+
+  ze_result_t status = HPCRUN_LEVEL0_CALL(zeEventQueryStatus, (event));
+  level0_check_result(status, __LINE__);
 
   // Query start and end time stamp for the event
   ze_kernel_timestamp_result_t timestamp;
@@ -507,6 +513,7 @@ level0_attribute_event
   // Free data structure for this event
   level0_event_map_delete(event);
 }
+
 
 static void
 level0_get_memory_types
@@ -532,6 +539,8 @@ level0_get_memory_types
     *dst_type_ptr = property.type;
   }
 }
+
+
 static void
 level0_event_pool_create_entry
 (
@@ -559,6 +568,7 @@ level0_event_pool_create_entry
   int flags = pool_desc->flags | ZE_EVENT_POOL_FLAG_KERNEL_TIMESTAMP;
   pool_desc->flags = (ze_event_pool_flag_t)(flags);
 }
+
 
 static ze_event_handle_t
 level0_command_list_append_launch_kernel_entry
@@ -595,6 +605,7 @@ level0_command_list_append_launch_kernel_entry
   }
   return event;
 }
+
 
 static ze_event_handle_t
 level0_command_list_append_launch_memcpy_entry
@@ -657,6 +668,7 @@ level0_command_list_create_exit
   level0_commandlist_context_map_insert(handle, hContext);
 }
 
+
 static void
 level0_command_list_destroy_entry
 (
@@ -679,6 +691,7 @@ level0_command_list_destroy_entry
   // Record the deletion of a command list
   level0_commandlist_map_delete(handle);
 }
+
 
 static void
 level0_command_list_reset_entry
@@ -703,6 +716,7 @@ level0_command_list_reset_entry
   *command_list_head = NULL;
 }
 
+
 static void
 level0_command_queue_execute_command_list_entry
 (
@@ -724,6 +738,7 @@ level0_command_queue_execute_command_list_entry
     }
   }
 }
+
 
 static void
 level0_process_immediate_command_list
@@ -749,6 +764,7 @@ level0_process_immediate_command_list
   }
 }
 
+
 static void
 level0_attribute_fence
 (
@@ -766,6 +782,7 @@ level0_attribute_fence
 
   level0_fence_map_delete(hFence);
 }
+
 
 static void
 level0_attribute_command_queue
@@ -903,6 +920,13 @@ foilbase_zeCommandListCreateImmediate
 {
   // Entry action
   // Execute the real level0 API
+
+  // hpctoolkit doesn't yet properly synchronize asynchronous command lists
+  // FIXME: force the execution to be synchronous
+  ze_command_queue_desc_t altdesc_new = *altdesc;
+  altdesc_new.mode = ZE_COMMAND_QUEUE_MODE_SYNCHRONOUS;
+  altdesc = &altdesc_new;
+
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListCreateImmediate,
     (hContext, hDevice, altdesc, phCommandList));
 
