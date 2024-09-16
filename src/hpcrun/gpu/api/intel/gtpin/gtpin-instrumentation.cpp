@@ -271,8 +271,18 @@ public:
 
 
 //*****************************************************************************
+// forward declarations
+//*****************************************************************************
+
+static void enqueue();
+
+
+
+//*****************************************************************************
 // local data
 //*****************************************************************************
+
+static thread_local gpu_op_ccts_t my_op_ccts;
 
 static thread_local CorrelationData correlation_head;
 static thread_local CorrelationData *correlation_tail = NULL;
@@ -649,6 +659,7 @@ create_igt_kernel_node
   correlation_data->next = NULL;
   correlation_tail->next = correlation_data;
   correlation_tail = correlation_data;
+  enqueue();
 }
 
 
@@ -1052,6 +1063,17 @@ HPCRUN_EXPOSED
 void
 gtpin_produce_runtime_callstack
 (gpu_op_ccts_t *op_ccts) {
+  my_op_ccts = *op_ccts;
+}
+
+
+static void
+enqueue
+(
+  void
+)
+{
+  gpu_op_ccts_t *op_ccts = &my_op_ccts;
   if (correlation_head.next == NULL)
     std::abort();
   CorrelationData *correlation_data = correlation_head.next;

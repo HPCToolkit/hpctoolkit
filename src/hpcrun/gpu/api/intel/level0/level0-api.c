@@ -56,6 +56,8 @@
 #define DEBUG 0
 #include "../../../common/gpu-print.h"
 
+#define LATE_BEGIN 0
+
 #define GPU_FLUSH_ALARM_ENABLED 1
 #define GPU_FLUSH_ALARM_TEST_ENABLED 0
 #include "../../common/gpu-flush-alarm.h"
@@ -308,6 +310,11 @@ level0_command_list_append_launch_kernel_entry
     level0_data_node_t * data_for_kernel = level0_commandlist_alloc_kernel(kernel, event, event_pool, dispatch);;
     // Associate the data entry with the event
     level0_event_map_insert(event, data_for_kernel);
+#if LATE_BEGIN == 0
+    // For immediate command list, the kernel is dispatched to GPU at this point.
+    // So, we attribute GPU metrics to the current CPU calling context.
+    level0_command_begin(data_for_kernel);
+#endif
   }
   return event;
 }
@@ -351,6 +358,11 @@ level0_command_list_append_launch_memcpy_entry
     level0_data_node_t * data_for_memcpy = level0_commandlist_alloc_memcpy(src_type, dst_type, mem_copy_size, event, event_pool, dispatch);
     // Associate the data entry with the event
     level0_event_map_insert(event, data_for_memcpy);
+#if LATE_BEGIN == 0
+    // For immediate command list, the mempcy is dispatched to GPU at this point.
+    // So, we attribute GPU metrics to the current CPU calling context.
+    level0_command_begin(data_for_memcpy);
+#endif
   }
   return event;
 }
@@ -462,9 +474,11 @@ level0_process_immediate_command_list
     // This is a GPU activity to an immediate command list
     level0_data_node_t* data_for_act = level0_event_map_lookup(event);
 
+#if LATE_BEGIN != 0
     // For immediate command list, the kernel is dispatched to GPU at this point.
     // So, we attribute GPU metrics to the current CPU calling context.
     level0_command_begin(data_for_act);
+#endif
 
     level0_attribute_event(event, dispatch);
 
