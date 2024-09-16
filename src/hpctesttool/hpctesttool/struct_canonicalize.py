@@ -78,8 +78,8 @@ def canonical_form(file: typing.BinaryIO) -> typing.List[str]:  # noqa: C901
     children: typing.Dict[XmlET.Element, typing.List[XmlET.Element]] = {}
     for elem in data.iter():
         children[elem] = sorted(
-            elem, key=lambda e: ranges[e], reverse=True
-        )  # noqa: F821
+            elem, key=lambda e: ranges[e], reverse=True  # noqa: F821
+        )
     del ranges
     for parent, new_children in children.items():
         parent[:] = new_children

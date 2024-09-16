@@ -100,9 +100,8 @@ class AnyValue(Value):
 
     @classmethod
     def parser(cls, **_kwargs) -> pp.ParserElement:
-        return pp.Literal("*").set_parse_action(
-            lambda: cls()
-        )  # pylint: disable=unnecessary-lambda
+        # pylint: disable=unnecessary-lambda
+        return pp.Literal("*").set_parse_action(lambda: cls())
 
 
 class LiteralValue(Value):
@@ -543,8 +542,8 @@ def parse_sources(  # noqa: C901
                 elif mat[1] == "ENDDEFINE":
                     if in_def is None:
                         raise ValueError("ENDDEFINE without a prior DEFINE")
-                    def_name, def_lines = (
-                        in_def  # pylint: disable=unpacking-non-sequence
+                    def_name, def_lines = (  # pylint: disable=unpacking-non-sequence
+                        in_def
                     )
                     if not mat[2].startswith("!") or def_name != mat[2][1:].strip():
                         raise ValueError(

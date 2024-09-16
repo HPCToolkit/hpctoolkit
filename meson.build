@@ -106,17 +106,17 @@ if meson.version().version_compare('>=1.4.0')
   xerces_dep = dependency('xerces-c', version: _xerces_c_ver, include_type: 'system')
 else
   xerces_dep = dependency('xerces-c', include_type: 'system')
-  if xerces_dep.type_name() != 'internal' and not xerces_dep.version().version_compare(
-    _xerces_c_ver,
-  )
-    message(
-      'Dependency @0@ found @1@ but need: \'@2@\''.format(
-        xerces_dep.name(),
-        xerces_dep.version(),
-        _xerces_c_ver,
-      ),
-    )
-    xerces_dep = dependency('xerces-c', method: 'system', include_type: 'system')  # Force fallback to wrap
+  if xerces_dep.type_name() != 'internal'
+    if not xerces_dep.version().version_compare(_xerces_c_ver)
+      message(
+        'Dependency @0@ found @1@ but need: \'@2@\''.format(
+          xerces_dep.name(),
+          xerces_dep.version(),
+          _xerces_c_ver,
+        ),
+      )
+      xerces_dep = dependency('xerces-c', method: 'system', include_type: 'system')  # Force fallback to wrap
+    endif
   endif
 endif
 lzma_dep = dependency('liblzma', version: '>=5.2.0', include_type: 'system')
@@ -126,17 +126,17 @@ if meson.version().version_compare('>=1.4.0')
   yaml_cpp_dep = dependency('yaml-cpp', version: _yaml_cpp_ver, include_type: 'system')
 else
   yaml_cpp_dep = dependency('yaml-cpp', include_type: 'system')
-  if yaml_cpp_dep.type_name() != 'internal' and not yaml_cpp_dep.version().version_compare(
-    _yaml_cpp_ver,
-  )
-    message(
-      'Dependency @0@ found @1@ but need: \'@2@\''.format(
-        yaml_cpp_dep.name(),
-        yaml_cpp_dep.version(),
-        _yaml_cpp_ver,
-      ),
-    )
-    yaml_cpp_dep = dependency('yaml-cpp', method: 'system', include_type: 'system')  # Force fallback to wrap
+  if yaml_cpp_dep.type_name() != 'internal'
+    if not yaml_cpp_dep.version().version_compare(_yaml_cpp_ver)
+      message(
+        'Dependency @0@ found @1@ but need: \'@2@\''.format(
+          yaml_cpp_dep.name(),
+          yaml_cpp_dep.version(),
+          _yaml_cpp_ver,
+        ),
+      )
+      yaml_cpp_dep = dependency('yaml-cpp', method: 'system', include_type: 'system')  # Force fallback to wrap
+    endif
   endif
 endif
 papi_dep = dependency(
