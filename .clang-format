@@ -2,21 +2,49 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-BasedOnStyle: Google
+# This configuration file targets clang-format 18.x. Do not add configuration for newer
+# versions of clang-format, nor for deprecated options or formats.
+#
+# See https://clang.llvm.org/docs/ClangFormatStyleOptions.html for explainations of all
+# available options.
 
+
+# Except where overridden, we follow the LLVM code style.
+BasedOnStyle: LLVM
+
+
+# Forably sort #includes alphabetically, grouping them based roughly on their purpose:
+#
+# 1. Local headers (e.g. `#include "loadmap.h"`)
+# 2. Dependency and C system headers (e.g. `#include <xed/xed-interface.h>`)
+# 3. C++ system headers (e.g. `#include <vector>`)
+#
+# This order ensures local headers properly #include their dependencies, and permits
+# dropping system #includes (if allowed by other policy like e.g. IWYU).
+IncludeBlocks:   Regroup
+IncludeCategories:
+- Regex:           '^<.*\.h>'
+  Priority:        2
+  SortPriority:    0
+  CaseSensitive:   false
+- Regex:           '^<.*'
+  Priority:        3
+  SortPriority:    0
+  CaseSensitive:   false
+- Regex:           '.*'
+  Priority:        1
+  SortPriority:    0
+  CaseSensitive:   false
+
+
+# Increase the line limit to 100. This value is rather arbitrary, it happens to fit
+# nicely in many cases and allows for fairly complex thoughts without a line break.
 ColumnLimit: 100
 
-AlignAfterOpenBracket: AlwaysBreak
 
+# Align the pointer `*` and reference `&` with the type, not the variable. This is the
+# preferred alignment for types since it better visually separates the type from the
+# variable name, e.g. `char*** x`.
 DerivePointerAlignment: false
 PointerAlignment: Left
 ReferenceAlignment: Pointer
-
-SpaceBeforeParens: ControlStatements
-
-EmptyLineAfterAccessModifier: Never
-EmptyLineBeforeAccessModifier: LogicalBlock
-KeepEmptyLinesAtTheStartOfBlocks: false
-SeparateDefinitionBlocks: Always
-
-BreakAfterAttributes: Always
