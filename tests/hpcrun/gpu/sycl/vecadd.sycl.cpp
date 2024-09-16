@@ -8,14 +8,14 @@
 #include <numeric>
 #include <vector>
 
-#define SYCL_CALL(statement, msg)        \
-  {                                      \
-    try {                                \
-      statement;                         \
-    } catch (sycl::exception const& e) { \
-      std::cerr << msg << e.what();      \
-      return 1;                          \
-    }                                    \
+#define SYCL_CALL(statement, msg)                                                                  \
+  {                                                                                                \
+    try {                                                                                          \
+      statement;                                                                                   \
+    } catch (sycl::exception const& e) {                                                           \
+      std::cerr << msg << e.what();                                                                \
+      return 1;                                                                                    \
+    }                                                                                              \
   }
 
 void vectorAdd(const float* a, const float* b, float* c, int i, const int n) {
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     mygpu = testdev;
   } catch (sycl::exception const& e) {
     std::cerr << "No devices available! " << e.what();
-    return 77;  // SKIP
+    return 77; // SKIP
   }
 
   // Create default SYCL queue for the GPU
@@ -56,12 +56,10 @@ int main(int argc, char* argv[]) {
   SYCL_CALL(d_c = sycl::malloc_device<float>(c.size(), q), "Failed to allocate d_c: ");
 
   // Copy the data in
-  SYCL_CALL(
-      q.memcpy(d_a, a.data(), a.size() * sizeof(decltype(a)::value_type)).wait(),
-      "Failed to memcpy a -> d_a: ");
-  SYCL_CALL(
-      q.memcpy(d_b, b.data(), b.size() * sizeof(decltype(b)::value_type)).wait(),
-      "Failed to memcpy b -> d_b: ");
+  SYCL_CALL(q.memcpy(d_a, a.data(), a.size() * sizeof(decltype(a)::value_type)).wait(),
+            "Failed to memcpy a -> d_a: ");
+  SYCL_CALL(q.memcpy(d_b, b.data(), b.size() * sizeof(decltype(b)::value_type)).wait(),
+            "Failed to memcpy b -> d_b: ");
 
   // Queue the kernel
   int tpb = 256;
@@ -74,9 +72,8 @@ int main(int argc, char* argv[]) {
    }).wait();
 
   // Copy the result back out
-  SYCL_CALL(
-      q.memcpy(c.data(), d_c, c.size() * sizeof(decltype(c)::value_type)).wait(),
-      "Failed to memcpy d_c -> c: ");
+  SYCL_CALL(q.memcpy(c.data(), d_c, c.size() * sizeof(decltype(c)::value_type)).wait(),
+            "Failed to memcpy d_c -> c: ");
 
   // Free device memory
   SYCL_CALL(sycl::free(d_a, q), "Failed to free d_a: ");

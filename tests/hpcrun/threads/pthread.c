@@ -33,7 +33,8 @@ static void* middle(void* _) {
   int err;
   if ((err = pthread_create(&t, NULL, work, NULL)) != 0)
     error(1, err, "error creating worker thread");
-  if ((err = pthread_join(t, NULL)) != 0) error(1, err, "error joining worker thread");
+  if ((err = pthread_join(t, NULL)) != 0)
+    error(1, err, "error joining worker thread");
   return NULL;
 }
 
@@ -42,6 +43,7 @@ int main() {
   int err;
   if ((err = pthread_create(&t, NULL, middle, NULL)) != 0)
     error(1, err, "error creating middle thread");
-  if ((err = pthread_join(t, NULL)) != 0) error(1, err, "error joining middle thread");
+  if ((err = pthread_join(t, NULL)) != 0)
+    error(1, err, "error joining middle thread");
   return 0;
 }

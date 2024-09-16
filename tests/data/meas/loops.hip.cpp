@@ -8,13 +8,15 @@
 #include <iostream>
 
 __device__ static void func1(volatile double* x) {
-  for (unsigned int i = 0; i < 1; i++) *x = *x * 2 + 3;
+  for (unsigned int i = 0; i < 1; i++)
+    *x = *x * 2 + 3;
   *x = *x * 2 + 3;
 }
 
 __device__ static void func2(volatile double* x) {
   for (unsigned int i = 0; i < 1; i++) {
-    for (unsigned int j = 0; j < 1; j++) *x = *x * 2 + 3;
+    for (unsigned int j = 0; j < 1; j++)
+      *x = *x * 2 + 3;
     *x = *x * 2 + 3;
   }
   *x = *x * 2 + 3;
@@ -24,11 +26,13 @@ __global__ static void kernmain() {
   volatile double x = 2;
   for (unsigned int i = 0; i < 1 << 12; i++) {
     for (unsigned int j = 0; j < 1; j++) {
-      for (unsigned int k = 0; k < 1; k++) x = x * 2 + 3;
+      for (unsigned int k = 0; k < 1; k++)
+        x = x * 2 + 3;
       x = x * 2 + 3;
       func1(&x);
     }
-    for (unsigned int k = 0; k < 1; k++) x = x * 2 + 3;
+    for (unsigned int k = 0; k < 1; k++)
+      x = x * 2 + 3;
     x = x * 2 + 3;
     func2(&x);
   }
@@ -43,7 +47,7 @@ int main() {
     err = hipGetDeviceCount(&nDevices);
     if (err != hipSuccess || nDevices == 0) {
       std::cerr << "No devices available!\n";
-      return 77;  // SKIP
+      return 77; // SKIP
     }
   }
 
