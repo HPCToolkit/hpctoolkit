@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+BasedOnStyle: InheritParentConfig
+
+# The files in this directory are vendored from external sources. They should not be autoformatted.
+DisableFormat: true

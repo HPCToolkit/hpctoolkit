@@ -2,8 +2,21 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-# This is a stub marker file which enables the `clang-format` target in Meson. Much of the codebase
-# does not have (any) consistent code style or auto-formatting.
-# Subdirectories may add their own `.clang-format` files that take precedence over this stub.
+BasedOnStyle: Google
 
-DisableFormat: true
+ColumnLimit: 100
+
+AlignAfterOpenBracket: AlwaysBreak
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+
+SpaceBeforeParens: ControlStatements
+
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: LogicalBlock
+KeepEmptyLinesAtTheStartOfBlocks: false
+SeparateDefinitionBlocks: Always
+
+BreakAfterAttributes: Always
