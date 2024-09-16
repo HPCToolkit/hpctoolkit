@@ -126,12 +126,18 @@ class MatchFile:
         return (
             "File("
             + ", ".join(
-                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+                [
+                    f"{k}={m}"
+                    for k, m in self._submatch.items()
+                    if not isinstance(m, _MatchAny)
+                ]
             )
             + ")"
         )
 
-    def itermatch(self, fs: metadb.SourceFiles) -> "collections.abc.Iterator[metadb.File]":
+    def itermatch(
+        self, fs: metadb.SourceFiles
+    ) -> "collections.abc.Iterator[metadb.File]":
         """Iterate over all matching Files."""
         return filter(self.matches, fs.files)
 
@@ -157,12 +163,18 @@ class MatchModule:
         return (
             "Module("
             + ", ".join(
-                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+                [
+                    f"{k}={m}"
+                    for k, m in self._submatch.items()
+                    if not isinstance(m, _MatchAny)
+                ]
             )
             + ")"
         )
 
-    def itermatch(self, lm: metadb.LoadModules) -> "collections.abc.Iterator[metadb.Module]":
+    def itermatch(
+        self, lm: metadb.LoadModules
+    ) -> "collections.abc.Iterator[metadb.Module]":
         """Iterate over all matching Modules."""
         return filter(self.matches, lm.modules)
 
@@ -200,12 +212,18 @@ class MatchFunction:
         return (
             "Function("
             + ", ".join(
-                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+                [
+                    f"{k}={m}"
+                    for k, m in self._submatch.items()
+                    if not isinstance(m, _MatchAny)
+                ]
             )
             + ")"
         )
 
-    def itermatch(self, fs: metadb.Functions) -> "collections.abc.Iterator[metadb.Function]":
+    def itermatch(
+        self, fs: metadb.Functions
+    ) -> "collections.abc.Iterator[metadb.Function]":
         """Iterate over all matching Functions."""
         return filter(self.matches, fs.functions)
 
@@ -223,7 +241,9 @@ class MatchEntryPoint:
     def _coerce_entry_point(cls, val) -> _MatchExact:
         return _MatchExact(metadb.EntryPoint.EntryPoint[val])
 
-    def __init__(self, *, entry_point=_MatchAnySingleton, pretty_name=_MatchAnySingleton):
+    def __init__(
+        self, *, entry_point=_MatchAnySingleton, pretty_name=_MatchAnySingleton
+    ):
         self._submatch = {
             "entry_point": self._coerce_entry_point(entry_point),
             "pretty_name": MatchStr.coerce(pretty_name),
@@ -237,12 +257,18 @@ class MatchEntryPoint:
         return (
             "EntryPoint("
             + ", ".join(
-                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+                [
+                    f"{k}={m}"
+                    for k, m in self._submatch.items()
+                    if not isinstance(m, _MatchAny)
+                ]
             )
             + ")"
         )
 
-    def itermatch(self, ct: metadb.ContextTree) -> "collections.abc.Iterator[metadb.EntryPoint]":
+    def itermatch(
+        self, ct: metadb.ContextTree
+    ) -> "collections.abc.Iterator[metadb.EntryPoint]":
         """Iterate over all EntryPoints that satisfy this matcher's requirements."""
         return filter(self.matches, ct.entry_points)
 
@@ -294,7 +320,11 @@ class MatchCtx:
         return (
             "Context("
             + ", ".join(
-                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+                [
+                    f"{k}={m}"
+                    for k, m in self._submatch.items()
+                    if not isinstance(m, _MatchAny)
+                ]
             )
             + ")"
         )

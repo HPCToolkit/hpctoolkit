@@ -52,7 +52,15 @@ _srcs += configure_file(
   },
 )
 
-_deps = [libdw_dep, libelf_dep, lzma_dep, openmp_dep, xerces_dep, xxhash_dep, yaml_cpp_dep]
+_deps = [
+  libdw_dep,
+  libelf_dep,
+  lzma_dep,
+  openmp_dep,
+  xerces_dep,
+  xxhash_dep,
+  yaml_cpp_dep,
+]
 
 _srcs += common_lean_srcs
 _deps += common_lean_deps

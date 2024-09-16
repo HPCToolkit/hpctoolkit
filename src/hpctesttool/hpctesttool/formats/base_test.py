@@ -23,7 +23,9 @@ from .base import (
 
 
 def test_db_parse():
-    with pytest.raises(AttributeError, match=r"type object 'DatabaseFile' has no attribute"):
+    with pytest.raises(
+        AttributeError, match=r"type object 'DatabaseFile' has no attribute"
+    ):
         DatabaseFile._parse_header(io.BytesIO(b"Anything"))
 
     class FooDB(DatabaseFile):
@@ -34,21 +36,26 @@ def test_db_parse():
 
     with pytest.raises(OSError, match=r"file appears to be truncated"):
         FooDB._parse_header(io.BytesIO(b"too short"))
-    with pytest.raises(InvalidFormatError, match=r"^File is not an HPCToolkit data file$"):
+    with pytest.raises(
+        InvalidFormatError, match=r"^File is not an HPCToolkit data file$"
+    ):
         FooDB._parse_header(io.BytesIO(b"BADMAGIC________    ________"))
     with pytest.raises(InvalidFormatError, match=r"'bar_' != 'foo_'"):
         FooDB._parse_header(io.BytesIO(b"HPCTOOLKITbar_\x00\x00   ________"))
     with pytest.raises(InvalidFormatError, match=r"'__bar.db' != '__foo.db'"):
         FooDB._parse_header(io.BytesIO(b"HPCTOOLKITfoo_\x00\x00   __bar.db"))
     with pytest.raises(
-        InvalidFormatError, match=r"^This implementation is only able to read v2.X, got v3$"
+        InvalidFormatError,
+        match=r"^This implementation is only able to read v2.X, got v3$",
     ):
         FooDB._parse_header(io.BytesIO(b"HPCTOOLKITfoo_\x03\x00   __foo.db"))
     with pytest.warns(
         UnsupportedFormatWarning,
         match=r"^This implementation is only able to read version <=2.1, got v2.3",
     ):
-        assert FooDB._parse_header(io.BytesIO(b"HPCTOOLKITfoo_\x02\x03   __foo.db")) == 3
+        assert (
+            FooDB._parse_header(io.BytesIO(b"HPCTOOLKITfoo_\x02\x03   __foo.db")) == 3
+        )
     assert FooDB._parse_header(io.BytesIO(b"HPCTOOLKITfoo_\x02\x00   __foo.db")) == 0
 
 
@@ -138,7 +145,10 @@ def test_enumeration_yaml():
     assert dump_to_string(y, Test.value2) == "!enum.test value2\n...\n"
     assert dump_to_string(y, Test.value3) == "!enum.test value3\n...\n"
 
-    assert y.load(dump_to_string(y, [Test.value3, Test.value1])) == [Test.value3, Test.value1]
+    assert y.load(dump_to_string(y, [Test.value3, Test.value1])) == [
+        Test.value3,
+        Test.value1,
+    ]
 
 
 def test_flags():
@@ -171,6 +181,9 @@ def test_flags_yaml():
 
     assert dump_to_string(y, Test.flag1) == "!flags.test [flag1]\n"
     assert dump_to_string(y, Test.flag1 | Test.flag2) == "!flags.test [flag1, flag2]\n"
-    assert dump_to_string(y, Test.flag3 | Test.aaa_flag4) == "!flags.test [aaa_flag4, flag3]\n"
+    assert (
+        dump_to_string(y, Test.flag3 | Test.aaa_flag4)
+        == "!flags.test [aaa_flag4, flag3]\n"
+    )
 
     assert y.load(dump_to_string(y, Test.flag3 | Test.flag1)) == Test.flag1 | Test.flag3

@@ -4,7 +4,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 option('manpages', type: 'feature', description: 'Include and install man pages')
-option('manual', type: 'feature', description: 'Include and install the manual (HTML, EPUB)')
+option(
+  'manual',
+  type: 'feature',
+  description: 'Include and install the manual (HTML, EPUB)',
+)
 option(
   'manual_pdf',
   type: 'feature',

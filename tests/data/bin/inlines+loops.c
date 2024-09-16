@@ -10,7 +10,9 @@ volatile int unconstant_i = 2;
 volatile int unconstant_j = 2;
 volatile int unconstant_k = 2;
 
-__attribute__((always_inline)) inline static void f_inlined() { printf("Hello, world!"); }
+__attribute__((always_inline)) inline static void f_inlined() {
+  printf("Hello, world!");
+}
 
 // 1. Standard function
 void f1() { printf("Hello, world!"); }

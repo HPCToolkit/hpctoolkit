@@ -103,12 +103,16 @@ class StructureBase:
     def __setstate__(self, state: typing.Dict[str, typing.Any]):
         for f in dataclasses.fields(self):  # type: ignore[arg-type]
             if f.name not in state:
-                raise ValueError(f"Attempt to load invalid serialized state: no field {f.name}")
+                raise ValueError(
+                    f"Attempt to load invalid serialized state: no field {f.name}"
+                )
             setattr(self, f.name, state[f.name])
 
     @classmethod
     def _as_commented_map(cls, obj):
-        state = obj.__getstate__() if hasattr(obj, "__getstate__") else obj.__dict__.copy()
+        state = (
+            obj.__getstate__() if hasattr(obj, "__getstate__") else obj.__dict__.copy()
+        )
         assert isinstance(state, dict)
         rstate = ruamel.yaml.comments.CommentedMap(state)
         for k, v in rstate.items():
@@ -135,7 +139,10 @@ def canonical_paths(
     """
     result: typing.Dict[StructureBase, typing.Tuple[typing.Union[str, int], ...]] = {}
 
-    def add(o: typing.Union[StructureBase, list, dict], path: typing.List[typing.Union[str, int]]):
+    def add(
+        o: typing.Union[StructureBase, list, dict],
+        path: typing.List[typing.Union[str, int]],
+    ):
         if isinstance(o, StructureBase):
             result[o] = tuple(path)
             for f in o.owning_fields():
@@ -214,12 +221,16 @@ class DatabaseFile(StructureBase):
             file.seek(0)
             hdr_bits = file.read(16)
             if len(hdr_bits) < 16:
-                raise OSError("Unable to read file header, file appears to be truncated")
+                raise OSError(
+                    "Unable to read file header, file appears to be truncated"
+                )
 
             file.seek(-8, io.SEEK_END)
             in_footer = file.read(8)
             if len(in_footer) < 8:
-                raise OSError("Unable to read file footer, file appears to be truncated")
+                raise OSError(
+                    "Unable to read file footer, file appears to be truncated"
+                )
         in_magic, in_fmtid, in_major, in_minor = cls.__hdr_struct.unpack(hdr_bits)
 
         if in_magic != b"HPCTOOLKIT":
@@ -339,15 +350,21 @@ class BitFlags(enum.Flag):
             for bit in cls:
                 if bit.value | value != 0:
                     obj.min_version = (
-                        bit.min_version if first else max(obj.min_version, bit.min_version)
+                        bit.min_version
+                        if first
+                        else max(obj.min_version, bit.min_version)
                     )
                     first = False
         return obj
 
     @classmethod
-    def versioned_decode(cls: typing.Type[BitFlagsT], version: int, value: int) -> BitFlagsT:
+    def versioned_decode(
+        cls: typing.Type[BitFlagsT], version: int, value: int
+    ) -> BitFlagsT:
         bits = [bit for bit in cls if bit.min_version <= version]
-        return cls(value) & functools.reduce(lambda x, y: x | y, bits) if bits else cls(0)
+        return (
+            cls(value) & functools.reduce(lambda x, y: x | y, bits) if bits else cls(0)
+        )
 
     @classmethod
     def to_yaml(cls, representer, node):

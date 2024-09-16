@@ -66,7 +66,9 @@ if rocm_dep.found()
 '''.strip().format(rocm_dep.version()) + '\n'
 endif
 
-features_msg += 'Intel Level Zero support: @0@\n'.format(level0_dep.found() ? 'yes' : 'no')
+features_msg += 'Intel Level Zero support: @0@\n'.format(
+  level0_dep.found() ? 'yes' : 'no',
+)
 if level0_dep.found()
   features_msg += '''
 - Level Zero: @0@

@@ -66,7 +66,12 @@ custom_target(
 
 # A more common format for offline documentation is PDF, but this requires a fairly complete
 # Latex installation, so it has a separate option and is disabled by default.
-_latexmk = find_program('latexmk', native: true, required: get_option('manual_pdf'), disabler: true)
+_latexmk = find_program(
+  'latexmk',
+  native: true,
+  required: get_option('manual_pdf'),
+  disabler: true,
+)
 custom_target(
   output: '@0@.pdf'.format(meson.project_name()),
   depfile: '@0@.pdf.d'.format(meson.project_name()),

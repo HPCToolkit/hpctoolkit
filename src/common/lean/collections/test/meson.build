@@ -7,13 +7,21 @@ project('collection-tests', 'c')
 
 incdir = include_directories('..', '../../../../')
 
-e = executable('freelist-test-inplace', 'freelist-test-inplace.c', include_directories: incdir)
+e = executable(
+  'freelist-test-inplace',
+  'freelist-test-inplace.c',
+  include_directories: incdir,
+)
 test('freelist-test-inplace', e)
 
 e = executable('stack-test-inplace', 'stack-test-inplace.c', include_directories: incdir)
 test('stack-test-inplace', e)
 
-e = executable('splay-tree-test-inplace', 'splay-tree-test-inplace.c', include_directories: incdir)
+e = executable(
+  'splay-tree-test-inplace',
+  'splay-tree-test-inplace.c',
+  include_directories: incdir,
+)
 test('splay-tree-test-inplace', e)
 
 

@@ -12,7 +12,10 @@ endif
 cpp = meson.get_compiler('cpp')
 incdirs = include_directories('Profilers/Include', 'Profilers/Include/ged/intel64')
 gtpin_dep = declare_dependency(
-  dependencies: cpp.find_library('gtpin', dirs: meson.current_source_dir() / 'Profilers/Lib/intel64'),
+  dependencies: cpp.find_library(
+    'gtpin',
+    dirs: meson.current_source_dir() / 'Profilers/Lib/intel64',
+  ),
   include_directories: incdirs,
   version: meson.project_version(),
 )

@@ -47,7 +47,9 @@ class TraceDB(DatabaseFile):
         minor = cls._parse_header(file)
         sections = cls.__struct.unpack_file(minor, file, 0)
         return cls(
-            ctx_traces=ContextTraceHeadersSection.from_file(minor, file, sections["pCtxTraces"]),
+            ctx_traces=ContextTraceHeadersSection.from_file(
+                minor, file, sections["pCtxTraces"]
+            ),
         )
 
 
@@ -82,7 +84,9 @@ class ContextTraceHeadersSection(StructureBase):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
             traces=[
-                ContextTrace.from_file(version, file, data["pTraces"] + data["szTrace"] * i)
+                ContextTrace.from_file(
+                    version, file, data["pTraces"] + data["szTrace"] * i
+                )
                 for i in range(data["nTraces"])
             ],
             timestamp_range={"min": data["minTimestamp"], "max": data["maxTimestamp"]},
@@ -111,10 +115,10 @@ class ContextTrace(StructureBase):
             tot = "0s"
             rang = "0-0"
         else:
-            tot = f"{(self.line[-1].timestamp-self.line[0].timestamp) / 1000000000:.9f}s"
-            rang = (
-                f"{self.line[0].timestamp/1000000000:.9f}-{self.line[-1].timestamp/1000000000:.9f}"
+            tot = (
+                f"{(self.line[-1].timestamp-self.line[0].timestamp) / 1000000000:.9f}s"
             )
+            rang = f"{self.line[0].timestamp/1000000000:.9f}-{self.line[-1].timestamp/1000000000:.9f}"
         prof = (
             f"{{{self._profile.id_tuple.shorthand}}}"
             if hasattr(self, "_profile") and self._profile.id_tuple is not None

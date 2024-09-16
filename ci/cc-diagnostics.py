@@ -36,7 +36,9 @@ def _collect_wrap_subprojects(project_root: Path) -> typing.Iterator[Path]:
         if trial.suffix == ".wrap":
             cfg = configparser.ConfigParser(interpolation=None)
             cfg.read(trial, encoding="utf-8")
-            directory = cfg.get(cfg.sections()[0], "directory", fallback=str(trial.stem))
+            directory = cfg.get(
+                cfg.sections()[0], "directory", fallback=str(trial.stem)
+            )
             yield subprojects_root / directory
 
 
@@ -52,7 +54,10 @@ def _severity(mode: str, messagekind: str, flags: str) -> str:
             return "critical"  # Highest possible severity without blocking merge
         if messagekind != "warning":
             raise ValueError(messagekind)
-        if "clang-analyzer-" in flags and "clang-analyzer-optin.performance" not in flags:
+        if (
+            "clang-analyzer-" in flags
+            and "clang-analyzer-optin.performance" not in flags
+        ):
             return "critical"  # Clang-analyzer reports are basically compiler warnings
         if any(cat in flags for cat in ["modernize-", "readability-"]):
             return "minor"  # Stylistic and modernization errors are usually less problematic
@@ -60,7 +65,9 @@ def _severity(mode: str, messagekind: str, flags: str) -> str:
     raise ValueError(mode)
 
 
-def _cc_to_cq(mode: str, project_root: Path, exclude_dirs: typing.List[Path], line: str) -> dict:
+def _cc_to_cq(
+    mode: str, project_root: Path, exclude_dirs: typing.List[Path], line: str
+) -> dict:
     # Compiler warning regex:
     #     {path}.{extension}:{line}:{column}: {severity}: {message} [{flag(s)}]
     mat = re.fullmatch(
@@ -177,6 +184,8 @@ if __name__ == "__main__":
         json.dump(diagnostics.reports, outf)
     print(f"Generated {len(diagnostics.reports):d} Code Climate reports")
     if diagnostics.errors > 0:
-        print(f"Excluded {diagnostics.errors:d} errors and {diagnostics.warnings:d} warnings")
+        print(
+            f"Excluded {diagnostics.errors:d} errors and {diagnostics.warnings:d} warnings"
+        )
     elif diagnostics.warnings > 0:
         print(f"Excluded {diagnostics.warnings:d} warnings")

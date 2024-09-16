@@ -3,7 +3,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-_example_tstexe = executable('tstexe-pthread-blame-example', 'example.c', dependencies: threads_dep)
+_example_tstexe = executable(
+  'tstexe-pthread-blame-example',
+  'example.c',
+  dependencies: threads_dep,
+)
 
 test(
   'Pthread-blame event measures on @0@'.format(_example_tstexe.name()),

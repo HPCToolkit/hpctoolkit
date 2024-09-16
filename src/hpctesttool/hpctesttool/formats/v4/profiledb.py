@@ -8,7 +8,14 @@ import functools
 import typing
 
 from .._util import VersionedStructure
-from ..base import BitFlags, DatabaseFile, EnumEntry, StructureBase, _CommentedMap, yaml_object
+from ..base import (
+    BitFlags,
+    DatabaseFile,
+    EnumEntry,
+    StructureBase,
+    _CommentedMap,
+    yaml_object,
+)
 
 if typing.TYPE_CHECKING:
     from .metadb import MetaDB
@@ -54,7 +61,9 @@ class ProfileDB(DatabaseFile):
         minor = cls._parse_header(file)
         sections = cls.__struct.unpack_file(minor, file, 0)
         return cls(
-            profile_infos=ProfileInfos.from_file(minor, file, sections["pProfileInfos"]),
+            profile_infos=ProfileInfos.from_file(
+                minor, file, sections["pProfileInfos"]
+            ),
         )
 
     @functools.cached_property
@@ -87,7 +96,9 @@ class ProfileInfos(StructureBase):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
             profiles=[
-                Profile.from_file(version, file, data["pProfiles"] + data["szProfile"] * i)
+                Profile.from_file(
+                    version, file, data["pProfiles"] + data["szProfile"] * i
+                )
                 for i in range(data["nProfiles"])
             ]
         )
@@ -142,7 +153,9 @@ class Profile(StructureBase):
             self.id_tuple._with(meta)
         self._context_map = meta.context_map
         self._metric_map = (
-            meta.summary_metric_map if self.Flags.is_summary in self.flags else meta.raw_metric_map
+            meta.summary_metric_map
+            if self.Flags.is_summary in self.flags
+            else meta.raw_metric_map
         )
 
     @classmethod
@@ -151,13 +164,17 @@ class Profile(StructureBase):
         values = [
             cls.__value.unpack_file(0, file, o)
             for o in scaled_range(
-                data["valueBlock_pValues"], data["valueBlock_nValues"], cls.__value.size(0)
+                data["valueBlock_pValues"],
+                data["valueBlock_nValues"],
+                cls.__value.size(0),
             )
         ]
         ctx_indices = [
             cls.__ctx_idx.unpack_file(0, file, o)
             for o in scaled_range(
-                data["valueBlock_pCtxIndices"], data["valueBlock_nCtxs"], cls.__ctx_idx.size(0)
+                data["valueBlock_pCtxIndices"],
+                data["valueBlock_nCtxs"],
+                cls.__ctx_idx.size(0),
             )
         ]
         return cls(
@@ -172,7 +189,9 @@ class Profile(StructureBase):
                     val["metricId"]: val["value"]
                     for val in values[
                         idx["startIndex"] : (
-                            ctx_indices[i + 1]["startIndex"] if i + 1 < len(ctx_indices) else None
+                            ctx_indices[i + 1]["startIndex"]
+                            if i + 1 < len(ctx_indices)
+                            else None
                         )
                     ]
                 }
@@ -190,7 +209,11 @@ class Profile(StructureBase):
             state["values"] = _CommentedMap(state["values"])
             for ctx_id in state["values"]:
                 if ctx_id in c_map:
-                    com = c_map[ctx_id].shorthand if c_map[ctx_id] is not None else "<root>"
+                    com = (
+                        c_map[ctx_id].shorthand
+                        if c_map[ctx_id] is not None
+                        else "<root>"
+                    )
                     state["values"].yaml_add_eol_comment("for " + com, key=ctx_id)
                 state["values"][ctx_id] = _CommentedMap(state["values"][ctx_id])
                 for met_id in state["values"][ctx_id]:

@@ -4,8 +4,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 _threadmodels = {
-  'pthread': executable('tstexe-pthread', files('pthread.c'), dependencies: [threads_dep, math_dep]),
-  'openmp': executable('tstexe-openmp', files('openmp.c'), dependencies: [openmp_dep, math_dep]),
+  'pthread': executable(
+    'tstexe-pthread',
+    files('pthread.c'),
+    dependencies: [threads_dep, math_dep],
+  ),
+  'openmp': executable(
+    'tstexe-openmp',
+    files('openmp.c'),
+    dependencies: [openmp_dep, math_dep],
+  ),
   'cpp-thread': executable(
     'tstexe-cpp-thread',
     files('cpp-thread.cpp'),

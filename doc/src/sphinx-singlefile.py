@@ -12,7 +12,12 @@ import sys
 from pathlib import Path
 
 if __name__ == "__main__":
-    build_dir, srcfile, dstfile, sphinx_cmd = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:]
+    build_dir, srcfile, dstfile, sphinx_cmd = (
+        sys.argv[1],
+        sys.argv[2],
+        sys.argv[3],
+        sys.argv[4:],
+    )
     src = Path(build_dir) / srcfile
     dst = Path(dstfile)
 

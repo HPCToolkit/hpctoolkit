@@ -37,7 +37,8 @@ def test() -> None:
 @test.command
 @click.option("-T", "--trace/--no-trace", help="Expect to have traces")
 @click.argument(
-    "measurements", type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path)
+    "measurements",
+    type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path),
 )
 @click.argument("pattern_all", type=re.compile)
 @click.argument("patterns_any", type=re.compile, nargs=-1)
@@ -64,11 +65,15 @@ def produces_profiles(
             )
             ok = False
         elif not trace and meas.tracefile(stem):
-            print(f"  Error: Did not expect trace but found: {stem}.hpctrace is present")
+            print(
+                f"  Error: Did not expect trace but found: {stem}.hpctrace is present"
+            )
             ok = False
 
         if not pattern_all.search(ids):
-            print(f"  Error: Profile did not match all pattern: {pattern_all.pattern!r}")
+            print(
+                f"  Error: Profile did not match all pattern: {pattern_all.pattern!r}"
+            )
             ok = False
 
     for pat in patterns_any:
@@ -86,7 +91,8 @@ del produces_profiles
 @test.command
 @click.option("-T", "--trace/--no-trace", help="Expect a trace.db")
 @click.argument(
-    "database", type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path)
+    "database",
+    type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path),
 )
 def check_db(*, trace: bool, database: Path) -> None:
     """Test that the given database has the required data."""
@@ -100,10 +106,13 @@ del check_db
 @test.command
 @click.argument(
     "script",
-    type=click.Path(exists=True, readable=True, dir_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(
+        exists=True, readable=True, dir_okay=False, path_type=Path, resolve_path=True
+    ),
 )
 @click.argument(
-    "database", type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path)
+    "database",
+    type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path),
 )
 def unwind_py_simple(*, script: Path, database: Path) -> None:
     """Test that the given DATABASE contains a func_hi -> func_mid -> func_lo callstack.
@@ -134,19 +143,25 @@ def unwind_py_simple(*, script: Path, database: Path) -> None:
                     MatchCtx(
                         relation="call",
                         lexical_type="function",
-                        function=MatchFunction(name="func_hi", module="<logical python>"),
+                        function=MatchFunction(
+                            name="func_hi", module="<logical python>"
+                        ),
                     ),
                     MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
                     MatchCtx(
                         relation="call",
                         lexical_type="function",
-                        function=MatchFunction(name="func_mid", module="<logical python>"),
+                        function=MatchFunction(
+                            name="func_mid", module="<logical python>"
+                        ),
                     ),
                     MatchCtx(relation="lexical", lexical_type="line", file=str(script)),
                     MatchCtx(
                         relation="call",
                         lexical_type="function",
-                        function=MatchFunction(name="func_lo", module="<logical python>"),
+                        function=MatchFunction(
+                            name="func_lo", module="<logical python>"
+                        ),
                     ),
                 )
             )
@@ -166,10 +181,12 @@ del unwind_py_simple
 
 @test.command
 @click.argument(
-    "database", type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path)
+    "database",
+    type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path),
 )
 @click.argument(
-    "canonical", type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path)
+    "canonical",
+    type=click.Path(exists=True, readable=True, file_okay=False, path_type=Path),
 )
 def db_compare(*, database: Path, canonical: Path) -> None:
     """Compare a DATABASE against a CANONICAL database and report any differences."""
@@ -186,13 +203,17 @@ del db_compare
 
 @test.command
 @click.argument(
-    "structfile", type=click.Path(exists=True, readable=True, dir_okay=False, path_type=Path)
+    "structfile",
+    type=click.Path(exists=True, readable=True, dir_okay=False, path_type=Path),
 )
 @click.argument(
-    "binary", type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True)
+    "binary",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
 )
 @click.argument(
-    "sources", type=click.Path(exists=True, readable=True, dir_okay=False, path_type=Path), nargs=-1
+    "sources",
+    type=click.Path(exists=True, readable=True, dir_okay=False, path_type=Path),
+    nargs=-1,
 )
 @click.option(
     "--debug/--no-debug",
@@ -200,7 +221,11 @@ del db_compare
     help="Disable any matching that would rely on the presence of debug info",
 )
 def match_struct(
-    *, structfile: Path, binary: Path, sources: "collections.abc.Iterable[Path]", debug: bool
+    *,
+    structfile: Path,
+    binary: Path,
+    sources: "collections.abc.Iterable[Path]",
+    debug: bool,
 ) -> None:
     """Compare a STRUCTFILE against the lexical structure expressed in SOURCES."""
     try:
@@ -236,7 +261,9 @@ def struct_compare(*, structfile: typing.BinaryIO, canonical: typing.BinaryIO) -
             expected, got, fromfile="expected structfile", tofile="produced structfile"
         ):
             click.echo(line, nl=False)
-        raise click.ClickException("Differences found between obtained and expected structure!")
+        raise click.ClickException(
+            "Differences found between obtained and expected structure!"
+        )
 
 
 del struct_compare
@@ -244,7 +271,8 @@ del struct_compare
 
 @test.command
 @click.argument(
-    "database", type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path)
+    "database",
+    type=click.Path(exists=True, file_okay=False, readable=True, path_type=Path),
 )
 @click.argument("output", type=click.File("w", encoding="utf-8"))
 def yaml(*, database: Path, output: typing.BinaryIO) -> None:

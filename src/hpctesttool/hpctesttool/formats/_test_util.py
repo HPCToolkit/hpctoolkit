@@ -30,10 +30,14 @@ def assert_good_traversal(obj, seen=None):
     if seen is None:
         seen = set()
 
-    if obj is None or isinstance(obj, (str, int, float, base.Enumeration, base.BitFlags)):
+    if obj is None or isinstance(
+        obj, (str, int, float, base.Enumeration, base.BitFlags)
+    ):
         pass
     elif isinstance(obj, base.StructureBase):
-        assert obj not in seen, f"Object {obj!r} was observed twice during the traversal!"
+        assert (
+            obj not in seen
+        ), f"Object {obj!r} was observed twice during the traversal!"
         seen.add(obj)
         for f in obj.owning_fields():
             assert_good_traversal(getattr(obj, f.name), seen=seen)

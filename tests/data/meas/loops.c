@@ -35,7 +35,8 @@ static void func2(volatile double* x) {
   *x = *x * 2 + 3;
 }
 
-__attribute__((always_inline)) static inline void test_separated_loops_helper(volatile double* x) {
+__attribute__((always_inline)) static inline void
+test_separated_loops_helper(volatile double* x) {
   *x = *x * 2 + 3;
 }
 

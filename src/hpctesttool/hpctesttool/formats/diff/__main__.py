@@ -24,7 +24,9 @@ def build_parser() -> argparse.ArgumentParser:
         description='Compare two performance databases and generate a semantically-aware "diff" between the two.'
     )
     parser.add_argument(
-        "strategy", choices=diffs.keys(), help="Diff strategy to use to compare the inputs"
+        "strategy",
+        choices=diffs.keys(),
+        help="Diff strategy to use to compare the inputs",
     )
     parser.add_argument(
         "-a",
@@ -32,10 +34,18 @@ def build_parser() -> argparse.ArgumentParser:
         choices=accuracies.keys(),
         help="Accuracy strategy to use to compare the inputs",
     )
-    parser.add_argument("a", type=Path, help="File or database directory on the lefthand side.")
-    parser.add_argument("b", type=Path, help="File or database directory on the righthand side.")
     parser.add_argument(
-        "-q", "--quiet", default=False, action="store_true", help="Disable all normal output"
+        "a", type=Path, help="File or database directory on the lefthand side."
+    )
+    parser.add_argument(
+        "b", type=Path, help="File or database directory on the righthand side."
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        default=False,
+        action="store_true",
+        help="Disable all normal output",
     )
     parser.add_argument(
         "--subdir-a",
@@ -57,11 +67,17 @@ def main(inargs: typing.List[str]) -> int:
     # Load the inputs
     a = from_path_extended(args.a, subdir=args.subdir_a)
     if a is None:
-        print("Invalid left input, not a recognized performance data format!", file=sys.stderr)
+        print(
+            "Invalid left input, not a recognized performance data format!",
+            file=sys.stderr,
+        )
         return 2
     b = from_path_extended(args.b, subdir=args.subdir_b)
     if b is None:
-        print("Invalid right input, not a recognized performance data format!", file=sys.stderr)
+        print(
+            "Invalid right input, not a recognized performance data format!",
+            file=sys.stderr,
+        )
         return 2
 
     # Compare the inputs

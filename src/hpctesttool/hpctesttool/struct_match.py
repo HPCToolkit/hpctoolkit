@@ -73,7 +73,9 @@ class InboundsPlaceholder(ValueLike):
 
     @classmethod
     def parser(cls, *, debug: bool) -> pp.ParserElement:
-        def lift(toks: pp.ParseResults) -> typing.Union[InboundsPlaceholder, IntRangeValue]:
+        def lift(
+            toks: pp.ParseResults,
+        ) -> typing.Union[InboundsPlaceholder, IntRangeValue]:
             if not debug:
                 return IntRangeValue(0)
             if toks[0] == "inbounds":
@@ -82,7 +84,9 @@ class InboundsPlaceholder(ValueLike):
                 return cls(parent=True)
             raise AssertionError
 
-        val = pp.Literal("inbounds") | "inparbounds"  # pylint: disable=unsupported-binary-operation
+        val = (
+            pp.Literal("inbounds") | "inparbounds"
+        )  # pylint: disable=unsupported-binary-operation
         val.set_parse_action(lift)
         return val
 
@@ -96,7 +100,9 @@ class AnyValue(Value):
 
     @classmethod
     def parser(cls, **_kwargs) -> pp.ParserElement:
-        return pp.Literal("*").set_parse_action(lambda: cls())  # pylint: disable=unnecessary-lambda
+        return pp.Literal("*").set_parse_action(
+            lambda: cls()
+        )  # pylint: disable=unnecessary-lambda
 
 
 class LiteralValue(Value):
@@ -126,7 +132,11 @@ class LiteralValue(Value):
                 return False  # Expected bracket suffix but not found
 
         # Match the literal on the rest
-        return value.endswith(self.literal) if self.wildcard_prefix else value == self.literal
+        return (
+            value.endswith(self.literal)
+            if self.wildcard_prefix
+            else value == self.literal
+        )
 
     @classmethod
     def parser(cls, *, file: str, binary: str, debug: bool) -> pp.ParserElement:
@@ -165,7 +175,9 @@ class LiteralValue(Value):
 
         del parse_brackets
 
-        std = pp.Combine(wprefix("wpfx") + pp.QuotedString('"')("literal") + bsuffix("bs"))
+        std = pp.Combine(
+            wprefix("wpfx") + pp.QuotedString('"')("literal") + bsuffix("bs")
+        )
 
         @std.set_parse_action
         def lift_std(toks: pp.ParseResults) -> LiteralValue:
@@ -187,7 +199,9 @@ class LiteralValue(Value):
 
 
 class IntRangeValue(Value):
-    def __init__(self, min_val: int, max_val: typing.Optional[int] = None, *, plus: int = 0):
+    def __init__(
+        self, min_val: int, max_val: typing.Optional[int] = None, *, plus: int = 0
+    ):
         if plus < 0:
             raise ValueError(plus)
         if max_val is not None and min_val > max_val:
@@ -258,9 +272,12 @@ class Tag:
     def __str__(self) -> str:
         bits = [
             self.tag
-            + {(False, False): "", (False, True): "?", (True, False): "+", (True, True): "*"}[
-                self.match_multiple, self.match_none
-            ]
+            + {
+                (False, False): "",
+                (False, True): "?",
+                (True, False): "+",
+                (True, True): "*",
+            }[self.match_multiple, self.match_none]
         ]
         bits.extend(dict_to_attrs(self.attrs))
         if self.allow_extra_children:
@@ -283,18 +300,25 @@ class Tag:
             return e.msg
 
     def _matches_root(
-        self, elem: XmlET.Element, *, par_bounds: typing.Optional[typing.Tuple[int, int]] = None
+        self,
+        elem: XmlET.Element,
+        *,
+        par_bounds: typing.Optional[typing.Tuple[int, int]] = None,
     ) -> bool:
         return (
             elem.tag == self.tag
             and all(k in self.attrs for k in elem.attrib)
             and all(
-                v.as_value(bounds=self.line_bounds, par_bounds=par_bounds).matches(elem.get(k, ""))
+                v.as_value(bounds=self.line_bounds, par_bounds=par_bounds).matches(
+                    elem.get(k, "")
+                )
                 for k, v in self.attrs.items()
             )
         )
 
-    def _match_children(self, elem: XmlET.Element, path: typing.Optional[str] = None) -> None:
+    def _match_children(
+        self, elem: XmlET.Element, path: typing.Optional[str] = None
+    ) -> None:
         path = (
             path + "/" if path is not None else ""
         ) + f"{self.tag}({self.line_bounds[0]}-{self.line_bounds[1]})"
@@ -310,7 +334,9 @@ class Tag:
                         continue
 
                     matches = [
-                        e for e in remaining if child._matches_root(e, par_bounds=self.line_bounds)
+                        e
+                        for e in remaining
+                        if child._matches_root(e, par_bounds=self.line_bounds)
                     ]
                     if len(matches) == 0 and not child.match_none:
                         msg = "\n".join(
@@ -342,15 +368,18 @@ class Tag:
         if remaining and not self.allow_extra_children:
             msg = "\n".join(
                 [f"{path}: Some children were not matched:"]
-                + [f"  - <{e.tag} {' '.join(dict_to_attrs(e.attrib, r=True))}>" for e in remaining]
+                + [
+                    f"  - <{e.tag} {' '.join(dict_to_attrs(e.attrib, r=True))}>"
+                    for e in remaining
+                ]
             )
             raise self.MatchFailureError(msg)
 
     @classmethod
     def predefined_parser(cls) -> pp.ParserElement:
-        return pp.Combine(pp.Literal("!") + pp.CharsNotIn(string.whitespace)("name")).set_name(
-            "macro"
-        )
+        return pp.Combine(
+            pp.Literal("!") + pp.CharsNotIn(string.whitespace)("name")
+        ).set_name("macro")
 
     @classmethod
     def parser(
@@ -376,10 +405,14 @@ class Tag:
 
         del lift_attrs
 
-        dbg_prefix = pp.Opt(pp.Literal("dbg:")("debugonly") | pp.Literal("nodbg:")("nodebugonly"))
+        dbg_prefix = pp.Opt(
+            pp.Literal("dbg:")("debugonly") | pp.Literal("nodbg:")("nodebugonly")
+        )
 
         shorthand_tag = (
-            pp.Combine(dbg_prefix + "<" + pp.Word(pp.alphas)("tag") + "/" + mode("mode"))
+            pp.Combine(
+                dbg_prefix + "<" + pp.Word(pp.alphas)("tag") + "/" + mode("mode")
+            )
         ).set_name("short-tag") - attrs("attrs")
 
         @shorthand_tag.set_parse_action
@@ -412,9 +445,9 @@ class Tag:
         open_tag = pp.Combine(
             dbg_prefix + "<" + pp.Word(pp.alphas)("opentag") + mode("mode")
         ).set_name("tag-open")
-        close_tag = pp.Combine("</" + pp.Word(pp.alphas)("closetag") + lineno("clineno")).set_name(
-            "tag-close"
-        )
+        close_tag = pp.Combine(
+            "</" + pp.Word(pp.alphas)("closetag") + lineno("clineno")
+        ).set_name("tag-close")
 
         tag = pp.Forward()
         paired_tag = (
@@ -502,13 +535,17 @@ def parse_sources(  # noqa: C901
                         raise ValueError("DEFINE subcheck names must start with '!'")
                     in_def = (mat[2][1:].strip(), [""] * len(lines))
                     if re.search(r"\s", in_def[0]):
-                        raise ValueError("DEFINE subcheck names must not contain spaces")
+                        raise ValueError(
+                            "DEFINE subcheck names must not contain spaces"
+                        )
                     if in_def[0] in definitions:
                         raise ValueError(f"Attempt to re-DEFINE macro !{in_def[0]}")
                 elif mat[1] == "ENDDEFINE":
                     if in_def is None:
                         raise ValueError("ENDDEFINE without a prior DEFINE")
-                    def_name, def_lines = in_def  # pylint: disable=unpacking-non-sequence
+                    def_name, def_lines = (
+                        in_def  # pylint: disable=unpacking-non-sequence
+                    )
                     if not mat[2].startswith("!") or def_name != mat[2][1:].strip():
                         raise ValueError(
                             f"Mismatched ENDDEFINE for macro !{def_name}, got {mat[2].strip()}"

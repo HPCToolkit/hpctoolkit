@@ -61,7 +61,10 @@ foreach name, struct : testdata_struct
     # FIXME: As of Elfutils 0.191, the handling for Nvidia binaries (without nvdisasm) is
     # no longer functional. Mark these cases as XFAIL until a fix comes about.
     # https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/831
-    if libdw_dep.version().version_compare('>=0.191') and struct['binary'].get('cuda', false)
+    if libdw_dep.version().version_compare('>=0.191') and struct['binary'].get(
+      'cuda',
+      false,
+    )
       _should_fail = true
     endif
     # FIXME: Dyninst 12.3 has a bug that makes it unable to parse certain inline sequences

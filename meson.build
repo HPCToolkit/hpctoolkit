@@ -40,7 +40,10 @@ endif
 python_inst = pymod.find_installation(python.full_path(), required: get_option('python'))
 if python_inst.found()
   assert(python_inst.language_version().version_compare('>=3.8'))
-  _py_dep = python_inst.dependency(required: get_option('python'), include_type: 'system')
+  _py_dep = python_inst.dependency(
+    required: get_option('python'),
+    include_type: 'system',
+  )
   # FIXME: Workaround for https://github.com/mesonbuild/meson/issues/12862
   if not cc.has_header('Python.h', dependencies: _py_dep)
     _py_dep = dependency('', required: false)
@@ -103,7 +106,9 @@ if meson.version().version_compare('>=1.4.0')
   xerces_dep = dependency('xerces-c', version: _xerces_c_ver, include_type: 'system')
 else
   xerces_dep = dependency('xerces-c', include_type: 'system')
-  if xerces_dep.type_name() != 'internal' and not xerces_dep.version().version_compare(_xerces_c_ver)
+  if xerces_dep.type_name() != 'internal' and not xerces_dep.version().version_compare(
+    _xerces_c_ver,
+  )
     message(
       'Dependency @0@ found @1@ but need: \'@2@\''.format(
         xerces_dep.name(),
@@ -168,7 +173,10 @@ if not libiberty_dep.found()
   if cc.has_header('libiberty/demangle.h') or cc.has_header('demangle.h')
     _libiberty_lib = cc.find_library('iberty', required: false)
     if _libiberty_lib.found()
-      libiberty_dep = declare_dependency(dependencies: _libiberty_lib, version: 'unknown')
+      libiberty_dep = declare_dependency(
+        dependencies: _libiberty_lib,
+        version: 'unknown',
+      )
     endif
   endif
 endif
@@ -240,7 +248,11 @@ perfmon_dep = dependency(
   include_type: 'system',
 )
 if not perfmon_dep.found()
-  _perfmon_lib = cc.find_library('pfm', has_headers: ['perfmon/pfmlib.h'], required: false)
+  _perfmon_lib = cc.find_library(
+    'pfm',
+    has_headers: ['perfmon/pfmlib.h'],
+    required: false,
+  )
   if _perfmon_lib.found()
     perfmon_dep = declare_dependency(
       dependencies: _perfmon_lib,
@@ -253,7 +265,12 @@ if not perfmon_dep.found()
   endif
 endif
 if not perfmon_dep.found()
-  perfmon_dep = dependency('libpfm', method: 'system', version: '>=4.0', include_type: 'system')
+  perfmon_dep = dependency(
+    'libpfm',
+    method: 'system',
+    version: '>=4.0',
+    include_type: 'system',
+  )
 endif
 
 
@@ -324,7 +341,11 @@ void test() {
   )
     add_project_arguments('-DUSE_GET_CONTAINING_MODULE', language: ['c', 'cpp'])
   endif
-  if cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general', dependencies: dyninst_dep)
+  if cpp.has_header_symbol(
+    'entryIDs.h',
+    'intel_gpu_op_general',
+    dependencies: dyninst_dep,
+  )
     add_project_arguments('-DDYNINST_SUPPORTS_INTEL_GPU', language: ['c', 'cpp'])
   endif
   if cpp.compiles(
@@ -340,7 +361,11 @@ void test() {
     add_project_arguments('-DDYNINST_USE_CUDA', language: ['c', 'cpp'])
   endif
 endif
-add_project_arguments('-DENABLE_OPENMP', '-DENABLE_OPENMP_SYMTAB', language: ['c', 'cpp'])
+add_project_arguments(
+  '-DENABLE_OPENMP',
+  '-DENABLE_OPENMP_SYMTAB',
+  language: ['c', 'cpp'],
+)
 
 
 # Find rst2man, which is used to generate the man pages from source
@@ -424,7 +449,11 @@ endif
 # removes some fallbacks/checks, but it works when we link.
 #
 # There are a couple different Meson bugs and antifeatures at play here to cause this, but it works.
-nvdisasm = find_program('nvdisasm', '/usr/local/cuda/bin/nvdisasm', required: get_option('cuda'))
+nvdisasm = find_program(
+  'nvdisasm',
+  '/usr/local/cuda/bin/nvdisasm',
+  required: get_option('cuda'),
+)
 if nvdisasm.found()
   add_project_arguments(
     '-DCUDA_NVDISASM_PATH="@0@"'.format(
@@ -580,7 +609,9 @@ if get_option('rocm').allowed()
       endif
       _metrics_xml = fs.expanduser(get_option('rocprofiler_metrics_xml'))
       if not fs.exists(_metrics_xml)
-        error(f'-Drocprofiler_metrics_xml set to an invalid path: no such file: @_metrics_xml@')
+        error(
+          f'-Drocprofiler_metrics_xml set to an invalid path: no such file: @_metrics_xml@',
+        )
       endif
       rocprofiler_dep = declare_dependency(
         dependencies: _rocprofiler_lib,
@@ -631,7 +662,10 @@ if rocm_dep.found()
     add_project_arguments('-DHAVE_ROCM_ACTIVITY_KERNEL_NAME', language: ['c', 'cpp'])
   endif
   rocprofiler_path = fs.parent(
-    rocprofiler_dep.get_variable(cmake: 'ROCprofiler_METRICS_XML', internal: 'metrics_xml'),
+    rocprofiler_dep.get_variable(
+      cmake: 'ROCprofiler_METRICS_XML',
+      internal: 'metrics_xml',
+    ),
   )
 endif
 if false  # get_option('papi_rocm')  # --enable-papi-c-rocm
@@ -698,7 +732,12 @@ if get_option('opencl').allowed()
   # installation and not just the headers. If that's all we got, use it and cut out the link
   # flags so we only get the headers.
   if not opencl_dep.found()
-    opencl_dep = dependency('OpenCL', required: false, version: _opencl_ver, include_type: 'system')
+    opencl_dep = dependency(
+      'OpenCL',
+      required: false,
+      version: _opencl_ver,
+      include_type: 'system',
+    )
     opencl_dep = opencl_dep.partial_dependency(includes: true, compile_args: true)
   endif
 
@@ -710,7 +749,11 @@ if get_option('opencl').allowed()
 
   # Fall back to dependency() to get a good error message and enable wrap fallbacks.
   if not opencl_dep.found()
-    opencl_dep = dependency('OpenCL-Headers', required: get_option('opencl'), include_type: 'system')
+    opencl_dep = dependency(
+      'OpenCL-Headers',
+      required: get_option('opencl'),
+      include_type: 'system',
+    )
   endif
 endif
 if opencl_dep.found()
@@ -738,7 +781,12 @@ endif
 # Find support for Intel performance monitoring via Level Zero.
 level0_dep = dependency('', required: false)
 if get_option('level0').allowed()
-  level0_dep = dependency('level-zero', required: false, version: '>=1.0', include_type: 'system')
+  level0_dep = dependency(
+    'level-zero',
+    required: false,
+    version: '>=1.0',
+    include_type: 'system',
+  )
   if level0_dep.found() and level0_dep.type_name() != 'internal'
 
     # Level Zero ships a pkg-config file, but it's untrustworthy due to a bug
@@ -754,10 +802,17 @@ if get_option('level0').allowed()
     if _l0_libdir != '' and _l0_prefix != ''
       _l0_new_libdir = _l0_prefix / get_option('libdir')
       if _l0_libdir != _l0_new_libdir and fs.exists(_l0_new_libdir)
-        _l0_lib = cc.find_library('ze_loader', dirs: [_l0_libdir, _l0_new_libdir], required: false)
+        _l0_lib = cc.find_library(
+          'ze_loader',
+          dirs: [_l0_libdir, _l0_new_libdir],
+          required: false,
+        )
         if _l0_lib.found()
           message(
-            'Replacing Level Zero libdir: \'@0@\' -> \'@1@\''.format(_l0_libdir, _l0_new_libdir),
+            'Replacing Level Zero libdir: \'@0@\' -> \'@1@\''.format(
+              _l0_libdir,
+              _l0_new_libdir,
+            ),
           )
           level0_dep = declare_dependency(
             dependencies: [level0_dep, _l0_lib],
@@ -853,7 +908,10 @@ if _gtpin_f.allowed()
       endif
     endforeach
     if _ok
-      igc_dep = declare_dependency(compile_args: ['-DIGC_INCLUDE_FULL_PATH'], version: 'unknown')
+      igc_dep = declare_dependency(
+        compile_args: ['-DIGC_INCLUDE_FULL_PATH'],
+        version: 'unknown',
+      )
     endif
   endif
 
@@ -903,7 +961,11 @@ endif
 # *has* to provide it through `cpp_args` and `cpp_link_args`.
 # But since that's way too much trouble in most cases, we also support pulling it from a wrap,
 # when the feature is explicitly requested.
-gtpin_dep = cpp.find_library('gtpin', has_headers: ['api/gtpin_api.h', 'ged.h'], required: false)
+gtpin_dep = cpp.find_library(
+  'gtpin',
+  has_headers: ['api/gtpin_api.h', 'ged.h'],
+  required: false,
+)
 if gtpin_dep.found()
   gtpin_dep = declare_dependency(dependencies: gtpin_dep, version: 'unknown')
 else
@@ -1071,7 +1133,9 @@ endif
 
 # Expose the results of various compile-time checks
 add_project_arguments(
-  '-DSIZEOF_VOIDP=@0@'.format(cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8)),
+  '-DSIZEOF_VOIDP=@0@'.format(
+    cc.compute_int('sizeof(void*)', low: 1, high: 64, guess: 8),
+  ),
   language: ['c', 'cpp'],
 )
 

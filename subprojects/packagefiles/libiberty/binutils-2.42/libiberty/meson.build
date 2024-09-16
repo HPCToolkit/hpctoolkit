@@ -143,7 +143,10 @@ foreach func : [
 endforeach
 
 foreach var : ['sys_errlist', 'sys_nerr', 'sys_siglist']
-  cfg.set('HAVE_@0@'.format(func.to_upper()), cc.has_header_symbol('errno.h', var) ? 1 : false)
+  cfg.set(
+    'HAVE_@0@'.format(func.to_upper()),
+    cc.has_header_symbol('errno.h', var) ? 1 : false,
+  )
 endforeach
 
 configure_file(output: 'config.h', configuration: cfg)

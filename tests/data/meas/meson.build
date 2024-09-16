@@ -41,7 +41,11 @@ _measurements = {}
 # `small` is designed to contain a few samples scattered through a tiny, easy-to-understand
 # calling context tree. Good for debugging very bad problems.
 _measurements += {
-  'small': {'tag': 'cpu', 'minsamples': 3, 'tail': ['-e', 'CPUTIME@100000', '-t', _exe_small]},
+  'small': {
+    'tag': 'cpu',
+    'minsamples': 3,
+    'tail': ['-e', 'CPUTIME@100000', '-t', _exe_small],
+  },
 }
 
 # `loops-*` are designed to exercise more interesting cases with multiple nested loops and
@@ -51,13 +55,32 @@ _measurements += {
   'loops-cputime-t': {'tag': 'none', 'tail': ['-e', 'CPUTIME', '-t', _exe_loops]},
   'loops-perf': {
     'tag': 'cpu',
-    'tail': ['-e', 'perf::cpu-clock@f80', '-e', 'perf::task-clock@100000000', _exe_loops],
+    'tail': [
+      '-e',
+      'perf::cpu-clock@f80',
+      '-e',
+      'perf::task-clock@100000000',
+      _exe_loops,
+    ],
   },
-  'loops-cuda-nvidia-t': {'tag': 'nvidia', 'tail': ['-e', 'gpu=nvidia', '-t', _exe_loops_cuda]},
-  'loops-cuda-nvidiapc-t': {'tag': 'nvidia', 'tail': ['-e', 'gpu=nvidia,pc', '-t', _exe_loops_cuda]},
+  'loops-cuda-nvidia-t': {
+    'tag': 'nvidia',
+    'tail': ['-e', 'gpu=nvidia', '-t', _exe_loops_cuda],
+  },
+  'loops-cuda-nvidiapc-t': {
+    'tag': 'nvidia',
+    'tail': ['-e', 'gpu=nvidia,pc', '-t', _exe_loops_cuda],
+  },
   'loops-hip-amd-t': {
     'tag': 'amd',
-    'tail': ['--rocprofiler-path', rocprofiler_path, '-e', 'gpu=amd', '-t', _exe_loops_hip],
+    'tail': [
+      '--rocprofiler-path',
+      rocprofiler_path,
+      '-e',
+      'gpu=amd',
+      '-t',
+      _exe_loops_hip,
+    ],
   },
 }
 

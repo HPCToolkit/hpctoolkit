@@ -10,7 +10,14 @@ import struct
 import typing
 
 from .._util import VersionedStructure, read_nbytes, read_ntstring
-from ..base import BitFlags, DatabaseFile, EnumEntry, Enumeration, StructureBase, yaml_object
+from ..base import (
+    BitFlags,
+    DatabaseFile,
+    EnumEntry,
+    Enumeration,
+    StructureBase,
+    yaml_object,
+)
 
 __all__ = [
     "MetaDB",
@@ -96,7 +103,9 @@ class MetaDB(DatabaseFile):
     def from_file(cls, file):
         minor = cls._parse_header(file)
         sections = cls.__struct.unpack_file(minor, file, 0)
-        modules, modules_by_offset = LoadModules.from_file(minor, file, sections["pModules"])
+        modules, modules_by_offset = LoadModules.from_file(
+            minor, file, sections["pModules"]
+        )
         files, files_by_offset = SourceFiles.from_file(minor, file, sections["pFiles"])
         functions, functions_by_offset = Functions.from_file(
             minor,
@@ -130,7 +139,9 @@ class MetaDB(DatabaseFile):
     @functools.cached_property
     def raw_metric_map(self) -> typing.Dict[int, "PropagationScopeInstance"]:
         """Mapping from a statMetricId to the PropagationScopeInstance is represents."""
-        return {i.prop_metric_id: i for m in self.metrics.metrics for i in m.scope_insts}
+        return {
+            i.prop_metric_id: i for m in self.metrics.metrics for i in m.scope_insts
+        }
 
     @functools.cached_property
     def summary_metric_map(self) -> typing.Dict[int, "SummaryStatistic"]:
@@ -138,12 +149,16 @@ class MetaDB(DatabaseFile):
         return {s.stat_metric_id: s for m in self.metrics.metrics for s in m.summaries}
 
     @functools.cached_property
-    def context_map(self) -> typing.Dict[int, typing.Union[None, "EntryPoint", "Context"]]:
+    def context_map(
+        self,
+    ) -> typing.Dict[int, typing.Union[None, "EntryPoint", "Context"]]:
         """Mapping from a ctxId to the Context or EntryPoint it represents.
 
         Mapping to None is reserved for ctxId 0, which indicates the global root context.
         """
-        result: typing.Dict[int, typing.Optional[typing.Union[EntryPoint, Context]]] = {0: None}
+        result: typing.Dict[int, typing.Optional[typing.Union[EntryPoint, Context]]] = {
+            0: None
+        }
 
         def traverse(ctx: "Context"):
             result[ctx.ctx_id] = ctx
@@ -205,7 +220,9 @@ class IdentifierNames(StructureBase):
         return cls(
             names=[
                 read_ntstring(file, cls.__ptr.unpack_file(0, file, o)["ptr"])
-                for o in scaled_range(data["ppNames"], data["nKinds"], cls.__ptr.size(0))
+                for o in scaled_range(
+                    data["ppNames"], data["nKinds"], cls.__ptr.size(0)
+                )
             ]
         )
 
@@ -248,7 +265,9 @@ class PerformanceMetrics(StructureBase):
                     sz_scope_inst=data["szScopeInst"],
                     sz_summary=data["szSummary"],
                 )
-                for o in scaled_range(data["pMetrics"], data["nMetrics"], data["szMetric"])
+                for o in scaled_range(
+                    data["pMetrics"], data["nMetrics"], data["szMetric"]
+                )
             ],
             scopes=list(scopes_by_off.values()),
         )
@@ -290,11 +309,17 @@ class Metric(StructureBase):
                 PropagationScopeInstance.from_file(
                     version, file, o, scopes_by_offset=scopes_by_offset
                 )
-                for o in scaled_range(data["pScopeInsts"], data["nScopeInsts"], sz_scope_inst)
+                for o in scaled_range(
+                    data["pScopeInsts"], data["nScopeInsts"], sz_scope_inst
+                )
             ],
             summaries=[
-                SummaryStatistic.from_file(version, file, o, scopes_by_offset=scopes_by_offset)
-                for o in scaled_range(data["pSummaries"], data["nSummaries"], sz_summary)
+                SummaryStatistic.from_file(
+                    version, file, o, scopes_by_offset=scopes_by_offset
+                )
+                for o in scaled_range(
+                    data["pSummaries"], data["nSummaries"], sz_summary
+                )
             ],
         )
 
@@ -320,7 +345,11 @@ class PropagationScopeInstance(StructureBase):
 
     @classmethod
     def from_file(
-        cls, version: int, file, offset: int, scopes_by_offset: typing.Dict[int, "PropagationScope"]
+        cls,
+        version: int,
+        file,
+        offset: int,
+        scopes_by_offset: typing.Dict[int, "PropagationScope"],
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
@@ -362,11 +391,17 @@ class SummaryStatistic(StructureBase):
     @property
     def shorthand(self) -> str:
         cb = self.combine.name if self.combine is not None else "<unknown>"
-        return f"{cb} / '{self.formula}' / {self.scope.scope_name}  #{self.stat_metric_id}"
+        return (
+            f"{cb} / '{self.formula}' / {self.scope.scope_name}  #{self.stat_metric_id}"
+        )
 
     @classmethod
     def from_file(
-        cls, version: int, file, offset: int, scopes_by_offset: typing.Dict[int, "PropagationScope"]
+        cls,
+        version: int,
+        file,
+        offset: int,
+        scopes_by_offset: typing.Dict[int, "PropagationScope"],
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
@@ -590,7 +625,9 @@ class Functions(StructureBase):
                 modules_by_offset=modules_by_offset,
                 files_by_offset=files_by_offset,
             )
-            for o in scaled_range(data["pFunctions"], data["nFunctions"], data["szFunction"])
+            for o in scaled_range(
+                data["pFunctions"], data["nFunctions"], data["szFunction"]
+            )
         }
         return cls(functions=list(functions_by_offset.values())), functions_by_offset
 
@@ -641,7 +678,11 @@ class Function(StructureBase):
     @property
     def shorthand(self) -> str:
         srcloc = f" {self.file.shortpath}:{self.line}" if self.file is not None else ""
-        point = f" {self.module.shortpath}+0x{self.offset:x}" if self.module is not None else ""
+        point = (
+            f" {self.module.shortpath}+0x{self.offset:x}"
+            if self.module is not None
+            else ""
+        )
         return f"{self.name}{srcloc}{point} [{self.flags.name or ''}]"
 
     @classmethod
@@ -665,7 +706,9 @@ class Function(StructureBase):
 
     @classmethod
     def owning_fields(cls) -> typing.Tuple[dataclasses.Field, ...]:
-        return tuple(f for f in dataclasses.fields(cls) if f.name not in ("module", "file"))
+        return tuple(
+            f for f in dataclasses.fields(cls) if f.name not in ("module", "file")
+        )
 
 
 @yaml_object(yaml_tag="!meta.db/v4/ContextTree")
@@ -906,7 +949,9 @@ class Context(StructureBase):
                 ctx_id=data["ctxId"],
                 flags=data["flags"],
                 relation=cls.Relation.versioned_decode(version, data["relation"]),
-                lexical_type=cls.LexicalType.versioned_decode(version, data["lexicalType"]),
+                lexical_type=cls.LexicalType.versioned_decode(
+                    version, data["lexicalType"]
+                ),
                 propagation=data["propagation"],
                 function=data["function"],
                 file=data["file"],
@@ -928,7 +973,9 @@ class Context(StructureBase):
     @classmethod
     def multi_from_file(cls, version: int, file, start: int, size: int, **kwargs):
         result: typing.List[Context] = []
-        q: typing.List[typing.Tuple[int, int, typing.List[Context]]] = [(start, size, result)]
+        q: typing.List[typing.Tuple[int, int, typing.List[Context]]] = [
+            (start, size, result)
+        ]
         while q:
             start, size, target = q.pop()
             offset = start
@@ -944,5 +991,7 @@ class Context(StructureBase):
     @classmethod
     def owning_fields(cls) -> typing.Tuple[dataclasses.Field, ...]:
         return tuple(
-            f for f in dataclasses.fields(cls) if f.name not in ("function", "module", "file")
+            f
+            for f in dataclasses.fields(cls)
+            if f.name not in ("function", "module", "file")
         )

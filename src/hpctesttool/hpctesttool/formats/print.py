@@ -42,7 +42,9 @@ def main(rawargs: typing.List[str]) -> int:
 
     data = from_path_extended(args.src, subdir=args.subdir)
     if data is None:
-        print("Invalid input, not a recognized performance data format!", file=sys.stderr)
+        print(
+            "Invalid input, not a recognized performance data format!", file=sys.stderr
+        )
         return 1
 
     if not args.silent:

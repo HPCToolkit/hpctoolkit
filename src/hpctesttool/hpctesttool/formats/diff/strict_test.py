@@ -26,10 +26,15 @@ _ = yaml, v4_data_small
 def all_objects(obj):
     if dataclasses.is_dataclass(obj):
         return {obj}.union(
-            *[all_objects(getattr(obj, field.name)) for field in dataclasses.fields(obj)]
+            *[
+                all_objects(getattr(obj, field.name))
+                for field in dataclasses.fields(obj)
+            ]
         )
     if isinstance(obj, collections.abc.Mapping):
-        return set().union(*[all_objects(k).union(all_objects(v)) for k, v in obj.items()])
+        return set().union(
+            *[all_objects(k).union(all_objects(v)) for k, v in obj.items()]
+        )
     if isinstance(obj, collections.abc.Iterable):
         return set().union(*[all_objects(v) for v in obj])
     return set()
@@ -61,12 +66,14 @@ def test_small_diff(v4_data_small):
     altered.meta.id_names.names[-1] = "FOO"
     altered.meta.metrics.scopes.append(
         v4.metadb.PropagationScope(
-            scope_name="foo", type=v4.metadb.PropagationScope.Type.custom, propagation_index=255
+            scope_name="foo",
+            type=v4.metadb.PropagationScope.Type.custom,
+            propagation_index=255,
         )
     )
-    altered.meta.context.entry_points[1].children[0].children[0].children[1].function = (
-        altered.meta.functions.functions[2]
-    )
+    altered.meta.context.entry_points[1].children[0].children[0].children[
+        1
+    ].function = altered.meta.functions.functions[2]
 
     with io.StringIO() as buf:
         StrictDiff(v4_data_small, altered).render(buf)
@@ -539,7 +546,8 @@ def test_accuracy_of_invalid_diff():
 
 
 @pytest.mark.parametrize(
-    ("attr", "vcnt"), [(None, 48), ("meta", 0), ("profile", 36), ("context", 18), ("trace", 0)]
+    ("attr", "vcnt"),
+    [(None, 48), ("meta", 0), ("profile", 36), ("context", 18), ("trace", 0)],
 )
 def test_no_diff_accuracy(v4_data_small, attr, vcnt):
     db = v4_data_small
@@ -557,6 +565,9 @@ def test_no_diff_accuracy(v4_data_small, attr, vcnt):
         acc.render(buf)
         out = buf.getvalue().splitlines()
     assert len(out) == (2 if vcnt == 0 else 1)
-    assert out[0] == f"Identified {100 if vcnt == 0 else 0:.2f}% inaccuracies in {vcnt:d} values"
+    assert (
+        out[0]
+        == f"Identified {100 if vcnt == 0 else 0:.2f}% inaccuracies in {vcnt:d} values"
+    )
     if vcnt == 0:
         assert out[1] == "  No values were compared!"

@@ -27,20 +27,26 @@ file_classes: typing.Tuple[typing.Type[base.DatabaseFile], ...] = (
 )
 
 
-def from_path(src: Path) -> typing.Optional[typing.Union[base.DatabaseBase, base.DatabaseFile]]:
+def from_path(
+    src: Path,
+) -> typing.Optional[typing.Union[base.DatabaseBase, base.DatabaseFile]]:
     """Open a file/directory of any of the supported formats. Returns the object-form of the input,
     or None if it does not appear to be a supported format.
     """
     if src.is_dir():
         # Presume it's a database directory
         for dircls in dir_classes:
-            with contextlib.suppress(base.InvalidFormatError, base.IncompatibleFormatError):
+            with contextlib.suppress(
+                base.InvalidFormatError, base.IncompatibleFormatError
+            ):
                 return dircls.from_dir(src)
     elif src.is_file():
         # Presume it's a loose data file
         with open(src, "rb") as srcf:
             for filecls in file_classes:
-                with contextlib.suppress(base.InvalidFormatError, base.IncompatibleFormatError):
+                with contextlib.suppress(
+                    base.InvalidFormatError, base.IncompatibleFormatError
+                ):
                     return filecls.from_file(srcf)
     elif not src.exists():
         raise FileNotFoundError(src)
@@ -89,7 +95,9 @@ def from_path_extended(
                     return result
 
         # Attempt 3: It's a YAML file containing a serialized database or otherwise
-        with open(src, encoding="utf-8") as f, contextlib.suppress(ruamel.yaml.YAMLError):
+        with open(src, encoding="utf-8") as f, contextlib.suppress(
+            ruamel.yaml.YAMLError
+        ):
             result = ruamel.yaml.YAML(typ="safe").load(f)
             if isinstance(result, (base.DatabaseBase, base.DatabaseFile)):
                 return result
