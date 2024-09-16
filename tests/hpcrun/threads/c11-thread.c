@@ -30,14 +30,18 @@ static int work(void* _) {
 
 static int middle(void* _) {
   thrd_t t;
-  if (thrd_create(&t, work, NULL) != thrd_success) error(1, 0, "error creating worker thread");
-  if (thrd_join(t, NULL) != thrd_success) error(1, 0, "error joining worker thread");
+  if (thrd_create(&t, work, NULL) != thrd_success)
+    error(1, 0, "error creating worker thread");
+  if (thrd_join(t, NULL) != thrd_success)
+    error(1, 0, "error joining worker thread");
   return 0;
 }
 
 int main() {
   thrd_t t;
-  if (thrd_create(&t, middle, NULL) != thrd_success) error(1, 0, "error creating middle thread");
-  if (thrd_join(t, NULL) != thrd_success) error(1, 0, "error joining middle thread");
+  if (thrd_create(&t, middle, NULL) != thrd_success)
+    error(1, 0, "error creating middle thread");
+  if (thrd_join(t, NULL) != thrd_success)
+    error(1, 0, "error joining middle thread");
   return 0;
 }

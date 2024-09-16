@@ -25,7 +25,7 @@ int main() {
     err = hipGetDeviceCount(&nDevices);
     if (err != hipSuccess || nDevices == 0) {
       std::cerr << "No devices available!\n";
-      return 77;  // SKIP
+      return 77; // SKIP
     }
   }
 
