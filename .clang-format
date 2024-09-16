@@ -37,9 +37,19 @@ IncludeCategories:
   CaseSensitive:   false
 
 
-# Increase the line limit to 100. This value is rather arbitrary, it happens to fit
-# nicely in many cases and allows for fairly complex thoughts without a line break.
-ColumnLimit: 100
+# Increase the line limit to "90-ish," a stance taken by the [Black formatting style for
+# Python][1]. The line soft limit is 88 (10% more than the popular but tight 80), but
+# the actual line length can be longer if wrapping would introduce a break. For example,
+# the following comment is left untouched even though it is 90 columns wide, but any
+# longer would trigger a break:
+#
+# ```c
+# // aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+# ```
+#
+# [1]: https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#line-length
+ColumnLimit: 88
+PenaltyExcessCharacter: 100
 
 
 # Align the pointer `*` and reference `&` with the type, not the variable. This is the
