@@ -87,6 +87,8 @@ using namespace hpctoolkit::util;
 // macros
 //*****************************************************************************
 
+#define GTPIN_COUNT_BROKEN 0
+
 #define GTPIN_KERNEL_IP_DEBUG 0
 
 #define GTPIN_PATCH_TOKEN_DEBUG 0
@@ -1030,13 +1032,17 @@ gtpin_instrumentation_options
   latency_knob = instrumentation->attribute_latency;
   collect_latency = instrumentation->attribute_latency;
   simd_knob = instrumentation->analyze_simd;
+  count_knob = instrumentation->count_instructions;
+
+#if GTPIN_COUNT_BROKEN
   // instruction counting alone currently destroys correctness.
   // for now, replace instruction counting with latency measurements, which
   // performs instruction counting as a side effect.
-  if (instrumentation->count_instructions) {
+  if (count_knob) {
     latency_knob = true;
   }
   count_knob = false;
+#endif
 
   if (count_knob || latency_knob || simd_knob) {
     // customize GTPin behaviors
