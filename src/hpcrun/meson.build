@@ -5,9 +5,11 @@
 
 libs = []
 
+hpcrun_sonames = configuration_data()
+
 # Shim to create a private link namespace, to hold libunwind and any other libraries in
 # need of protection from the application (e.g. C++).
-libs += shared_library(
+private_ns_lib = shared_library(
   'hpcrun_private_ns',
   'audit/private-ns.c',
   'audit/exports.c',
@@ -17,9 +19,11 @@ libs += shared_library(
   link_language: 'c',
   install: true,
 )
+hpcrun_sonames.set_quoted('HPCRUN_PRIVATE_NS_SO', fs.name(private_ns_lib.full_path()))
+libs += private_ns_lib
 
 # Shim to load and access libunwind in a private link namespace.
-libs += shared_library(
+unwind_lib = shared_library(
   'hpcrun_unwind',
   'unwind/common/libunwind-pvt.c',
   gnu_symbol_visibility: 'hidden',
@@ -28,6 +32,8 @@ libs += shared_library(
   link_language: 'c',
   install: true,
 )
+hpcrun_sonames.set_quoted('HPCRUN_UNWIND_SO', fs.name(unwind_lib.full_path()))
+libs += unwind_lib
 
 # Main library for hpcrun, this is where most everything happens.
 
@@ -363,7 +369,7 @@ if cupti_dep.found()
   )
 
   # Access to CUDA/CUPTI is relegated through this dlopen'd foil
-  libs += shared_library(
+  dlopen_nvidia_lib = shared_library(
     'hpcrun_dlopen_nvidia',
     'foil/nvidia-dlopen.c',
     gnu_symbol_visibility: 'hidden',
@@ -371,6 +377,11 @@ if cupti_dep.found()
     dependencies: [cupti_dep],
     install: true,
   )
+  hpcrun_sonames.set_quoted(
+    'HPCRUN_DLOPEN_NVIDIA_SO',
+    fs.name(dlopen_nvidia_lib.full_path()),
+  )
+  libs += dlopen_nvidia_lib
 endif
 
 if rocm_dep.found()
@@ -434,7 +445,7 @@ endif
 if gtpin_dep.found()
   srcs += files('gpu/api/intel/gtpin/gtpin-shim.c')
 
-  libs += shared_library(
+  gtpin_cxx_lib = shared_library(
     'hpcrun_gtpin_cxx',
     'foil/gtpin.cpp',
     'gpu/api/intel/gtpin/gtpin-instrumentation.cpp',
@@ -455,9 +466,11 @@ if gtpin_dep.found()
     ],
     install: true,
   )
+  hpcrun_sonames.set_quoted('HPCRUN_GTPIN_CXX_SO', fs.name(gtpin_cxx_lib.full_path()))
+  libs += gtpin_cxx_lib
 
   # Access to GTPin is relegated through this dlopen'd foil
-  libs += shared_library(
+  dlopen_gtpin_lib = shared_library(
     'hpcrun_dlopen_gtpin',
     'foil/gtpin-dlopen.cpp',
     gnu_symbol_visibility: 'hidden',
@@ -465,6 +478,11 @@ if gtpin_dep.found()
     dependencies: [gtpin_dep],
     install: true,
   )
+  hpcrun_sonames.set_quoted(
+    'HPCRUN_DLOPEN_GTPIN_SO',
+    fs.name(dlopen_gtpin_lib.full_path()),
+  )
+  libs += dlopen_gtpin_lib
 endif
 
 main_hpcrun_lib = shared_library(
@@ -498,10 +516,11 @@ main_hpcrun_lib = shared_library(
   ],
   install: true,
 )
+hpcrun_sonames.set_quoted('HPCRUN_SO', fs.name(main_hpcrun_lib.full_path()))
 libs += main_hpcrun_lib
 
 # Libraries needed to support the "audit" interface for collecting loaded libraries
-libs += shared_library(
+audit_lib = shared_library(
   'hpcrun_audit',
   'audit/auditor.c',
   'audit/private-ns.c',
@@ -511,9 +530,11 @@ libs += shared_library(
   link_language: 'c',
   install: true,
 )
+hpcrun_sonames.set_quoted('HPCRUN_AUDIT_SO', fs.name(audit_lib.full_path()))
+libs += audit_lib
 
 # Symbol interceptions are handled via this LD_PRELOAD'd foil
-libs += shared_library(
+preload_lib = shared_library(
   'hpcrun_preload',
   'foil/common-preload.c',
   'foil/client-preload.c',
@@ -525,9 +546,11 @@ libs += shared_library(
   dependencies: [dl_dep, threads_dep],
   install: true,
 )
+hpcrun_sonames.set_quoted('HPCRUN_PRELOAD_SO', fs.name(preload_lib.full_path()))
+libs += preload_lib
 
 # Optional symbol interception LD_PRELOAD'd foils for Glibc
-libs += shared_library(
+preload_libc_io_lib = shared_library(
   'hpcrun_preload_libc_io',
   'foil/common-preload.c',
   'foil/libc-io-preload.c',
@@ -536,7 +559,13 @@ libs += shared_library(
   dependencies: [dl_dep, threads_dep],
   install: true,
 )
-libs += shared_library(
+hpcrun_sonames.set_quoted(
+  'HPCRUN_PRELOAD_LIBC_IO_SO',
+  fs.name(preload_libc_io_lib.full_path()),
+)
+libs += preload_libc_io_lib
+
+preload_libc_alloc_lib = shared_library(
   'hpcrun_preload_libc_alloc',
   'foil/common-preload.c',
   'foil/libc-alloc-preload.c',
@@ -545,7 +574,13 @@ libs += shared_library(
   dependencies: [dl_dep, threads_dep],
   install: true,
 )
-libs += shared_library(
+hpcrun_sonames.set_quoted(
+  'HPCRUN_PRELOAD_LIBC_ALLOC_SO',
+  fs.name(preload_libc_alloc_lib.full_path()),
+)
+libs += preload_libc_alloc_lib
+
+preload_libc_sync_lib = shared_library(
   'hpcrun_preload_libc_sync',
   'foil/common-preload.c',
   'foil/libc-sync-preload.c',
@@ -554,9 +589,14 @@ libs += shared_library(
   dependencies: [dl_dep, threads_dep],
   install: true,
 )
+hpcrun_sonames.set_quoted(
+  'HPCRUN_PRELOAD_LIBC_SYNC_SO',
+  fs.name(preload_libc_sync_lib.full_path()),
+)
+libs += preload_libc_sync_lib
 
 # Optional symbol interception LD_PRELOAD'd foils for libdl
-libs += shared_library(
+preload_libdl_lib = shared_library(
   'hpcrun_preload_libdl',
   'foil/libdl-preload.c',
   gnu_symbol_visibility: 'hidden',
@@ -565,7 +605,13 @@ libs += shared_library(
   link_language: 'c',
   install: true,
 )
-libs += shared_library(
+hpcrun_sonames.set_quoted(
+  'HPCRUN_PRELOAD_LIBDL_SO',
+  fs.name(preload_libdl_lib.full_path()),
+)
+libs += preload_libdl_lib
+
+preload_libdl_dlmopen_lib = shared_library(
   'hpcrun_preload_libdl_dlmopen',
   'foil/libdl-dlmopen-preload.c',
   gnu_symbol_visibility: 'hidden',
@@ -574,16 +620,27 @@ libs += shared_library(
   link_language: 'c',
   install: true,
 )
+hpcrun_sonames.set_quoted(
+  'HPCRUN_PRELOAD_LIBDL_DLMOPEN_SO',
+  fs.name(preload_libdl_dlmopen_lib.full_path()),
+)
+libs += preload_libdl_dlmopen_lib
 
 # Optional symbol interception LD_PRELOAD'd foils for smaller features
-libs += shared_library(
+preload_gprof_lib = shared_library(
   'hpcrun_preload_gprof',
   'foil/gprof-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   install: true,
 )
-libs += shared_library(
+hpcrun_sonames.set_quoted(
+  'HPCRUN_PRELOAD_GPROF_SO',
+  fs.name(preload_gprof_lib.full_path()),
+)
+libs += preload_gprof_lib
+
+preload_ga_lib = shared_library(
   'hpcrun_preload_ga',
   'foil/common-preload.c',
   'foil/ga-preload.c',
@@ -592,10 +649,12 @@ libs += shared_library(
   dependencies: [dl_dep, threads_dep],
   install: true,
 )
+hpcrun_sonames.set_quoted('HPCRUN_PRELOAD_GA_SO', fs.name(preload_ga_lib.full_path()))
+libs += preload_ga_lib
 
 # Symbols needed for integration with ROCProfiler etc. are defined by this foil
 if rocm_dep.found()
-  libs += shared_library(
+  dlopen_rocm_lib = shared_library(
     'hpcrun_dlopen_rocm',
     'foil/rocm-hip-dlopen.c',
     'foil/rocm-hsa-dlopen.c',
@@ -607,11 +666,16 @@ if rocm_dep.found()
     dependencies: [rocm_dep],
     install: true,
   )
+  hpcrun_sonames.set_quoted(
+    'HPCRUN_DLOPEN_ROCM_SO',
+    fs.name(dlopen_rocm_lib.full_path()),
+  )
+  libs += dlopen_rocm_lib
 endif
 
 # Optional symbol interception LD_PRELOAD'd foil for OpenCL
 if opencl_dep.found()
-  libs += shared_library(
+  preload_opencl_lib = shared_library(
     'hpcrun_preload_opencl',
     'foil/common-preload.c',
     'foil/opencl-preload.c',
@@ -620,11 +684,16 @@ if opencl_dep.found()
     dependencies: [dl_dep, threads_dep, opencl_dep],
     install: true,
   )
+  hpcrun_sonames.set_quoted(
+    'HPCRUN_PRELOAD_OPENCL_SO',
+    fs.name(preload_opencl_lib.full_path()),
+  )
+  libs += preload_opencl_lib
 endif
 
 # Optional symbol interception LD_PRELOAD'd foil for Level Zero
 if level0_dep.found()
-  libs += shared_library(
+  preload_level0_lib = shared_library(
     'hpcrun_preload_level0',
     'foil/common-preload.c',
     'foil/level0-preload.c',
@@ -633,19 +702,22 @@ if level0_dep.found()
     dependencies: [dl_dep, threads_dep, level0_dep],
     install: true,
   )
+  hpcrun_sonames.set_quoted(
+    'HPCRUN_PRELOAD_LEVEL0_SO',
+    fs.name(preload_level0_lib.full_path()),
+  )
+  libs += preload_level0_lib
 endif
 
-# Configure and install the hpcrun launcher
-_prefixes_cfg = configuration_data()
-_prefixes_cfg.set_quoted(
+# Finalize the sonames header before any builds happen
+hpcrun_sonames.set_quoted(
   'HPCRUN_INSTALL_LIBDIR',
   get_option('prefix') / get_option('libdir'),
 )
-_prefixes_h = configure_file(
-  output: 'hpcrun-install-prefixes.h',
-  configuration: _prefixes_cfg,
-)
-hpcrun = executable('hpcrun', 'launch.cpp', version_cpp, _prefixes_h, install: true)
+configure_file(output: 'hpcrun-sonames.h', configuration: hpcrun_sonames)
+
+# Configure and install the hpcrun launcher
+hpcrun = executable('hpcrun', 'launch.cpp', version_cpp, install: true)
 
 # Build and install the client API
 install_headers('hpctoolkit.h')

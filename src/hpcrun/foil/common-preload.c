@@ -6,6 +6,8 @@
 
 #include "common-preload.h"
 
+#include "../hpcrun-sonames.h"
+
 #include <assert.h>
 #include <dlfcn.h>
 #include <link.h>
@@ -114,7 +116,7 @@ static void* core_dlsym(void* handle, const char* symbol) {
 
 static void load_core_foil() {
   static void* h = NULL;
-  h = dlopen("libhpcrun.so", RTLD_NOW | RTLD_LOCAL);
+  h = dlopen(HPCRUN_SO, RTLD_NOW | RTLD_LOCAL);
   if (h == NULL) {
     fprintf(stderr, "hpcrun: Error loading libhpcrun.so: %s\n", dlerror());
     abort();

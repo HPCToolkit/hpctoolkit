@@ -7,6 +7,7 @@
 #include "rocprofiler.h"
 
 #include "../gpu/api/amd/rocprofiler-api.h"
+#include "../hpcrun-sonames.h"
 #include "common.h"
 #include "rocprofiler-private.h"
 
@@ -33,8 +34,7 @@ hpcrun_foil_fetch_hooks_rocprofiler() {
 static const struct hpcrun_foil_appdispatch_rocprofiler* dispatch_var = NULL;
 
 static void init_dispatch() {
-  void* handle =
-      dlmopen(LM_ID_BASE, "libhpcrun_dlopen_rocm.so", RTLD_NOW | RTLD_DEEPBIND);
+  void* handle = dlmopen(LM_ID_BASE, HPCRUN_DLOPEN_ROCM_SO, RTLD_NOW | RTLD_DEEPBIND);
   if (handle == NULL) {
     assert(false && "Failed to load foil_rocm.so");
     abort();

@@ -8,6 +8,7 @@
 #define _GNU_SOURCE
 
 #include "../audit/audit-api.h"
+#include "../hpcrun-sonames.h"
 #include "common.h"
 
 #include <dlfcn.h>
@@ -180,7 +181,7 @@ const auditor_exports_t* hpcrun_connect_to_auditor() {
   real_dlclose = dlsym(RTLD_NEXT, "dlclose");
 
   // Load the private namespace and get the binding function out of it
-  private_ns = dlmopen(LM_ID_NEWLM, "libhpcrun_private_ns.so", RTLD_NOW);
+  private_ns = dlmopen(LM_ID_NEWLM, HPCRUN_PRIVATE_NS_SO, RTLD_NOW);
   if (private_ns == NULL) {
     fprintf(stderr,
             "[fake audit] ERROR: Unable to create private linkage namespace: %s",
@@ -218,7 +219,7 @@ HPCRUN_EXPOSED_API void* dlopen(const char* fn, int flags) {
   if (!real_dlopen)
     return ((void* (*)(const char*, int))dlsym(RTLD_NEXT, "dlopen"))(fn, flags);
   void* out = real_dlopen(fn, flags);
-  if (fn != NULL && strcmp(fn, "libhpcrun.so") == 0)
+  if (fn != NULL && strcmp(fn, HPCRUN_SO) == 0)
     return out;
   if (hooks != NULL && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
     if (verbose)

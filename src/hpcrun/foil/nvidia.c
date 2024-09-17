@@ -6,6 +6,7 @@
 
 #include "nvidia.h"
 
+#include "../hpcrun-sonames.h"
 #include "nvidia-private.h"
 
 #include <assert.h>
@@ -17,15 +18,14 @@
 static const struct hpcrun_foil_appdispatch_nvidia* dispatch_var = NULL;
 
 static void init_dispatch() {
-  void* handle =
-      dlmopen(LM_ID_BASE, "libhpcrun_dlopen_nvidia.so", RTLD_NOW | RTLD_DEEPBIND);
+  void* handle = dlmopen(LM_ID_BASE, HPCRUN_DLOPEN_NVIDIA_SO, RTLD_NOW | RTLD_DEEPBIND);
   if (handle == NULL) {
-    assert(false && "Failed to load foil_nvidia.so");
+    assert(false && "Failed to load " HPCRUN_DLOPEN_NVIDIA_SO);
     abort();
   }
   dispatch_var = dlsym(handle, "hpcrun_dispatch_nvidia");
   if (dispatch_var == NULL) {
-    assert(false && "Failed to fetch dispatch from foil_nvidia.so");
+    assert(false && "Failed to fetch dispatch from " HPCRUN_DLOPEN_NVIDIA_SO);
     abort();
   }
 }

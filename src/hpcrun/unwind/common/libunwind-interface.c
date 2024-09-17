@@ -8,6 +8,7 @@
 #define _GNU_SOURCE
 
 #include "libunwind-interface.h"
+#include "../hpcrun-sonames.h"
 
 #include "../../audit/binding.h"
 
@@ -24,7 +25,7 @@ pfn_set_reg_t libunwind_set_reg = NULL;
 pfn_unw_get_save_loc_t libunwind_get_save_loc = NULL;
 
 void libunwind_bind() {
-  hpcrun_bind_private("libhpcrun_unwind.so",
+  hpcrun_bind_private(HPCRUN_UNWIND_SO,
     "libunwind_getcontext", &libunwind_getcontext,
     "libunwind_init_local", &libunwind_init_local,
     "libunwind_init_local2", &libunwind_init_local2,
