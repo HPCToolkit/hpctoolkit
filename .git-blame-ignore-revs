@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# This file contains revisions to be ignored by git blame.
+# These revisions are expected to be formatting-only changes.
+#
+# Calling `git blame --ignore-revs-file .git-blame-ignore-revs` will tell `git blame` to
+# ignore changes made by these revisions when assigning assigning blame, as if the
+# change never happened.
+#
+# This file may be automatically used by your IDE for Git blame interfaces.
+# VSCode+GitLens and JetBrains products are reported to do this.
+#
+# You can enable this as a default for your local repository by running
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+# Note that after running this command switching to a branch without this file will make
+# `git blame` fail with an error.
+#
+# Guidelines:
+# - Only large automated refactorings are expected to be included in this file.
+#   Do not add new revision just because it feels unimportant.
+# - Prefix each revision or group of revisions with a link to the MR/issue/epic that
+#   describes the high-level change made.
+# - Only list full 40-character commit hashes here.
+# - Always update this file in a follow-up MR. This avoids problems when the exact
+#   commit hash changes during merge (e.g. rebase+merge).
+# - Please append new lines to the end of the file, no matter of real chronological
+#   order of revisions. This helps simplify merge conflicts.
+
+# https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1143
+1315777cd23713af9defe8e2b5cf24571b9730d9
+
+# https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1180
+861c5d7d1403858d93afa50f1259836dff17c83a
+
+# https://gitlab.com/hpctoolkit/hpctoolkit/-/merge_requests/1182
+296170dcead5a0ab13c43573fc11e16dc5877c4d
