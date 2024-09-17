@@ -421,9 +421,9 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
 // ret = return value from posix_memalign()
 //
 static void *
-memleak_malloc_helper(memalign_fcn* real_memalign, malloc_fcn* real_malloc,
-                      const char *name, size_t bytes, size_t align,
-                      int clear, ucontext_t *uc, int *ret)
+memleak_malloc_helper(const char *name, size_t bytes, size_t align,
+                      int clear, ucontext_t *uc, int *ret,
+                      const struct hpcrun_foil_appdispatch_libc_alloc* dispatch)
 {
   void *sys_ptr, *appl_ptr;
   leakinfo_t *info_ptr;
@@ -449,12 +449,12 @@ memleak_malloc_helper(memalign_fcn* real_memalign, malloc_fcn* real_malloc,
   if (align != 0) {
     // there is no __libc_posix_memalign(), so we use __libc_memalign()
     // instead, or else use dlsym().
-    sys_ptr = real_memalign(align, size);
+    sys_ptr = f_memalign(align, size, dispatch);
     if (ret != NULL) {
       *ret = (sys_ptr == NULL) ? errno : 0;
     }
   } else {
-    sys_ptr = real_malloc(size);
+    sys_ptr = f_malloc(size, dispatch);
   }
   if (clear && sys_ptr != NULL) {
     memset(sys_ptr, 0, size);
@@ -543,13 +543,14 @@ memleak_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
 // Use mmap and hpcrun_malloc instead.
 
 int
-foilbase_posix_memalign(memalign_fcn* real_memalign, malloc_fcn* real_malloc, void **memptr, size_t alignment, size_t bytes)
+hpcrun_posix_memalign(void **memptr, size_t alignment, size_t bytes,
+                        const struct hpcrun_foil_appdispatch_libc_alloc* dispatch)
 {
   ucontext_t uc;
   int ret = 0;
 
   if (! hpcrun_safe_enter()) {
-    *memptr = real_memalign(alignment, bytes);
+    *memptr = f_memalign(alignment, bytes, dispatch);
     return (*memptr == NULL) ? errno : 0;
   }
   memleak_initialize();
@@ -560,20 +561,21 @@ foilbase_posix_memalign(memalign_fcn* real_memalign, malloc_fcn* real_malloc, vo
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  *memptr = memleak_malloc_helper(real_memalign, real_malloc, "posix_memalign", bytes, alignment, 0, &uc, &ret);
+  *memptr = memleak_malloc_helper("posix_memalign", bytes, alignment, 0, &uc, &ret, dispatch);
   hpcrun_safe_exit();
   return ret;
 }
 
 
 void *
-foilbase_memalign(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t boundary, size_t bytes)
+hpcrun_memalign(size_t boundary, size_t bytes,
+                  const struct hpcrun_foil_appdispatch_libc_alloc* dispatch)
 {
   ucontext_t uc;
   void *ptr;
 
   if (! hpcrun_safe_enter()) {
-    return real_memalign(boundary, bytes);
+    return f_memalign(boundary, bytes, dispatch);
   }
   memleak_initialize();
 
@@ -583,20 +585,20 @@ foilbase_memalign(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t b
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  ptr = memleak_malloc_helper(real_memalign, real_malloc, "memalign", bytes, boundary, 0, &uc, NULL);
+  ptr = memleak_malloc_helper("memalign", bytes, boundary, 0, &uc, NULL, dispatch);
   hpcrun_safe_exit();
   return ptr;
 }
 
 
 void *
-foilbase_valloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, valloc_fcn* real_valloc, size_t bytes)
+hpcrun_valloc(size_t bytes, const struct hpcrun_foil_appdispatch_libc_alloc* dispatch)
 {
   ucontext_t uc;
   void *ptr;
 
   if (! hpcrun_safe_enter()) {
-    return real_valloc(bytes);
+    return f_valloc(bytes, dispatch);
   }
   memleak_initialize();
 
@@ -606,20 +608,20 @@ foilbase_valloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, valloc_fcn
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  ptr = memleak_malloc_helper(real_memalign, real_malloc, "valloc", bytes, memleak_pagesize, 0, &uc, NULL);
+  ptr = memleak_malloc_helper("valloc", bytes, memleak_pagesize, 0, &uc, NULL, dispatch);
   hpcrun_safe_exit();
   return ptr;
 }
 
 
 void *
-foilbase_malloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t bytes)
+hpcrun_malloc_intercept(size_t bytes, const struct hpcrun_foil_appdispatch_libc_alloc* dispatch)
 {
   ucontext_t uc;
   void *ptr;
 
   if (! hpcrun_safe_enter()) {
-    return real_malloc(bytes);
+    return f_malloc(bytes, dispatch);
   }
   memleak_initialize();
 
@@ -629,20 +631,21 @@ foilbase_malloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t byt
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  ptr = memleak_malloc_helper(real_memalign, real_malloc, "malloc", bytes, 0, 0, &uc, NULL);
+  ptr = memleak_malloc_helper("malloc", bytes, 0, 0, &uc, NULL, dispatch);
   hpcrun_safe_exit();
   return ptr;
 }
 
 
 void *
-foilbase_calloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t nmemb, size_t bytes)
+hpcrun_calloc(size_t nmemb, size_t bytes,
+                const struct hpcrun_foil_appdispatch_libc_alloc* dispatch)
 {
   ucontext_t uc;
   void *ptr;
 
   if (! hpcrun_safe_enter()) {
-    ptr = real_malloc(nmemb * bytes);
+    ptr = f_malloc(nmemb * bytes, dispatch);
     if (ptr != NULL) {
       memset(ptr, 0, nmemb * bytes);
     }
@@ -656,7 +659,7 @@ foilbase_calloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t nme
   INLINE_ASM_GCTXT(uc);
 #endif // USE_SYS_GCTXT
 
-  ptr = memleak_malloc_helper(real_memalign, real_malloc, "calloc", nmemb * bytes, 0, 1, &uc, NULL);
+  ptr = memleak_malloc_helper("calloc", nmemb * bytes, 0, 1, &uc, NULL, dispatch);
   hpcrun_safe_exit();
   return ptr;
 }
@@ -669,7 +672,7 @@ foilbase_calloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, size_t nme
 // system ptr or else free() will crash.
 //
 void
-foilbase_free(free_fcn* real_free, void *ptr)
+hpcrun_free(void *ptr, const struct hpcrun_foil_appdispatch_libc_alloc* dispatch)
 {
   leakinfo_t *info_ptr;
   void *sys_ptr;
@@ -682,7 +685,7 @@ foilbase_free(free_fcn* real_free, void *ptr)
   TMSG(MEMLEAK, "free: ptr: %p", ptr);
 
   if (! leak_detection_enabled) {
-    real_free(ptr);
+    f_free(ptr, dispatch);
     TMSG(MEMLEAK, "free: ptr: %p (inactive)", ptr);
     goto finish;
   }
@@ -692,7 +695,7 @@ foilbase_free(free_fcn* real_free, void *ptr)
 
   loc = memleak_get_free_loc(ptr, &sys_ptr, &info_ptr);
   memleak_free_helper("free", sys_ptr, ptr, info_ptr, loc);
-  real_free(sys_ptr);
+  f_free(sys_ptr, dispatch);
 
 finish:
   if (safe) {
@@ -703,8 +706,8 @@ finish:
 
 
 void *
-foilbase_realloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, realloc_fcn* real_realloc,
-    free_fcn* real_free, void *ptr, size_t bytes)
+hpcrun_realloc(void *ptr, size_t bytes,
+                 const struct hpcrun_foil_appdispatch_libc_alloc* dispatch)
 {
   ucontext_t uc;
   leakinfo_t *info_ptr;
@@ -719,7 +722,7 @@ foilbase_realloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, realloc_f
   TMSG(MEMLEAK, "realloc: ptr: %p bytes: %ld", ptr, bytes);
 
   if (! leak_detection_enabled) {
-    appl_ptr = real_realloc(ptr, bytes);
+    appl_ptr = f_realloc(ptr, bytes, dispatch);
     goto finish;
   }
 
@@ -731,7 +734,7 @@ foilbase_realloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, realloc_f
 
   // realloc(NULL, bytes) means malloc(bytes)
   if (ptr == NULL) {
-    appl_ptr = memleak_malloc_helper(real_memalign, real_malloc, "realloc/malloc", bytes, 0, 0, &uc, NULL);
+    appl_ptr = memleak_malloc_helper("realloc/malloc", bytes, 0, 0, &uc, NULL, dispatch);
     goto finish;
   }
 
@@ -741,7 +744,7 @@ foilbase_realloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, realloc_f
 
   // realloc(ptr, 0) means free(ptr)
   if (bytes == 0) {
-    real_free(sys_ptr);
+    f_free(sys_ptr, dispatch);
     appl_ptr = NULL;
     goto finish;
   }
@@ -764,7 +767,7 @@ foilbase_realloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, realloc_f
       // slide left
       memmove(sys_ptr, ptr, bytes);
     }
-    appl_ptr = real_realloc(sys_ptr, bytes);
+    appl_ptr = f_realloc(sys_ptr, bytes, dispatch);
     TMSG(MEMLEAK, "realloc: bytes: %ld ptr: %p (%s)",
          bytes, appl_ptr, inactive_mesg);
     goto finish;
@@ -774,7 +777,7 @@ foilbase_realloc(memalign_fcn* real_memalign, malloc_fcn* real_malloc, realloc_f
   // malloc of the new size.  note: if realloc moves the data and
   // switches header/footer, then need to slide the user data.
   size_t size = bytes + leakinfo_size;
-  ptr2 = real_realloc(sys_ptr, size);
+  ptr2 = f_realloc(sys_ptr, size, dispatch);
   loc2 = memleak_get_malloc_loc(ptr2, bytes, 0, &appl_ptr, &info_ptr);
   if (loc == MEMLEAK_LOC_HEAD && loc2 != MEMLEAK_LOC_HEAD) {
     // slide left

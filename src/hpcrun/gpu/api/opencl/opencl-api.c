@@ -28,7 +28,6 @@
 //******************************************************************************
 
 #include "../../../safe-sampling.h"
-#include "../../../sample-sources/libdl.h"
 #include "../../activity/gpu-activity.h"
 #include "../../activity/gpu-activity-channel.h"
 #include "../../activity/gpu-activity-process.h"
@@ -43,7 +42,6 @@
 #endif
 #include "intel/papi/papi-metric-collector.h"
 #include "../../../messages/messages.h"
-#include "../../../sample-sources/libdl.h"
 #include "../../blame-shifting/opencl/opencl-blame.h"
 #include "../../../files.h"
 #include "../../../utilities/hpcrun-nanotime.h"
@@ -53,6 +51,7 @@
 #include "../../../../common/lean/splay-uint64.h"
 #include <stdatomic.h>
 #include "../../../../common/lean/usec_time.h"
+#include "../../../libmonitor/monitor.h"
 
 #include "opencl-api.h"
 #include "opencl-api-wrappers.h"
@@ -143,14 +142,14 @@ opencl_write_debug_binary
 static cl_uint
 opencl_device_count
 (
-  typeof(&clGetProgramInfo) pfn_clGetProgramInfo,
-  cl_program program
+  cl_program program,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   cl_uint num_devices;
 
-  cl_int ret = pfn_clGetProgramInfo(program, CL_PROGRAM_NUM_DEVICES,
-                                    sizeof(cl_uint), &num_devices, 0);
+  cl_int ret = f_clGetProgramInfo(program, CL_PROGRAM_NUM_DEVICES,
+                                    sizeof(cl_uint), &num_devices, 0, dispatch);
 
   if (ret != CL_SUCCESS) num_devices = 0;
 
@@ -161,14 +160,14 @@ opencl_device_count
 static cl_uint
 opencl_binary_sizes
 (
-  typeof(&clGetProgramInfo) pfn_clGetProgramInfo,
   cl_program program,
   cl_int device_count,
-  size_t *binary_sizes
+  size_t *binary_sizes,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
-  cl_int ret = pfn_clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,
-                                    device_count * sizeof(size_t), binary_sizes, 0);
+  cl_int ret = f_clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,
+                                    device_count * sizeof(size_t), binary_sizes, 0, dispatch);
   return ret;
 }
 
@@ -176,11 +175,11 @@ opencl_binary_sizes
 static bool
 opencl_binaries
 (
-  typeof(&clGetProgramInfo) pfn_clGetProgramInfo,
   cl_program program,
   cl_uint *_num_devices,
   unsigned char ***_binaries,
-  size_t **_binary_sizes
+  size_t **_binary_sizes,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   // variable initializations needed for error handling
@@ -188,14 +187,14 @@ opencl_binaries
   unsigned char **binaries = 0;
   size_t *binary_sizes = 0;
 
-  cl_uint num_devices = opencl_device_count(pfn_clGetProgramInfo, program);
+  cl_uint num_devices = opencl_device_count(program, dispatch);
 
   if (num_devices > 0) {
     binary_sizes = (size_t *) malloc(sizeof(size_t) * num_devices);
 
     if (binary_sizes == 0) goto no_binary_sizes;
 
-    cl_uint ret_code = opencl_binary_sizes(pfn_clGetProgramInfo, program, num_devices, binary_sizes);
+    cl_uint ret_code = opencl_binary_sizes(program, num_devices, binary_sizes, dispatch);
     if (ret_code == CL_SUCCESS) {
       binaries = (unsigned char **) malloc(sizeof(size_t) * num_devices);
       if (binaries == 0) goto no_binaries;
@@ -211,8 +210,8 @@ opencl_binaries
     }
   }
 
-  cl_int ret = pfn_clGetProgramInfo(program, CL_PROGRAM_BINARIES,
-                                    num_devices * sizeof(unsigned char *), binaries, 0);
+  cl_int ret = f_clGetProgramInfo(program, CL_PROGRAM_BINARIES,
+                                    num_devices * sizeof(unsigned char *), binaries, 0, dispatch);
 
   if (ret != CL_SUCCESS) goto error;
 
@@ -379,15 +378,15 @@ opencl_operation_multiplexer_push
 static void
 opencl_activity_process
 (
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
   cl_event event,
   opencl_object_t *obj,
-  uint32_t correlation_id
+  uint32_t correlation_id,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   gpu_interval_t interval;
   memset(&interval, 0, sizeof(gpu_interval_t));
-  opencl_timing_info_get(pfn_clGetEventProfilingInfo, &interval, event);
+  opencl_timing_info_get(&interval, event, dispatch);
 
   opencl_operation_multiplexer_push(interval, obj, correlation_id);
 }
@@ -692,15 +691,15 @@ opencl_activity_completion_callback
 
   if (event_command_exec_status == CL_COMPLETE) {
     opencl_cb_basic_print(cb_basic, "Completion_Callback");
-    opencl_activity_process(cb_data->pfn_clGetEventProfilingInfo, event, cb_data, cb_basic.correlation_id);
+    opencl_activity_process(event, cb_data, cb_basic.correlation_id, cb_data->dispatch);
   }
 
   if (is_opencl_blame_shifting_enabled() && cb_data->kind == GPU_ACTIVITY_KERNEL && event_command_exec_status == CL_COMPLETE) {
-                opencl_kernel_epilogue(cb_data->pfn_clGetEventProfilingInfo, event);
+                opencl_kernel_epilogue(event, cb_data->dispatch);
         }
 
         if (cb_data->internal_event) {
-    ((typeof(&clReleaseEvent))cb_data->pfn_clReleaseEvent)(event);
+          f_clReleaseEvent(event, cb_data->dispatch);
   }
 
   // Finish operations
@@ -711,21 +710,21 @@ opencl_activity_completion_callback
 void
 opencl_timing_info_get
 (
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
   gpu_interval_t *interval,
-  cl_event event
+  cl_event event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   cl_ulong commandStart = 0;
   cl_ulong commandEnd = 0;
 
-  pfn_clGetEventProfilingInfo
+  f_clGetEventProfilingInfo
          (event, CL_PROFILING_COMMAND_START,
-          sizeof(commandStart), &commandStart, NULL);
+          sizeof(commandStart), &commandStart, NULL, dispatch);
 
-  pfn_clGetEventProfilingInfo
+  f_clGetEventProfilingInfo
          (event, CL_PROFILING_COMMAND_END,
-          sizeof(commandEnd), &commandEnd, NULL);
+          sizeof(commandEnd), &commandEnd, NULL, dispatch);
 
   ETMSG(OPENCL, "duration [%lu, %lu]", commandStart, commandEnd);
 
@@ -762,16 +761,15 @@ opencl_api_initialize
 
 
 cl_int
-foilbase_clBuildProgram
+hpcrun_clBuildProgram
 (
-  typeof(&clBuildProgram) pfn_real,
-  typeof(&clGetProgramInfo) pfn_clGetProgramInfo,
   cl_program program,
   cl_uint num_devices,
   const cl_device_id* device_list,
   const char* options,
   void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
-  void* user_data
+  void* user_data,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "inside clBuildProgram_wrapper");
@@ -783,16 +781,16 @@ foilbase_clBuildProgram
   if (options != NULL) {
     strcat(options_with_debug_flags, options);
   }
-  cl_int ret = pfn_real(program, num_devices, device_list,
+  cl_int ret = f_clBuildProgram(program, num_devices, device_list,
                         options_with_debug_flags, clBuildProgramCallback,
-                        user_data);
+                        user_data, dispatch);
   free(options_with_debug_flags);
 
   {
     cl_uint num_devices;
     unsigned char **binaries;
     size_t *binary_sizes;
-    if (opencl_binaries(pfn_clGetProgramInfo, program, &num_devices, &binaries, &binary_sizes)) {
+    if (opencl_binaries(program, &num_devices, &binaries, &binary_sizes, dispatch)) {
       for (cl_uint i = 0; i < num_devices; i++) {
         if (binary_sizes[i] > 0) {
           opencl_write_debug_binary(binaries[i], binary_sizes[i]);
@@ -809,21 +807,19 @@ foilbase_clBuildProgram
 
 
 cl_context
-foilbase_clCreateContext
+hpcrun_clCreateContext
 (
-  typeof(&clCreateContext) pfn_real,
-  typeof(&clGetPlatformIDs) pfn_clGetPlatformIDs,
-  typeof(&clGetDeviceIDs) pfn_clGetDeviceIDs,
   const cl_context_properties *properties,
   cl_uint num_devices,
   const cl_device_id *devices,
   void (CL_CALLBACK* pfn_notify) (const char *errinfo, const void *private_info, size_t cb, void *user_data),
   void *user_data,
-  cl_int *errcode_ret
+  cl_int *errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "inside clCreateContext wrapper");
-  cl_context context = pfn_real(properties, num_devices, devices, pfn_notify, user_data, errcode_ret);
+  cl_context context = f_clCreateContext(properties, num_devices, devices, pfn_notify, user_data, errcode_ret, dispatch);
   if (optimization_check && *errcode_ret == CL_SUCCESS) {
     recordDeviceCount(num_devices, devices);
 
@@ -832,12 +828,12 @@ foilbase_clCreateContext
     cl_uint platformDeviceCount;
     unsigned int num_devices = 0;
 
-    pfn_clGetPlatformIDs(0, NULL, &platformCount);
+    f_clGetPlatformIDs(0, NULL, &platformCount, dispatch);
     platforms = (cl_platform_id*) malloc(sizeof(cl_platform_id) * platformCount);
-    pfn_clGetPlatformIDs(platformCount, platforms, NULL);
+    f_clGetPlatformIDs(platformCount, platforms, NULL, dispatch);
 
     for (int i = 0; i < platformCount; i++) {
-      pfn_clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &platformDeviceCount);
+      f_clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &platformDeviceCount, dispatch);
       num_devices += platformDeviceCount;
     }
     atomic_store_explicit(&total_num_devices, num_devices, memory_order_release);
@@ -847,19 +843,19 @@ foilbase_clCreateContext
 
 
 cl_command_queue
-foilbase_clCreateCommandQueue
+hpcrun_clCreateCommandQueue
 (
-  typeof(&clCreateCommandQueue) pfn_real,
   cl_context context,
   cl_device_id device,
   cl_command_queue_properties properties,
-  cl_int *errcode_ret
+  cl_int *errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   // enabling profiling
   properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE;
 
-  cl_command_queue queue = pfn_real(context, device, properties,errcode_ret);
+  cl_command_queue queue = f_clCreateCommandQueue(context, device, properties,errcode_ret, dispatch);
 
   if (optimization_check && *errcode_ret == CL_SUCCESS) {
     isQueueInInOrderExecutionMode(&properties);
@@ -879,13 +875,13 @@ foilbase_clCreateCommandQueue
 
 
 cl_command_queue
-foilbase_clCreateCommandQueueWithProperties
+hpcrun_clCreateCommandQueueWithProperties
 (
-  typeof(&clCreateCommandQueueWithProperties) pfn_real,
   cl_context context,
   cl_device_id device,
   const cl_queue_properties* properties,
-  cl_int* errcode_ret
+  cl_int* errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   cl_queue_properties *queue_properties = (cl_queue_properties *)properties;
@@ -926,7 +922,7 @@ foilbase_clCreateCommandQueueWithProperties
       queue_properties[props_count + 2] = 0;
     }
   }
-  cl_command_queue queue = pfn_real(context, device, queue_properties, errcode_ret);
+  cl_command_queue queue = f_clCreateCommandQueueWithProperties(context, device, queue_properties, errcode_ret, dispatch);
 
   if (optimization_check && *errcode_ret == CL_SUCCESS) {
     isQueueInInOrderExecutionMode(properties);
@@ -957,14 +953,14 @@ foilbase_clCreateCommandQueueWithProperties
 static uint32_t
 getKernelModuleId
 (
-  typeof(&clGetKernelInfo) pfn_clGetKernelInfo,
-  cl_kernel ocl_kernel
+  cl_kernel ocl_kernel,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   size_t kernel_name_size;
-  cl_int status = pfn_clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, 0, NULL, &kernel_name_size);
+  cl_int status = f_clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, 0, NULL, &kernel_name_size, dispatch);
   char kernel_name[kernel_name_size];
-  status = pfn_clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, kernel_name_size, kernel_name, NULL);
+  status = f_clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, kernel_name_size, kernel_name, NULL, dispatch);
   if (status != CL_SUCCESS)
     hpcrun_terminate();
   uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, kernel_name_size);
@@ -978,14 +974,8 @@ getKernelModuleId
 
 
 cl_int
-foilbase_clEnqueueNDRangeKernel
+hpcrun_clEnqueueNDRangeKernel
 (
-  typeof(&clEnqueueNDRangeKernel) pfn_real,
-  typeof(&clGetKernelInfo) pfn_clGetKernelInfo,
-  typeof(&clRetainEvent) pfn_clRetainEvent,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_kernel ocl_kernel,
   cl_uint work_dim,
@@ -994,21 +984,22 @@ foilbase_clEnqueueNDRangeKernel
   const size_t *local_work_size,
   cl_uint num_events_in_wait_list,
   const cl_event *event_wait_list,
-  cl_event *event
+  cl_event *event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
-  uint32_t module_id = getKernelModuleId(pfn_clGetKernelInfo, ocl_kernel);
+  uint32_t module_id = getKernelModuleId(ocl_kernel, dispatch);
 
-  opencl_object_t *kernel_info = opencl_malloc_kind(pfn_clGetEventProfilingInfo, pfn_clReleaseEvent, GPU_ACTIVITY_KERNEL);
+  opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL, dispatch);
   INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue, module_id))
 
 
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
 
-  cl_int return_status = pfn_real(command_queue, ocl_kernel, work_dim,
+  cl_int return_status = f_clEnqueueNDRangeKernel(command_queue, ocl_kernel, work_dim,
                                 global_work_offset, global_work_size, local_work_size,
-                                num_events_in_wait_list, event_wait_list, eventp);
+                                num_events_in_wait_list, event_wait_list, eventp, dispatch);
   if (optimization_check && return_status == CL_SUCCESS) {
     isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
     areKernelParamsAliased(ocl_kernel, module_id);
@@ -1017,13 +1008,13 @@ foilbase_clEnqueueNDRangeKernel
   opencl_subscriber_callback(kernel_info);
 
         if(is_opencl_blame_shifting_enabled()) {
-                opencl_kernel_prologue(pfn_clRetainEvent, *eventp, module_id);
+                opencl_kernel_prologue(*eventp, module_id, dispatch);
         }
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
                 "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
 
-  pfn_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, kernel_info);
+  f_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, kernel_info, dispatch);
 
   return return_status;
 }
@@ -1031,23 +1022,19 @@ foilbase_clEnqueueNDRangeKernel
 
 // this is a simplified version of clEnqueueNDRangeKernel, TODO: check if code duplication can be avoided
 cl_int
-foilbase_clEnqueueTask
+hpcrun_clEnqueueTask
 (
-  typeof(&clEnqueueTask) pfn_real,
-  typeof(&clGetKernelInfo) pfn_clGetKernelInfo,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_kernel kernel,
   cl_uint num_events_in_wait_list,
   const cl_event* event_wait_list,
-  cl_event* event
+  cl_event* event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
-  uint32_t module_id = getKernelModuleId(pfn_clGetKernelInfo, kernel);
+  uint32_t module_id = getKernelModuleId(kernel, dispatch);
 
-  opencl_object_t *kernel_info = opencl_malloc_kind(pfn_clGetEventProfilingInfo, pfn_clReleaseEvent, GPU_ACTIVITY_KERNEL);
+  opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL, dispatch);
   INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue, module_id))
 
   opencl_subscriber_callback(kernel_info);
@@ -1055,8 +1042,8 @@ foilbase_clEnqueueTask
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info);
 
-  cl_int return_status = pfn_real(command_queue, kernel,
-                                num_events_in_wait_list, event_wait_list, eventp);
+  cl_int return_status = f_clEnqueueTask(command_queue, kernel,
+                                num_events_in_wait_list, event_wait_list, eventp, dispatch);
   if (optimization_check && return_status == CL_SUCCESS) {
     isKernelSubmittedToMultipleQueues(kernel, command_queue);
     areKernelParamsAliased(kernel, module_id);
@@ -1065,19 +1052,15 @@ foilbase_clEnqueueTask
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
                 "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
 
-  pfn_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, kernel_info);
+  f_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, kernel_info, dispatch);
 
   return return_status;
 }
 
 
 cl_int
-foilbase_clEnqueueReadBuffer
+hpcrun_clEnqueueReadBuffer
 (
-  typeof(&clEnqueueReadBuffer) pfn_real,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_mem buffer,
   cl_bool blocking_read,
@@ -1086,12 +1069,13 @@ foilbase_clEnqueueReadBuffer
   void *ptr,
   cl_uint num_events_in_wait_list,
   const cl_event *event_wait_list,
-  cl_event *event
+  cl_event *event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "inside clEnqueueReadBuffer wrapper");
 
-  opencl_object_t *cpy_info = opencl_malloc_kind(pfn_clGetEventProfilingInfo, pfn_clReleaseEvent, GPU_ACTIVITY_MEMCPY);
+  opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY, dispatch);
   INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_D2H, cb, command_queue))
 
   opencl_subscriber_callback(cpy_info);
@@ -1099,8 +1083,8 @@ foilbase_clEnqueueReadBuffer
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, cpy_info);
 
-  cl_int return_status = pfn_real(command_queue, buffer, blocking_read, offset,
-       cb, ptr, num_events_in_wait_list, event_wait_list, eventp);
+  cl_int return_status = f_clEnqueueReadBuffer(command_queue, buffer, blocking_read, offset,
+       cb, ptr, num_events_in_wait_list, event_wait_list, eventp, dispatch);
   if (optimization_check && return_status == CL_SUCCESS) {
     recordD2HCall(buffer);
   }
@@ -1111,19 +1095,15 @@ foilbase_clEnqueueReadBuffer
         (long)cb);
 
 
-  pfn_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, cpy_info);
+  f_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, cpy_info, dispatch);
 
   return return_status;
 }
 
 
 cl_int
-foilbase_clEnqueueWriteBuffer
+hpcrun_clEnqueueWriteBuffer
 (
-  typeof(&clEnqueueWriteBuffer) pfn_real,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_mem buffer,
   cl_bool blocking_write,
@@ -1132,11 +1112,12 @@ foilbase_clEnqueueWriteBuffer
   const void *ptr,
   cl_uint num_events_in_wait_list,
   const cl_event *event_wait_list,
-  cl_event *event
+  cl_event *event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "inside clEnqueueWriteBuffer wrapper. cl_mem buffer: %p", buffer);
-  opencl_object_t *cpy_info = opencl_malloc_kind(pfn_clGetEventProfilingInfo, pfn_clReleaseEvent, GPU_ACTIVITY_MEMCPY);
+  opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY, dispatch);
   INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_H2D, cb, command_queue))
 
   opencl_subscriber_callback(cpy_info);
@@ -1144,8 +1125,8 @@ foilbase_clEnqueueWriteBuffer
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, cpy_info);
 
-  cl_int return_status = pfn_real(command_queue, buffer, blocking_write, offset, cb, ptr,
-                          num_events_in_wait_list, event_wait_list, eventp);
+  cl_int return_status = f_clEnqueueWriteBuffer(command_queue, buffer, blocking_write, offset, cb, ptr,
+                          num_events_in_wait_list, event_wait_list, eventp, dispatch);
   if (optimization_check && return_status == CL_SUCCESS) {
     recordH2DCall(buffer);
   }
@@ -1155,19 +1136,15 @@ foilbase_clEnqueueWriteBuffer
   ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device",
         (long)cb);
 
-  pfn_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, cpy_info);
+  f_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, cpy_info, dispatch);
 
   return return_status;
 }
 
 
 void*
-foilbase_clEnqueueMapBuffer
+hpcrun_clEnqueueMapBuffer
 (
-  typeof(&clEnqueueMapBuffer) pfn_real,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_mem buffer,
   cl_bool blocking_map,
@@ -1177,12 +1154,13 @@ foilbase_clEnqueueMapBuffer
   cl_uint num_events_in_wait_list,
   const cl_event* event_wait_list,
   cl_event* event,
-  cl_int* errcode_ret
+  cl_int* errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "inside clEnqueueMapBuffer wrapper");
 
-  opencl_object_t *cpy_info = opencl_malloc_kind(pfn_clGetEventProfilingInfo, pfn_clReleaseEvent, GPU_ACTIVITY_MEMCPY);
+  opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY, dispatch);
   if (map_flags == CL_MAP_READ) {
     INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_D2H, size, command_queue));
   } else {
@@ -1195,8 +1173,8 @@ foilbase_clEnqueueMapBuffer
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, cpy_info);
 
-  void *map_ptr = pfn_real(command_queue, buffer, blocking_map, map_flags, offset,
-                     size, num_events_in_wait_list, event_wait_list, eventp, errcode_ret);
+  void *map_ptr = f_clEnqueueMapBuffer(command_queue, buffer, blocking_map, map_flags, offset,
+                     size, num_events_in_wait_list, event_wait_list, eventp, errcode_ret, dispatch);
 
   if (map_flags == CL_MAP_READ) {
     ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: D2H. "
@@ -1210,35 +1188,33 @@ foilbase_clEnqueueMapBuffer
           (long)size);
   }
 
-  pfn_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, cpy_info);
+  f_clSetEventCallback(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, cpy_info, dispatch);
 
   return map_ptr;
 }
 
 
 cl_mem
-foilbase_clCreateBuffer
+hpcrun_clCreateBuffer
 (
-  typeof(&clCreateBuffer) pfn_real,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
   cl_context context,
   cl_mem_flags flags,
   size_t size,
   void* host_ptr,
-  cl_int* errcode_ret
+  cl_int* errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "clCreateBuffer flags: %u, size: %"PRIu64 "", flags, size);
 
-  opencl_object_t *mem_info = opencl_malloc_kind(pfn_clGetEventProfilingInfo, pfn_clReleaseEvent, GPU_ACTIVITY_MEMORY);
+  opencl_object_t *mem_info = opencl_malloc_kind(GPU_ACTIVITY_MEMORY, dispatch);
   INITIALIZE_CALLBACK_INFO(initializeMemoryCallBackInfo, mem_info, (mem_info, flags, size))
 
   opencl_subscriber_callback(mem_info);
 
   gpu_interval_t interval;
   interval.start = CPU_NANOTIME();
-  cl_mem buffer = pfn_real(context, flags, size, host_ptr, errcode_ret);
+  cl_mem buffer = f_clCreateBuffer(context, flags, size, host_ptr, errcode_ret, dispatch);
   interval.end = CPU_NANOTIME();
 
   opencl_operation_multiplexer_push(interval, mem_info, mem_info->details.mem_cb.correlation_id);
@@ -1250,16 +1226,16 @@ foilbase_clCreateBuffer
 
 
 cl_int
-foilbase_clSetKernelArg
+hpcrun_clSetKernelArg
 (
-  typeof(&clSetKernelArg) pfn_real,
   cl_kernel kernel,
   cl_uint arg_index,
   size_t arg_size,
-  const void* arg_value
+  const void* arg_value,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
-  cl_int status = pfn_real(kernel, arg_index, arg_size, arg_value);
+  cl_int status = f_clSetKernelArg(kernel, arg_index, arg_size, arg_value, dispatch);
   if (optimization_check && status == CL_SUCCESS) {
     recordKernelParams(kernel, arg_value, arg_size);
   }
@@ -1268,13 +1244,11 @@ foilbase_clSetKernelArg
 
 
 cl_int
-foilbase_clWaitForEvents
+hpcrun_clWaitForEvents
 (
-  typeof(&clWaitForEvents) pfn_real,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clGetEventInfo) pfn_clGetEventInfo,
   cl_uint num_events,
-  const cl_event* event_list
+  const cl_event* event_list,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "clWaitForEvents called");
@@ -1284,19 +1258,19 @@ foilbase_clWaitForEvents
   if(is_opencl_blame_shifting_enabled()) {
     for (int i = 0; i < num_events; i++) {
       size_t queue_size;
-      pfn_clGetEventInfo(event_list[i], CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
+      f_clGetEventInfo(event_list[i], CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size, dispatch);
       char queue_data[queue_size];
-      pfn_clGetEventInfo(event_list[i], CL_EVENT_COMMAND_QUEUE, queue_size, queue_data, NULL);
+      f_clGetEventInfo(event_list[i], CL_EVENT_COMMAND_QUEUE, queue_size, queue_data, NULL, dispatch);
       queues[i] = *(cl_command_queue*)queue_data;
       opencl_sync_prologue(queues[i]);
     }
   }
 
-  cl_int status = pfn_real(num_events, event_list);
+  cl_int status = f_clWaitForEvents(num_events, event_list, dispatch);
 
   if(is_opencl_blame_shifting_enabled()) {
     for (int i = 0; i < num_events; i++) {
-      opencl_sync_epilogue(pfn_clReleaseEvent, queues[i], (uint16_t)num_events);
+      opencl_sync_epilogue(queues[i], (uint16_t)num_events, dispatch);
     }
   }
   return status;
@@ -1304,13 +1278,13 @@ foilbase_clWaitForEvents
 
 
 cl_int
-foilbase_clReleaseMemObject
+hpcrun_clReleaseMemObject
 (
-  typeof(&clReleaseMemObject) pfn_real,
-  cl_mem mem
+  cl_mem mem,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
-  cl_int status = pfn_real(mem);
+  cl_int status = f_clReleaseMemObject(mem, dispatch);
   if (optimization_check && status == CL_SUCCESS) {
     clearBufferEntry(mem);
   }
@@ -1319,15 +1293,15 @@ foilbase_clReleaseMemObject
 
 
 cl_int
-foilbase_clReleaseKernel
+hpcrun_clReleaseKernel
 (
-  typeof(&clReleaseKernel) pfn_real,
-  cl_kernel kernel
+  cl_kernel kernel,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "clReleaseKernel called for kernel: %"PRIu64 "", (uint64_t)kernel);
 
-  cl_int status = pfn_real(kernel);
+  cl_int status = f_clReleaseKernel(kernel, dispatch);
   if (optimization_check && status == CL_SUCCESS) {
     clearKernelQueues(kernel);
     clearKernelParams(kernel);
@@ -1337,14 +1311,14 @@ foilbase_clReleaseKernel
 
 
 cl_int
-foilbase_clReleaseCommandQueue
+hpcrun_clReleaseCommandQueue
 (
-  typeof(&clReleaseCommandQueue) pfn_real,
-  cl_command_queue command_queue
+  cl_command_queue command_queue,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "clReleaseCommandQueue called");
-  cl_int status = pfn_real(command_queue);
+  cl_int status = f_clReleaseCommandQueue(command_queue, dispatch);
 
   if (optimization_check && status == CL_SUCCESS) {
     clearQueueContext(command_queue);
@@ -1377,11 +1351,10 @@ get_numeric_hash_id_for_string
 
 
 cl_int
-foilbase_clFinish
+hpcrun_clFinish
 (
-  typeof(&clFinish) pfn_real,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  cl_command_queue command_queue
+  cl_command_queue command_queue,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   ETMSG(OPENCL, "clFinish called");
@@ -1389,9 +1362,9 @@ foilbase_clFinish
   if(is_opencl_blame_shifting_enabled()) {
     opencl_sync_prologue(command_queue);
   }
-  cl_int status = pfn_real(command_queue);
+  cl_int status = f_clFinish(command_queue, dispatch);
   if(is_opencl_blame_shifting_enabled()) {
-    opencl_sync_epilogue(pfn_clReleaseEvent, command_queue, 1);
+    opencl_sync_epilogue(command_queue, 1, dispatch);
   }
   return status;
 }

@@ -6,8 +6,6 @@
 // -*-Mode: C++;-*- // technically C99
 
 #define _GNU_SOURCE
-#define __HIP_PLATFORM_AMD__
-#define __HIP_PLATFORM_HCC__
 
 //******************************************************************************
 // macros
@@ -24,6 +22,7 @@
 
 #include "../../common/gpu-print.h"
 #include "../common/gpu-kernel-table.h"
+#include "../../../foil/roctracer.h"
 
 #include "roctracer-activity-translate.h"
 #include <hip/hip_runtime_api.h>
@@ -187,7 +186,7 @@ roctracer_activity_translate
  uint64_t *correlation_id
 )
 {
-  const char * name = roctracer_op_string(record->domain, record->op, record->kind);
+  const char * name = f_roctracer_op_string(record->domain, record->op, record->kind);
 
   gpu_activity_init(ga);
 

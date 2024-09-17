@@ -13,6 +13,7 @@
 #include "../messages/messages.h"
 #include "../thread_data.h"
 #include "../safe-sampling.h"
+#include "../foil/python.h"
 
 #include <libelf.h>
 #include <gelf.h>
@@ -21,47 +22,11 @@
 #include <sys/mman.h>
 
 #include <assert.h>
-#include <dlfcn.h>
-#include <Python.h>
-#include <frameobject.h>
 #include <stddef.h>
-
-// set flag for python 3.8
-// use funcs F(PyFrame_GetBack) and F(PyFrame_GetCode) for python >= 3.9
-// use PyFrameObject attributes to replace these functions for python 3.8
-#if PY_VERSION_HEX >= 0x030800F0 && PY_VERSION_HEX < 0x030900F0
-#define IS_PYTHON_38
-#endif
 
 // -----------------------------
 // Local variables
 // -----------------------------
-
-#define DL(NAME) dl_##NAME
-
-#ifdef IS_PYTHON_38
-  #define PYFUNCS(F) \
-    F(PyEval_GetFuncName) \
-    F(PyEval_SetProfile) \
-    F(PyFrame_GetLineNumber) \
-    F(PySys_AddAuditHook) \
-    F(PyUnicode_AsUTF8) \
-    // END PYFUNCS
-#else
-  #define PYFUNCS(F) \
-    F(PyEval_GetFuncName) \
-    F(PyEval_SetProfile) \
-    F(PyFrame_GetBack) \
-    F(PyFrame_GetCode) \
-    F(PyFrame_GetLineNumber) \
-    F(PySys_AddAuditHook) \
-    F(PyUnicode_AsUTF8) \
-    // END PYFUNCS
-#endif
-
-#define DL_DEF(NAME) static typeof(NAME)* dl_##NAME = NULL;
-PYFUNCS(DL_DEF)
-#undef DL_DEF
 
 static logical_metadata_store_t python_metastore;
 
@@ -87,9 +52,9 @@ static bool python_unwind(logical_region_t* region, void** store,
     // Emit that frame here and adjust index so the rest of the code is general.
     if(index == 0) {
       TMSG(LOGICAL_CTX_PYTHON, "Exited Python through C function %s",
-           DL(PyEval_GetFuncName)(state->cfunc));
+           f_PyEval_GetFuncName(state->cfunc));
       if(lframe->fid == 0)
-        lframe->fid = hpcrun_logical_metadata_fid(&python_metastore, DL(PyEval_GetFuncName)(state->cfunc), LOGICAL_MANGLING_NONE, NULL, 0);
+        lframe->fid = hpcrun_logical_metadata_fid(&python_metastore, f_PyEval_GetFuncName(state->cfunc), LOGICAL_MANGLING_NONE, NULL, 0);
       frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, 0);
       return true;
     }
@@ -101,35 +66,27 @@ static bool python_unwind(logical_region_t* region, void** store,
 
   // Decipher the PyFrameObject to generate the final logical frame
   PyFrameObject* pyframe = *store;
-#ifdef IS_PYTHON_38
-  PyCodeObject* code = pyframe->f_code;
-#else
-  PyCodeObject* code = DL(PyFrame_GetCode)(pyframe);
-  Py_DECREF(code);
-#endif
+  PyCodeObject* code = f_PyFrame_GetCode(pyframe);
+  f_Py_DecRef((PyObject*)code);
 
   TMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame %p: %s:%d in function %s (starting at line %d)",
-       pyframe, DL(PyUnicode_AsUTF8)(code->co_filename),
-       DL(PyFrame_GetLineNumber)(pyframe), DL(PyUnicode_AsUTF8)(code->co_name),
+       pyframe, f_PyUnicode_AsUTF8(code->co_filename),
+       f_PyFrame_GetLineNumber(pyframe), f_PyUnicode_AsUTF8(code->co_name),
        code->co_firstlineno);
   if(lframe->fid == 0 || lframe->code != code) {
-    const char* name = DL(PyUnicode_AsUTF8)(code->co_name);
+    const char* name = f_PyUnicode_AsUTF8(code->co_name);
     if(strcmp(name, "<module>") == 0)
       name = NULL;  // Special case, the main module should just have its filename
     lframe->fid = hpcrun_logical_metadata_fid(&python_metastore,
-      name, LOGICAL_MANGLING_NONE, DL(PyUnicode_AsUTF8)(code->co_filename), code->co_firstlineno);
+      name, LOGICAL_MANGLING_NONE, f_PyUnicode_AsUTF8(code->co_filename), code->co_firstlineno);
     lframe->code = code;
     TMSG(LOGICAL_CTX_PYTHON, "Registered the above as Python fid #%x", lframe->fid);
   }
-  frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, DL(PyFrame_GetLineNumber)(pyframe));
+  frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, f_PyFrame_GetLineNumber(pyframe));
 
   // Fetch the next frame in the unwind and save that in *store for next time
-#ifdef IS_PYTHON_38
-  PyFrameObject* prevframe = pyframe->f_back;
-#else
-  PyFrameObject* prevframe = DL(PyFrame_GetBack)(pyframe);
-  Py_XDECREF(prevframe);
-#endif
+  PyFrameObject* prevframe = f_PyFrame_GetBack(pyframe);
+  f_Py_DecRef((PyObject*)prevframe);
   if(ENABLED(LOGICAL_CTX_PYTHON) && prevframe == state->caller && real_index+1 < region->expected)
     TMSG(LOGICAL_CTX_PYTHON, "Python appears to be missing some frames, got %d of %d (caller = %p)", real_index+1, region->expected, state->caller);
   *store = prevframe;
@@ -173,36 +130,26 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   case PyTrace_CALL: {  // Some Python function was called
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     IF_ENABLED(LOGICAL_CTX_PYTHON) {
-#ifdef IS_PYTHON_38
-      PyCodeObject* code = frame->f_code;
-#else
-      PyCodeObject* code = DL(PyFrame_GetCode)(frame);
-      Py_DECREF(code);
-#endif
+      PyCodeObject* code = f_PyFrame_GetCode(frame);
+      f_Py_DecRef((PyObject*)code);
       TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] call of Python function %s (%s:%d), now at frame = %p",
            top == NULL ? -1 : top->expected, top == NULL ? 1 : top->expected+1,
-           DL(PyUnicode_AsUTF8)(code->co_name),
-           DL(PyUnicode_AsUTF8)(code->co_filename),
-           DL(PyFrame_GetLineNumber)(frame), frame);
+           f_PyUnicode_AsUTF8(code->co_name),
+           f_PyUnicode_AsUTF8(code->co_filename),
+           f_PyFrame_GetLineNumber(frame), frame);
     }
     if(top == NULL || top->exit_len > 0) {
       // We are (re)entering Python from C. Push a brand new logical region
       logical_region_t reg = {
         .generator = python_unwind, .specific = {.python = {
           .lm = 0,
-#ifdef IS_PYTHON_38
-          .caller = frame->f_back,
-#else
-          .caller = DL(PyFrame_GetBack)(frame),
-#endif
+          .caller = f_PyFrame_GetBack(frame),
           .frame = frame, .cfunc = NULL,
         }},
         .expected = 1,
         .beforeenter = {}, .exit = {}, .exit_len = 0, .afterexit = python_afterexit,
       };
-#ifndef IS_PYTHON_38
-      Py_XDECREF(reg.specific.python.caller);
-#endif
+      f_Py_DecRef(reg.specific.python.caller);
 
       // Unwind out through libpython.so to identify the appropriate C caller
       hpcrun_logical_frame_cursor(&reg.beforeenter, 1);
@@ -233,11 +180,11 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     if (top == NULL) {
       TMSG(LOGICAL_CTX_PYTHON, "[? -> ?] ignoring attempt to call into C via function %s from frame = %p: no logical stack",
-           DL(PyEval_GetFuncName)(arg), frame);
+           f_PyEval_GetFuncName(arg), frame);
       break;
     }
     TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] call into C via function %s from frame = %p",
-         top->expected, top->expected+1, DL(PyEval_GetFuncName)(arg), frame);
+         top->expected, top->expected+1, f_PyEval_GetFuncName(arg), frame);
 
     // Update the top region to record that we have exited Python. Assume there
     // is a stable physical frame within the top 4 callers of this callback.
@@ -279,12 +226,8 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     }
 
     // Fetch the frame we are returning into
-#ifdef IS_PYTHON_38
-    PyFrameObject* prevframe = frame->f_back;
-#else
-    PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
-    Py_XDECREF(prevframe);
-#endif
+    PyFrameObject* prevframe = f_PyFrame_GetBack(frame);
+    f_Py_DecRef((PyObject*)prevframe);
     TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] (about to) return from Python frame = %p, now at frame %p",
          top->expected, top->expected-1, frame, prevframe);
 
@@ -318,7 +261,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
 static int python_audit(const char* event, PyObject* args, void* ud) {
   // Set the trace function so we start getting callbacks from Python
   if(strcmp(event, "sys.setprofile") != 0)
-    DL(PyEval_SetProfile)(python_profile, NULL);
+    f_PyEval_SetProfile(python_profile, NULL);
 
   // We want our samples to be recorded in Python form, so make sure the
   // backtrace finalizer to make that happen is registered.
@@ -328,98 +271,13 @@ static int python_audit(const char* event, PyObject* args, void* ud) {
   return 0;
 }
 
-// Search for a particular symbol in an ELF dynamic section
-// Copied from the module-ignore-map code
-static bool has_symbol(Elf *e, GElf_Shdr* secHead, Elf_Scn *section, const char* target) {
-  Elf_Data *data;
-  char *symName;
-  uint64_t count;
-  GElf_Sym curSym;
-  uint64_t ii,symType, symBind;
-  // char *marmite;
-
-  data = elf_getdata(section, NULL);           // use it to get the data
-  if (data == NULL || secHead->sh_entsize == 0) return -1;
-  count = (secHead->sh_size)/(secHead->sh_entsize);
-  for (ii=0; ii<count; ii++) {
-    gelf_getsym(data, ii, &curSym);
-    symName = elf_strptr(e, secHead->sh_link, curSym.st_name);
-    symType = GELF_ST_TYPE(curSym.st_info);
-    symBind = GELF_ST_BIND(curSym.st_info);
-
-    // the .dynsym section can contain undefined symbols that represent imported symbols.
-    // We need to find functions defined in the module.
-    if ( (symType == STT_FUNC) && (symBind == STB_GLOBAL) && (curSym.st_value != 0)) {
-      if(strcmp(symName, target) == 0) {
-        return true;
-      }
-    }
-        }
-  return false;
-}
-
 static void python_notify_mapped(load_module_t* lm) {
-  // Determine whether this is a Python 3.8 or higher
-  // Copied from the module-ignore-map code
-  {
-    int fd = open (lm->name, O_RDONLY);
-    if (fd < 0) return;
-    struct stat stat;
-    if (fstat (fd, &stat) < 0) {
-      close(fd);
-      return;
-    }
-
-    char* buffer = (char*) mmap (NULL, stat.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-    if (buffer == NULL) {
-      close(fd);
-      return;
-    }
-    elf_version(EV_CURRENT);
-    Elf *elf = elf_memory(buffer, stat.st_size);
-    Elf_Scn *scn = NULL;
-    GElf_Shdr secHead;
-
-    bool matches = false;
-    while ((scn = elf_nextscn(elf, scn)) != NULL) {
-      gelf_getshdr(scn, &secHead);
-      // Only search .dynsym section
-      if (secHead.sh_type != SHT_DYNSYM) continue;
-      if (has_symbol(elf, &secHead, scn, "PySys_AddAuditHook")) {
-        matches = true;
-        break;
-      }
-    }
-    munmap(buffer, stat.st_size);
-    close(fd);
-
-    if(!matches) return;
-  }
-
-  // Pop open the module and nab out the symbols we need
-  void* libpy = dlopen(lm->name, RTLD_LAZY | RTLD_NOLOAD);
-  if(libpy == NULL) {
-    // This might be the main executable, so look there too
-    libpy = dlopen(NULL, RTLD_LAZY | RTLD_NOLOAD);
-    if(dlsym(libpy, "PySys_AddAuditHook") == NULL)
-      libpy = NULL;
-  }
-  if(libpy == NULL) {
-    EEMSG("WARNING: Python found but failed to dlopen, Python unwinding not enabled: %s", lm->name);
+  if (!f_identify_libpython(lm->name)) {
     return;
   }
-  #define SAVE(NAME) \
-    dl_##NAME = dlsym(libpy, #NAME); \
-    if(dl_##NAME == NULL) { \
-      EEMSG("WARNING: Python does not have symbol " #NAME ", Python unwinding not enabled"); \
-      return; \
-    }
-  PYFUNCS(SAVE)
-  #undef SAVE
-
-  // If all went well, we can now register our Python audit hook
-  if(DL(PySys_AddAuditHook)(python_audit, NULL) != 0)
+  if (f_PySys_AddAuditHook(python_audit, NULL) != 0) {
     EEMSG("Python error while adding audit hook, Python unwinding may not be enabled");
+  }
 }
 
 static loadmap_notify_t python_loadmap_notify = {

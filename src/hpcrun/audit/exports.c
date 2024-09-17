@@ -14,6 +14,7 @@
 #include <sched.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <pthread.h>
 
 __attribute__((visibility("default")))
 void export_symbols(auditor_exports_t* exports) {
@@ -21,4 +22,7 @@ void export_symbols(auditor_exports_t* exports) {
   exports->sigprocmask = sigprocmask;
   exports->pthread_sigmask = pthread_sigmask;
   exports->sigaction = sigaction;
+  exports->pthread_self = pthread_self;
+  exports->pthread_kill = pthread_kill;
+  exports->pthread_setcancelstate = pthread_setcancelstate;
 }

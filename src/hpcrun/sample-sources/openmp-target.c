@@ -38,8 +38,6 @@
 
 #include "amd.h"
 
-#include "libdl.h"
-
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"

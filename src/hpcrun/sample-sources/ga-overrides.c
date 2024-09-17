@@ -47,6 +47,7 @@
 #include "../messages/messages.h"
 #include "ga.h"
 #include "ga-overrides.h"
+#include "../foil/ga.h"
 
 #include "../../common/lean/timer.h"
 
@@ -249,28 +250,28 @@ ga_setDataIdx(global_array_t* GA, Integer g_a, int idx)
 //      pnga_allocate()
 
 logical
-foilbase_pnga_create(ga_create_fn_t* real_pnga_create, global_array_t* GA,
+hpcrun_pnga_create(
     Integer type, Integer ndim, Integer *dims, char* name,
-    Integer *chunk, Integer *g_a)
+    Integer *chunk, Integer *g_a, const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   // collective
-  logical ret = real_pnga_create(type, ndim, dims, name, chunk, g_a);
+  logical ret = f_pnga_create(type, ndim, dims, name, chunk, g_a, dispatch);
 
   int idx = -1;
 #if (GA_DataCentric_Prototype)
   idx = hpcrun_ga_dataIdx_new(name);
 #endif
 
-  ga_setDataIdx(GA, *g_a, idx);
+  ga_setDataIdx(f_GA(dispatch), *g_a, idx);
 
   return ret;
 }
 
 Integer
-foilbase_pnga_create_handle(ga_create_handle_fn_t* real_pnga_create_handle, global_array_t* GA)
+hpcrun_pnga_create_handle(const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   // collective
-  Integer g_a = real_pnga_create_handle();
+  Integer g_a = f_pnga_create_handle(dispatch);
 
   int idx = -1;
 #if (GA_DataCentric_Prototype)
@@ -278,7 +279,7 @@ foilbase_pnga_create_handle(ga_create_handle_fn_t* real_pnga_create_handle, glob
   idx = hpcrun_ga_dataIdx_new(name);
 #endif
 
-  ga_setDataIdx(GA, g_a, idx);
+  ga_setDataIdx(f_GA(dispatch), g_a, idx);
 
   return g_a;
 }
@@ -300,38 +301,38 @@ foilbase_pnga_create_handle(ga_create_handle_fn_t* real_pnga_create_handle, glob
 //***************************************************************************
 
 void
-foilbase_pnga_get(ga_getput_fn_t* real_pnga_get, global_array_t* GA, Integer g_a, Integer* lo,
-                  Integer* hi, void* buf, Integer* ld)
+hpcrun_pnga_get(Integer g_a, Integer* lo, Integer* hi, void* buf, Integer* ld,
+                const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   def_isSampled_blocking();
 
-  real_pnga_get(g_a, lo, hi, buf, ld);
+  f_pnga_get(g_a, lo, hi, buf, ld, dispatch);
 
-  doSample_1sided_blocking(GA, g_a, lo, hi);
+  doSample_1sided_blocking(f_GA(dispatch), g_a, lo, hi);
 }
 
 
 void
-foilbase_pnga_put(ga_getput_fn_t* real_pnga_put, global_array_t* GA, Integer g_a, Integer* lo,
-                  Integer* hi, void* buf, Integer* ld)
+hpcrun_pnga_put(Integer g_a, Integer* lo, Integer* hi, void* buf, Integer* ld,
+                const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   def_isSampled_blocking();
 
-  real_pnga_put(g_a, lo, hi, buf, ld);
+  f_pnga_put(g_a, lo, hi, buf, ld, dispatch);
 
-  doSample_1sided_blocking(GA, g_a, lo, hi);
+  doSample_1sided_blocking(f_GA(dispatch), g_a, lo, hi);
 }
 
 
 void
-foilbase_pnga_acc(ga_acc_fn_t* real_pnga_acc, global_array_t* GA, Integer g_a, Integer *lo,
-                  Integer *hi, void *buf, Integer *ld, void *alpha)
+hpcrun_pnga_acc(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld,
+                void *alpha, const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   def_isSampled_blocking();
 
-  real_pnga_acc(g_a, lo, hi, buf, ld, alpha);
+  f_pnga_acc(g_a, lo, hi, buf, ld, alpha, dispatch);
 
-  doSample_1sided_blocking(GA, g_a, lo, hi);
+  doSample_1sided_blocking(f_GA(dispatch), g_a, lo, hi);
 }
 
 
@@ -343,52 +344,53 @@ foilbase_pnga_acc(ga_acc_fn_t* real_pnga_acc, global_array_t* GA, Integer g_a, I
 //***************************************************************************
 
 void
-foilbase_pnga_nbget(ga_nbgetput_fn_t* real_pnga_nbget, global_array_t* GA, Integer g_a, Integer *lo,
-                    Integer *hi, void *buf, Integer *ld, Integer *nbhandle)
+hpcrun_pnga_nbget(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld,
+                  Integer *nbhandle, const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   def_isSampled_nonblocking();
 
-  real_pnga_nbget(g_a, lo, hi, buf, ld, nbhandle);
+  f_pnga_nbget(g_a, lo, hi, buf, ld, nbhandle, dispatch);
 
-  doSample_1sided_nonblocking(GA, g_a, lo, hi);
+  doSample_1sided_nonblocking(f_GA(dispatch), g_a, lo, hi);
 }
 
 void
-foilbase_pnga_nbput(ga_nbgetput_fn_t* real_pnga_nbput, global_array_t* GA, Integer g_a, Integer *lo,
-                    Integer *hi, void *buf, Integer *ld, Integer *nbhandle)
+hpcrun_pnga_nbput(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld,
+                  Integer *nbhandle, const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   def_isSampled_nonblocking();
 
-  real_pnga_nbput(g_a, lo, hi, buf, ld, nbhandle);
+  f_pnga_nbput(g_a, lo, hi, buf, ld, nbhandle, dispatch);
 
-  doSample_1sided_nonblocking(GA, g_a, lo, hi);
-}
-
-
-void
-foilbase_pnga_nbacc(ga_nbacc_fn_t* real_pnga_nbacc, global_array_t* GA, Integer g_a, Integer *lo,
-                    Integer *hi, void *buf, Integer *ld, void *alpha, Integer *nbhandle)
-{
-  def_isSampled_nonblocking();
-
-  real_pnga_nbacc(g_a, lo, hi, buf, ld, alpha, nbhandle);
-
-  doSample_1sided_nonblocking(GA, g_a, lo, hi);
+  doSample_1sided_nonblocking(f_GA(dispatch), g_a, lo, hi);
 }
 
 
 void
-foilbase_pnga_nbwait(ga_nbwait_fn_t* real_pnga_nbwait, global_array_t* GA, Integer *nbhandle)
+hpcrun_pnga_nbacc(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld,
+                  void *alpha, Integer *nbhandle,
+                  const struct hpcrun_foil_appdispatch_ga* dispatch)
+{
+  def_isSampled_nonblocking();
+
+  f_pnga_nbacc(g_a, lo, hi, buf, ld, alpha, nbhandle, dispatch);
+
+  doSample_1sided_nonblocking(f_GA(dispatch), g_a, lo, hi);
+}
+
+
+void
+hpcrun_pnga_nbwait(Integer *nbhandle, const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   // FIXME: measure only if tagged
   def_isSampled();
   def_timeBeg(isSampled);
 
-  real_pnga_nbwait(nbhandle);
+  f_pnga_nbwait(nbhandle, dispatch);
 
   if (isSampled) {
     double latency = timeElapsed(timeBeg);
-    doSample(GA, G_A_NULL,
+    doSample(f_GA(dispatch), G_A_NULL,
              doMetric(hpcrun_ga_metricId_latency, latency, r),
              do0(), do0(), do0());
   }
@@ -400,37 +402,37 @@ foilbase_pnga_nbwait(ga_nbwait_fn_t* real_pnga_nbwait, global_array_t* GA, Integ
 //***************************************************************************
 
 void
-foilbase_pnga_brdcst(ga_brdcst_fn_t* real_pnga_brdcst, global_array_t* GA, Integer type, void *buf,
-                     Integer len, Integer originator)
+hpcrun_pnga_brdcst(Integer type, void *buf, Integer len, Integer originator,
+                   const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   def_isSampled_blocking();
 
-  real_pnga_brdcst(type, buf, len, originator);
+  f_pnga_brdcst(type, buf, len, originator, dispatch);
 
-  doSample_collective_blocking(GA);
+  doSample_collective_blocking(f_GA(dispatch));
 }
 
 
 void
-foilbase_pnga_gop(ga_gop_fn_t* real_pnga_gop, global_array_t* GA, Integer type, void *x, Integer n,
-                  char *op)
+hpcrun_pnga_gop(Integer type, void *x, Integer n, char *op,
+                const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   def_isSampled_blocking();
 
-  real_pnga_gop(type, x, n, op);
+  f_pnga_gop(type, x, n, op, dispatch);
 
-  doSample_collective_blocking(GA);
+  doSample_collective_blocking(f_GA(dispatch));
 }
 
 
 void
-foilbase_pnga_sync(ga_sync_fn_t* real_pnga_sync, global_array_t* GA)
+hpcrun_pnga_sync(const struct hpcrun_foil_appdispatch_ga* dispatch)
 {
   def_isSampled_blocking();
 
-  real_pnga_sync();
+  f_pnga_sync(dispatch);
 
-  doSample_collective_blocking(GA);
+  doSample_collective_blocking(f_GA(dispatch));
 }
 
 

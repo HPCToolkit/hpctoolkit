@@ -36,13 +36,6 @@ roctracer_fini
  int how
 );
 
-
-int
-roctracer_bind
-(
-  void
-);
-
 void
 roctracer_enable_counter_collection
 (

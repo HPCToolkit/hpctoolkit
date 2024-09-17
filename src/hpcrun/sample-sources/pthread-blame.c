@@ -37,7 +37,7 @@
 #include "../cct2metrics.h"
 #include "../metrics.h"
 
-#include "../hpctoolkit.h"
+#include "../start-stop.h"
 #include "../safe-sampling.h"
 #include "../sample_event.h"
 #include "../thread_data.h"
@@ -242,7 +242,7 @@ pthread_directed_blame_accept(void* obj)
 {
   uint64_t blame = get_blame((uint64_t) (uintptr_t) obj);
   TMSG(LOCKWAIT, "Blame obj %d accepting %d units of blame", obj, blame);
-  if (blame && hpctoolkit_sampling_is_active()) {
+  if (blame && hpcrun_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();

@@ -3,69 +3,35 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-_hpcrun_libs = []
+libs = []
 
-_unw_common_files = files(
-  'unwind/common/backtrace.c',
-  'unwind/common/binarytree_uwi.c',
-  'unwind/common/interval_t.c',
-  'unwind/common/libunw_intervals.c',
-  'unwind/common/libunwind-interface.c',
-  'unwind/common/stack_troll.c',
-  'unwind/common/unw-throw.c',
-  'unwind/common/uw_hash.c',
-  'unwind/common/uw_recipe_map.c',
+# Shim to create a private link namespace, to hold libunwind and any other libraries in
+# need of protection from the application (e.g. C++).
+libs += shared_library(
+  'hpcrun_private_ns',
+  'audit/private-ns.c',
+  'audit/exports.c',
+  gnu_symbol_visibility: 'hidden',
+  implicit_include_directories: false,
+  dependencies: [dl_dep, threads_dep],
+  link_language: 'c',
+  install: true,
 )
 
-_unw_x86_files = _unw_common_files + files(
-  'unwind/x86-family/amd-xop.c',
-  'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c',
-  'unwind/x86-family/manual-intervals/x86-32bit-main.c',
-  'unwind/x86-family/manual-intervals/x86-fail-intervals.c',
-  'unwind/x86-family/manual-intervals/x86-gcc-adjust.c',
-  'unwind/x86-family/manual-intervals/x86-gcc-main64.c',
-  'unwind/x86-family/manual-intervals/x86-intel-align32.c',
-  'unwind/x86-family/manual-intervals/x86-intel-align64.c',
-  'unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c',
-  'unwind/x86-family/manual-intervals/x86-intel11-f90main.c',
-  'unwind/x86-family/manual-intervals/x86-linux-dlresolver.c',
-  'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c',
-  'unwind/x86-family/x86-addsub.c',
-  'unwind/x86-family/x86-and.c',
-  'unwind/x86-family/x86-build-intervals.c',
-  'unwind/x86-family/x86-call.c',
-  'unwind/x86-family/x86-canonical.c',
-  'unwind/x86-family/x86-cold-path.c',
-  'unwind/x86-family/x86-debug.c',
-  'unwind/x86-family/x86-decoder.c',
-  'unwind/x86-family/x86-enter.c',
-  'unwind/x86-family/x86-jump.c',
-  'unwind/x86-family/x86-lea.c',
-  'unwind/x86-family/x86-leave.c',
-  'unwind/x86-family/x86-move.c',
-  'unwind/x86-family/x86-process-inst.c',
-  'unwind/x86-family/x86-push.c',
-  'unwind/x86-family/x86-return.c',
-  'unwind/x86-family/x86-unwind-interval-fixup.c',
-  'unwind/x86-family/x86-unwind-interval.c',
-  'unwind/x86-family/x86-unwind-support.c',
-  'unwind/x86-family/x86-unwind.c',
-  'unwind/x86-family/x86-validate-retn-addr.c',
-)
-_unw_x86_include_dirs_deps = [xed_dep]
-
-_unw_ppc64_files = _unw_common_files + files(
-  'unwind/common/default_validation_summary.c',
-  'unwind/ppc64/ppc64-unwind-interval.c',
-  'unwind/ppc64/ppc64-unwind.c',
+# Shim to load and access libunwind in a private link namespace.
+libs += shared_library(
+  'hpcrun_unwind',
+  'unwind/common/libunwind-pvt.c',
+  gnu_symbol_visibility: 'hidden',
+  implicit_include_directories: false,
+  dependencies: [libunwind_dep],
+  link_language: 'c',
+  install: true,
 )
 
-_unw_libunw_files = _unw_common_files + files(
-  'unwind/common/default_validation_summary.c',
-  'unwind/generic-libunwind/libunw-unwind.c',
-)
+# Main library for hpcrun, this is where most everything happens.
 
-_my_base_files = files(
+srcs = files(
   'audit/binding.c',
   'cct/cct-node-vector.c',
   'cct/cct.c',
@@ -76,14 +42,23 @@ _my_base_files = files(
   'cct_insert_backtrace.c',
   'closure-registry.c',
   'control-knob.c',
+  'custom-init-dynamic.c',
   'device-finalizers.c',
   'device-initializers.c',
   'disabled.c',
   'env.c',
   'epoch.c',
   'files.c',
+  'fnbounds/fnbounds.c',
   'fnbounds/fnbounds_common.c',
-  'foil/foil.c',
+  'fnbounds/fnbounds_dynamic.c',
+  'fnbounds/scan.c',
+  'foil/client.c',
+  'foil/common.c',
+  'foil/ga.c',
+  'foil/libc.c',
+  'foil/mpi.c',
+  'foil/ompt.c',
   'gpu/activity/correlation/gpu-correlation-channel.c',
   'gpu/activity/correlation/gpu-host-correlation-map.c',
   'gpu/activity/gpu-activity-channel.c',
@@ -128,7 +103,6 @@ _my_base_files = files(
   'hpcrun_signals.c',
   'hpcrun_stats.c',
   'libmonitor/callback.c',
-  'libmonitor/common.c',
   'libmonitor/fork.c',
   'libmonitor/main.c',
   'libmonitor/mpi.c',
@@ -169,6 +143,7 @@ _my_base_files = files(
   'messages/messages-sync.c',
   'metrics.c',
   'module-ignore-map.c',
+  'monitor-exts/openmp.c',
   'name.c',
   'ompt/ompt-callstack.c',
   'ompt/ompt-defer-write.c',
@@ -218,10 +193,20 @@ _my_base_files = files(
   'thread_use.c',
   'threadmgr.c',
   'trace.c',
+  'unwind/common/backtrace.c',
+  'unwind/common/binarytree_uwi.c',
+  'unwind/common/interval_t.c',
+  'unwind/common/libunw_intervals.c',
+  'unwind/common/libunwind-interface.c',
+  'unwind/common/stack_troll.c',
+  'unwind/common/unw-throw.c',
+  'unwind/common/uw_hash.c',
+  'unwind/common/uw_recipe_map.c',
   'utilities/executable-path.c',
   'utilities/first_func.c',
   'utilities/hpcrun-nanotime.c',
   'utilities/ip-normalized.c',
+  'utilities/last_func.c',
   'utilities/line_wrapping.c',
   'utilities/linuxtimer.c',
   'utilities/timer.c',
@@ -231,14 +216,78 @@ _my_base_files = files(
   'write_data.c',
 )
 
+if host_machine.cpu_family() in ['x86', 'x86_64']
+  srcs += files(
+    'trampoline/x86-family/x86-tramp.S',
+    'unwind/x86-family/amd-xop.c',
+    'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c',
+    'unwind/x86-family/manual-intervals/x86-32bit-main.c',
+    'unwind/x86-family/manual-intervals/x86-fail-intervals.c',
+    'unwind/x86-family/manual-intervals/x86-gcc-adjust.c',
+    'unwind/x86-family/manual-intervals/x86-gcc-main64.c',
+    'unwind/x86-family/manual-intervals/x86-intel-align32.c',
+    'unwind/x86-family/manual-intervals/x86-intel-align64.c',
+    'unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c',
+    'unwind/x86-family/manual-intervals/x86-intel11-f90main.c',
+    'unwind/x86-family/manual-intervals/x86-linux-dlresolver.c',
+    'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c',
+    'unwind/x86-family/x86-addsub.c',
+    'unwind/x86-family/x86-and.c',
+    'unwind/x86-family/x86-build-intervals.c',
+    'unwind/x86-family/x86-call.c',
+    'unwind/x86-family/x86-canonical.c',
+    'unwind/x86-family/x86-cold-path.c',
+    'unwind/x86-family/x86-debug.c',
+    'unwind/x86-family/x86-decoder.c',
+    'unwind/x86-family/x86-enter.c',
+    'unwind/x86-family/x86-jump.c',
+    'unwind/x86-family/x86-lea.c',
+    'unwind/x86-family/x86-leave.c',
+    'unwind/x86-family/x86-move.c',
+    'unwind/x86-family/x86-process-inst.c',
+    'unwind/x86-family/x86-push.c',
+    'unwind/x86-family/x86-return.c',
+    'unwind/x86-family/x86-unwind-interval-fixup.c',
+    'unwind/x86-family/x86-unwind-interval.c',
+    'unwind/x86-family/x86-unwind-support.c',
+    'unwind/x86-family/x86-unwind.c',
+    'unwind/x86-family/x86-validate-retn-addr.c',
+    'utilities/arch/x86-family/x86-context-pc.c',
+  )
+elif host_machine.cpu_family() == 'ppc64'
+  srcs += files(
+    'trampoline/ppc64/ppc64-tramp.s',
+    'unwind/common/default_validation_summary.c',
+    'unwind/ppc64/ppc64-unwind-interval.c',
+    'unwind/ppc64/ppc64-unwind.c',
+    'utilities/arch/ppc64/ppc64-context-pc.c',
+  )
+elif host_machine.cpu_family() == 'aarch64'
+  srcs += files(
+    'trampoline/aarch64/aarch64-tramp.c',
+    'unwind/common/default_validation_summary.c',
+    'unwind/generic-libunwind/libunw-unwind.c',
+    'utilities/arch/libunwind/libunwind-context-pc.c',
+  )
+elif host_machine.cpu_family() == 'mips'
+  srcs += files('unwind/common/default_validation_summary.c')
+elif host_machine.cpu_family() == 'ia64'
+  srcs += files(
+    'trampoline/ia64/ia64-tramp.s',
+    'unwind/common/default_validation_summary.c',
+    'unwind/generic-libunwind/libunw-unwind.c',
+    'utilities/arch/ia64/ia64-context-pc.c',
+  )
+endif
+
 if host_machine.cpu_family() == 'ppc64'
-  _my_base_files += files('trampoline/common/trampoline_eager.c')
+  srcs += files('trampoline/common/trampoline_eager.c')
 else
-  _my_base_files += files('trampoline/common/trampoline_lazy.c')
+  srcs += files('trampoline/common/trampoline_lazy.c')
 endif
 
 if has_perf_events
-  _my_base_files += files(
+  srcs += files(
     'sample-sources/perf/event_custom.c',
     'sample-sources/perf/event_name_parser.c',
     'sample-sources/perf/linux_perf.c',
@@ -249,9 +298,9 @@ if has_perf_events
   )
 
   if perfmon_dep.found()
-    _my_base_files += files('sample-sources/perf/perfmon-util.c')
+    srcs += files('sample-sources/perf/perfmon-util.c')
   else
-    _my_base_files += files('sample-sources/perf/perfmon-util-dummy.c')
+    srcs += files('sample-sources/perf/perfmon-util-dummy.c')
   endif
 
   _kernel_43_code = '''
@@ -262,89 +311,43 @@ if has_perf_events
 #endif
 '''
   if cc.compiles(_kernel_43_code, name: 'Linux >= 4.3')
-    _my_base_files += files('sample-sources/perf/kernel_blocking.c')
+    srcs += files('sample-sources/perf/kernel_blocking.c')
   else
-    _my_base_files += files('sample-sources/perf/kernel_blocking_stub.c')
+    srcs += files('sample-sources/perf/kernel_blocking_stub.c')
   endif
 endif
 
-_my_dynamic_files = files(
-  'custom-init-dynamic.c',
-  'fnbounds/fnbounds.c',
-  'fnbounds/fnbounds_dynamic.c',
-  'fnbounds/scan.c',
-  'foil/hpctoolkit-preload.c',
-  'foil/mpi-preload.c',
-  'foil/ompt-preload.c',
-  'foil/process-preload.c',
-  'foil/signal-preload.c',
-  'foil/syscalls/poll-preload.c',
-  'foil/syscalls/ppoll-preload.c',
-  'foil/syscalls/select-preload.c',
-  'foil/syscalls/sysv_signal-preload.c',
-  'foil/thread-preload.c',
-  'monitor-exts/openmp.c',
-)
-_my_linux_dynamic_files = files(
-  'custom-init-dynamic.c',
-  'fnbounds/fnbounds.c',
-  'fnbounds/fnbounds_dynamic.c',
-  'fnbounds/scan.c',
-  'foil/hpctoolkit-preload.c',
-  'foil/mpi-preload.c',
-  'foil/ompt-preload.c',
-  'foil/process-preload.c',
-  'foil/signal-preload.c',
-  'foil/syscalls/poll-preload.c',
-  'foil/syscalls/ppoll-preload.c',
-  'foil/syscalls/select-preload.c',
-  'foil/syscalls/sysv_signal-preload.c',
-  'foil/thread-preload.c',
-  'monitor-exts/openmp.c',
-)
-_my_mips_files = files('unwind/common/default_validation_summary.c')
-_my_ppc_files = files(
-  'trampoline/ppc64/ppc64-tramp.s',
-  'utilities/arch/ppc64/ppc64-context-pc.c',
-)
-_my_x86_files = files(
-  'trampoline/x86-family/x86-tramp.S',
-  'utilities/arch/x86-family/x86-context-pc.c',
-)
-_my_ia64_files = files(
-  'trampoline/ia64/ia64-tramp.s',
-  'utilities/arch/ia64/ia64-context-pc.c',
-)
-_my_aarch64_files = files(
-  'trampoline/aarch64/aarch64-tramp.c',
-  'utilities/arch/libunwind/libunwind-context-pc.c',
-)
+if papi_dep.found()
+  if papi_has_components
+    srcs += files(
+      'sample-sources/papi-c-extended-info.c',
+      'sample-sources/papi-c-intel.c',
+      'sample-sources/papi-c.c',
+    )
+    if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
+      srcs += files('sample-sources/papi-c-cupti.c')
+    endif
+  else
+    srcs += files('sample-sources/papi.c')
+  endif
 
-_my_papi_files = []
-if papi_has_components
-  _my_papi_files = files(
-    'sample-sources/papi-c-extended-info.c',
-    'sample-sources/papi-c-intel.c',
-    'sample-sources/papi-c.c',
+  srcs += files(
+    'gpu/api/opencl/intel/papi/papi-kernel-map.c',
+    'gpu/api/opencl/intel/papi/papi-metric-collector.c',
   )
+
   if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
-    _my_papi_files += files('sample-sources/papi-c-cupti.c')
+    srcs += files('sample-sources/papi-c-cupti.c')
   endif
-else
-  _my_papi_files += files('sample-sources/papi.c')
 endif
 
-_my_papi_files += files(
-  'gpu/api/opencl/intel/papi/papi-kernel-map.c',
-  'gpu/api/opencl/intel/papi/papi-metric-collector.c',
-)
-
-if false  # get_option('papi_cupti')  # --enable-papi-c-cupti
-  _my_papi_files += files('sample-sources/papi-c-cupti.c')
+if python_inst.found()
+  srcs += files('foil/python.c', 'logical/python.c')
 endif
 
 if cupti_dep.found()
-  _my_cupti_files = files(
+  srcs += files(
+    'foil/nvidia.c',
     'gpu/api/nvidia/cubin-id-map.c',
     'gpu/api/nvidia/cubin-symbols.c',
     'gpu/api/nvidia/cuda-api.c',
@@ -358,10 +361,37 @@ if cupti_dep.found()
     'gpu/api/nvidia/gpu-function-id-map.c',
     'sample-sources/nvidia.c',
   )
+
+  # Access to CUDA/CUPTI is relegated through this dlopen'd foil
+  libs += shared_library(
+    'hpcrun_dlopen_nvidia',
+    'foil/nvidia-dlopen.c',
+    gnu_symbol_visibility: 'hidden',
+    implicit_include_directories: false,
+    dependencies: [cupti_dep],
+    install: true,
+  )
+endif
+
+if rocm_dep.found()
+  srcs += files(
+    'foil/rocm-hip.c',
+    'foil/rocm-hsa.c',
+    'foil/rocprofiler.c',
+    'foil/roctracer.c',
+    'gpu/api/amd/hip-api.c',
+    'gpu/api/amd/rocprofiler-api.c',
+    'gpu/api/amd/roctracer-activity-translate.c',
+    'gpu/api/amd/roctracer-api.c',
+    'sample-sources/amd-rocprofiler.c',
+    'sample-sources/amd.c',
+    'sample-sources/openmp-target.c',
+  )
 endif
 
 if opencl_dep.found()
-  _my_opencl_files = files(
+  srcs += files(
+    'foil/opencl.c',
     'gpu/api/opencl/intel/maps/buffer-map.c',
     'gpu/api/opencl/intel/maps/device-map.c',
     'gpu/api/opencl/intel/maps/kernel-context-map.c',
@@ -380,65 +410,11 @@ if opencl_dep.found()
     'gpu/blame-shifting/opencl/opencl-blame.c',
     'sample-sources/opencl.c',
   )
-
-  _hpcrun_libs += shared_module(
-    'hpcrun_opencl',
-    'foil/opencl-preload.c',
-    gnu_symbol_visibility: 'hidden',
-    link_language: 'c',
-    implicit_include_directories: false,
-    dependencies: [opencl_dep, dl_dep],
-    install: true,
-  )
-endif
-_my_include_dirs_deps = [
-  libunwind_dep,
-  gtpin_dep.partial_dependency(compile_args: true, includes: true),
-  rocm_dep.partial_dependency(compile_args: true, includes: true),
-  libelf_dep,
-  cupti_dep.partial_dependency(compile_args: true, includes: true),
-]
-
-if gtpin_dep.found()
-  _my_dynamic_files += files('gpu/api/intel/gtpin/gtpin-shim.c')
-
-  _hpcrun_libs += shared_library(
-    'hpcrun_gtpin_cxx',
-    'gpu/api/intel/gtpin/gtpin-instrumentation.cpp',
-    'gpu/api/intel/binaries/patchTokenSymbols.c',
-    'gpu/api/intel/binaries/symbolVector.c',
-    'gpu/api/intel/binaries/zebinSymbols.c',
-    common_lean_srcs,
-    gnu_symbol_visibility: 'hidden',
-    implicit_include_directories: false,
-    dependencies: [
-      common_lean_deps,
-      dl_dep,
-      gtpin_dep,
-      libelf_dep,
-      libunwind_dep,
-      tbb_malloc_dep,
-      threads_dep,
-    ],
-    install: true,
-  )
-endif
-
-if rocm_dep.found()
-  _my_rocm_files = files(
-    'foil/rocm-preload.c',
-    'gpu/api/amd/hip-api.c',
-    'gpu/api/amd/rocprofiler-api.c',
-    'gpu/api/amd/roctracer-activity-translate.c',
-    'gpu/api/amd/roctracer-api.c',
-    'sample-sources/amd-rocprofiler.c',
-    'sample-sources/amd.c',
-    'sample-sources/openmp-target.c',
-  )
 endif
 
 if level0_dep.found()
-  _my_level0_files = files(
+  srcs += files(
+    'foil/level0.c',
     'gpu/api/intel/level0/level0-api.c',
     'gpu/api/intel/level0/level0-binary.c',
     'gpu/api/intel/level0/level0-command-list-context-map.c',
@@ -453,106 +429,80 @@ if level0_dep.found()
     'gpu/api/intel/level0/level0-kernel-module-map.c',
     'sample-sources/level0.c',
   )
+endif
 
-  _hpcrun_libs += shared_module(
-    'hpcrun_level0',
-    'foil/level0-preload.c',
+if gtpin_dep.found()
+  srcs += files('gpu/api/intel/gtpin/gtpin-shim.c')
+
+  libs += shared_library(
+    'hpcrun_gtpin_cxx',
+    'foil/gtpin.cpp',
+    'gpu/api/intel/gtpin/gtpin-instrumentation.cpp',
+    'gpu/api/intel/binaries/patchTokenSymbols.c',
+    'gpu/api/intel/binaries/symbolVector.c',
+    'gpu/api/intel/binaries/zebinSymbols.c',
+    common_lean_srcs,
     gnu_symbol_visibility: 'hidden',
-    link_language: 'c',
     implicit_include_directories: false,
-    dependencies: level0_dep,
+    dependencies: [
+      common_lean_deps,
+      dl_dep,
+      gtpin_dep.partial_dependency(compile_args: true, includes: true),
+      libelf_dep,
+      libunwind_dep,
+      tbb_malloc_dep,
+      threads_dep,
+    ],
+    install: true,
+  )
+
+  # Access to GTPin is relegated through this dlopen'd foil
+  libs += shared_library(
+    'hpcrun_dlopen_gtpin',
+    'foil/gtpin-dlopen.cpp',
+    gnu_symbol_visibility: 'hidden',
+    implicit_include_directories: false,
+    dependencies: [gtpin_dep],
     install: true,
   )
 endif
 
-
-if host_machine.cpu_family() in ['x86', 'x86_64']  # UNW_X86
-  _unw_source_files = _unw_x86_files
-endif
-
-if host_machine.cpu_family() in ['ppc64']  # UNW_PPC64
-  _unw_source_files = _unw_ppc64_files
-endif
-
-if host_machine.cpu_family() in ['aarch64', 'ia64']  # UNW_LIBUNW
-  _unw_source_files = _unw_libunw_files
-endif
-
-_hpcrun_libs += shared_module(
+main_hpcrun_lib = shared_library(
   'hpcrun',
-  _my_base_files,
-  _my_dynamic_files,
-  host_machine.system() == 'linux' ? _my_linux_dynamic_files : [],
-  host_machine.cpu_family() == 'mips' ? _my_mips_files : [],
-  host_machine.cpu_family() == 'ppc64' ? _my_ppc_files : [],
-  host_machine.cpu_family() in ['x86', 'x86_64'] ? _my_x86_files : [],
-  host_machine.cpu_family() == 'ia64' ? _my_ia64_files : [],
-  host_machine.cpu_family() == 'aarch64' ? _my_aarch64_files : [],
-  papi_dep.found() ? _my_papi_files : [],
-  python_inst.found() ? ['logical/python.c'] : [],
-  cupti_dep.found() ? _my_cupti_files : [],
-  rocm_dep.found() ? _my_rocm_files : [],
-  level0_dep.found() ? _my_level0_files : [],
-  opencl_dep.found() ? _my_opencl_files : [],
-  _unw_source_files,
+  srcs,
   common_lean_srcs,
-  'utilities/last_func.c',
   gnu_symbol_visibility: 'hidden',
   link_language: 'c',
+  override_options: ['b_lundef=false'],
   implicit_include_directories: false,
   dependencies: [
-    _my_include_dirs_deps,
     common_lean_deps,
-    math_dep,
-    dl_dep,
-    rt_dep,
-    lzma_dep,
-    libelf_dep,
-    libdw_dep,
-    perfmon_dep,
-    xed_dep,
-    papi_dep,
-    rocm_dep.partial_dependency(compile_args: true, includes: true),
     cupti_dep.partial_dependency(compile_args: true, includes: true),
+    dl_dep,
+    gtpin_dep.partial_dependency(compile_args: true, includes: true),
+    level0_dep.partial_dependency(compile_args: true, includes: true),
+    libdw_dep,
+    libelf_dep,
+    libunwind_dep,
+    lzma_dep,
+    math_dep,
+    opencl_dep,
+    papi_dep,
+    perfmon_dep,
+    rocm_dep.partial_dependency(compile_args: true, includes: true),
+    rt_dep,
+    xed_dep,
     (python_inst.found() ? python_inst.dependency() : dependency('', required: false)).partial_dependency(
       compile_args: true,
       includes: true,
     ),
-    opencl_dep,
-    level0_dep.partial_dependency(compile_args: true, includes: true),
   ],
   install: true,
 )
+libs += main_hpcrun_lib
 
-_hpcrun_libs += shared_library(
-  'hpcrun_unwind',
-  'unwind/common/libunwind-pvt.c',
-  gnu_symbol_visibility: 'hidden',
-  implicit_include_directories: false,
-  dependencies: [libunwind_dep],
-  link_language: 'c',
-  install: true,
-)
-_hpcrun_libs += shared_module(
-  'hpcrun_fake_audit',
-  'audit/fake-auditor.c',
-  gnu_symbol_visibility: 'hidden',
-  implicit_include_directories: false,
-  dependencies: [dl_dep, threads_dep],
-  link_language: 'c',
-  install: true,
-)
-_hpcrun_libs += shared_library(
-  'hpcrun_private_ns',
-  'audit/private-ns.c',
-  'audit/exports.c',
-  gnu_symbol_visibility: 'hidden',
-  implicit_include_directories: false,
-  dependencies: [dl_dep, threads_dep],
-  link_language: 'c',
-  install: true,
-)
-_hpcrun_libs += shared_library(
+# Libraries needed to support the "audit" interface for collecting loaded libraries
+libs += shared_library(
   'hpcrun_audit',
   'audit/auditor.c',
   'audit/private-ns.c',
@@ -562,9 +512,63 @@ _hpcrun_libs += shared_library(
   link_language: 'c',
   install: true,
 )
-_hpcrun_libs += shared_library(
-  'hpcrun_dlmopen',
-  'dlmopen/dlmopen.c',
+
+# Symbol interceptions are handled via this LD_PRELOAD'd foil
+libs += shared_library(
+  'hpcrun_preload',
+  'foil/common-preload.c',
+  'foil/client-preload.c',
+  'foil/libc-preload.c',
+  'foil/mpi-preload.c',
+  'foil/ompt-preload.c',
+  gnu_symbol_visibility: 'hidden',
+  implicit_include_directories: false,
+  dependencies: [dl_dep, threads_dep],
+  install: true,
+)
+
+# Optional symbol interception LD_PRELOAD'd foils for Glibc
+libs += shared_library(
+  'hpcrun_preload_libc_io',
+  'foil/common-preload.c',
+  'foil/libc-io-preload.c',
+  gnu_symbol_visibility: 'hidden',
+  implicit_include_directories: false,
+  dependencies: [dl_dep, threads_dep],
+  install: true,
+)
+libs += shared_library(
+  'hpcrun_preload_libc_alloc',
+  'foil/common-preload.c',
+  'foil/libc-alloc-preload.c',
+  gnu_symbol_visibility: 'hidden',
+  implicit_include_directories: false,
+  dependencies: [dl_dep, threads_dep],
+  install: true,
+)
+libs += shared_library(
+  'hpcrun_preload_libc_sync',
+  'foil/common-preload.c',
+  'foil/libc-sync-preload.c',
+  gnu_symbol_visibility: 'hidden',
+  implicit_include_directories: false,
+  dependencies: [dl_dep, threads_dep],
+  install: true,
+)
+
+# Optional symbol interception LD_PRELOAD'd foils for libdl
+libs += shared_library(
+  'hpcrun_preload_libdl',
+  'foil/libdl-preload.c',
+  gnu_symbol_visibility: 'hidden',
+  implicit_include_directories: false,
+  dependencies: [dl_dep, threads_dep],
+  link_language: 'c',
+  install: true,
+)
+libs += shared_library(
+  'hpcrun_preload_libdl_dlmopen',
+  'foil/libdl-dlmopen-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
   dependencies: [dl_dep],
@@ -572,50 +576,65 @@ _hpcrun_libs += shared_library(
   install: true,
 )
 
-_hpcrun_libs += shared_module(
-  'hpcrun_ga',
-  'foil/ga-preload.c',
-  gnu_symbol_visibility: 'hidden',
-  implicit_include_directories: false,
-  dependencies: [dl_dep],
-  link_language: 'c',
-  install: true,
-)
-_hpcrun_libs += shared_module(
-  'hpcrun_gprof',
+# Optional symbol interception LD_PRELOAD'd foils for smaller features
+libs += shared_library(
+  'hpcrun_preload_gprof',
   'foil/gprof-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
-  link_language: 'c',
   install: true,
 )
-_hpcrun_libs += shared_module(
-  'hpcrun_io',
-  'foil/io-preload.c',
+libs += shared_library(
+  'hpcrun_preload_ga',
+  'foil/common-preload.c',
+  'foil/ga-preload.c',
   gnu_symbol_visibility: 'hidden',
   implicit_include_directories: false,
-  dependencies: [dl_dep],
-  link_language: 'c',
-  install: true,
-)
-_hpcrun_libs += shared_module(
-  'hpcrun_memleak',
-  'foil/memleak-preload.c',
-  gnu_symbol_visibility: 'hidden',
-  implicit_include_directories: false,
-  link_language: 'c',
-  install: true,
-)
-_hpcrun_libs += shared_module(
-  'hpcrun_pthread',
-  'foil/pthread-blame-preload.c',
-  gnu_symbol_visibility: 'hidden',
-  implicit_include_directories: false,
-  dependencies: [dl_dep],
-  link_language: 'c',
+  dependencies: [dl_dep, threads_dep],
   install: true,
 )
 
+# Symbols needed for integration with ROCProfiler etc. are defined by this foil
+if rocm_dep.found()
+  libs += shared_library(
+    'hpcrun_dlopen_rocm',
+    'foil/rocm-hip-dlopen.c',
+    'foil/rocm-hsa-dlopen.c',
+    'foil/rocprofiler-dlopen.c',
+    'foil/roctracer-dlopen.c',
+    gnu_symbol_visibility: 'hidden',
+    implicit_include_directories: false,
+    link_with: main_hpcrun_lib,
+    dependencies: [rocm_dep],
+    install: true,
+  )
+endif
+
+# Optional symbol interception LD_PRELOAD'd foil for OpenCL
+if opencl_dep.found()
+  libs += shared_library(
+    'hpcrun_preload_opencl',
+    'foil/common-preload.c',
+    'foil/opencl-preload.c',
+    gnu_symbol_visibility: 'hidden',
+    implicit_include_directories: false,
+    dependencies: [dl_dep, threads_dep, opencl_dep],
+    install: true,
+  )
+endif
+
+# Optional symbol interception LD_PRELOAD'd foil for Level Zero
+if level0_dep.found()
+  libs += shared_library(
+    'hpcrun_preload_level0',
+    'foil/common-preload.c',
+    'foil/level0-preload.c',
+    gnu_symbol_visibility: 'hidden',
+    implicit_include_directories: false,
+    dependencies: [dl_dep, threads_dep, level0_dep],
+    install: true,
+  )
+endif
 
 # Configure and install the hpcrun launcher
 _prefixes_cfg = configuration_data()
@@ -634,5 +653,5 @@ install_headers('hpctoolkit.h')
 hpctoolkit_client_lib = library('hpctoolkit', 'hpctoolkit.c', install: true)
 
 # Settings needed for dependencies
-hpcrun_test_depends = _hpcrun_libs
+hpcrun_test_depends = libs
 test_depends += hpcrun_test_depends

@@ -12,24 +12,20 @@
 #include "common.h"
 #include "monitor.h"
 
-typedef void mpi_init_thread_fcn_t(int *, int *, int *);
-
-static mpi_init_thread_fcn_t  *real_mpi_init_thread = NULL;
-
 void
-foilbase_mpi_init_thread_(int *required, int *provided, int *ierror)
+hpcrun_mpi_init_thread_fortran1(int *required, int *provided, int *ierror,
+                          const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
     int argc, count;
     char **argv;
 
     MONITOR_DEBUG1("\n");
-    MONITOR_GET_REAL_NAME_WRAP(real_mpi_init_thread, mpi_init_thread_);
     count = monitor_mpi_init_count(1);
     if (count == 1) {
         MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
         monitor_mpi_pre_init();
     }
-    (*real_mpi_init_thread)(required, provided, ierror);
+    f_mpi_init_thread_fortran1(required, provided, ierror, dispatch);
     if (count == 1) {
         MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
         monitor_get_main_args(&argc, &argv, NULL);

@@ -5,14 +5,15 @@
 
 // -*-Mode: C++;-*- // technically C99
 
-#define _GNU_SOURCE
-
-#include "foil.h"
+#include "common.h"
 
 // stubs to override gprof support to avoid conflicts with hpcrun
 // NOTE: avoids core dump on ppc64le
 
-HPCRUN_EXPOSED void __monstartup() {}
-HPCRUN_EXPOSED void _mcleanup() {}
-HPCRUN_EXPOSED void mcount() {}
-HPCRUN_EXPOSED void _mcount() {}
+HPCRUN_EXPOSED_API void __monstartup() {}
+
+HPCRUN_EXPOSED_API void _mcleanup() {}
+
+HPCRUN_EXPOSED_API void mcount() {}
+
+HPCRUN_EXPOSED_API void _mcount() {}

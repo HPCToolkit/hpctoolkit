@@ -194,7 +194,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   // Sampling turned off by the user application.
   // This doesn't count as a sample for the summary stats.
-  if (!isSync && !foilbase_hpctoolkit_sampling_is_active()) {
+  if (!isSync && !hpcrun_sampling_is_active()) {
     monitor_unblock_shootdown();
     return ret;
   }

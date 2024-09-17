@@ -213,9 +213,9 @@ level0_command_begin
     ip_normalized_t kernel_ip;
     ze_kernel_handle_t kernel = command_node->details.kernel.kernel;
     size_t name_size = 0;
-    zeKernelGetName(kernel, &name_size, NULL);
+    f_zeKernelGetName(kernel, &name_size, NULL, command_node->dispatch);
     char* kernel_name = malloc(name_size);
-    zeKernelGetName(kernel, &name_size, kernel_name);
+    f_zeKernelGetName(kernel, &name_size, kernel_name, command_node->dispatch);
 #ifdef ENABLE_GTPIN
     if (level0_gtpin_enabled()) {
       kernel_ip = gtpin_lookup_kernel_ip(kernel_name);

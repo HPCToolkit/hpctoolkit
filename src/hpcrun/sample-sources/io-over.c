@@ -74,7 +74,8 @@
  *****************************************************************************/
 
 ssize_t
-foilbase_read(read_fn_t* real_read, int fd, void *buf, size_t count)
+hpcrun_read(int fd, void *buf, size_t count,
+              const struct hpcrun_foil_appdispatch_libc_io* dispatch)
 {
   ucontext_t uc;
   ssize_t ret;
@@ -82,7 +83,7 @@ foilbase_read(read_fn_t* real_read, int fd, void *buf, size_t count)
   int save_errno;
 
   if (metric_id_read < 0 || ! hpcrun_safe_enter()) {
-    return real_read(fd, buf, count);
+    return f_read(fd, buf, count, dispatch);
   }
 
   // insert samples before and after the slow functions to make the
@@ -93,7 +94,7 @@ foilbase_read(read_fn_t* real_read, int fd, void *buf, size_t count)
         0, 1, NULL);
 
   hpcrun_safe_exit();
-  ret = real_read(fd, buf, count);
+  ret = f_read(fd, buf, count, dispatch);
   save_errno = errno;
   hpcrun_safe_enter();
 
@@ -111,7 +112,8 @@ foilbase_read(read_fn_t* real_read, int fd, void *buf, size_t count)
 
 
 ssize_t
-foilbase_write(write_fn_t* real_write, int fd, const void *buf, size_t count)
+hpcrun_write(int fd, const void *buf, size_t count,
+               const struct hpcrun_foil_appdispatch_libc_io* dispatch)
 {
   ucontext_t uc;
   size_t ret;
@@ -119,7 +121,7 @@ foilbase_write(write_fn_t* real_write, int fd, const void *buf, size_t count)
   int save_errno;
 
   if (metric_id_write < 0 || ! hpcrun_safe_enter()) {
-    return real_write(fd, buf, count);
+    return f_write(fd, buf, count, dispatch);
   }
 
   // insert samples before and after the slow functions to make the
@@ -130,7 +132,7 @@ foilbase_write(write_fn_t* real_write, int fd, const void *buf, size_t count)
             0, 1, NULL);
 
   hpcrun_safe_exit();
-  ret = real_write(fd, buf, count);
+  ret = f_write(fd, buf, count, dispatch);
   save_errno = errno;
   hpcrun_safe_enter();
 
@@ -148,14 +150,15 @@ foilbase_write(write_fn_t* real_write, int fd, const void *buf, size_t count)
 
 
 size_t
-foilbase_fread(fread_fn_t* real_fread, void *ptr, size_t size, size_t count, FILE *stream)
+hpcrun_fread(void *ptr, size_t size, size_t count, FILE *stream,
+               const struct hpcrun_foil_appdispatch_libc_io* dispatch)
 {
   ucontext_t uc;
   size_t ret;
   int metric_id_read = hpcrun_metric_id_read();
 
   if (metric_id_read < 0 || ! hpcrun_safe_enter()) {
-    return real_fread(ptr, size, count, stream);
+    return f_fread(ptr, size, count, stream, dispatch);
   }
 
   // insert samples before and after the slow functions to make the
@@ -167,7 +170,7 @@ foilbase_fread(fread_fn_t* real_fread, void *ptr, size_t size, size_t count, FIL
             0, 1, NULL);
 
   hpcrun_safe_exit();
-  ret = real_fread(ptr, size, count, stream);
+  ret = f_fread(ptr, size, count, stream, dispatch);
   hpcrun_safe_enter();
 
   // FIXME: the second sample should not do a full unwind.
@@ -183,14 +186,15 @@ foilbase_fread(fread_fn_t* real_fread, void *ptr, size_t size, size_t count, FIL
 
 
 size_t
-foilbase_fwrite(fwrite_fn_t* real_fwrite, const void *ptr, size_t size, size_t count, FILE *stream)
+hpcrun_fwrite(const void *ptr, size_t size, size_t count, FILE *stream,
+                const struct hpcrun_foil_appdispatch_libc_io* dispatch)
 {
   ucontext_t uc;
   size_t ret;
   int metric_id_write = hpcrun_metric_id_write();
 
   if (metric_id_write < 0 || ! hpcrun_safe_enter()) {
-    return real_fwrite(ptr, size, count, stream);
+    return f_fwrite(ptr, size, count, stream, dispatch);
   }
 
   // insert samples before and after the slow functions to make the
@@ -201,7 +205,7 @@ foilbase_fwrite(fwrite_fn_t* real_fwrite, const void *ptr, size_t size, size_t c
             0, 1, NULL);
 
   hpcrun_safe_exit();
-  ret = real_fwrite(ptr, size, count, stream);
+  ret = f_fwrite(ptr, size, count, stream, dispatch);
   hpcrun_safe_enter();
 
   // FIXME: the second sample should not do a full unwind.

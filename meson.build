@@ -466,7 +466,7 @@ cupti_dep = dependency('', required: false)
 if get_option('cuda').allowed()
   cupti_dep = dependency(
     'CUDA',
-    modules: ['cupti'],
+    modules: ['cupti', 'cuda'],
     required: false,
     version: '>=11.2',
     include_type: 'system',
@@ -475,12 +475,11 @@ if get_option('cuda').allowed()
     cupti_dep = dependency(
       'CUDAToolkit',
       components: ['cupti'],
-      modules: ['CUDA::cupti'],
+      modules: ['CUDA::cupti', 'CUDA::cuda_driver', 'CUDA::cudart_static'],
       required: get_option('cuda'),
       include_type: 'system',
     )
   endif
-  cupti_dep = cupti_dep.partial_dependency(compile_args: true, includes: true)
 endif
 if cupti_dep.found()
   add_project_arguments(
@@ -643,7 +642,6 @@ endif
 
 _rocm_subdeps = [rocprofiler_dep, roctracer_dep, hip_dep, hsa_dep]
 rocm_dep = declare_dependency(dependencies: _rocm_subdeps, version: hip_dep.version())
-rocm_dep = rocm_dep.partial_dependency(compile_args: true, includes: true)
 rocprofiler_path = disabler()
 foreach dep : _rocm_subdeps
   if not dep.found()
@@ -652,7 +650,13 @@ foreach dep : _rocm_subdeps
   endif
 endforeach
 if rocm_dep.found()
-  add_project_arguments('-DUSE_ROCM', '-DHPCRUN_SS_AMD', language: ['c', 'cpp'])
+  add_project_arguments(
+    '-DUSE_ROCM',
+    '-DHPCRUN_SS_AMD',
+    '-D__HIP_PLATFORM_AMD__',
+    '-D__HIP_PLATFORM_HCC__',
+    language: ['c', 'cpp'],
+  )
   if cc.has_member(
     'roctracer_record_t',
     'kernel_name',

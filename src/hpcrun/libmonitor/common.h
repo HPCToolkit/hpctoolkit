@@ -80,24 +80,6 @@
 #define MONITOR_ERROR1(fmt)      MONITOR_ERROR_ARGS(fmt, __func__)
 #define MONITOR_ERROR(fmt, ...)  MONITOR_ERROR_ARGS(fmt, __func__, __VA_ARGS__)
 
-void *monitor_dlsym(const char *symbol);
-
-#define MONITOR_REQUIRE_DLSYM(var, name)  do {          \
-    if (var == NULL) {                                  \
-        var = monitor_dlsym(name);                      \
-    }                                                   \
-} while (0)
-
-#define MONITOR_GET_REAL_NAME_HELP(var, name)  \
-    MONITOR_REQUIRE_DLSYM(var, #name )
-#define MONITOR_GET_REAL_NAME_WRAP_HELP(var, name)  \
-    MONITOR_REQUIRE_DLSYM(var, #name )
-
-#define MONITOR_GET_REAL_NAME(var, name)  \
-    MONITOR_GET_REAL_NAME_HELP(var, name)
-#define MONITOR_GET_REAL_NAME_WRAP(var, name)  \
-    MONITOR_GET_REAL_NAME_WRAP_HELP(var, name)
-
 #define MONITOR_ASM_LABEL(name)         \
     asm volatile (".globl " #name );    \
     asm volatile ( #name ":" )
@@ -111,12 +93,12 @@ extern int monitor_debug;
 
 void monitor_early_init(void);
 void monitor_fork_init(void);
-void monitor_signal_init(void);
+void monitor_signal_init();
 void monitor_begin_process_fcn(void *, int);
 void monitor_end_process_fcn(int);
 void monitor_end_library_fcn(void);
 void monitor_thread_shootdown(void);
-int  monitor_shootdown_signal(void);
+int  monitor_shootdown_signal();
 int  monitor_sigwait_handler(int, siginfo_t *, void *);
 void monitor_remove_client_signals(sigset_t *, int);
 int  monitor_sigset_string(char *, int, const sigset_t *);

@@ -21,9 +21,11 @@
 // local includes
 //******************************************************************************
 
+#include "../../../foil/rocprofiler.h"
+#include "../../../foil/rocm-hsa.h"
+
 #include "rocprofiler-api.h"
 
-#include <rocprofiler/rocprofiler.h>
 #include <rocprofiler/activity.h>
 
 #include "../../activity/gpu-activity.h"
@@ -38,7 +40,6 @@
 
 #include "../../../audit/audit-api.h"
 #include "../../../thread_data.h"
-#include "../../../sample-sources/libdl.h"
 #include "../../../main.h"
 
 #include "../../../utilities/hpcrun-nanotime.h"
@@ -64,32 +65,12 @@
 #define DUMP_COUNTER_INFO(array, n, label)
 #endif
 
-
-#define FORALL_ROCPROFILER_ROUTINES(macro)                      \
-  macro(rocprofiler_open)   \
-  macro(rocprofiler_close)   \
-  macro(rocprofiler_get_metrics) \
-  macro(rocprofiler_set_queue_callbacks) \
-  macro(rocprofiler_start_queue_callbacks) \
-  macro(rocprofiler_stop_queue_callbacks) \
-  macro(rocprofiler_remove_queue_callbacks) \
-  macro(rocprofiler_iterate_info) \
-  macro(rocprofiler_group_get_data) \
-  macro(rocprofiler_get_group)
-
-
-
-#define ROCPROFILER_FN_NAME(f) DYN_FN_NAME(f)
-
-#define ROCPROFILER_FN(fn, args) \
-  static hsa_status_t (*ROCPROFILER_FN_NAME(fn)) args
-
 #define HPCRUN_ROCPROFILER_CALL(fn, args) \
 {      \
-  hsa_status_t status = ROCPROFILER_FN_NAME(fn) args;   \
+  hsa_status_t status = f_ ## fn args;   \
   if (status != HSA_STATUS_SUCCESS) {           \
     const char* error_string = NULL; \
-    rocprofiler_error_string(&error_string); \
+    f_rocprofiler_error_string(&error_string); \
     fprintf(stderr, "ERROR: %s\n", error_string); \
     hpcrun_terminate(); \
   }                                             \
@@ -198,105 +179,6 @@ static const char** requested_counter_description = NULL;
 
 // A spin lock to serialize GPU kernels
 static spinlock_t kernel_lock;
-
-//----------------------------------------------------------
-// rocprofiler function pointers for late binding
-//----------------------------------------------------------
-
-ROCPROFILER_FN
-(
- rocprofiler_open,
- (
-    hsa_agent_t agent,                  // GPU handle
-    rocprofiler_feature_t* features,    // [in/out] profiling feature array
-    uint32_t feature_count,                     // profiling feature count
-    rocprofiler_t** context,            // [out] profiling context handle
-    uint32_t mode,                              // profiling mode mask
-    rocprofiler_properties_t* properties        // profiler properties
- )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_close,
-  (
-    rocprofiler_t* context              // [in] profiling context
-  )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_get_metrics,
-  (
-    rocprofiler_t* context              // [in/out] profiling context
-  )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_set_queue_callbacks,
-  (
-    rocprofiler_queue_callbacks_t callbacks,           // callbacks
-    void* data
-  )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_start_queue_callbacks,
-  (
-    void
-  )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_stop_queue_callbacks,
-  (
-    void
-  )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_remove_queue_callbacks,
-  (
-    void
-  )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_iterate_info,
-  (
-    const hsa_agent_t* agent,                   // [in] GPU handle, NULL for all
-                                  // GPU agents
-    rocprofiler_info_kind_t kind,                       // kind of iterated info
-    hsa_status_t (*callback)(const rocprofiler_info_data_t info, void *data), // callback
-    void *data
-  )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_group_get_data,
-  (
-    rocprofiler_group_t* group // [in/out] profiling group
-  )
-);
-
-ROCPROFILER_FN
-(
-  rocprofiler_get_group,
-  (
-    rocprofiler_t* context,                       // [in/out] profiling context,
-                                  //  will be returned as
-                                  //  a part of the group structure
-    uint32_t index,                                     // [in] group index
-    rocprofiler_group_t* group          // [out] profiling group
-  )
-);
-
 
 
 //******************************************************************************
@@ -686,14 +568,14 @@ initialize_counter_information
 //******************************************************************************
 
 // This is necessary for rocprofiler callback to work
-void foilbase_OnLoadToolProp(void* v_settings){
+void hpcrun_OnLoadToolProp(void* v_settings){
   rocprofiler_settings_t* settings = v_settings;
 
   // Enable hsa interception for getting code object URIs
   settings->hsa_intercepting = 1;
 }
 
-void foilbase_OnUnloadTool() {
+void hpcrun_OnUnloadTool() {
   // Must be provided. Otherwise rocprofiler
   // will refuse to work
 }
@@ -740,13 +622,7 @@ rocprofiler_init
 
   monitor_disable_new_threads();
 
-  // We usually bind GPU vendor library in finalize_event_list.
-  // But here we must do early binding to query supported list of counters
-  if (rocprofiler_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to AMD rocprofiler library: %s\n", dlerror());
-    EEMSG("hpcrun: see hpcrun --help message for instruction on how to provide a rocprofiler install");
-    auditor_exports()->exit(-1);
-  }
+  f_hsa_init();
 
   initialize_counter_information();
 
@@ -788,36 +664,6 @@ rocprofiler_fini
 {
   HPCRUN_ROCPROFILER_CALL(rocprofiler_remove_queue_callbacks, ());
   return;
-}
-
-
-int
-rocprofiler_bind
-(
-  void
-)
-{
-  hpcrun_force_dlopen(true);
-  const char* rocprofiler_path = getenv("HSA_TOOLS_LIB");
-  if (rocprofiler_path == NULL) {
-    return DYNAMIC_BINDING_STATUS_ERROR;
-  }
-  CHK_DLOPEN(rocprofiler, rocprofiler_path, RTLD_NOW | RTLD_GLOBAL);
-  hpcrun_force_dlopen(false);
-
-#define ROCPROFILER_BIND(fn) \
-  CHK_DLSYM(rocprofiler, fn);
-
-  FORALL_ROCPROFILER_ROUTINES(ROCPROFILER_BIND);
-
-#undef ROCPROFILER_BIND
-
-  hpcrun_force_dlopen(true);
-  CHK_DLOPEN(hsa, "libhsa-runtime64.so", RTLD_NOW | RTLD_GLOBAL);
-  hsa_init();
-  hpcrun_force_dlopen(false);
-
-  return DYNAMIC_BINDING_STATUS_OK;
 }
 
 void

@@ -54,13 +54,6 @@ rocprofiler_fini
  int how
 );
 
-
-int
-rocprofiler_bind
-(
-  void
-);
-
 void
 rocprofiler_wait_context_callback
 (
@@ -110,9 +103,9 @@ rocprofiler_register_counter_callbacks
 );
 
 // NB: The argument is a pointer to a rocprofiler_settings_t
-void foilbase_OnLoadToolProp(void* settings);
+void hpcrun_OnLoadToolProp(void* settings);
 
-void foilbase_OnUnloadTool();
+void hpcrun_OnUnloadTool();
 
 
 #endif

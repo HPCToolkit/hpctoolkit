@@ -123,11 +123,13 @@ level0_commandlist_alloc_kernel
 (
  ze_kernel_handle_t kernel,
  ze_event_handle_t event,
- ze_event_pool_handle_t event_pool
+ ze_event_pool_handle_t event_pool,
+ const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   level0_data_node_t* list_entry = level0_data_node_new();
   list_entry->type = LEVEL0_KERNEL;
+  list_entry->dispatch = dispatch;
   list_entry->details.kernel.kernel = kernel;
   list_entry->event = event;
   list_entry->event_pool = event_pool;
@@ -144,11 +146,13 @@ level0_commandlist_alloc_memcpy
  ze_memory_type_t dst_type,
  size_t copy_size,
  ze_event_handle_t event,
- ze_event_pool_handle_t event_pool
+ ze_event_pool_handle_t event_pool,
+ const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   level0_data_node_t* list_entry = level0_data_node_new();
   list_entry->type = LEVEL0_MEMCPY;
+  list_entry->dispatch = dispatch;
   list_entry->details.memcpy.src_type = src_type;
   list_entry->details.memcpy.dst_type = dst_type;
   list_entry->details.memcpy.copy_size = copy_size;
@@ -166,10 +170,11 @@ level0_commandlist_append_kernel
  level0_data_node_t** command_list,
  ze_kernel_handle_t kernel,
  ze_event_handle_t event,
- ze_event_pool_handle_t event_pool
+ ze_event_pool_handle_t event_pool,
+ const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
-  level0_data_node_t* list_entry = level0_commandlist_alloc_kernel(kernel, event, event_pool);
+  level0_data_node_t* list_entry = level0_commandlist_alloc_kernel(kernel, event, event_pool, dispatch);
   link_node(command_list, list_entry);
   return list_entry;
 }
@@ -182,10 +187,11 @@ level0_commandlist_append_memcpy
  ze_memory_type_t dst_type,
  size_t copy_size,
  ze_event_handle_t event,
- ze_event_pool_handle_t event_pool
+ ze_event_pool_handle_t event_pool,
+ const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
-  level0_data_node_t* list_entry = level0_commandlist_alloc_memcpy(src_type, dst_type, copy_size, event, event_pool);
+  level0_data_node_t* list_entry = level0_commandlist_alloc_memcpy(src_type, dst_type, copy_size, event, event_pool, dispatch);
   link_node(command_list, list_entry);
   return list_entry;
 }

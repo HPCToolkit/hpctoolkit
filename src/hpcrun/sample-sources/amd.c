@@ -8,8 +8,6 @@
 //******************************************************************************
 
 #define _GNU_SOURCE
-#define __HIP_PLATFORM_AMD__
-#define __HIP_PLATFORM_HCC__
 
 #include <alloca.h>
 #include <ctype.h>
@@ -39,8 +37,6 @@
 //******************************************************************************
 
 #include "amd.h"
-
-#include "libdl.h"
 
 #include "simple_oo.h"
 #include "sample_source_obj.h"
@@ -162,16 +158,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
-    auditor_exports()->exit(-1);
-  }
-
-  if (hip_bind()) {
-    EEMSG("hpcrun: unable to bind to HIP AMD library %s\n", dlerror());
-    auditor_exports()->exit(-1);
-  }
-
   roctracer_init();
 
   device_finalizer_flush.fn = roctracer_flush;

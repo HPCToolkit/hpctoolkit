@@ -31,8 +31,6 @@
 // local includes
 //******************************************************************************
 
-#include "libdl.h"
-
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
@@ -346,16 +344,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   gpu_metrics_default_enable();
   gpu_metrics_KINFO_enable();
-
-  if (cuda_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
-    auditor_exports()->exit(-1);
-  }
-
-  if (cupti_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
-    auditor_exports()->exit(-1);
-  }
 
   // Register hpcrun callbacks
   device_finalizer_flush.fn = cupti_device_flush;

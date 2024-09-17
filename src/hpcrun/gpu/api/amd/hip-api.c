@@ -21,20 +21,16 @@
 //*****************************************************************************
 
 #define _GNU_SOURCE
-#define __HIP_PLATFORM_AMD__
-#define __HIP_PLATFORM_HCC__
 
 #include <dlfcn.h>
 #include <stdio.h>
 #include <string.h>    // memset
 
-#include <hip/hip_runtime.h>
-
 //*****************************************************************************
 // local include files
 //*****************************************************************************
 
-#include "../../../sample-sources/libdl.h"
+#include "../../../foil/rocm-hip.h"
 #include "../../../messages/messages.h"
 
 #include "hip-api.h"
@@ -45,53 +41,14 @@
 // macros
 //*****************************************************************************
 
-#define HIP_FN_NAME(f) DYN_FN_NAME(f)
-
-#define HIP_FN(fn, args) \
-  static hipError_t (*HIP_FN_NAME(fn)) args
-
 #define HPCRUN_HIP_API_CALL(fn, args)                              \
 {                                                                   \
-  hipError_t error_result = HIP_FN_NAME(fn) args;                   \
+  hipError_t error_result = f_##fn args;                   \
   if (error_result != hipSuccess) {                                 \
     ETMSG(CUDA, "hip api %s returned %d", #fn, (int) error_result);    \
     exit(-1);                                                       \
   }                                                                 \
 }
-
-#define FORALL_HIP_ROUTINES(macro)             \
-  macro(hipDeviceSynchronize)                  \
-  macro(hipDeviceGetAttribute)                 \
-  macro(hipCtxGetCurrent)
-
-//******************************************************************************
-// static data
-//******************************************************************************
-
-HIP_FN
-(
- hipDeviceSynchronize,
-( void )
-);
-
-HIP_FN
-(
- hipDeviceGetAttribute,
- (
- int *pi,
- hipDeviceAttribute_t attrib,
- int dev
- )
-);
-
-HIP_FN
-(
- hipCtxGetCurrent,
- (
- hipCtx_t *ctx
- )
-);
-
 
 //******************************************************************************
 // private operations
@@ -118,23 +75,6 @@ hip_device_sm_blocks_query
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
-int
-hip_bind
-(
-void
-)
-{
-  CHK_DLOPEN(hip, "libamdhip64.so", RTLD_NOW | RTLD_GLOBAL);
-
-#define HIP_BIND(fn) \
-  CHK_DLSYM(hip, fn);
-
-  FORALL_HIP_ROUTINES(HIP_BIND);
-#undef HIP_BIND
-
-  return 0;
-}
 
 int
 hip_context

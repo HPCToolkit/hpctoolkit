@@ -57,12 +57,6 @@ typedef enum {
 // interface functions
 //******************************************************************************
 
-int
-cupti_bind
-(
- void
-);
-
 
 void
 cupti_activity_process

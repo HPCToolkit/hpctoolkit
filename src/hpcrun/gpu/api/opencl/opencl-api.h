@@ -15,6 +15,7 @@
 #include "../../activity/gpu-activity.h"
 #include "../common/gpu-instrumentation.h"
 #include "opencl-memory-manager.h"
+#include "../../../foil/opencl.h"
 
 #include <CL/cl.h>
 
@@ -70,9 +71,9 @@ opencl_activity_completion_callback
 void
 opencl_timing_info_get
 (
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
   gpu_interval_t *,
-  cl_event
+  cl_event,
+  const struct hpcrun_foil_appdispatch_opencl*
 );
 
 

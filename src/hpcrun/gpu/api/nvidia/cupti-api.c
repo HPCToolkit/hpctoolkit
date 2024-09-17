@@ -35,6 +35,8 @@
 #include "../../../audit/binding.h"
 #include "../../../audit/audit-api.h"
 
+#include "../../../foil/nvidia.h"
+
 
 //***************************************************************************
 // workaround for cuptiFlushAll hang
@@ -134,7 +136,6 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 
 #include "../../../ompt/ompt-device.h"
 
-#include "../../../sample-sources/libdl.h"
 #include "../../../sample-sources/nvidia.h"
 
 #include "../../../utilities/hpcrun-nanotime.h"
@@ -158,53 +159,18 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include "../../common/gpu-print.h"
 
 
-#define CUPTI_LIBRARY_LOCATION "/lib64/libcupti.so"
-#define CUPTI_PATH_FROM_CUDA "extras/CUPTI"
-
-
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE (16 * 1024 * 1024)
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_ALIGNMENT (8)
 
-#define CUPTI_FN_NAME(f) DYN_FN_NAME(f)
-
-#define CUPTI_FN(fn, args) \
-  static CUptiResult (*CUPTI_FN_NAME(fn)) args
-
 #define HPCRUN_CUPTI_CALL(fn, args)  \
 {  \
-  CUptiResult status = CUPTI_FN_NAME(fn) args;  \
+  CUptiResult status = fn args;  \
   if (status != CUPTI_SUCCESS) {  \
     cupti_error_report(status, #fn);  \
   }  \
 }
 
-#define HPCRUN_CUPTI_CALL_NOERROR(fn, args)  \
-{  \
-  CUPTI_FN_NAME(fn) args;  \
-}
-
-
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
-
-#define FORALL_CUPTI_ROUTINES(macro)             \
-  macro(cuptiActivityConfigurePCSampling)        \
-  macro(cuptiActivityDisable)                    \
-  macro(cuptiActivityDisableContext)             \
-  macro(cuptiActivityEnable)                     \
-  macro(cuptiActivityEnableContext)              \
-  macro(cuptiActivityFlushAll)                   \
-  macro(cuptiActivitySetAttribute)               \
-  macro(cuptiActivityGetNextRecord)              \
-  macro(cuptiActivityGetNumDroppedRecords)       \
-  macro(cuptiActivityPopExternalCorrelationId)   \
-  macro(cuptiActivityPushExternalCorrelationId)  \
-  macro(cuptiActivityRegisterCallbacks)          \
-  macro(cuptiGetTimestamp)                       \
-  macro(cuptiEnableDomain)                       \
-  macro(cuptiFinalize)                           \
-  macro(cuptiGetResultString)                    \
-  macro(cuptiSubscribe)                          \
-  macro(cuptiUnsubscribe)
 
 
 
@@ -313,321 +279,9 @@ static cupti_load_callback_t cupti_unload_callback = 0;
 static CUpti_SubscriberHandle cupti_subscriber;
 
 
-//----------------------------------------------------------
-// cupti function pointers for late binding
-//----------------------------------------------------------
-
-CUPTI_FN
-(
- cuptiActivityEnable,
- (
-  CUpti_ActivityKind kind
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityDisable,
- (
- CUpti_ActivityKind kind
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityEnableContext,
- (
-  CUcontext context,
-  CUpti_ActivityKind kind
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityDisableContext,
- (
-  CUcontext context,
-  CUpti_ActivityKind kind
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityConfigurePCSampling,
- (
-  CUcontext ctx,
-  CUpti_ActivityPCSamplingConfig *config
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityRegisterCallbacks,
- (
-  CUpti_BuffersCallbackRequestFunc funcBufferRequested,
-  CUpti_BuffersCallbackCompleteFunc funcBufferCompleted
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityPushExternalCorrelationId,
- (
-  CUpti_ExternalCorrelationKind kind,
-  uint64_t id
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityPopExternalCorrelationId,
- (
-  CUpti_ExternalCorrelationKind kind,
-  uint64_t *lastId
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityGetNextRecord,
- (
-  uint8_t* buffer,
-  size_t validBufferSizeBytes,
-  CUpti_Activity **record
- )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityGetNumDroppedRecords,
- (
-  CUcontext context,
-  uint32_t streamId,
-  size_t *dropped
- )
-);
-
-
-CUPTI_FN
-(
-  cuptiActivitySetAttribute,
-  (
-   CUpti_ActivityAttribute attribute,
-   size_t *value_size,
-   void *value
-  )
-);
-
-
-CUPTI_FN
-(
- cuptiActivityFlushAll,
- (
-  uint32_t flag
- )
-);
-
-
-CUPTI_FN
-(
- cuptiGetTimestamp,
- (
-  uint64_t *timestamp
- )
-);
-
-
-CUPTI_FN
-(
-  cuptiGetTimestamp,
-  (
-    uint64_t* timestamp
-  )
-);
-
-
-CUPTI_FN
-(
- cuptiEnableDomain,
- (
-  uint32_t enable,
-  CUpti_SubscriberHandle subscriber,
-  CUpti_CallbackDomain domain
- )
-);
-
-
-CUPTI_FN
-(
- cuptiFinalize,
- (
-  void
- )
-);
-
-
-CUPTI_FN
-(
- cuptiGetResultString,
- (
-  CUptiResult result,
-  const char **str
- )
-);
-
-
-CUPTI_FN
-(
- cuptiSubscribe,
- (
-  CUpti_SubscriberHandle *subscriber,
-  CUpti_CallbackFunc callback,
-  void *userdata
- )
-);
-
-
-CUPTI_FN
-(
- cuptiUnsubscribe,
- (
-  CUpti_SubscriberHandle subscriber
- )
-);
-
-
-
 //******************************************************************************
 // private operations
 //******************************************************************************
-
-int
-cuda_path
-(
- struct dl_phdr_info *info,
- size_t size,
- void *data
-)
-{
-  char *buffer = (char *) data;
-  const char *suffix = strstr(info->dlpi_name, "libcudart");
-  if (suffix) {
-    // CUDA library organization after 9.0
-    suffix = strstr(info->dlpi_name, "targets");
-    if (!suffix) {
-      // CUDA library organization in 9.0 or earlier
-      suffix = strstr(info->dlpi_name, "lib64");
-    }
-  }
-  if (suffix){
-    int len = suffix - info->dlpi_name;
-    strncpy(buffer, info->dlpi_name, len);
-    buffer[len] = 0;
-    return 1;
-  }
-  return 0;
-}
-
-
-static void
-cupti_set_default_path(char *buffer)
-{
-  strcpy(buffer, CUPTI_INSTALL_PREFIX CUPTI_LIBRARY_LOCATION);
-}
-
-int
-library_path_resolves(const char *buffer)
-{
-  struct stat sb;
-  return stat(buffer, &sb) == 0;
-}
-
-
-static const char *
-cupti_path
-(
-  void
-)
-{
-  const char *path = "libcupti.so";
-  int resolved = 0;
-
-  static char buffer[PATH_MAX];
-  buffer[0] = 0;
-
-  // open an NVIDIA library to find the CUDA path with dl_iterate_phdr
-  // note: a version of this file with a more specific name may
-  // already be loaded. thus, even if the dlopen fails, we search with
-  // dl_iterate_phdr.
-  void *h = NULL /* hpcrun_raw_dlopen("libcudart.so", RTLD_LOCAL | RTLD_LAZY) */;
-
-  if (dl_iterate_phdr(cuda_path, buffer)) {
-    // invariant: buffer contains CUDA home
-    int zero_index = strlen(buffer);
-    strcat(buffer, CUPTI_LIBRARY_LOCATION);
-
-    if (library_path_resolves(buffer)) {
-      path = buffer;
-      resolved = 1;
-    } else {
-      buffer[zero_index] = 0;
-      strcat(buffer, CUPTI_PATH_FROM_CUDA CUPTI_LIBRARY_LOCATION);
-
-      if (library_path_resolves(buffer)) {
-        path = buffer;
-        resolved = 1;
-      } else {
-        buffer[zero_index - 1] = 0;
-        fprintf(stderr, "NOTE: CUDA root at %s lacks a copy of NVIDIA's CUPTI "
-          "tools library.\n", buffer);
-      }
-    }
-  }
-
-  if (!resolved) {
-    cupti_set_default_path(buffer);
-    if (library_path_resolves(buffer)) {
-      fprintf(stderr, "NOTE: Using builtin path for NVIDIA's CUPTI tools "
-        "library %s.\n", buffer);
-      path = buffer;
-      resolved = 1;
-    }
-  }
-
-  if (h) hpcrun_raw_dlclose(h);
-
-  return path;
-}
-
-
-int
-cupti_bind
-(
-  void
-)
-{
-  hpcrun_force_dlopen(true);
-  CHK_DLOPEN(cupti, cupti_path(), RTLD_NOW | RTLD_GLOBAL);
-  hpcrun_force_dlopen(false);
-
-#define CUPTI_BIND(fn) \
-  CHK_DLSYM(cupti, fn);
-
-  FORALL_CUPTI_ROUTINES(CUPTI_BIND);
-
-#undef CUPTI_BIND
-
-  return DYNAMIC_BINDING_STATUS_OK;
-}
 
 
 static cct_node_t *
@@ -665,7 +319,7 @@ cupti_error_report
 )
 {
   const char *error_string;
-  CUPTI_FN_NAME(cuptiGetResultString)(error, &error_string);
+  f_cuptiGetResultString(error, &error_string);
 
   int exitcode;
   switch(error) {
@@ -1207,7 +861,7 @@ cupti_device_timestamp_get
  uint64_t *time
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiGetTimestamp, (time));
+  HPCRUN_CUPTI_CALL(f_cuptiGetTimestamp, (time));
 }
 
 
@@ -1217,7 +871,7 @@ cupti_activity_timestamp_get
  uint64_t *time
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiGetTimestamp, (time));
+  HPCRUN_CUPTI_CALL(f_cuptiGetTimestamp, (time));
 }
 
 
@@ -1229,12 +883,12 @@ cupti_device_buffer_config
 )
 {
   size_t value_size = sizeof(size_t);
-  HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
+  HPCRUN_CUPTI_CALL(f_cuptiActivitySetAttribute,
                    (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &buf_size));
   int rt_major, rt_minor;
   cuda_get_runtime_version(&rt_major, &rt_minor);
   if (rt_major <= 12 && rt_minor < 3) {
-    HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
+    HPCRUN_CUPTI_CALL(f_cuptiActivitySetAttribute,
                      (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, &value_size, &sem_size));
   }
 }
@@ -1271,7 +925,7 @@ cupti_buffer_cursor_advance
   CUpti_Activity **current
 )
 {
-  return (CUPTI_FN_NAME(cuptiActivityGetNextRecord)(buffer, size, current) == CUPTI_SUCCESS);
+  return (f_cuptiActivityGetNextRecord(buffer, size, current) == CUPTI_SUCCESS);
 }
 
 
@@ -1329,8 +983,8 @@ cupti_monitoring_set
 
   cupti_activity_enable_t action =
     (enable ?
-     CUPTI_FN_NAME(cuptiActivityEnable):
-     CUPTI_FN_NAME(cuptiActivityDisable));
+     f_cuptiActivityEnable:
+     f_cuptiActivityDisable);
 
   int i = 0;
   for (;;) {
@@ -1385,7 +1039,7 @@ cupti_start
  void
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiActivityRegisterCallbacks,
+  HPCRUN_CUPTI_CALL(f_cuptiActivityRegisterCallbacks,
                    (cupti_activity_enabled.buffer_request,
                     cupti_activity_enabled.buffer_complete));
 }
@@ -1397,7 +1051,7 @@ cupti_finalize
  void
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiFinalize, ());
+  HPCRUN_CUPTI_CALL(f_cuptiFinalize, ());
 }
 
 
@@ -1409,7 +1063,7 @@ cupti_num_dropped_records_get
  size_t* dropped
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiActivityGetNumDroppedRecords,
+  HPCRUN_CUPTI_CALL(f_cuptiActivityGetNumDroppedRecords,
                    (context, streamId, dropped));
 }
 
@@ -1428,17 +1082,17 @@ cupti_callbacks_subscribe
   cupti_unload_callback = cupti_unload_callback_cuda;
   cupti_correlation_callback = gpu_application_thread_correlation_callback;
 
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_subscriber,
+  HPCRUN_CUPTI_CALL(f_cuptiSubscribe, (&cupti_subscriber,
                    (CUpti_CallbackFunc) cupti_subscriber_callback,
                    (void *) NULL));
 
-  HPCRUN_CUPTI_CALL(cuptiEnableDomain,
+  HPCRUN_CUPTI_CALL(f_cuptiEnableDomain,
                    (1, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
-  HPCRUN_CUPTI_CALL(cuptiEnableDomain,
+  HPCRUN_CUPTI_CALL(f_cuptiEnableDomain,
                    (1, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
 
-  HPCRUN_CUPTI_CALL(cuptiEnableDomain,
+  HPCRUN_CUPTI_CALL(f_cuptiEnableDomain,
                    (1, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
 }
 
@@ -1452,16 +1106,16 @@ cupti_callbacks_unsubscribe
   cupti_unload_callback = 0;
   cupti_correlation_callback = 0;
 
-  HPCRUN_CUPTI_CALL(cuptiEnableDomain,
+  HPCRUN_CUPTI_CALL(f_cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
 
-  HPCRUN_CUPTI_CALL(cuptiEnableDomain,
+  HPCRUN_CUPTI_CALL(f_cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
 
-  HPCRUN_CUPTI_CALL(cuptiEnableDomain,
+  HPCRUN_CUPTI_CALL(f_cuptiEnableDomain,
                     (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
+  HPCRUN_CUPTI_CALL(f_cuptiUnsubscribe, (cupti_subscriber));
 }
 
 
@@ -1475,7 +1129,7 @@ cupti_correlation_enable
 
   // For unknown reasons, external correlation ids do not return using
   // cuptiActivityEnableContext
-  HPCRUN_CUPTI_CALL(cuptiActivityEnable,
+  HPCRUN_CUPTI_CALL(f_cuptiActivityEnable,
                    (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
 
   TMSG(CUPTI, "exit cupti_correlation_enable");
@@ -1488,7 +1142,7 @@ cupti_correlation_disable
 )
 {
   if (cupti_correlation_enabled) {
-    HPCRUN_CUPTI_CALL(cuptiActivityDisable,
+    HPCRUN_CUPTI_CALL(f_cuptiActivityDisable,
                      (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
     cupti_correlation_enabled = false;
   }
@@ -1526,12 +1180,12 @@ cupti_pc_sampling_enable
   if (retval == 0) { // only turn something on if success determining mode
 
     if (!required) {
-      HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
+      HPCRUN_CUPTI_CALL(f_cuptiActivityConfigurePCSampling, (context, &config));
 
-      HPCRUN_CUPTI_CALL(cuptiActivityEnableContext,
+      HPCRUN_CUPTI_CALL(f_cuptiActivityEnableContext,
                         (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
      } else {
-      HPCRUN_CUPTI_CALL(cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+      HPCRUN_CUPTI_CALL(f_cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
      }
   }
 
@@ -1546,7 +1200,7 @@ cupti_pc_sampling_disable
 )
 {
   if (cupti_pc_sampling_context_set) {
-    HPCRUN_CUPTI_CALL(cuptiActivityDisableContext,
+    HPCRUN_CUPTI_CALL(f_cuptiActivityDisableContext,
                      (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 
     cupti_pc_sampling_context_set = false;
@@ -1570,8 +1224,7 @@ cupti_activity_flush
     FLUSH_ALARM_INIT();
     if (!FLUSH_ALARM_FIRED()) {
       FLUSH_ALARM_SET();
-      HPCRUN_CUPTI_CALL_NOERROR
-        (cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+      f_cuptiActivityFlushAll(CUPTI_ACTIVITY_FLAG_FLUSH_FORCED);
       FLUSH_ALARM_TEST();
       FLUSH_ALARM_CLEAR();
     }
@@ -1620,7 +1273,7 @@ cupti_runtime_api_flag_set()
 void
 cupti_correlation_id_push(uint64_t id)
 {
-  HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
+  HPCRUN_CUPTI_CALL(f_cuptiActivityPushExternalCorrelationId,
     (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, id));
 }
 
@@ -1629,7 +1282,7 @@ uint64_t
 cupti_correlation_id_pop()
 {
   uint64_t id;
-  HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
+  HPCRUN_CUPTI_CALL(f_cuptiActivityPopExternalCorrelationId,
     (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &id));
   return id;
 }
