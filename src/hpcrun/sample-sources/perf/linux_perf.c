@@ -792,7 +792,10 @@ METHOD_FN(supports_event, const char *ev_str)
   int num_events = perf_util_parse_eventname(ev_str, &perf_obj);
 
   for (int i=0; i<num_events; i++) {
-    if (!pfmu_isSupported(perf_obj.event_names[i])) {
+    // issue #862: check if perfmon returns negative number or not
+    // if it's a negative number, then it isn't a perf_event event
+    if (pfmu_isSupported(perf_obj.event_names[i]) < 0) {
+      perf_util_free_eventname(&perf_obj);
       return false;
     }
   }
