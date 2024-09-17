@@ -59,13 +59,15 @@ int main() {
   }
 
   // Copy the data in
-  err = hipMemcpy(d_a, a.data(), a.size() * sizeof(decltype(a)::value_type), hipMemcpyHostToDevice);
+  err = hipMemcpy(d_a, a.data(), a.size() * sizeof(decltype(a)::value_type),
+                  hipMemcpyHostToDevice);
   if (err != hipSuccess) {
     std::cerr << "Failed to memcpy a -> d_a: " << hipGetErrorString(err) << "\n";
     return 1;
   }
 
-  err = hipMemcpy(d_b, b.data(), b.size() * sizeof(decltype(b)::value_type), hipMemcpyHostToDevice);
+  err = hipMemcpy(d_b, b.data(), b.size() * sizeof(decltype(b)::value_type),
+                  hipMemcpyHostToDevice);
   if (err != hipSuccess) {
     std::cerr << "Failed to memcpy b -> d_b: " << hipGetErrorString(err) << "\n";
     return 1;
@@ -76,7 +78,8 @@ int main() {
   vectorAdd<<<(a.size() + tpb - 1) / tpb, tpb>>>(d_a, d_b, d_c, a.size());
 
   // Copy the result back out
-  err = hipMemcpy(c.data(), d_c, c.size() * sizeof(decltype(c)::value_type), hipMemcpyDeviceToHost);
+  err = hipMemcpy(c.data(), d_c, c.size() * sizeof(decltype(c)::value_type),
+                  hipMemcpyDeviceToHost);
   if (err != hipSuccess) {
     std::cerr << "Failed to memcpy d_c -> c: " << hipGetErrorString(err) << "\n";
     return 1;
@@ -99,8 +102,8 @@ int main() {
   // Validate that the answer is correct
   for (int i = 0; i < c.size(); i++) {
     if (c[i] != 2 * i + 4) {
-      std::cerr << "Invalid result at c[" << i << "]: expected " << (i + 4) << ", got " << c[i]
-                << "\n";
+      std::cerr << "Invalid result at c[" << i << "]: expected " << (i + 4) << ", got "
+                << c[i] << "\n";
       return 1;
     }
   }

@@ -303,12 +303,18 @@ _my_linux_dynamic_files = files(
   'monitor-exts/openmp.c',
 )
 _my_mips_files = files('unwind/common/default_validation_summary.c')
-_my_ppc_files = files('trampoline/ppc64/ppc64-tramp.s', 'utilities/arch/ppc64/ppc64-context-pc.c')
+_my_ppc_files = files(
+  'trampoline/ppc64/ppc64-tramp.s',
+  'utilities/arch/ppc64/ppc64-context-pc.c',
+)
 _my_x86_files = files(
   'trampoline/x86-family/x86-tramp.S',
   'utilities/arch/x86-family/x86-context-pc.c',
 )
-_my_ia64_files = files('trampoline/ia64/ia64-tramp.s', 'utilities/arch/ia64/ia64-context-pc.c')
+_my_ia64_files = files(
+  'trampoline/ia64/ia64-tramp.s',
+  'utilities/arch/ia64/ia64-context-pc.c',
+)
 _my_aarch64_files = files(
   'trampoline/aarch64/aarch64-tramp.c',
   'utilities/arch/libunwind/libunwind-context-pc.c',
@@ -613,8 +619,14 @@ _hpcrun_libs += shared_module(
 
 # Configure and install the hpcrun launcher
 _prefixes_cfg = configuration_data()
-_prefixes_cfg.set_quoted('HPCRUN_INSTALL_LIBDIR', get_option('prefix') / get_option('libdir'))
-_prefixes_h = configure_file(output: 'hpcrun-install-prefixes.h', configuration: _prefixes_cfg)
+_prefixes_cfg.set_quoted(
+  'HPCRUN_INSTALL_LIBDIR',
+  get_option('prefix') / get_option('libdir'),
+)
+_prefixes_h = configure_file(
+  output: 'hpcrun-install-prefixes.h',
+  configuration: _prefixes_cfg,
+)
 hpcrun = executable('hpcrun', 'launch.cpp', version_cpp, _prefixes_h, install: true)
 
 # Build and install the client API

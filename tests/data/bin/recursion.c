@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-// The following code implements a "heart" or "double-diamond" recursion pattern: two recursive
-// loops sharing a call edge.
+// The following code implements a "heart" or "double-diamond" recursion pattern: two
+// recursive loops sharing a call edge.
 
 __attribute__((noinline)) static void top1(volatile double* x, int i);
 __attribute__((noinline)) static void top2(volatile double* x, int i);

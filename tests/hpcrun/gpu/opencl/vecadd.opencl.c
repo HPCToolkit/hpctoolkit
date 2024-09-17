@@ -137,8 +137,8 @@ int main() {
   if (err != CL_SUCCESS) {
     char log[4096] = {0};
     size_t logsz;
-    cl_uint xerr =
-        clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof log, log, &logsz);
+    cl_uint xerr = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG,
+                                         sizeof log, log, &logsz);
     if (xerr != CL_SUCCESS) {
       fprintf(stderr, "OpenCL error, failed to get build log\n");
       handleCLError(err, 1);
@@ -186,7 +186,8 @@ int main() {
     handleCLError(err, 1);
 
   // Execute the kernel over the entire range of the data set
-  err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, &localSize, 0, NULL, NULL);
+  err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalSize, &localSize, 0, NULL,
+                               NULL);
   if (err != CL_SUCCESS)
     handleCLError(err, 1);
 

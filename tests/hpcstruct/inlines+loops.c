@@ -11,6 +11,8 @@ volatile int unconstant_j = 2;
 volatile int unconstant_k = 2;
 volatile int x = 17;
 
+// clang-format off
+
 // DECLARE: !!S^ <S/* i=* l=inparbounds v=* <S/* i=* l="0" v=*
 // DECLARE: !!S0^ <S/* i=* l="0" v=*
 // DECLARE: !!A^ dbg:<A* i=* f=* l=* n="" v="{}" <*>* </A

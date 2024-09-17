@@ -25,7 +25,9 @@ from .base import AccuracyStrategy, DiffHunk, DiffStrategy
 __all__ = ["MonotonicHunk", "FixedAlteredHunk", "StrictDiff", "StrictAccuracy"]
 
 
-def _pretty_path(path: "collections.abc.Iterable[typing.Union[str, int]]", obj) -> typing.List[str]:
+def _pretty_path(
+    path: "collections.abc.Iterable[typing.Union[str, int]]", obj
+) -> typing.List[str]:
     """Given a canonical path to a field of obj, generate a list of lines suitable for printing,
     except for indentation.
     """
@@ -95,16 +97,22 @@ class _TrieNode(collections.defaultdict):
             str_a = textwrap.indent(_yaml2str(_stripped_obj(obj_a), "rt"), indent)
             str_b = textwrap.indent(_yaml2str(_stripped_obj(obj_b), "rt"), indent)
             out.write(
-                "".join(difflib.ndiff(str_a.splitlines(True), str_b.splitlines(True))).rstrip()
+                "".join(
+                    difflib.ndiff(str_a.splitlines(True), str_b.splitlines(True))
+                ).rstrip()
                 + "\n"
             )
         for obj in self.removed:
             out.write(
-                textwrap.indent(_yaml2str(obj, "rt").strip(), prefix_rm, lambda _: True) + "\n"
+                textwrap.indent(_yaml2str(obj, "rt").strip(), prefix_rm, lambda _: True)
+                + "\n"
             )
         for obj in self.added:
             out.write(
-                textwrap.indent(_yaml2str(obj, "rt").strip(), prefix_add, lambda _: True) + "\n"
+                textwrap.indent(
+                    _yaml2str(obj, "rt").strip(), prefix_add, lambda _: True
+                )
+                + "\n"
             )
 
         for key in sorted(self.keys()):
@@ -291,7 +299,9 @@ class StrictDiff(DiffStrategy):
     def _key_m(
         self, o, *, side_a: bool, key: typing.Optional[typing.Tuple[dict, dict]] = None
     ) -> collections.abc.Hashable:
-        return self._key(key[0 if side_a else 1][o] if key is not None else o, side_a=side_a)
+        return self._key(
+            key[0 if side_a else 1][o] if key is not None else o, side_a=side_a
+        )
 
     @_key.register
     def _(self, o: None, *, side_a: bool):
@@ -478,7 +488,9 @@ class StrictDiff(DiffStrategy):
     # =====================
 
     @_update.register
-    @check_fields("general", "id_names", "metrics", "files", "modules", "functions", "context")
+    @check_fields(
+        "general", "id_names", "metrics", "files", "modules", "functions", "context"
+    )
     def _(self, a: v4.metadb.MetaDB, b: v4.metadb.MetaDB):
         self._set(a, b)
         self._update(a.general, b.general)
@@ -548,7 +560,11 @@ class StrictDiff(DiffStrategy):
 
     @_update.register
     @check_fields("scope", "prop_metric_id")
-    def _(self, a: v4.metadb.PropagationScopeInstance, b: v4.metadb.PropagationScopeInstance):
+    def _(
+        self,
+        a: v4.metadb.PropagationScopeInstance,
+        b: v4.metadb.PropagationScopeInstance,
+    ):
         assert self._key_a(a) == self._key_b(b)
         if self._presume(a.scope, b.scope):
             self._set(a, b)
@@ -827,7 +843,11 @@ class StrictDiff(DiffStrategy):
 
     @_update.register
     @check_fields("timestamp_range", "traces")
-    def _(self, a: v4.tracedb.ContextTraceHeadersSection, b: v4.tracedb.ContextTraceHeadersSection):
+    def _(
+        self,
+        a: v4.tracedb.ContextTraceHeadersSection,
+        b: v4.tracedb.ContextTraceHeadersSection,
+    ):
         if a.timestamp_range == b.timestamp_range:
             self._set(a, b)
         else:
@@ -907,7 +927,8 @@ class StrictAccuracy(AccuracyStrategy):
             self._diffcontext = a2b
             self.failed_cnt, self.total_cnt = 0, 0
             self.failures: typing.Dict[
-                typing.Tuple[float, float, typing.Union[float, CmpError]], typing.List[str]
+                typing.Tuple[float, float, typing.Union[float, CmpError]],
+                typing.List[str],
             ] = {}
             for a, b in a2b.items():
                 self._compare(a, b)
@@ -948,7 +969,10 @@ class StrictAccuracy(AccuracyStrategy):
             if len(fails) <= 30:
                 print(f"  Details of failures{suffix} (expected != got):", file=out)
             else:
-                print(f"  Details of 30 worst failures{suffix} (expected != got):", file=out)
+                print(
+                    f"  Details of 30 worst failures{suffix} (expected != got):",
+                    file=out,
+                )
             for key in fails[:30]:
                 a, b, diff = key
                 paths = self.failures[key]
@@ -964,7 +988,9 @@ class StrictAccuracy(AccuracyStrategy):
                         if exp_a == exp_b
                         else f"({min(exp_a,exp_b):d}|{max(exp_a,exp_b):d})"
                     )
-                    why = f"difference of {diff:f} * 2^{exp} = {diff*self._norm2ulp} ULPs"
+                    why = (
+                        f"difference of {diff:f} * 2^{exp} = {diff*self._norm2ulp} ULPs"
+                    )
                 else:
                     raise AssertionError(f"Invalid diff value: {diff!r}")
 
@@ -972,7 +998,9 @@ class StrictAccuracy(AccuracyStrategy):
                 print(
                     "   At: "
                     + "\n".join(
-                        textwrap.wrap(" ".join(paths), width=100, subsequent_indent=" " * 5)
+                        textwrap.wrap(
+                            " ".join(paths), width=100, subsequent_indent=" " * 5
+                        )
                     ),
                     file=out,
                 )
@@ -1106,7 +1134,11 @@ class StrictAccuracy(AccuracyStrategy):
         else:
             assert isinstance(self.diff.a, v4.cctdb.ContextDB)
             assert isinstance(self.diff.b, v4.cctdb.ContextDB)
-            i = self.diff.a.ctx_infos.contexts.index(a), self.diff.b.ctx_infos.contexts.index(b)
-        for j, x, y in self._zip_by_id(a.values, b.values, met_map, lambda m: m.prop_metric_id):
+            i = self.diff.a.ctx_infos.contexts.index(
+                a
+            ), self.diff.b.ctx_infos.contexts.index(b)
+        for j, x, y in self._zip_by_id(
+            a.values, b.values, met_map, lambda m: m.prop_metric_id
+        ):
             for k, v_a, v_b in self._zip_by_id(x, y, prof_map, prof_b2id):
                 self._base_compare(v_a, v_b, "contexts", i, j, k)

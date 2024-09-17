@@ -25,7 +25,17 @@ foreach dst, src : testdata_files
   _patch = custom_target(
     output: fs.name(dst) + '.patch',
     capture: true,
-    command: [_git, '-C', '@SOURCE_ROOT@', 'diff', '--full-index', '--binary', 'HEAD', '--', dst],
+    command: [
+      _git,
+      '-C',
+      '@SOURCE_ROOT@',
+      'diff',
+      '--full-index',
+      '--binary',
+      'HEAD',
+      '--',
+      dst,
+    ],
   )
   _new = {
     'cmd': _orig['cmd'] + [src['src'], dst],

@@ -114,7 +114,9 @@ class Measurements:
         threads = [
             procs * tpp
             for tpp in (
-                threads_per_proc if not isinstance(threads_per_proc, int) else [threads_per_proc]
+                threads_per_proc
+                if not isinstance(threads_per_proc, int)
+                else [threads_per_proc]
             )
         ]
         for trial in threads:
@@ -133,12 +135,16 @@ class Measurements:
                 raise PredictableFailureError(f"Expected a profile for thread stem {t}")
             if self.tracefile(t):
                 if not traces:
-                    raise PredictableFailureError(f"Did not expect a trace for thread stem {t}")
+                    raise PredictableFailureError(
+                        f"Did not expect a trace for thread stem {t}"
+                    )
             elif traces:
                 raise PredictableFailureError(f"Expected a trace for thread stem {t}")
 
         if logs_found != procs:
-            raise PredictableFailureError(f"Expected exactly {procs} log file, got {logs_found}")
+            raise PredictableFailureError(
+                f"Expected exactly {procs} log file, got {logs_found}"
+            )
 
 
 class Database:
@@ -158,13 +164,22 @@ class Database:
         metrics_default = self.basedir / "metrics" / "default.yaml"
 
         # Check for standard files that should always be there
-        for fn in (meta_db, profile_db, cct_db, formats_md, metrics_yaml, metrics_default):
+        for fn in (
+            meta_db,
+            profile_db,
+            cct_db,
+            formats_md,
+            metrics_yaml,
+            metrics_default,
+        ):
             if not fn.is_file():
                 raise PredictableFailureError(f"Expected {fn.name} in database!")
 
         # trace.db should only be present if traces were enabled
         if trace_db.is_file():
             if not tracedb:
-                raise PredictableFailureError("trace.db present in database but not expected!")
+                raise PredictableFailureError(
+                    "trace.db present in database but not expected!"
+                )
         elif tracedb:
             raise PredictableFailureError("Expected trace.db in database!")

@@ -12,7 +12,9 @@ if typing.TYPE_CHECKING:
     import collections.abc
 
 
-def iter_xml(root: XmlET.Element) -> "collections.abc.Iterator[typing.Tuple[XmlET.Element, bool]]":
+def iter_xml(
+    root: XmlET.Element,
+) -> "collections.abc.Iterator[typing.Tuple[XmlET.Element, bool]]":
     """Iterate over an XML element tree in depth-first order with exit callbacks. Returns each
     element in the tree exactly twice, along with a boolean indicating with this is the first time
     incountering the element.
@@ -75,7 +77,9 @@ def canonical_form(file: typing.BinaryIO) -> typing.List[str]:  # noqa: C901
     # 2. Sort the children of each element by their address ranges
     children: typing.Dict[XmlET.Element, typing.List[XmlET.Element]] = {}
     for elem in data.iter():
-        children[elem] = sorted(elem, key=lambda e: ranges[e], reverse=True)  # noqa: F821
+        children[elem] = sorted(
+            elem, key=lambda e: ranges[e], reverse=True  # noqa: F821
+        )
     del ranges
     for parent, new_children in children.items():
         parent[:] = new_children

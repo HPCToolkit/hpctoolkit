@@ -13,7 +13,15 @@ import typing
 import pytest
 
 from .._test_util import assert_good_traversal, dump_to_string, testdatadir, yaml
-from .metadb import Context, EntryPoint, File, MetaDB, PropagationScope, SummaryStatistic, _Flex
+from .metadb import (
+    Context,
+    EntryPoint,
+    File,
+    MetaDB,
+    PropagationScope,
+    SummaryStatistic,
+    _Flex,
+)
 
 _ = yaml
 
@@ -45,8 +53,12 @@ def test_enum_scope_type_stringification(yaml):
 
 def test_enum_entrypoint_stringification(yaml):
     cls = EntryPoint.EntryPoint
-    assert dump_to_string(yaml, cls.unknown_entry).startswith(f"{cls.yaml_tag} unknown_entry")
-    assert dump_to_string(yaml, cls.main_thread).startswith(f"{cls.yaml_tag} main_thread")
+    assert dump_to_string(yaml, cls.unknown_entry).startswith(
+        f"{cls.yaml_tag} unknown_entry"
+    )
+    assert dump_to_string(yaml, cls.main_thread).startswith(
+        f"{cls.yaml_tag} main_thread"
+    )
     assert dump_to_string(yaml, cls.application_thread).startswith(
         f"{cls.yaml_tag} application_thread"
     )
@@ -56,7 +68,9 @@ def test_enum_context_relation_stringification(yaml):
     cls = Context.Relation
     assert dump_to_string(yaml, cls.lexical).startswith(f"{cls.yaml_tag} lexical")
     assert dump_to_string(yaml, cls.call).startswith(f"{cls.yaml_tag} call")
-    assert dump_to_string(yaml, cls.inlined_call).startswith(f"{cls.yaml_tag} inlined_call")
+    assert dump_to_string(yaml, cls.inlined_call).startswith(
+        f"{cls.yaml_tag} inlined_call"
+    )
 
 
 def test_enum_context_lextype_stringification(yaml):
@@ -64,7 +78,9 @@ def test_enum_context_lextype_stringification(yaml):
     assert dump_to_string(yaml, cls.function).startswith(f"{cls.yaml_tag} function")
     assert dump_to_string(yaml, cls.loop).startswith(f"{cls.yaml_tag} loop")
     assert dump_to_string(yaml, cls.line).startswith(f"{cls.yaml_tag} line")
-    assert dump_to_string(yaml, cls.instruction).startswith(f"{cls.yaml_tag} instruction")
+    assert dump_to_string(yaml, cls.instruction).startswith(
+        f"{cls.yaml_tag} instruction"
+    )
 
 
 def test_enum_file_flags_stringification(yaml):

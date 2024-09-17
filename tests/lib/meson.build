@@ -10,4 +10,8 @@
 # Running `meson test --setup=thread-disruptive` runs all tests under this wrapper. Note that doing
 # this slows down the tests and as such test timeouts are automatically increased.
 thread_disruptive = find_program(files('thread-disruptive'))
-add_test_setup('threaddisruptive', exe_wrapper: thread_disruptive, timeout_multiplier: 100)
+add_test_setup(
+  'threaddisruptive',
+  exe_wrapper: thread_disruptive,
+  timeout_multiplier: 100,
+)

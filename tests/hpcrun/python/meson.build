@@ -27,7 +27,14 @@ test(
 test(
   'Measurement of simple-exception unwound Python',
   _tst,
-  args: [hpctesttool, hpcrun, hpcprof, python.full_path(), files('simple-exception'), '1'],
+  args: [
+    hpctesttool,
+    hpcrun,
+    hpcprof,
+    python.full_path(),
+    files('simple-exception'),
+    '1',
+  ],
   suite: ['hpcrun', 'python'],
   depends: hpcrun_test_depends,
 )

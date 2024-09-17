@@ -38,7 +38,9 @@ def test_diff(capsys, yaml, tmp_path, v4_data_small, v4_data_small_path):
     data.meta.id_names.names[-1] = "FOO"
     data.meta.metrics.scopes.append(
         v4.metadb.PropagationScope(
-            scope_name="foo", type=v4.metadb.PropagationScope.Type.custom, propagation_index=255
+            scope_name="foo",
+            type=v4.metadb.PropagationScope.Type.custom,
+            propagation_index=255,
         )
     )
     altered_yaml = str(tmp_path / "altered.yaml")

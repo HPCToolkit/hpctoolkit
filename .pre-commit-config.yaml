@@ -29,7 +29,7 @@ repos:
   # Run a number of Python linters in Rust. Not completely feature-parity with Python-based linters,
   # but can autofix a number of issues before they run. Also wicked fast.
   - id: ruff
-    args: [--target-version=py38, --fix, --line-length=100]
+    args: [--target-version=py38, --fix]
 
 
 # ------------------------------------------------------------------------------------
@@ -39,16 +39,16 @@ repos:
 - repo: https://github.com/psf/black
   rev: '24.8.0'
   hooks:
-  # Blacken all Python code, except allow slightly longer line lengths
+  # Blacken all Python code
   - id: black
-    args: ['--line-length=100', '--target-version=py38']
+    args: ['--target-version=py38']
 
 - repo: https://github.com/PyCQA/isort
   rev: 5.13.2
   hooks:
   # Sort imports in all the Python code
   - id: isort
-    args: [--profile, black, --line-length=100]
+    args: [--profile, black]
 
 - repo: local
   hooks:

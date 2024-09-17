@@ -138,7 +138,9 @@ class PerContext(StructureBase):
     @property
     def shorthand(self) -> typing.Optional[str]:
         if hasattr(self, "_context"):
-            return "for " + (self._context.shorthand if self._context is not None else "<root>")
+            return "for " + (
+                self._context.shorthand if self._context is not None else "<root>"
+            )
         if hasattr(self, "_ctx_id"):
             return f"for [{self._ctx_id:d}]"
         return None
@@ -149,7 +151,9 @@ class PerContext(StructureBase):
         values = [
             cls.__value.unpack_file(0, file, o)
             for o in scaled_range(
-                data["valueBlock_pValues"], data["valueBlock_nValues"], cls.__value.size(0)
+                data["valueBlock_pValues"],
+                data["valueBlock_nValues"],
+                cls.__value.size(0),
             )
         ]
         met_indices = [
@@ -166,7 +170,9 @@ class PerContext(StructureBase):
                     val["profIndex"]: val["value"]
                     for val in values[
                         idx["startIndex"] : (
-                            met_indices[i + 1]["startIndex"] if i + 1 < len(met_indices) else None
+                            met_indices[i + 1]["startIndex"]
+                            if i + 1 < len(met_indices)
+                            else None
                         )
                     ]
                 }

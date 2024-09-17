@@ -108,6 +108,8 @@ foreach name, variants : _structfiles
       endif
     endif
 
-    testdata_files += {testdata_struct[f'@name@@suffix@']['structfile']: {'src': _gen, 'tag': _tag}}
+    testdata_files += {
+      testdata_struct[f'@name@@suffix@']['structfile']: {'src': _gen, 'tag': _tag},
+    }
   endforeach
 endforeach

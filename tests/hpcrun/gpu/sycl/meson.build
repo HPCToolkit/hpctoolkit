@@ -8,7 +8,11 @@ if not level0_dep.found() or not has_sycl
 endif
 
 if sycl_is_cpp
-  _tstexe_vecadd_sycl = executable('tstexe-vecadd-sycl', 'vecadd.sycl.cpp', dependencies: sycl_dep)
+  _tstexe_vecadd_sycl = executable(
+    'tstexe-vecadd-sycl',
+    'vecadd.sycl.cpp',
+    dependencies: sycl_dep,
+  )
 else
   _tstexe_vecadd_sycl = custom_target(
     output: 'tstexe-vecadd-sycl',

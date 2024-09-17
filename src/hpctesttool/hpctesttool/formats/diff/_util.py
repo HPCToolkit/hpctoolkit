@@ -23,5 +23,7 @@ def check_fields(*names: str, cls: typing.Optional[type] = None):
         return apply
 
     got = frozenset(f.name for f in dataclasses.fields(cls))
-    assert got == expected, f"Missing fields {got-expected!r}, extra fields {expected-got!r}"
+    assert (
+        got == expected
+    ), f"Missing fields {got-expected!r}, extra fields {expected-got!r}"
     return lambda x: x

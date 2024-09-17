@@ -8,14 +8,14 @@
 #include <numeric>
 #include <vector>
 
-#define SYCL_CALL(statement, msg)                                                                  \
-  {                                                                                                \
-    try {                                                                                          \
-      statement;                                                                                   \
-    } catch (sycl::exception const& e) {                                                           \
-      std::cerr << msg << e.what();                                                                \
-      return 1;                                                                                    \
-    }                                                                                              \
+#define SYCL_CALL(statement, msg)                                                      \
+  {                                                                                    \
+    try {                                                                              \
+      statement;                                                                       \
+    } catch (sycl::exception const& e) {                                               \
+      std::cerr << msg << e.what();                                                    \
+      return 1;                                                                        \
+    }                                                                                  \
   }
 
 void vectorAdd(const float* a, const float* b, float* c, int i, const int n) {
@@ -83,8 +83,8 @@ int main(int argc, char* argv[]) {
   // Validate that the answer is correct
   for (size_t i = 0; i < c.size(); i++) {
     if (c[i] != 2 * i + 4) {
-      std::cerr << "Invalid result at c[" << i << "]: expected " << (i + 4) << ", got " << c[i]
-                << "\n";
+      std::cerr << "Invalid result at c[" << i << "]: expected " << (i + 4) << ", got "
+                << c[i] << "\n";
       return 1;
     }
   }

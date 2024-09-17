@@ -35,7 +35,10 @@ _srcs += [
   configure_file(
     output: 'static.data.cpp',
     input: 'static.data.cpp.in',
-    configuration: {'HPCSTRUCT_DTD': _struct_dtd, 'HPCSTRUCT_DTD_VERSION': _struct_dtd_ver},
+    configuration: {
+      'HPCSTRUCT_DTD': _struct_dtd,
+      'HPCSTRUCT_DTD_VERSION': _struct_dtd_ver,
+    },
   ),
   fs.copyfile('static.data.h'),  # Needed to compile the above
 ]
@@ -48,7 +51,16 @@ if igc_dep.found()
   _srcs += files('intel/GPUCFG_Intel.cpp')
 endif
 
-_deps = [boost_dep, dyninst_dep, iga_dep, igc_dep, libdw_dep, libelf_dep, openmp_dep, xed_dep]
+_deps = [
+  boost_dep,
+  dyninst_dep,
+  iga_dep,
+  igc_dep,
+  libdw_dep,
+  libelf_dep,
+  openmp_dep,
+  xed_dep,
+]
 
 _srcs += common_srcs
 _deps += common_deps

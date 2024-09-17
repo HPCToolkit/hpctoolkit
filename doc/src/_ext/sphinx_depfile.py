@@ -45,7 +45,9 @@ def write_files(app, _):
                     files.add(pdep)
 
         # Files that are part of the _static or _templates are also dependencies
-        for path in itertools.chain(app.env.config.html_static_path, app.env.config.templates_path):
+        for path in itertools.chain(
+            app.env.config.html_static_path, app.env.config.templates_path
+        ):
             files.update(Path(path).rglob("*"))
 
         # The Makefile format is simple, one rule marking dependencies and blank rules for deps

@@ -4,21 +4,54 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 testdata_bin = {
-  'inlines+loops-sm_62-nvcc102-0': {'file': files('inlines+loops-sm_62-nvcc102-0'), 'cuda': true},
-  'inlines+loops-sm_62-nvcc102-dr': {'file': files('inlines+loops-sm_62-nvcc102-dr'), 'cuda': true},
-  'inlines+loops-sm_62-nvcc102-r': {'file': files('inlines+loops-sm_62-nvcc102-r'), 'cuda': true},
-  'inlines+loops-sm_75-nvcc112-0': {'file': files('inlines+loops-sm_75-nvcc112-0'), 'cuda': true},
-  'inlines+loops-sm_75-nvcc112-dr': {'file': files('inlines+loops-sm_75-nvcc112-dr'), 'cuda': true},
-  'inlines+loops-sm_75-nvcc112-r': {'file': files('inlines+loops-sm_75-nvcc112-r'), 'cuda': true},
-  'inlines+loops-sm_87-nvcc118-0': {'file': files('inlines+loops-sm_87-nvcc118-0'), 'cuda': true},
-  'inlines+loops-sm_87-nvcc118-dr': {'file': files('inlines+loops-sm_87-nvcc118-dr'), 'cuda': true},
-  'inlines+loops-sm_87-nvcc118-r': {'file': files('inlines+loops-sm_87-nvcc118-r'), 'cuda': true},
-  'inlines+loops-sm_90a-nvcc120-0': {'file': files('inlines+loops-sm_90a-nvcc120-0'), 'cuda': true},
+  'inlines+loops-sm_62-nvcc102-0': {
+    'file': files('inlines+loops-sm_62-nvcc102-0'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_62-nvcc102-dr': {
+    'file': files('inlines+loops-sm_62-nvcc102-dr'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_62-nvcc102-r': {
+    'file': files('inlines+loops-sm_62-nvcc102-r'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_75-nvcc112-0': {
+    'file': files('inlines+loops-sm_75-nvcc112-0'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_75-nvcc112-dr': {
+    'file': files('inlines+loops-sm_75-nvcc112-dr'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_75-nvcc112-r': {
+    'file': files('inlines+loops-sm_75-nvcc112-r'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_87-nvcc118-0': {
+    'file': files('inlines+loops-sm_87-nvcc118-0'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_87-nvcc118-dr': {
+    'file': files('inlines+loops-sm_87-nvcc118-dr'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_87-nvcc118-r': {
+    'file': files('inlines+loops-sm_87-nvcc118-r'),
+    'cuda': true,
+  },
+  'inlines+loops-sm_90a-nvcc120-0': {
+    'file': files('inlines+loops-sm_90a-nvcc120-0'),
+    'cuda': true,
+  },
   'inlines+loops-sm_90a-nvcc120-dr': {
     'file': files('inlines+loops-sm_90a-nvcc120-dr'),
     'cuda': true,
   },
-  'inlines+loops-sm_90a-nvcc120-r': {'file': files('inlines+loops-sm_90a-nvcc120-r'), 'cuda': true},
+  'inlines+loops-sm_90a-nvcc120-r': {
+    'file': files('inlines+loops-sm_90a-nvcc120-r'),
+    'cuda': true,
+  },
   'inlines+loops-x86_64-gcc10-0': {'file': files('inlines+loops-x86_64-gcc10-0')},
   'inlines+loops-x86_64-gcc10-d': {'file': files('inlines+loops-x86_64-gcc10-d')},
   'inlines+loops-x86_64-gcc10-dr': {'file': files('inlines+loops-x86_64-gcc10-dr')},
@@ -43,15 +76,42 @@ testdata_bin = {
   'inlines+loops-x86_64-llvm7-d': {'file': files('inlines+loops-x86_64-llvm7-d')},
   'inlines+loops-x86_64-llvm7-dr': {'file': files('inlines+loops-x86_64-llvm7-dr')},
   'inlines+loops-x86_64-llvm7-r': {'file': files('inlines+loops-x86_64-llvm7-r')},
-  'recursion-sm_75-nvcc112-0': {'file': files('recursion-sm_75-nvcc112-0'), 'cuda': true},
-  'recursion-sm_75-nvcc112-dr': {'file': files('recursion-sm_75-nvcc112-dr'), 'cuda': true},
-  'recursion-sm_75-nvcc112-r': {'file': files('recursion-sm_75-nvcc112-r'), 'cuda': true},
-  'recursion-sm_87-nvcc118-0': {'file': files('recursion-sm_87-nvcc118-0'), 'cuda': true},
-  'recursion-sm_87-nvcc118-dr': {'file': files('recursion-sm_87-nvcc118-dr'), 'cuda': true},
-  'recursion-sm_87-nvcc118-r': {'file': files('recursion-sm_87-nvcc118-r'), 'cuda': true},
-  'recursion-sm_90a-nvcc120-0': {'file': files('recursion-sm_90a-nvcc120-0'), 'cuda': true},
-  'recursion-sm_90a-nvcc120-dr': {'file': files('recursion-sm_90a-nvcc120-dr'), 'cuda': true},
-  'recursion-sm_90a-nvcc120-r': {'file': files('recursion-sm_90a-nvcc120-r'), 'cuda': true},
+  'recursion-sm_75-nvcc112-0': {
+    'file': files('recursion-sm_75-nvcc112-0'),
+    'cuda': true,
+  },
+  'recursion-sm_75-nvcc112-dr': {
+    'file': files('recursion-sm_75-nvcc112-dr'),
+    'cuda': true,
+  },
+  'recursion-sm_75-nvcc112-r': {
+    'file': files('recursion-sm_75-nvcc112-r'),
+    'cuda': true,
+  },
+  'recursion-sm_87-nvcc118-0': {
+    'file': files('recursion-sm_87-nvcc118-0'),
+    'cuda': true,
+  },
+  'recursion-sm_87-nvcc118-dr': {
+    'file': files('recursion-sm_87-nvcc118-dr'),
+    'cuda': true,
+  },
+  'recursion-sm_87-nvcc118-r': {
+    'file': files('recursion-sm_87-nvcc118-r'),
+    'cuda': true,
+  },
+  'recursion-sm_90a-nvcc120-0': {
+    'file': files('recursion-sm_90a-nvcc120-0'),
+    'cuda': true,
+  },
+  'recursion-sm_90a-nvcc120-dr': {
+    'file': files('recursion-sm_90a-nvcc120-dr'),
+    'cuda': true,
+  },
+  'recursion-sm_90a-nvcc120-r': {
+    'file': files('recursion-sm_90a-nvcc120-r'),
+    'cuda': true,
+  },
   'recursion-x86_64-gcc10-0': {'file': files('recursion-x86_64-gcc10-0')},
   'recursion-x86_64-gcc10-d': {'file': files('recursion-x86_64-gcc10-d')},
   'recursion-x86_64-gcc10-dr': {'file': files('recursion-x86_64-gcc10-dr')},

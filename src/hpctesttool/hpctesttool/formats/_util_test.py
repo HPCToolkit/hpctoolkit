@@ -18,7 +18,9 @@ def test_versionedstructure():
 
     assert v.unpack_from(0, b"\x10") == {"foo": 0x10}
     assert v.unpack_from(1, b"\x10\x20") == {"foo": 0x10, "bar": 0x20}
-    with pytest.raises(ValueError, match=r"buffer is not large enough, must be at least 2 bytes"):
+    with pytest.raises(
+        ValueError, match=r"buffer is not large enough, must be at least 2 bytes"
+    ):
         v.unpack_from(1, b"\x10")
 
     src = io.BytesIO(b"\x10\x20")

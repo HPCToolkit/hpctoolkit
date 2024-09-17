@@ -11,7 +11,15 @@ hpcproftt = executable(
   _srcs,
   common_srcs,
   implicit_include_directories: false,
-  dependencies: [common_deps, iga_dep, igc_dep, libdw_dep, libelf_dep, lzma_dep, xerces_dep],
+  dependencies: [
+    common_deps,
+    iga_dep,
+    igc_dep,
+    libdw_dep,
+    libelf_dep,
+    lzma_dep,
+    xerces_dep,
+  ],
 )
 
 _devenv = environment()

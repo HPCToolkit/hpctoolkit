@@ -27,7 +27,9 @@ if __name__ == "__main__":
 
     try:
         subprocess.run([*sphinx_cmd, build_dir], check=True)
-        subprocess.run([latexmk, "-pdf", "-dvi-", "-ps-", texfile], cwd=build_dir, check=True)
+        subprocess.run(
+            [latexmk, "-pdf", "-dvi-", "-ps-", texfile], cwd=build_dir, check=True
+        )
     except subprocess.CalledProcessError as e:
         sys.exit(e.returncode)
 

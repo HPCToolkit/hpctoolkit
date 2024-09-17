@@ -15,9 +15,15 @@ _databases = {
   'loops-cuda-nvidia-t': {},
   'loops-cuda-nvidia-t.nostruct': {'args': ['--ignore-structs'], 'remap_measdir': true},
   'loops-cuda-nvidiapc-t': {},
-  'loops-cuda-nvidiapc-t.nostruct': {'args': ['--ignore-structs'], 'remap_measdir': true},
+  'loops-cuda-nvidiapc-t.nostruct': {
+    'args': ['--ignore-structs'],
+    'remap_measdir': true,
+  },
   'recursion-cuda-nvidiapc-t': {},
-  'recursion-cuda-nvidiapc-t.nostruct': {'args': ['--ignore-structs'], 'remap_measdir': true},
+  'recursion-cuda-nvidiapc-t.nostruct': {
+    'args': ['--ignore-structs'],
+    'remap_measdir': true,
+  },
   'loops-hip-amd-t': {},
   'loops-hip-amd-t.nostruct': {'args': ['--ignore-structs'], 'remap_measdir': true},
 }
@@ -54,7 +60,13 @@ foreach _name, _features : _databases
       output: f'@_name@.yaml',
       build_by_default: false,
       depends: [_stamp],
-      command: [hpctesttool, 'test', 'yaml', meson.current_build_dir() / f'@_name@.d', '@OUTPUT@'],
+      command: [
+        hpctesttool,
+        'test',
+        'yaml',
+        meson.current_build_dir() / f'@_name@.d',
+        '@OUTPUT@',
+      ],
     )
     _dbase += {'yaml': meson.current_source_dir() / f'@_name@.yaml', 'freshyaml': _yaml}
     testdata_files += {_dbase['yaml']: {'src': _yaml, 'tag': _meas['tag']}}
