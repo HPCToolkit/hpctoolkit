@@ -5,7 +5,8 @@
     "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.bare"
   },
   "capAdd": [
-    "SYS_ADMIN"
+    "SYS_ADMIN",
+    "PERFMON"
   ],
   "customizations": {
     "vscode": {

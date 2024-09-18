@@ -5,7 +5,8 @@
     "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.rhel8"
   },
   "capAdd": [
-    "SYS_ADMIN"
+    "SYS_ADMIN",
+    "PERFMON"
   ],
   "containerEnv": {
     "OMPI_ALLOW_RUN_AS_ROOT": "1",
