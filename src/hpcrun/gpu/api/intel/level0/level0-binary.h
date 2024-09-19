@@ -25,7 +25,8 @@
 void
 level0_binary_process
 (
-  ze_module_handle_t module
+  ze_module_handle_t module,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 );
 
 

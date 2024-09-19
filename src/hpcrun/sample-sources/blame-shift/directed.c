@@ -23,11 +23,10 @@
  * local includes
  *****************************************************************************/
 
-#include "../../hpctoolkit.h"
-
 #include "../../cct/cct.h"
 #include "../../safe-sampling.h"
 #include "../../sample_event.h"
+#include "../../start-stop.h"
 
 #include "blame-map.h"
 #include "directed.h"
@@ -44,7 +43,7 @@ directed_blame_accept(void *arg, uint64_t obj)
 {
   directed_blame_info_t *bi = (directed_blame_info_t *) arg;
 
-  if (hpctoolkit_sampling_is_active()) {
+  if (hpcrun_sampling_is_active()) {
     uint64_t blame = blame_map_get_blame(bi->blame_table, obj);
 
     if (blame > 0) {

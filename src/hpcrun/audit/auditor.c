@@ -27,6 +27,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 
 
 //******************************************************************************
@@ -99,6 +100,7 @@ static const auditor_hooks_t* hooks;
 
 static void mainlib_connected(const char*, const auditor_hooks_t*);
 static void mainlib_disconnect();
+extern void hpcrun_bind_v(const char*, va_list);  // in private-ns.c
 
 typedef int (*pfn_iterate_phdr_t)(int (*callback)(struct dl_phdr_info*, size_t, void*), void* data);
 extern pfn_iterate_phdr_t hpcrun_iterate_phdr;
@@ -606,6 +608,9 @@ static const auditor_exports_t* hpcrun_connect_to_auditor_p() {
     .exit = exit,
     .sigprocmask = sigprocmask, .pthread_sigmask = pthread_sigmask,
     .sigaction = sigaction,
+    .pthread_self = pthread_self,
+    .pthread_kill = pthread_kill,
+    .pthread_setcancelstate = pthread_setcancelstate,
   };
   return &exports;
 }

@@ -32,6 +32,8 @@
 #include "atomic.h"
 #include "monitor.h"
 #include "pthread_h.h"
+#include "../audit/audit-api.h"
+#include "../env.h"
 
 int monitor_debug = 0;
 
@@ -60,17 +62,9 @@ static void *new_stinfo[4];
 
 #endif
 
-typedef int start_main_fcn_t(START_MAIN_PARAM_LIST);
 typedef int main_fcn_t(int, char **, char **  AUXVEC_DECL );
-typedef void exit_fcn_t(int);
-typedef int sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
-typedef pid_t fork_fcn_t(void);
 
-static start_main_fcn_t  *real_start_main = NULL;
 static main_fcn_t  *real_main = NULL;
-static exit_fcn_t  *real_exit = NULL;
-static exit_fcn_t  *real_u_exit = NULL;
-static sigprocmask_fcn_t *real_sigprocmask = NULL;
 
 static int monitor_argc = 0;
 static char **monitor_argv = NULL;
@@ -121,24 +115,15 @@ monitor_early_init(void)
  *  (static).
  */
 static void
-monitor_normal_init(void)
+monitor_normal_init()
 {
     MONITOR_RUN_ONCE(normal_init);
 
     monitor_early_init();
     MONITOR_DEBUG("%s rev %d\n", "libmonitor", 0);
 
-    /*
-     * Always get _exit() first so that we have a way to exit if
-     * needed.
-     */
-    MONITOR_GET_REAL_NAME_WRAP(real_u_exit, _exit);
-    MONITOR_GET_REAL_NAME_WRAP(real_exit, exit);
-    MONITOR_REQUIRE_DLSYM(real_start_main, "__libc_start_main");
-
     monitor_fork_init();
 
-    MONITOR_GET_REAL_NAME_WRAP(real_sigprocmask, sigprocmask);
     monitor_signal_init();
 }
 
@@ -149,7 +134,7 @@ monitor_normal_init(void)
  */
 
 static void
-monitor_begin_library_fcn(void)
+monitor_begin_library_fcn()
 {
     MONITOR_RUN_ONCE(begin_library);
 
@@ -399,10 +384,9 @@ monitor_main(int argc, char **argv, char **envp  AUXVEC_DECL )
 }
 
 int
-foilbase_libc_start_main(START_MAIN_PARAM_LIST)
+hpcrun_libc_start_main(START_MAIN_PARAM_LIST, const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     MONITOR_DEBUG1("\n");
-    MONITOR_REQUIRE_DLSYM(real_start_main, "__libc_start_main");
 
 #ifdef HOST_CPU_PPC
     real_main = stinfo[1];
@@ -412,16 +396,16 @@ foilbase_libc_start_main(START_MAIN_PARAM_LIST)
     /* Set real_main first, so monitor_get_addr_main() works. */
     monitor_start_main_init();
 
-    (*real_start_main)(argc, argv, envp, auxp, rtld_fini,
-                       new_stinfo, stack_end);
+    f_uulibc_start_main(argc, argv, envp, auxp, rtld_fini,
+                       new_stinfo, stack_end, dispatch);
 
 #else
     real_main = main;
 
     monitor_start_main_init();
 
-    (*real_start_main)(monitor_main, argc, argv, init, fini,
-                       rtld_fini, stack_end);
+    f_uulibc_start_main(monitor_main, argc, argv, init, fini,
+                        rtld_fini, stack_end, dispatch);
 #endif
 
     /* Never reached. */
@@ -434,13 +418,13 @@ foilbase_libc_start_main(START_MAIN_PARAM_LIST)
  *  exit() to handle multiple calls to exit().
  */
 void
-foilbase_exit(int status)
+hpcrun_exit(int status, const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     monitor_normal_init();
     MONITOR_DEBUG1("\n");
 
     monitor_end_process_fcn(MONITOR_EXIT_NORMAL);
-    (*real_exit)(status);
+    f_exit(status, dispatch);
 
     /* Never reached, but silence a compiler warning. */
     exit(status);
@@ -451,28 +435,28 @@ foilbase_exit(int status)
  *  them here (in the dynamic case).
  */
 void
-foilbase__exit(int status)
+hpcrun_uexit(int status, const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     monitor_normal_init();
     MONITOR_DEBUG1("\n");
 
     monitor_end_process_fcn(MONITOR_EXIT_NORMAL);
     monitor_end_library_fcn();
-    (*real_u_exit)(status);
+    f_uexit(status, dispatch);
 
     /* Never reached, but silence a compiler warning. */
     exit(status);
 }
 
 void
-foilbase__Exit(int status)
+hpcrun_uExit(int status, const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     monitor_normal_init();
     MONITOR_DEBUG1("\n");
 
     monitor_end_process_fcn(MONITOR_EXIT_NORMAL);
     monitor_end_library_fcn();
-    (*real_u_exit)(status);
+    f_uexit(status, dispatch);
 
     /* Never reached, but silence a compiler warning. */
     exit(status);

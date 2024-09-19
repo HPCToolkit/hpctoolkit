@@ -22,41 +22,6 @@
 #include "monitor.h"
 #include <stdio.h>
 
-typedef int mpi_init_fcn_t(int *, char ***);
-typedef int mpi_init_thread_fcn_t(int *, char ***, int, int *);
-typedef int mpi_finalize_fcn_t(void);
-typedef int mpi_comm_fcn_t(void *, int *);
-
-typedef void f_mpi_init_fcn_t(int *);
-typedef void f_mpi_init_thread_fcn_t(int *, int *, int *);
-typedef void f_mpi_finalize_fcn_t(int *);
-typedef void f_mpi_comm_fcn_t(int *, int *, int *);
-
-static mpi_init_fcn_t    *real_pmpi_init = NULL;
-static f_mpi_init_fcn_t  *real_pmpi_init_f0 = NULL;
-static f_mpi_init_fcn_t  *real_pmpi_init_f1 = NULL;
-static f_mpi_init_fcn_t  *real_pmpi_init_f2 = NULL;
-
-static mpi_init_thread_fcn_t    *real_pmpi_init_thread = NULL;
-static f_mpi_init_thread_fcn_t  *real_pmpi_init_thread_f0 = NULL;
-static f_mpi_init_thread_fcn_t  *real_pmpi_init_thread_f1 = NULL;
-static f_mpi_init_thread_fcn_t  *real_pmpi_init_thread_f2 = NULL;
-
-static mpi_finalize_fcn_t    *real_pmpi_finalize = NULL;
-static f_mpi_finalize_fcn_t  *real_pmpi_finalize_f0 = NULL;
-static f_mpi_finalize_fcn_t  *real_pmpi_finalize_f1 = NULL;
-static f_mpi_finalize_fcn_t  *real_pmpi_finalize_f2 = NULL;
-
-static mpi_comm_fcn_t    *real_pmpi_comm_size = NULL;
-static f_mpi_comm_fcn_t  *real_pmpi_comm_size_f0 = NULL;
-static f_mpi_comm_fcn_t  *real_pmpi_comm_size_f1 = NULL;
-static f_mpi_comm_fcn_t  *real_pmpi_comm_size_f2 = NULL;
-
-static mpi_comm_fcn_t    *real_pmpi_comm_rank = NULL;
-static f_mpi_comm_fcn_t  *real_pmpi_comm_rank_f0 = NULL;
-static f_mpi_comm_fcn_t  *real_pmpi_comm_rank_f1 = NULL;
-static f_mpi_comm_fcn_t  *real_pmpi_comm_rank_f2 = NULL;
-
 /*
  *----------------------------------------------------------------------
  *  PMPI_INIT OVERRIDE FUNCTIONS
@@ -64,18 +29,17 @@ static f_mpi_comm_fcn_t  *real_pmpi_comm_rank_f2 = NULL;
  */
 
 int
-foilbase_PMPI_Init(int *argc, char ***argv)
+hpcrun_PMPI_Init(int *argc, char ***argv, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
     int ret, count;
 
     MONITOR_DEBUG1("\n");
-    MONITOR_GET_REAL_NAME_WRAP(real_pmpi_init, PMPI_Init);
     count = monitor_mpi_init_count(1);
     if (count == 1) {
         MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
         monitor_mpi_pre_init();
     }
-    ret = (*real_pmpi_init)(argc, argv);
+    ret = f_PMPI_Init(argc, argv, dispatch);
     if (count == 1) {
         MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
         monitor_init_mpi(argc, argv);
@@ -85,17 +49,16 @@ foilbase_PMPI_Init(int *argc, char ***argv)
     return (ret);
 }
 
-#define FORTRAN_INIT_BODY(var_name, fcn_name)                   \
+#define FORTRAN_INIT_BODY(fcn_name)                             \
     int argc, count;                                            \
     char **argv;                                                \
     MONITOR_DEBUG1("\n");                                       \
-    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);             \
     count = monitor_mpi_init_count(1);                          \
     if (count == 1) {                                           \
         MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n"); \
         monitor_mpi_pre_init();                                 \
     }                                                           \
-    (*var_name)(ierror);                                        \
+    f_##fcn_name(ierror, dispatch);                             \
     if (count == 1) {                                           \
         MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");     \
         monitor_get_main_args(&argc, &argv, NULL);              \
@@ -104,21 +67,21 @@ foilbase_PMPI_Init(int *argc, char ***argv)
     monitor_mpi_init_count(-1);
 
 void
-foilbase_pmpi_init(int *ierror)
+hpcrun_pmpi_init_fortran0(int *ierror, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_INIT_BODY(real_pmpi_init_f0, pmpi_init);
+    FORTRAN_INIT_BODY(pmpi_init_fortran0);
 }
 
 void
-foilbase_pmpi_init_(int *ierror)
+hpcrun_pmpi_init_fortran1(int *ierror, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_INIT_BODY(real_pmpi_init_f1, pmpi_init_);
+    FORTRAN_INIT_BODY(pmpi_init_fortran1);
 }
 
 void
-foilbase_pmpi_init__(int *ierror)
+hpcrun_pmpi_init_fortran2(int *ierror, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_INIT_BODY(real_pmpi_init_f2, pmpi_init__);
+    FORTRAN_INIT_BODY(pmpi_init_fortran2);
 }
 
 /*
@@ -128,19 +91,18 @@ foilbase_pmpi_init__(int *ierror)
  */
 
 int
-foilbase_PMPI_Init_thread(int *argc, char ***argv,
-                                    int required, int *provided)
+hpcrun_PMPI_Init_thread(int *argc, char ***argv,
+    int required, int *provided, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
     int ret, count;
 
     MONITOR_DEBUG1("\n");
-    MONITOR_GET_REAL_NAME_WRAP(real_pmpi_init_thread, PMPI_Init_thread);
     count = monitor_mpi_init_count(1);
     if (count == 1) {
         MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n");
         monitor_mpi_pre_init();
     }
-    ret = (*real_pmpi_init_thread)(argc, argv, required, provided);
+    ret = f_PMPI_Init_thread(argc, argv, required, provided, dispatch);
     if (count == 1) {
         MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");
         monitor_init_mpi(argc, argv);
@@ -150,17 +112,16 @@ foilbase_PMPI_Init_thread(int *argc, char ***argv,
     return (ret);
 }
 
-#define FORTRAN_INIT_THREAD_BODY(var_name, fcn_name)            \
+#define FORTRAN_INIT_THREAD_BODY(fcn_name)                      \
     int argc, count;                                            \
     char **argv;                                                \
     MONITOR_DEBUG1("\n");                                       \
-    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);             \
     count = monitor_mpi_init_count(1);                          \
     if (count == 1) {                                           \
         MONITOR_DEBUG1("calling monitor_mpi_pre_init() ...\n"); \
         monitor_mpi_pre_init();                                 \
     }                                                           \
-    (*var_name)(required, provided, ierror);                    \
+    f_##fcn_name(required, provided, ierror, dispatch);         \
     if (count == 1) {                                           \
         MONITOR_DEBUG1("calling monitor_init_mpi() ...\n");     \
         monitor_get_main_args(&argc, &argv, NULL);              \
@@ -169,21 +130,24 @@ foilbase_PMPI_Init_thread(int *argc, char ***argv,
     monitor_mpi_init_count(-1);
 
 void
-foilbase_pmpi_init_thread(int *required, int *provided, int *ierror)
+hpcrun_pmpi_init_thread_fortran0(int *required, int *provided, int *ierror,
+                          const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_INIT_THREAD_BODY(real_pmpi_init_thread_f0, pmpi_init_thread);
+    FORTRAN_INIT_THREAD_BODY(pmpi_init_thread_fortran0);
 }
 
 void
-foilbase_pmpi_init_thread_(int *required, int *provided, int *ierror)
+hpcrun_pmpi_init_thread_fortran1(int *required, int *provided, int *ierror,
+                           const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_INIT_THREAD_BODY(real_pmpi_init_thread_f1, pmpi_init_thread_);
+    FORTRAN_INIT_THREAD_BODY(pmpi_init_thread_fortran1);
 }
 
 void
-foilbase_pmpi_init_thread__(int *required, int *provided, int *ierror)
+hpcrun_pmpi_init_thread_fortran2(int *required, int *provided, int *ierror,
+                            const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_INIT_THREAD_BODY(real_pmpi_init_thread_f2, pmpi_init_thread__);
+    FORTRAN_INIT_THREAD_BODY(pmpi_init_thread_fortran2);
 }
 
 /*
@@ -193,19 +157,18 @@ foilbase_pmpi_init_thread__(int *required, int *provided, int *ierror)
  */
 
 int
-foilbase_PMPI_Finalize(void)
+hpcrun_PMPI_Finalize(const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
     int ret, count;
 
     MONITOR_DEBUG1("\n");
-    MONITOR_GET_REAL_NAME_WRAP(real_pmpi_finalize, PMPI_Finalize);
     count = monitor_mpi_fini_count(1);
     if (count == 1) {
         MONITOR_DEBUG("calling monitor_fini_mpi(), size = %d, rank = %d ...\n",
                       monitor_mpi_comm_size(), monitor_mpi_comm_rank());
         monitor_fini_mpi();
     }
-    ret = (*real_pmpi_finalize)();
+    ret = f_PMPI_Finalize(dispatch);
     if (count == 1) {
         MONITOR_DEBUG1("calling monitor_mpi_post_fini() ...\n");
         monitor_mpi_post_fini();
@@ -215,17 +178,16 @@ foilbase_PMPI_Finalize(void)
     return (ret);
 }
 
-#define FORTRAN_FINALIZE_BODY(var_name, fcn_name)       \
+#define FORTRAN_FINALIZE_BODY(fcn_name)                 \
     int count;                                          \
     MONITOR_DEBUG1("\n");                               \
-    MONITOR_GET_REAL_NAME_WRAP(var_name, fcn_name);     \
     count = monitor_mpi_fini_count(1);                  \
     if (count == 1) {                                   \
         MONITOR_DEBUG("calling monitor_fini_mpi(), size = %d, rank = %d ...\n",  \
                       monitor_mpi_comm_size(), monitor_mpi_comm_rank());  \
         monitor_fini_mpi();                             \
     }                                                   \
-    (*var_name)(ierror);                                \
+    f_##fcn_name(ierror, dispatch);                     \
     if (count == 1) {                                   \
         MONITOR_DEBUG1("calling monitor_mpi_post_fini() ...\n");  \
         monitor_mpi_post_fini();                        \
@@ -233,21 +195,21 @@ foilbase_PMPI_Finalize(void)
     monitor_mpi_fini_count(-1);
 
 void
-foilbase_pmpi_finalize(int *ierror)
+hpcrun_pmpi_finalize_fortran0(int *ierror, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_FINALIZE_BODY(real_pmpi_finalize_f0, pmpi_finalize);
+    FORTRAN_FINALIZE_BODY(pmpi_finalize_fortran0);
 }
 
 void
-foilbase_pmpi_finalize_(int *ierror)
+hpcrun_pmpi_finalize_fortran1(int *ierror, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_FINALIZE_BODY(real_pmpi_finalize_f1, pmpi_finalize_);
+    FORTRAN_FINALIZE_BODY(pmpi_finalize_fortran1);
 }
 
 void
-foilbase_pmpi_finalize__(int *ierror)
+hpcrun_pmpi_finalize_fortran2(int *ierror, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_FINALIZE_BODY(real_pmpi_finalize_f2, pmpi_finalize__);
+    FORTRAN_FINALIZE_BODY(pmpi_finalize_fortran2);
 }
 
 /*
@@ -261,49 +223,45 @@ foilbase_pmpi_finalize__(int *ierror)
  * compatible with most libraries.
  */
 int
-foilbase_PMPI_Comm_rank(void *comm, int *rank)
+hpcrun_PMPI_Comm_rank(void *comm, int *rank, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
     int size = -1, ret;
 
     MONITOR_DEBUG("comm = %p\n", comm);
-    MONITOR_GET_REAL_NAME(real_pmpi_comm_size, PMPI_Comm_size);
-    MONITOR_GET_REAL_NAME_WRAP(real_pmpi_comm_rank, PMPI_Comm_rank);
-    ret = (*real_pmpi_comm_size)(comm, &size);
-    ret = (*real_pmpi_comm_rank)(comm, rank);
+    ret = f_PMPI_Comm_size(comm, &size, dispatch);
+    ret = f_PMPI_Comm_rank(comm, rank, dispatch);
     monitor_set_mpi_size_rank(size, *rank);
 
     return (ret);
 }
 
-#define FORTRAN_COMM_RANK_BODY(size_var, size_fcn, rank_var, rank_fcn)  \
+#define FORTRAN_COMM_RANK_BODY(size_fcn, rank_fcn)      \
     int size = -1;                                      \
     MONITOR_DEBUG("comm = %d\n", *comm);                \
-    MONITOR_GET_REAL_NAME(size_var, size_fcn);          \
-    MONITOR_GET_REAL_NAME_WRAP(rank_var, rank_fcn);     \
-    (*size_var)(comm, &size, ierror);                   \
-    (*rank_var)(comm, rank, ierror);                    \
+    f_##size_fcn(comm, &size, ierror, dispatch);        \
+    f_##rank_fcn(comm, rank, ierror, dispatch);         \
     monitor_set_mpi_size_rank(size, *rank);
 
 /*
  * In Fortran, MPI_Comm is always int.
  */
 void
-foilbase_pmpi_comm_rank(int *comm, int *rank, int *ierror)
+hpcrun_pmpi_comm_rank_fortran0(int *comm, int *rank, int *ierror,
+                        const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f0, pmpi_comm_size,
-                           real_pmpi_comm_rank_f0, pmpi_comm_rank);
+    FORTRAN_COMM_RANK_BODY(pmpi_comm_size_fortran0, pmpi_comm_rank_fortran0);
 }
 
 void
-foilbase_pmpi_comm_rank_(int *comm, int *rank, int *ierror)
+hpcrun_pmpi_comm_rank_fortran1(int *comm, int *rank, int *ierror,
+                         const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f1, pmpi_comm_size_,
-                           real_pmpi_comm_rank_f1, pmpi_comm_rank_);
+    FORTRAN_COMM_RANK_BODY(pmpi_comm_size_fortran1, pmpi_comm_rank_fortran1);
 }
 
 void
-foilbase_pmpi_comm_rank__(int *comm, int *rank, int *ierror)
+hpcrun_pmpi_comm_rank_fortran2(int *comm, int *rank, int *ierror,
+                          const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
-    FORTRAN_COMM_RANK_BODY(real_pmpi_comm_size_f2, pmpi_comm_size__,
-                           real_pmpi_comm_rank_f2, pmpi_comm_rank__);
+    FORTRAN_COMM_RANK_BODY(pmpi_comm_size_fortran2, pmpi_comm_rank_fortran2);
 }

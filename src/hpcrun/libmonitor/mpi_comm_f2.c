@@ -12,23 +12,16 @@
 #include "common.h"
 #include "monitor.h"
 
-typedef void mpi_comm_fcn_t(int *, int *, int *);
-
-static mpi_comm_fcn_t  *real_mpi_comm_size = NULL;
-static mpi_comm_fcn_t  *real_mpi_comm_rank = NULL;
-
 /*
  * In Fortran, MPI_Comm is always int.
  */
 void
-foilbase_mpi_comm_rank__(int *comm, int *rank, int *ierror)
+hpcrun_mpi_comm_rank_fortran2(int *comm, int *rank, int *ierror, const struct hpcrun_foil_appdispatch_mpi* dispatch)
 {
     int size = -1;
 
     MONITOR_DEBUG("comm = %d\n", *comm);
-    MONITOR_GET_REAL_NAME(real_mpi_comm_size, mpi_comm_size__);
-    MONITOR_GET_REAL_NAME_WRAP(real_mpi_comm_rank, mpi_comm_rank__);
-    (*real_mpi_comm_size)(comm, &size, ierror);
-    (*real_mpi_comm_rank)(comm, rank, ierror);
+    f_mpi_comm_size_fortran2(comm, &size, ierror, dispatch);
+    f_mpi_comm_rank_fortran2(comm, rank, ierror, dispatch);
     monitor_set_mpi_size_rank(size, *rank);
 }

@@ -1,25 +1,23 @@
-// SPDX-FileCopyrightText: 2002-2024 Rice University
 // SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-// -*-Mode: C++;-*- // technically C99
+#include "common-preload.h"
+#include "common.h"
+#include "ompt-private.h"
 
-#define _GNU_SOURCE
-
-#include "foil.h"
-#include "../ompt/ompt-interface.h"
-#include "../monitor-exts/openmp.h"
-
-HPCRUN_EXPOSED ompt_start_tool_result_t* ompt_start_tool(unsigned int omp_version,
-    const char *runtime_version) {
-  LOOKUP_FOIL_BASE(base, ompt_start_tool);
-  return base(omp_version, runtime_version);
+HPCRUN_EXPOSED_API ompt_start_tool_result_t*
+ompt_start_tool(unsigned int omp_version, const char* runtime_version) {
+  return hpcrun_foil_fetch_hooks_ompt_dl()->ompt_start_tool(omp_version,
+                                                            runtime_version);
 }
 
-HPCRUN_EXPOSED void* _mp_init() {
-  LOOKUP_FOIL_BASE(base, _mp_init);
-  FOIL_DLSYM(real, _mp_init);
-  base();
-  return real();
+// The PGI OpenMP compiler does some strange things with their thread
+// stacks.  We use _mp_init() as our test for this and then adjust the
+// unwind heuristics if found.
+
+// NOLINTNEXTLINE(bugprone-reserved-identifier)
+HPCRUN_EXPOSED_API void* _mp_init() {
+  hpcrun_foil_fetch_hooks_ompt_dl()->mp_init();
+  return ((void* (*)())foil_dlsym("_mp_init"))();
 }

@@ -286,9 +286,6 @@ static locked_unordered_map<std::string, ip_normalized_t, std::mutex, MyHashKern
 
 static locked_unordered_map<std::string, bool, std::mutex, MyHashElfBinary> elf_binary_map;
 
-// memoized result of GTPin_GetCore
-static IGtCore *igt_core = NULL;
-
 static bool count_knob = false;
 static bool collect_latency = false;
 static bool latency_knob = false;
@@ -1001,45 +998,6 @@ GTPinInstrumentation::OnKernelComplete
     it->gatherMetrics(dispatch, correlation_data);
   }
 }
-
-
-
-//*****************************************************************************
-// interface to Intel's gtpin C++ library
-//*****************************************************************************
-
-static void
-gtpin_find_core
-(void)
-{
-  void *handler = dlmopen(LM_ID_BASE, "libgtpin.so", RTLD_LOCAL | RTLD_LAZY);
-  if (handler == NULL) {
-    fprintf(stderr, "FATAL: hpcrun: unable to load Intel's gtpin library: "
-            "%s\n", dlerror());
-    gtpin_hpcrun_api->real_exit(-1);
-  }
-
-  IGtCore *(*getcore)() = (IGtCore * (*)()) dlsym(handler, "GTPin_GetCore");
-  if (getcore == NULL) {
-    fprintf(stderr, "FATAL: hpcrun: failed to bind function in Intel's"
-            " gtpin library: %s\n", dlerror());
-    gtpin_hpcrun_api->real_exit(-1);
-  }
-
-  igt_core = getcore();
-}
-
-extern "C" {
-  IGtCore *GTPin_GetCore
-  (void) {
-    static pthread_once_t once_control = PTHREAD_ONCE_INIT;
-
-    pthread_once(&once_control, gtpin_find_core);
-
-    return igt_core;
-  }
-}
-
 
 
 //*****************************************************************************

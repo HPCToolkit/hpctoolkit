@@ -60,14 +60,14 @@ hpcrun_start_stop_internal_init(void)
 
 
 int
-foilbase_hpctoolkit_sampling_is_active(void)
+hpcrun_sampling_is_active(void)
 {
   return sampling_is_active;
 }
 
 
 void
-foilbase_hpctoolkit_sampling_start(void)
+hpcrun_sampling_start(void)
 {
   sampling_is_active = 1;
   dont_reinit = 1;
@@ -78,7 +78,7 @@ foilbase_hpctoolkit_sampling_start(void)
 
 
 void
-foilbase_hpctoolkit_sampling_stop(void)
+hpcrun_sampling_stop(void)
 {
   sampling_is_active = 0;
   dont_reinit = 1;

@@ -58,115 +58,123 @@
 //
 
 int
-foilbase_pthread_cond_timedwait(fn_pthread_cond_timedwait_t* real_fn, pthread_cond_t* restrict cond,
-    pthread_mutex_t* restrict mutex, const struct timespec* restrict abstime)
+hpcrun_pthread_cond_timedwait(pthread_cond_t* restrict cond,
+    pthread_mutex_t* restrict mutex, const struct timespec* restrict abstime,
+    const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   pthread_directed_blame_shift_blocked_start(cond);
-  int retval = real_fn(cond, mutex, abstime);
+  int retval = f_pthread_cond_timedwait(cond, mutex, abstime, dispatch);
   pthread_directed_blame_shift_end();
 
   return retval;
 }
 
 int
-foilbase_pthread_cond_wait(fn_pthread_cond_wait_t* real_fn, pthread_cond_t* restrict cond,
-                           pthread_mutex_t* restrict mutex)
+hpcrun_pthread_cond_wait(pthread_cond_t* restrict cond, pthread_mutex_t* restrict mutex,
+                           const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   pthread_directed_blame_shift_blocked_start(cond);
-  int retval = real_fn(cond, mutex);
+  int retval = f_pthread_cond_wait(cond, mutex, dispatch);
   pthread_directed_blame_shift_end();
 
   return retval;
 }
 
 int
-foilbase_pthread_cond_broadcast(fn_pthread_cond_broadcast_t* real_fn, pthread_cond_t *cond)
+hpcrun_pthread_cond_broadcast(pthread_cond_t *cond,
+                                const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
-  int retval = real_fn(cond);
+  int retval = f_pthread_cond_broadcast(cond, dispatch);
   pthread_directed_blame_accept(cond);
   return retval;
 }
 
 int
-foilbase_pthread_cond_signal(fn_pthread_cond_signal_t* real_fn, pthread_cond_t* cond)
+hpcrun_pthread_cond_signal(pthread_cond_t* cond,
+                             const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
-  int retval = real_fn(cond);
+  int retval = f_pthread_cond_signal(cond, dispatch);
   pthread_directed_blame_accept(cond);
   return retval;
 }
 
 int
-foilbase_pthread_mutex_lock(fn_pthread_mutex_lock_t* real_fn, pthread_mutex_t* mutex)
+hpcrun_pthread_mutex_lock(pthread_mutex_t* mutex,
+                            const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   TMSG(LOCKWAIT, "mutex lock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
-    return real_fn(mutex);
+    return f_pthread_mutex_lock(mutex, dispatch);
   }
 
   TMSG(LOCKWAIT, "pthread mutex LOCK override");
   pthread_directed_blame_shift_blocked_start(mutex);
-  int retval = real_fn(mutex);
+  int retval = f_pthread_mutex_lock(mutex, dispatch);
   pthread_directed_blame_shift_end();
 
   return retval;
 }
 
 int
-foilbase_pthread_mutex_unlock(fn_pthread_mutex_unlock_t* real_fn, pthread_mutex_t* mutex)
+hpcrun_pthread_mutex_unlock(pthread_mutex_t* mutex,
+                              const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   TMSG(LOCKWAIT, "mutex unlock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
-    return real_fn(mutex);
+    return f_pthread_mutex_unlock(mutex, dispatch);
   }
   TMSG(LOCKWAIT, "pthread mutex UNLOCK");
-  int retval = real_fn(mutex);
+  int retval = f_pthread_mutex_unlock(mutex, dispatch);
   pthread_directed_blame_accept(mutex);
   return retval;
 }
 
 int
-foilbase_pthread_mutex_timedlock(fn_pthread_mutex_timedlock_t* real_fn,
-    pthread_mutex_t* restrict mutex, const struct timespec* restrict abs_timeout)
+hpcrun_pthread_mutex_timedlock(
+    pthread_mutex_t* restrict mutex, const struct timespec* restrict abs_timeout,
+    const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   TMSG(LOCKWAIT, "mutex timedlock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
-    return real_fn(mutex, abs_timeout);
+    return f_pthread_mutex_timedlock(mutex, abs_timeout, dispatch);
   }
 
   TMSG(LOCKWAIT, "pthread mutex TIMEDLOCK");
 
   pthread_directed_blame_shift_blocked_start(mutex);
-  int retval = real_fn(mutex, abs_timeout);
+  int retval = f_pthread_mutex_timedlock(mutex, abs_timeout, dispatch);
   pthread_directed_blame_shift_end();
   return retval;
 }
 
 int
-foilbase_pthread_spin_lock(fn_pthread_spin_lock_t* real_fn, pthread_spinlock_t* lock)
+hpcrun_pthread_spin_lock(pthread_spinlock_t* lock,
+                           const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   TMSG(LOCKWAIT, "pthread_spin_lock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
-    return real_fn(lock);
+    return f_pthread_spin_lock(lock, dispatch);
   }
 
   TMSG(LOCKWAIT, "pthread SPIN LOCK override");
   pthread_directed_blame_shift_spin_start((void*) lock);
-  int retval = real_fn(lock);
+  int retval = f_pthread_spin_lock(lock, dispatch);
   pthread_directed_blame_shift_end();
 
   return retval;
 }
 
 int
-foilbase_pthread_spin_unlock(fn_pthread_spin_unlock_t* real_fn, pthread_spinlock_t* lock)
+hpcrun_pthread_spin_unlock(pthread_spinlock_t* lock,
+                             const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   TMSG(LOCKWAIT, "pthread_spin_unlock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
-    return real_fn(lock);
+    return f_pthread_spin_unlock(lock, dispatch);
   }
 
   TMSG(LOCKWAIT, "pthread SPIN UNLOCK");
-  int retval = real_fn(lock);
+  int retval = f_pthread_spin_unlock(lock, dispatch);
   pthread_directed_blame_accept((void*) lock);
   return retval;
 }
@@ -182,25 +190,25 @@ static unsigned int calls_to_sched_yield = 0;
 static unsigned int calls_to_sem_wait    = 0;
 
 int
-foilbase_sched_yield(fn_sched_yield_t* real_fn)
+hpcrun_sched_yield(const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   // TMSG(TBB_EACH, "sched_yield hit");
 
-  int retval = real_fn();
+  int retval = f_sched_yield(dispatch);
 
   // __sync_fetch_and_add(&calls_to_sched_yield, 1);
   return retval;
 }
 
 int
-foilbase_sem_wait(fn_sem_wait_t* real_fn, sem_t* sem)
+hpcrun_sem_wait(sem_t* sem, const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   if (! pthread_blame_lockwait_enabled() ) {
-    return real_fn(sem);
+    return f_sem_wait(sem, dispatch);
   }
   TMSG(TBB_EACH, "sem wait hit, sem = %p", sem);
   pthread_directed_blame_shift_blocked_start(sem);
-  int retval = real_fn(sem);
+  int retval = f_sem_wait(sem, dispatch);
   pthread_directed_blame_shift_end();
 
   // hpcrun_atomicIncr(&calls_to_sem_wait);
@@ -209,14 +217,14 @@ foilbase_sem_wait(fn_sem_wait_t* real_fn, sem_t* sem)
 }
 
 int
-foilbase_sem_post(fn_sem_post_t* real_fn, sem_t* sem)
+hpcrun_sem_post(sem_t* sem, const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   TMSG(LOCKWAIT, "sem_post ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
-    return real_fn(sem);
+    return f_sem_post(sem, dispatch);
   }
   TMSG(LOCKWAIT, "sem POST");
-  int retval = real_fn(sem);
+  int retval = f_sem_post(sem, dispatch);
   pthread_directed_blame_accept(sem);
   // TMSG(TBB_EACH, "sem post hit, sem = %p", sem);
 
@@ -224,10 +232,11 @@ foilbase_sem_post(fn_sem_post_t* real_fn, sem_t* sem)
 }
 
 int
-foilbase_sem_timedwait(fn_sem_timedwait_t* real_fn, sem_t* sem, const struct timespec* abs_timeout)
+hpcrun_sem_timedwait(sem_t* sem, const struct timespec* abs_timeout,
+                       const struct hpcrun_foil_appdispatch_libc_sync* dispatch)
 {
   TMSG(TBB_EACH, "sem timedwait hit, sem = %p", sem);
-  int retval = real_fn(sem, abs_timeout);
+  int retval = f_sem_timedwait(sem, abs_timeout, dispatch);
 
   return retval;
 }

@@ -31,6 +31,7 @@
 
 #include "gtpin-hpcrun-api.h"
 
+#include "../hpcrun-sonames.h"
 #include "../../../../audit/audit-api.h"
 #include "../../../../cct/cct.h"
 #include "../../common/gpu-binary.h"
@@ -97,7 +98,7 @@ static uintptr_t (*gtpin_lookup_kernel_ip_fn)(const char *kernel_name);
 static void init()
 {
   Lmid_t scope = getenv("HPCRUN_GTPIN_VISIBLE") ? LM_ID_BASE : LM_ID_NEWLM;
-  void *hpcrun_gtpinlib = dlmopen(scope, "libhpcrun_gtpin_cxx.so",
+  void *hpcrun_gtpinlib = dlmopen(scope, HPCRUN_GTPIN_CXX_SO,
                                   RTLD_LOCAL | RTLD_LAZY);
   if (hpcrun_gtpinlib == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());

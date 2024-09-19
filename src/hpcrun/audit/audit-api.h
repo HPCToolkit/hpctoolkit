@@ -62,7 +62,6 @@ typedef struct auditor_exports_t {
   void (*mainlib_disconnect)();
 
   // Called to load and bind new libraries in the auditor's namespace.
-  // Same semantics as #hpcrun_bind_v.
   void (*hpcrun_bind_v)(const char*, va_list);
 
   // Exports from libc to aid in wrapper evasion
@@ -70,6 +69,9 @@ typedef struct auditor_exports_t {
   int (*sigprocmask)(int, const sigset_t*, sigset_t*);
   int (*pthread_sigmask)(int, const sigset_t*, sigset_t*);
   int (*sigaction)(int, const struct sigaction* restrict, struct sigaction* restrict);
+  pthread_t (*pthread_self)();
+  int (*pthread_kill)(pthread_t, int);
+  int (*pthread_setcancelstate)(int, int*);
 } auditor_exports_t;
 
 // Get a pointer to the current set of auditor exports

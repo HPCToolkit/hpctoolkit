@@ -9,6 +9,6 @@
 #define HPCRUN_MONITOR_EXTS_OPENMP_H
 
 extern void
-foilbase__mp_init(void);
+hpcrun_mp_init(void);
 
 #endif  // HPCRUN_MONITOR_EXTS_OPENMP_H

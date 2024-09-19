@@ -34,29 +34,20 @@
 // local include files
 //*****************************************************************************
 
-#include "../../../sample-sources/libdl.h"
 #include "../../../messages/messages.h"
 
 #include "cuda-api.h"
+
+#include "../../../foil/nvidia.h"
 
 
 
 //*****************************************************************************
 // macros
 //*****************************************************************************
-
-#define CUDA_FN_NAME(f) DYN_FN_NAME(f)
-
-#define CUDA_FN(fn, args) \
-  static CUresult (*CUDA_FN_NAME(fn)) args
-
-
-#define CUDA_RUNTIME_FN(fn, args) \
-  static cudaError_t (*CUDA_FN_NAME(fn)) args
-
 #define HPCRUN_CUDA_API_CALL(fn, args)                              \
 {                                                                   \
-  CUresult error_result = CUDA_FN_NAME(fn) args;                    \
+  CUresult error_result = fn args;                    \
   if (error_result != CUDA_SUCCESS) {                               \
     ETMSG(CUDA, "cuda api %s returned %d", #fn,                     \
           (int) error_result);                                      \
@@ -67,7 +58,7 @@
 
 #define HPCRUN_CUDA_RUNTIME_CALL(fn, args)                          \
 {                                                                   \
-  cudaError_t error_result = CUDA_FN_NAME(fn) args;                 \
+  cudaError_t error_result = fn args;                 \
   if (error_result != cudaSuccess) {                                \
     ETMSG(CUDA, "cuda runtime %s returned %d", #fn,                 \
           (int) error_result);                                      \
@@ -104,101 +95,12 @@
 // static data
 //******************************************************************************
 
-CUDA_FN
-(
- cuDeviceGetAttribute,
- (
-  int* pi,
-  CUdevice_attribute attrib,
-  CUdevice dev
- )
-);
 
-
-CUDA_FN
-(
- cuCtxGetCurrent,
- (
-  CUcontext *ctx
- )
-);
-
-
-CUDA_FN
-(
- cuFuncGetModule,
- (
-  CUmodule* hmod,
-  CUfunction function
- )
-);
-
-
-CUDA_FN
-(
- cuDriverGetVersion,
- (
-  int* version
- )
-);
-
-
-CUDA_RUNTIME_FN
-(
- cudaGetDevice,
- (
-  int *device_id
- )
-);
-
-
-CUDA_RUNTIME_FN
-(
- cudaRuntimeGetVersion,
- (
-  int* runtimeVersion
- )
-);
-
-
-CUDA_RUNTIME_FN
-(
- cudaMemcpy,
- (
-  void* dst,
-  const void* src,
-  size_t count,
-  enum cudaMemcpyKind kind
- )
-);
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
-
-
-int
-cuda_bind
-(
-  void
-)
-{
-  CHK_DLOPEN(cuda, "libcuda.so", RTLD_NOW | RTLD_GLOBAL);
-
-  CHK_DLSYM(cuda, cuDeviceGetAttribute);
-  CHK_DLSYM(cuda, cuCtxGetCurrent);
-  CHK_DLSYM(cuda, cuFuncGetModule);
-  CHK_DLSYM(cuda, cuDriverGetVersion);
-
-  CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
-
-  CHK_DLSYM(cudart, cudaGetDevice);
-  CHK_DLSYM(cudart, cudaRuntimeGetVersion);
-  CHK_DLSYM(cudart, cudaMemcpy);
-
-  return DYNAMIC_BINDING_STATUS_OK;
-}
 
 
 static int
@@ -229,10 +131,10 @@ cuda_device_compute_capability
   int *minor
 )
 {
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
 
   return 0;
@@ -246,7 +148,7 @@ cuda_device_id
   int *device_id
 )
 {
-  HPCRUN_CUDA_RUNTIME_CALL(cudaGetDevice, (device_id));
+  HPCRUN_CUDA_RUNTIME_CALL(f_cudaGetDevice, (device_id));
   return 0;
 }
 
@@ -257,7 +159,7 @@ cuda_runtime_version
   int *rt_version
 )
 {
-  HPCRUN_CUDA_RUNTIME_CALL(cudaRuntimeGetVersion, (rt_version));
+  HPCRUN_CUDA_RUNTIME_CALL(f_cudaRuntimeGetVersion, (rt_version));
 }
 
 
@@ -273,7 +175,7 @@ cuda_context
  CUcontext *ctx
 )
 {
-  HPCRUN_CUDA_API_CALL(cuCtxGetCurrent, (ctx));
+  HPCRUN_CUDA_API_CALL(f_cuCtxGetCurrent, (ctx));
   return 0;
 }
 
@@ -284,34 +186,34 @@ cuda_device_property_query
  cuda_device_property_t *property
 )
 {
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (&property->sm_clock_rate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (&property->sm_shared_memory,
      CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (&property->sm_registers,
      CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (&property->sm_threads, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR,
      device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (&property->num_threads_per_warp, CU_DEVICE_ATTRIBUTE_WARP_SIZE,
      device_id));
 
   int major = 0, minor = 0;
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+  HPCRUN_CUDA_API_CALL(f_cuDeviceGetAttribute,
     (&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
 
   property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
@@ -356,7 +258,7 @@ cuda_get_module
  CUfunction fn
 )
 {
-  HPCRUN_CUDA_API_CALL(cuFuncGetModule, (mod, fn));
+  HPCRUN_CUDA_API_CALL(f_cuFuncGetModule, (mod, fn));
   return 0;
 }
 
@@ -370,7 +272,7 @@ cuda_get_driver_version
 {
   int version;
 
-  HPCRUN_CUDA_API_CALL(cuDriverGetVersion, (&version));
+  HPCRUN_CUDA_API_CALL(f_cuDriverGetVersion, (&version));
 
   *major = version / 1000;
   *minor = version - *major * 1000;
@@ -404,6 +306,6 @@ cuda_get_code
  size_t bytes
 )
 {
-  HPCRUN_CUDA_RUNTIME_CALL(cudaMemcpy, (host, dev, bytes, cudaMemcpyDeviceToHost));
+  HPCRUN_CUDA_RUNTIME_CALL(f_cudaMemcpy, (host, dev, bytes, cudaMemcpyDeviceToHost));
   return 0;
 }

@@ -47,6 +47,7 @@
 #include "pthread_h.h"
 #include "queue.h"
 #include "spinlock.h"
+#include "../audit/audit-api.h"
 
 /*
  *----------------------------------------------------------------------
@@ -75,45 +76,6 @@
     const pthread_attr_t *attr,                 \
     pthread_start_fcn_t *start_routine,         \
     void *arg
-
-typedef int   pthread_create_fcn_t(PTHREAD_CREATE_PARAM_LIST);
-typedef int   pthread_attr_init_fcn_t(pthread_attr_t *);
-typedef int   pthread_attr_getstacksize_fcn_t(const pthread_attr_t *, size_t *);
-typedef int   pthread_attr_setstacksize_fcn_t(pthread_attr_t *, size_t);
-typedef void  pthread_exit_fcn_t(void *);
-typedef int   pthread_key_create_fcn_t(pthread_key_t *, void (*)(void *));
-typedef int   pthread_key_delete_fcn_t(pthread_key_t);
-typedef int   pthread_kill_fcn_t(pthread_t, int);
-typedef pthread_t pthread_self_fcn_t(void);
-typedef void *pthread_getspecific_fcn_t(pthread_key_t);
-typedef int   pthread_setspecific_fcn_t(pthread_key_t, const void *);
-typedef int   pthread_setcancelstate_fcn_t(int, int *);
-typedef int   sigaction_fcn_t(int, const struct sigaction *,
-                              struct sigaction *);
-typedef int   sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
-typedef int   sigwaitinfo_fcn_t(const sigset_t *, siginfo_t *);
-typedef int   sigtimedwait_fcn_t(const sigset_t *, siginfo_t *,
-                                 const struct timespec *);
-typedef void *malloc_fcn_t(size_t);
-
-static pthread_create_fcn_t  *real_pthread_create;
-static pthread_attr_init_fcn_t  *real_pthread_attr_init;
-static pthread_attr_init_fcn_t  *real_pthread_attr_destroy;
-static pthread_attr_getstacksize_fcn_t  *real_pthread_attr_getstacksize;
-static pthread_attr_setstacksize_fcn_t  *real_pthread_attr_setstacksize;
-static pthread_exit_fcn_t   *real_pthread_exit;
-static pthread_key_create_fcn_t   *real_pthread_key_create;
-static pthread_key_delete_fcn_t   *real_pthread_key_delete;
-static pthread_kill_fcn_t  *real_pthread_kill;
-static pthread_self_fcn_t  *real_pthread_self;
-static pthread_getspecific_fcn_t  *real_pthread_getspecific;
-static pthread_setspecific_fcn_t  *real_pthread_setspecific;
-static pthread_setcancelstate_fcn_t  *real_pthread_setcancelstate;
-static sigaction_fcn_t    *real_sigaction;
-static sigprocmask_fcn_t  *real_pthread_sigmask;
-static sigwaitinfo_fcn_t  *real_sigwaitinfo;
-static sigtimedwait_fcn_t *real_sigtimedwait;
-static malloc_fcn_t  *real_malloc = NULL;
 
 /*
  *  The global thread mutex protects monitor's list of threads and
@@ -172,7 +134,7 @@ monitor_get_tn(void)
     struct monitor_thread_node *tn;
 
     if (monitor_has_used_threads) {
-        tn = (*real_pthread_getspecific)(monitor_pthread_key);
+        tn = pthread_getspecific(monitor_pthread_key);
         if (tn != NULL && tn->tn_magic != MONITOR_TN_MAGIC) {
             MONITOR_WARN_NO_TID("bad magic in thread node: %p\n", tn);
             tn = NULL;
@@ -188,23 +150,6 @@ static void
 monitor_thread_name_init(void)
 {
     MONITOR_RUN_ONCE(thread_name_init);
-
-    MONITOR_GET_REAL_NAME_WRAP(real_pthread_create, pthread_create);
-    MONITOR_GET_REAL_NAME(real_pthread_attr_init, pthread_attr_init);
-    MONITOR_GET_REAL_NAME(real_pthread_attr_destroy, pthread_attr_destroy);
-    MONITOR_GET_REAL_NAME(real_pthread_attr_getstacksize, pthread_attr_getstacksize);
-    MONITOR_GET_REAL_NAME(real_pthread_attr_setstacksize, pthread_attr_setstacksize);
-    MONITOR_GET_REAL_NAME(real_pthread_key_create, pthread_key_create);
-    MONITOR_GET_REAL_NAME(real_pthread_key_delete, pthread_key_delete);
-    MONITOR_GET_REAL_NAME(real_pthread_kill, pthread_kill);
-    MONITOR_GET_REAL_NAME(real_pthread_self, pthread_self);
-    MONITOR_GET_REAL_NAME(real_pthread_getspecific,  pthread_getspecific);
-    MONITOR_GET_REAL_NAME(real_pthread_setspecific,  pthread_setspecific);
-    MONITOR_GET_REAL_NAME(real_pthread_setcancelstate, pthread_setcancelstate);
-    MONITOR_GET_REAL_NAME_WRAP(real_sigaction, sigaction);
-    MONITOR_GET_REAL_NAME_WRAP(real_pthread_sigmask, pthread_sigmask);
-    MONITOR_GET_REAL_NAME_WRAP(real_sigwaitinfo, sigwaitinfo);
-    MONITOR_GET_REAL_NAME_WRAP(real_sigtimedwait, sigtimedwait);
 }
 
 /*
@@ -230,7 +175,7 @@ monitor_thread_list_init(void)
     LIST_INIT(&monitor_free_list);
     monitor_tn_array_pos = 0;
 
-    ret = (*real_pthread_key_create)(&monitor_pthread_key, NULL);
+    ret = pthread_key_create(&monitor_pthread_key, NULL);
     if (ret != 0) {
         MONITOR_ERROR("pthread_key_create failed (%d)\n", ret);
     }
@@ -241,8 +186,8 @@ monitor_thread_list_init(void)
     if (main_tn == NULL || main_tn->tn_magic != MONITOR_TN_MAGIC) {
         MONITOR_ERROR1("monitor_get_main_tn failed\n");
     }
-    main_tn->tn_self = (*real_pthread_self)();
-    ret = (*real_pthread_setspecific)(monitor_pthread_key, main_tn);
+    main_tn->tn_self = auditor_exports()->pthread_self();
+    ret = pthread_setspecific(monitor_pthread_key, main_tn);
     if (ret != 0) {
         MONITOR_ERROR("pthread_setspecific failed (%d)\n", ret);
     }
@@ -287,7 +232,7 @@ monitor_reset_thread_list(struct monitor_thread_node *main_tn)
     LIST_INIT(&monitor_thread_list);
     LIST_INIT(&monitor_free_list);
     monitor_tn_array_pos = 0;
-    if ((*real_pthread_key_delete)(monitor_pthread_key) != 0) {
+    if (pthread_key_delete(monitor_pthread_key) != 0) {
         MONITOR_WARN1("pthread_key_delete failed\n");
     }
     monitor_has_used_threads = 0;
@@ -316,9 +261,7 @@ monitor_make_thread_node(void)
     }
     else {
         /* Malloc a new tn array. */
-        MONITOR_GET_REAL_NAME(real_malloc, malloc);
-        monitor_tn_array =
-            (*real_malloc)(MONITOR_TN_ARRAY_SIZE * sizeof(struct monitor_thread_node));
+        monitor_tn_array = malloc(MONITOR_TN_ARRAY_SIZE * sizeof(struct monitor_thread_node));
         if (monitor_tn_array == NULL) {
             MONITOR_ERROR1("malloc failed\n");
         }
@@ -379,7 +322,7 @@ monitor_shootdown_handler(int sig)
     struct monitor_thread_node *tn;
     int old_state;
 
-    tn = (*real_pthread_getspecific)(monitor_pthread_key);
+    tn = pthread_getspecific(monitor_pthread_key);
     if (tn == NULL) {
         MONITOR_WARN1("unable to deliver monitor_fini_thread callback: "
                       "pthread_getspecific() failed\n");
@@ -400,13 +343,13 @@ monitor_shootdown_handler(int sig)
         return;
     }
 
-    (*real_pthread_setcancelstate)(PTHREAD_CANCEL_DISABLE, &old_state);
+    auditor_exports()->pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
     tn->tn_fini_started = 1;
     MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
                   tn->tn_user_data, tn->tn_tid);
     monitor_fini_thread(tn->tn_user_data);
     tn->tn_fini_done = 1;
-    (*real_pthread_setcancelstate)(old_state, NULL);
+    auditor_exports()->pthread_setcancelstate(old_state, NULL);
 }
 
 
@@ -430,7 +373,7 @@ monitor_thread_shootdown(void)
         return;
     }
 
-    (*real_pthread_setcancelstate)(PTHREAD_CANCEL_DISABLE, &old_state);
+    auditor_exports()->pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
 
     MONITOR_THREAD_LOCK;
     monitor_in_exit_cleanup = 1;
@@ -447,7 +390,7 @@ monitor_thread_shootdown(void)
     my_action.sa_handler = monitor_shootdown_handler;
     my_action.sa_mask = empty_set;
     my_action.sa_flags = SA_RESTART;
-    if ((*real_sigaction)(shootdown_signal, &my_action, NULL) != 0) {
+    if (auditor_exports()->sigaction(shootdown_signal, &my_action, NULL) != 0) {
         MONITOR_ERROR1("sigaction failed\n");
     }
 
@@ -456,7 +399,7 @@ monitor_thread_shootdown(void)
      * main on the thread list.  Main gets a fini-thread callback and
      * the current thread gets both fini-thread and fini-process.
      */
-    self = (*real_pthread_self)();
+    self = auditor_exports()->pthread_self();
     main_tn = monitor_get_main_tn();
     if (! PTHREAD_EQUAL(self, main_tn->tn_self)) {
         main_tn->tn_appl_started = 1;
@@ -495,7 +438,7 @@ monitor_thread_shootdown(void)
                 if (tn->tn_fini_started) {
                     num_started++;
                 } else {
-                    (*real_pthread_kill)(tn->tn_self, shootdown_signal);
+                    auditor_exports()->pthread_kill(tn->tn_self, shootdown_signal);
                     num_unstarted++;
                 }
                 if (tn->tn_fini_done)
@@ -535,7 +478,7 @@ monitor_thread_shootdown(void)
         my_tn->tn_fini_done = 1;
     }
 
-    (*real_pthread_setcancelstate)(old_state, NULL);
+    auditor_exports()->pthread_setcancelstate(old_state, NULL);
 }
 
 /*
@@ -668,20 +611,20 @@ monitor_broadcast_signal(int sig)
     if (MONITOR_THREAD_TRYLOCK != 0)
         return (FAILURE);
 
-    self = (*real_pthread_self)();
+    self = auditor_exports()->pthread_self();
     for (tn = LIST_FIRST(&monitor_thread_list);
          tn != NULL;
          tn = LIST_NEXT(tn, tn_links)) {
 
         if (!PTHREAD_EQUAL(self, tn->tn_self) &&
             tn->tn_appl_started && !tn->tn_fini_started) {
-            (*real_pthread_kill)(tn->tn_self, sig);
+            auditor_exports()->pthread_kill(tn->tn_self, sig);
         }
     }
 
     tn = monitor_get_main_tn();
     if (tn != NULL && !PTHREAD_EQUAL(self, tn->tn_self))
-        (*real_pthread_kill)(tn->tn_self, sig);
+        auditor_exports()->pthread_kill(tn->tn_self, sig);
 
     MONITOR_THREAD_UNLOCK;
     return (SUCCESS);
@@ -845,10 +788,10 @@ monitor_begin_thread(void *arg)
     /*
      * Don't create any new threads after someone has called exit().
      */
-    tn->tn_self = (*real_pthread_self)();
+    tn->tn_self = auditor_exports()->pthread_self();
     tn->tn_stack_bottom = alloca(8);
     strncpy(tn->tn_stack_bottom, "stakbot", 8);
-    if ((*real_pthread_setspecific)(monitor_pthread_key, tn) != 0) {
+    if (pthread_setspecific(monitor_pthread_key, tn) != 0) {
         MONITOR_ERROR1("pthread_setspecific failed\n");
     }
     if (monitor_link_thread_node(tn) != 0) {
@@ -891,7 +834,8 @@ monitor_begin_thread(void *arg)
 pthread_attr_t *
 monitor_adjust_stack_size(pthread_attr_t *orig_attr,
                           pthread_attr_t *default_attr,
-                          int *restore, int *destroy, size_t *old_size)
+                          int *restore, int *destroy, size_t *old_size,
+                          const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     pthread_attr_t *attr;
     size_t new_size;
@@ -901,7 +845,7 @@ monitor_adjust_stack_size(pthread_attr_t *orig_attr,
     if (orig_attr != NULL)
         attr = orig_attr;
     else {
-        if ((*real_pthread_attr_init)(default_attr) != 0) {
+        if (f_pthread_attr_init(default_attr, dispatch) != 0) {
             MONITOR_WARN1("pthread_attr_init failed\n");
             return (orig_attr);
         }
@@ -909,7 +853,7 @@ monitor_adjust_stack_size(pthread_attr_t *orig_attr,
         attr = default_attr;
     }
 
-    if ((*real_pthread_attr_getstacksize)(attr, old_size) != 0) {
+    if (f_pthread_attr_getstacksize(attr, old_size, dispatch) != 0) {
         MONITOR_WARN1("pthread_attr_getstacksize failed\n");
         return (orig_attr);
     }
@@ -918,7 +862,7 @@ monitor_adjust_stack_size(pthread_attr_t *orig_attr,
     if (new_size == *old_size)
         return (orig_attr);
 
-    if ((*real_pthread_attr_setstacksize)(attr, new_size) != 0) {
+    if (f_pthread_attr_setstacksize(attr, new_size, dispatch) != 0) {
         MONITOR_WARN1("pthread_attr_setstacksize failed\n");
         return (orig_attr);
     }
@@ -935,7 +879,8 @@ monitor_adjust_stack_size(pthread_attr_t *orig_attr,
  *  Override pthread_create().
  */
 int
-foilbase_pthread_create(void* caller, PTHREAD_CREATE_PARAM_LIST)
+hpcrun_pthread_create(PTHREAD_CREATE_PARAM_LIST, void* caller,
+                        const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     struct monitor_thread_node *tn, *my_tn;
     struct monitor_thread_info mti;
@@ -983,7 +928,7 @@ foilbase_pthread_create(void* caller, PTHREAD_CREATE_PARAM_LIST)
      */
     if (my_tn == NULL || my_tn->tn_ignore_threads) {
         MONITOR_DEBUG("launching ignored thread: start = %p\n", start_routine);
-        return (*real_pthread_create)(thread, attr, start_routine, arg);
+        return f_pthread_create(thread, attr, start_routine, arg, dispatch);
     }
 
     /*
@@ -1010,7 +955,7 @@ foilbase_pthread_create(void* caller, PTHREAD_CREATE_PARAM_LIST)
      */
     if (user_data == MONITOR_IGNORE_NEW_THREAD) {
         MONITOR_DEBUG("launching ignored thread: start = %p\n", start_routine);
-        return (*real_pthread_create)(thread, attr, start_routine, arg);
+        return f_pthread_create(thread, attr, start_routine, arg, dispatch);
     }
 
     tn = monitor_make_thread_node();
@@ -1025,18 +970,17 @@ foilbase_pthread_create(void* caller, PTHREAD_CREATE_PARAM_LIST)
      * increasing its size).
      */
     attr = monitor_adjust_stack_size((pthread_attr_t *)attr, &default_attr,
-                                     &restore, &destroy, &old_size);
+                                     &restore, &destroy, &old_size, dispatch);
 
     MONITOR_DEBUG("launching monitored thread: monitor = %p, start = %p\n",
                   monitor_begin_thread, start_routine);
-    ret = (*real_pthread_create)(thread, attr, monitor_begin_thread,
-                                 (void *)tn);
+    ret = f_pthread_create(thread, attr, monitor_begin_thread, (void *)tn, dispatch);
 
     if (restore) {
-        (*real_pthread_attr_setstacksize)((pthread_attr_t *)attr, old_size);
+        f_pthread_attr_setstacksize((pthread_attr_t *)attr, old_size, dispatch);
     }
     if (destroy) {
-        (*real_pthread_attr_destroy)(&default_attr);
+        f_pthread_attr_destroy(&default_attr, dispatch);
     }
     if (ret != 0) {
         MONITOR_DEBUG("real_pthread_create failed: start_routine = %p, ret = %d\n",
@@ -1061,7 +1005,7 @@ foilbase_pthread_create(void* caller, PTHREAD_CREATE_PARAM_LIST)
  *  it here.
  */
 void
-foilbase_pthread_exit(void *data)
+hpcrun_pthread_exit(void *data, const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     struct monitor_thread_node *tn;
 
@@ -1071,8 +1015,7 @@ foilbase_pthread_exit(void *data)
         monitor_end_process_fcn(MONITOR_EXIT_NORMAL);
     }
 
-    MONITOR_GET_REAL_NAME_WRAP(real_pthread_exit, pthread_exit);
-    (*real_pthread_exit)(data);
+    f_pthread_exit(data, dispatch);
 
     /* Never reached, but silence a compiler warning. */
     exit(0);
@@ -1083,7 +1026,8 @@ foilbase_pthread_exit(void *data)
  *  let it change the mask for any signal in the keep open list.
  */
 int
-foilbase_pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset)
+hpcrun_pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset,
+                         const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     sigset_t my_set;
 
@@ -1097,7 +1041,7 @@ foilbase_pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset)
         set = &my_set;
     }
 
-    return (*real_pthread_sigmask)(how, set, oldset);
+    return f_pthread_sigmask(how, set, oldset, dispatch);
 }
 
 /*
@@ -1137,13 +1081,13 @@ monitor_sigwait_helper(const sigset_t *set, int sig, int sigwait_errno,
         && !tn->tn_fini_started
         && !tn->tn_block_shootdown)
     {
-        (*real_pthread_setcancelstate)(PTHREAD_CANCEL_DISABLE, &old_state);
+        auditor_exports()->pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
         tn->tn_fini_started = 1;
         MONITOR_DEBUG("calling monitor_fini_thread(data = %p), tid = %d ...\n",
                       tn->tn_user_data, tn->tn_tid);
         monitor_fini_thread(tn->tn_user_data);
         tn->tn_fini_done = 1;
-        (*real_pthread_setcancelstate)(old_state, NULL);
+        auditor_exports()->pthread_setcancelstate(old_state, NULL);
 
         return 1;
     }
@@ -1170,7 +1114,8 @@ monitor_sigwait_helper(const sigset_t *set, int sig, int sigwait_errno,
 }
 
 int
-foilbase_sigwait(const sigset_t *set, int *sig)
+hpcrun_sigwait(const sigset_t *set, int *sig,
+                 const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     char buf[MONITOR_SIG_BUF_SIZE];
     siginfo_t my_info;
@@ -1185,7 +1130,7 @@ foilbase_sigwait(const sigset_t *set, int *sig)
 
     getcontext(&context);
     do {
-        ret = real_sigwaitinfo(set, &my_info);
+        ret = f_sigwaitinfo(set, &my_info, dispatch);
         save_errno = errno;
     }
     while (monitor_sigwait_helper(set, ret, save_errno, &my_info, &context));
@@ -1200,7 +1145,8 @@ foilbase_sigwait(const sigset_t *set, int *sig)
 }
 
 int
-foilbase_sigwaitinfo(const sigset_t *set, siginfo_t *info)
+hpcrun_sigwaitinfo(const sigset_t *set, siginfo_t *info,
+                     const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     char buf[MONITOR_SIG_BUF_SIZE];
     siginfo_t my_info, *info_ptr;
@@ -1216,7 +1162,7 @@ foilbase_sigwaitinfo(const sigset_t *set, siginfo_t *info)
     getcontext(&context);
     info_ptr = (info != NULL) ? info : &my_info;
     do {
-        ret = real_sigwaitinfo(set, info_ptr);
+        ret = f_sigwaitinfo(set, info_ptr, dispatch);
         save_errno = errno;
     }
     while (monitor_sigwait_helper(set, ret, save_errno, info_ptr, &context));
@@ -1226,8 +1172,8 @@ foilbase_sigwaitinfo(const sigset_t *set, siginfo_t *info)
 }
 
 int
-foilbase_sigtimedwait(const sigset_t *set, siginfo_t *info,
-                                const struct timespec *timeout)
+hpcrun_sigtimedwait(const sigset_t *set, siginfo_t *info, const struct timespec *timeout,
+                      const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     char buf[MONITOR_SIG_BUF_SIZE];
     siginfo_t my_info, *info_ptr;
@@ -1247,7 +1193,7 @@ foilbase_sigtimedwait(const sigset_t *set, siginfo_t *info,
     getcontext(&context);
     info_ptr = (info != NULL) ? info : &my_info;
     do {
-        ret = real_sigtimedwait(set, info_ptr, timeout);
+        ret = f_sigtimedwait(set, info_ptr, timeout, dispatch);
         save_errno = errno;
     }
     while (monitor_sigwait_helper(set, ret, save_errno, info_ptr, &context));

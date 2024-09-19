@@ -23,6 +23,5 @@ typedef struct gpu_instrumentation_t gpu_instrumentation_t;
 void level0_init(gpu_instrumentation_t *inst_options);
 void level0_fini();
 void level0_flush();
-int level0_bind();
 
 #endif //HPCTOOLKIT_LEVEL0_H

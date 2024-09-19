@@ -98,8 +98,7 @@ lush_agent__fini(lush_agent_t* x, lush_agent_pool_t* pool)
 {
   pool->LUSHI_fini[x->id]();
 
-  //dlclose(x->dlhandle);
-  hpcrun_raw_dlclose(x->dlhandle);
+  dlclose(x->dlhandle);
   handle_any_dlerror();
 
   //free(x->path);

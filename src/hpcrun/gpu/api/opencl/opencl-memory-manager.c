@@ -85,14 +85,12 @@ opencl_malloc
 opencl_object_t *
 opencl_malloc_kind
 (
-  void* pfn_clGetEventProfilingInfo,
-  void* pfn_clReleaseEvent,
-  gpu_activity_kind_t kind
+  gpu_activity_kind_t kind,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 )
 {
   opencl_object_t *cl_obj = opencl_malloc();
-  cl_obj->pfn_clGetEventProfilingInfo = pfn_clGetEventProfilingInfo;
-  cl_obj->pfn_clReleaseEvent = pfn_clReleaseEvent;
+  cl_obj->dispatch = dispatch;
   cl_obj->kind = kind;
   return cl_obj;
 }

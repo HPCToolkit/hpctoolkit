@@ -15,7 +15,7 @@
 // unwind heuristics if found.
 
 void
-foilbase__mp_init(void)
+hpcrun_mp_init(void)
 {
   ENABLE(OMP_SKIP_MSB);
 }

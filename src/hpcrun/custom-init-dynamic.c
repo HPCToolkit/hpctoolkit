@@ -56,7 +56,7 @@ hpcrun_do_custom_init(void)
       else {
         TMSG(CUSTOM_INIT, "could not dynamically load hpcrun_custom_init procedure");
       }
-      hpcrun_raw_dlclose(custom_fns);
+      dlclose(custom_fns);
     }
     else {
       TMSG(CUSTOM_INIT, "could not open hpcrun-custom.so");

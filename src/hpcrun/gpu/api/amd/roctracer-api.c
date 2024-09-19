@@ -10,15 +10,14 @@
 //******************************************************************************
 
 #define _GNU_SOURCE
-#define __HIP_PLATFORM_AMD__
-#define __HIP_PLATFORM_HCC__
 
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
 
 #include "hip-api.h"
-
-#include <roctracer/roctracer_hip.h>
+#include "../../../foil/roctracer.h"
+#include "../../../foil/rocm-hip.h"
+#include "../../../foil/rocm-hsa.h"
 
 #include "../../activity/gpu-activity-channel.h"
 #include "../../activity/gpu-activity-process.h"
@@ -34,7 +33,6 @@
 
 
 #include "../../../safe-sampling.h"
-#include "../../../sample-sources/libdl.h"
 
 #include "../../../utilities/hpcrun-nanotime.h"
 #include "../../../libmonitor/monitor.h"
@@ -53,26 +51,9 @@
 #define DEBUG 0
 #include "../../common/gpu-print.h"
 
-
-#define FORALL_ROCTRACER_ROUTINES(macro)      \
-  macro(roctracer_open_pool_expl)   \
-  macro(roctracer_flush_activity_expl)   \
-  macro(roctracer_activity_push_external_correlation_id) \
-  macro(roctracer_activity_pop_external_correlation_id) \
-  macro(roctracer_enable_domain_callback) \
-  macro(roctracer_enable_domain_activity_expl) \
-  macro(roctracer_disable_domain_callback) \
-  macro(roctracer_disable_domain_activity) \
-  macro(roctracer_set_properties)
-
-#define ROCTRACER_FN_NAME(f) DYN_FN_NAME(f)
-
-#define ROCTRACER_FN(fn, args) \
-  static roctracer_status_t (*ROCTRACER_FN_NAME(fn)) args
-
 #define HPCRUN_ROCTRACER_CALL(fn, args) \
 {      \
-  roctracer_status_t status = ROCTRACER_FN_NAME(fn) args;  \
+  roctracer_status_t status = f_##fn args;  \
   if (status != ROCTRACER_STATUS_SUCCESS) {    \
     /* use roctracer_error_string() */ \
   }            \
@@ -88,87 +69,6 @@
 // we will serialize kernel executions.
 // Hopefully, AMD tool support will improve this the future
 static bool collect_counter = false;
-
-//----------------------------------------------------------
-// roctracer function pointers for late binding
-//----------------------------------------------------------
-
-ROCTRACER_FN
-(
- roctracer_open_pool_expl,
- (
-  const roctracer_properties_t*,
-  roctracer_pool_t**
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_flush_activity_expl,
- (
-  roctracer_pool_t*
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_activity_push_external_correlation_id,
- (
-  activity_correlation_id_t
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_activity_pop_external_correlation_id,
- (
-  activity_correlation_id_t*
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_enable_domain_callback,
- (
-  activity_domain_t,
-  activity_rtapi_callback_t,
-  void*
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_enable_domain_activity_expl,
- (
-  activity_domain_t,
-  roctracer_pool_t*
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_disable_domain_callback,
- (
-  activity_domain_t
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_disable_domain_activity,
- (
-  activity_domain_t
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_set_properties,
- (
-  activity_domain_t,
-  void*
- )
-);
 
 
 //******************************************************************************
@@ -325,7 +225,7 @@ roctracer_subscriber_callback
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
     uint64_t hsa_timestamp;
-    hsa_system_get_info(HSA_SYSTEM_INFO_TIMESTAMP, &hsa_timestamp);
+    f_hsa_system_get_info(HSA_SYSTEM_INFO_TIMESTAMP, &hsa_timestamp);
 
     // We align CPU & GPU timestamps
     gpu_set_cpu_gpu_timestamp(cpu_submit_time, hsa_timestamp);
@@ -352,7 +252,7 @@ roctracer_subscriber_callback
   } else if (data->phase == ACTIVITY_API_PHASE_EXIT) {
     if (is_kernel_op && collect_counter) {
       //gpu_monitors_apply(NULL, gpu_monitor_type_exit);
-      hipStreamSynchronize(kernel_stream);
+      f_hipStreamSynchronize(kernel_stream);
       rocprofiler_wait_context_callback();
       rocprofiler_stop_kernel();
     }
@@ -433,43 +333,9 @@ roctracer_buffer_completion_callback
   }
 }
 
-
-static const char *
-roctracer_path
-(
- void
-)
-{
-  const char *path = "libroctracer64.so";
-
-  return path;
-}
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
-int
-roctracer_bind
-(
- void
-)
-{
-  hpcrun_force_dlopen(true);
-  CHK_DLOPEN(roctracer, roctracer_path(), RTLD_NOW | RTLD_GLOBAL);
-
-  CHK_DLOPEN(hip, "libamdhip64.so", RTLD_NOW | RTLD_GLOBAL);
-  hpcrun_force_dlopen(false);
-
-#define ROCTRACER_BIND(fn) \
-  CHK_DLSYM(roctracer, fn);
-
-  FORALL_ROCTRACER_ROUTINES(ROCTRACER_BIND);
-
-#undef ROCTRACER_BIND
-
-  return DYNAMIC_BINDING_STATUS_OK;
-}
 
 void
 roctracer_init

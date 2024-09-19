@@ -34,7 +34,8 @@
 #include "../sample_sources_all.h"
 #include "common.h"
 #include "ss-obj-name.h"
-#include "../audit/binding.h"
+#include "../foil/nvidia.h"
+
 // *********************************************************
 
 // ******** local includes ***********
@@ -51,7 +52,7 @@
   int ret = fn(__VA_ARGS__);                                   \
   if (ret != CUPTI_SUCCESS) {                                  \
     const char* errstr;                                        \
-    dcuptiGetResultString(ret, &errstr);                        \
+    f_cuptiGetResultString(ret, &errstr);                      \
     hpcrun_abort("error: CUDA/CUPTI API "                      \
                  #fn " failed w error code %d ==> '%s'\n",     \
                  ret, errstr);                                 \
@@ -63,22 +64,6 @@
   (void) fn(__VA_ARGS__);                                      \
 }
 
-#define Chk_dlopen(v, lib, flags)                     \
-  void* v = NULL /* hpcrun_raw_dlopen(lib, flags) */; \
-  if (! v) {                                          \
-    fprintf(stderr, "gpu dlopen %s failed\n", lib);   \
-    return;                                           \
-  }                                                   \
-
-#define Chk_dlsym(h, fn) {                                \
-  dlerror();                                              \
-  d ## fn = dlsym(h, #fn);                                \
-  char* e = dlerror();                                    \
-  if (e) {                                                \
-    fprintf(stderr, "dlsym(%s) fails w '%s'\n", #fn, e);  \
-    return;                                               \
-  }                                                       \
-}
 // ***********************************************************
 
 typedef struct {
@@ -95,26 +80,6 @@ static papi_cuda_data_t local = {};
 static spinlock_t cupti_lock = SPINLOCK_UNLOCKED;
 static spinlock_t setup_lock = SPINLOCK_UNLOCKED;
 
-// ******************** cuda/cupti functions ***********************
-// Some cuda/cupti functions must not be wrapped! So, we fetch them via dlopen.
-// NOTE: naming convention is to prepend the letter "d" to the actual function
-// The indirect functions are below.
-//
-cudaError_t (*dcudaThreadSynchronize)(void);
-
-CUptiResult (*dcuptiGetResultString)(CUptiResult result, const char** str);
-
-CUptiResult (*dcuptiSubscribe)(CUpti_SubscriberHandle* subscriber,
-                               CUpti_CallbackFunc callback,
-                               void* userdata);
-
-CUptiResult (*dcuptiEnableCallback)(uint32_t enable,
-                                    CUpti_SubscriberHandle subscriber,
-                                    CUpti_CallbackDomain domain,
-                                    CUpti_CallbackId cbid);
-
-CUptiResult (*dcuptiUnsubscribe)(CUpti_SubscriberHandle subscriber);
-
 
 // *****************************************************************
 typedef struct cuda_callback_t {
@@ -125,19 +90,6 @@ typedef struct cuda_callback_t {
 //
 // populate the cuda/cupti functions via dlopen
 //
-
-static void
-dlgpu(void)
-{
-  Chk_dlopen(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
-  Chk_dlsym(cudart, cudaThreadSynchronize);
-
-  Chk_dlopen(cupti, "libcupti.so", RTLD_NOW | RTLD_GLOBAL);
-  Chk_dlsym(cupti, cuptiGetResultString);
-  Chk_dlsym(cupti, cuptiSubscribe);
-  Chk_dlsym(cupti, cuptiEnableCallback);
-  Chk_dlsym(cupti, cuptiUnsubscribe);
-}
 
 //
 // noop routine
@@ -185,7 +137,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
       // exclusive access to launcher
     spinlock_lock(&cupti_lock);
     TMSG(CUPTI, "-ACQ-lock");
-    dcudaThreadSynchronize();
+    f_cudaDeviceSynchronize();
 
     TMSG(CUPTI,"-- PRE launch callback");
     TMSG(CUDA, "Start monitoring with event set %d", cudaEventSet);
@@ -201,7 +153,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
   if (cbInfo->callbackSite == CUPTI_API_EXIT) {
     TMSG(CUDA, "Cupti API -EXIT- portion");
     // MC recommends Use cudaDeviceSynchronize
-    dcudaThreadSynchronize();
+    f_cudaDeviceSynchronize();
     TMSG(CUPTI, "-- POST launch callback");
     long_long eventValues[nevents+2];
 
@@ -285,11 +237,11 @@ papi_c_cupti_setup(void)
   papi_source_info_t* psi = td->ss_info[local.self->sel_idx].ptr;
   local.event_set = get_component_event_set(psi, cuda_component_idx);
 
-  Cupti_call(dcuptiSubscribe, &subscriber,
+  Cupti_call(f_cuptiSubscribe, &subscriber,
              (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback,
              &local);
 
-  Cupti_call(dcuptiEnableCallback, 1, subscriber,
+  Cupti_call(f_cuptiEnableCallback, 1, subscriber,
              CUPTI_CB_DOMAIN_RUNTIME_API,
              CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
 
@@ -360,7 +312,7 @@ papi_c_cupti_teardown(void)
 
   TMSG(CUDA,"sync teardown called (=unsubscribe)");
 
-  Cupti_call(dcuptiUnsubscribe, subscriber);
+  Cupti_call(f_cuptiUnsubscribe, subscriber);
   one_time = true;
   spinlock_unlock(&setup_lock);
 }
@@ -383,6 +335,5 @@ void
 SS_OBJ_CONSTRUCTOR(papi_c_cupti)(void)
 {
   // fetch actual cuda/cupti functions
-  dlgpu();
   papi_c_sync_register(&cuda_component);
 }

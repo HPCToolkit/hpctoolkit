@@ -37,11 +37,12 @@
 #include "../../../../libmonitor/monitor.h"
 #include "../../../../main.h"
 #include "../../../../memory/hpcrun-malloc.h"
-#include "../../../../sample-sources/libdl.h"
 #include "../../../gpu-monitoring-thread-api.h"
 #include "../../../gpu-application-thread-api.h"
 #include "../../../operation/gpu-operation-multiplexer.h"
 #include "../../common/gpu-kernel-table.h"
+#include "../../../../foil/level0.h"
+#include "../../../../libmonitor/monitor.h"
 
 #ifdef ENABLE_GTPIN
 #include "../gtpin/gtpin-instrumentation.h"
@@ -59,43 +60,6 @@
 #define GPU_FLUSH_ALARM_TEST_ENABLED 0
 #include "../../common/gpu-flush-alarm.h"
 
-#define FORALL_LEVEL0_ROUTINES(macro)                   \
-  macro(zeInit)   \
-  macro(zeDriverGet)  \
-  macro(zeDeviceGet) \
-  macro(zeDeviceGetProperties)   \
-  macro(zeEventCreate) \
-  macro(zeEventDestroy) \
-  macro(zeEventPoolCreate) \
-  macro(zeEventPoolDestroy) \
-  macro(zeEventQueryStatus) \
-  macro(zeEventQueryKernelTimestamp) \
-  macro(zeMemGetAllocProperties) \
-  macro(zeCommandListAppendLaunchKernel) \
-  macro(zeCommandListAppendMemoryCopy) \
-  macro(zeCommandListCreate) \
-  macro(zeCommandListCreateImmediate) \
-  macro(zeCommandListDestroy) \
-  macro(zeCommandListReset) \
-  macro(zeCommandQueueExecuteCommandLists) \
-  macro(zeEventHostReset) \
-  macro(zeModuleCreate) \
-  macro(zeModuleDestroy) \
-  macro(zeKernelCreate) \
-  macro(zeKernelDestroy) \
-  macro(zeFenceDestroy) \
-  macro(zeFenceReset) \
-  macro(zeCommandQueueSynchronize)
-
-#define LEVEL0_FN_NAME(f) DYN_FN_NAME(f)
-
-#define LEVEL0_FN(fn, args) \
-  static ze_result_t (*LEVEL0_FN_NAME(fn)) args
-
-#define HPCRUN_LEVEL0_CALL(fn, args) (LEVEL0_FN_NAME(fn) args)
-
-
-
 //******************************************************************************
 // local variables
 //******************************************************************************
@@ -105,268 +69,6 @@ ze_driver_handle_t hDriver = NULL;
 ze_device_handle_t hDevice = NULL;
 
 static bool gtpin_instrumentation = false;
-
-
-
-//----------------------------------------------------------
-// level0 function pointers for late binding
-//----------------------------------------------------------
-
-LEVEL0_FN
-(
- zeInit,
- (
-  ze_init_flag_t
- )
-);
-
-LEVEL0_FN
-(
- zeDriverGet,
- (
-  uint32_t*,
-  ze_driver_handle_t*
- )
-);
-
-LEVEL0_FN
-(
- zeDeviceGet,
- (
-  ze_driver_handle_t,
-  uint32_t*,
-  ze_device_handle_t*
- )
-);
-
-LEVEL0_FN
-(
- zeDeviceGetProperties,
- (
-  ze_device_handle_t,
-  ze_device_properties_t*
- )
-);
-
-LEVEL0_FN
-(
- zeEventCreate,
- (
-  ze_event_pool_handle_t,
-  const ze_event_desc_t*,
-  ze_event_handle_t*
- )
-);
-
-LEVEL0_FN
-(
- zeEventDestroy,
- (
-   ze_event_handle_t
- )
-);
-
-LEVEL0_FN
-(
- zeEventPoolCreate,
- (
-  ze_context_handle_t,
-  const ze_event_pool_desc_t*,
-  uint32_t,
-  ze_device_handle_t*,
-  ze_event_pool_handle_t*
- )
-);
-
-LEVEL0_FN
-(
- zeEventPoolDestroy,
- (
-   ze_event_pool_handle_t
- )
-);
-
-LEVEL0_FN
-(
- zeEventQueryStatus,
- (
-   ze_event_handle_t
- )
-);
-
-LEVEL0_FN
-(
- zeEventQueryKernelTimestamp,
- (
-   ze_event_handle_t,
-   ze_kernel_timestamp_result_t*
- )
-);
-
-LEVEL0_FN
-(
- zeMemGetAllocProperties,
- (
-    ze_context_handle_t,
-    const void* ptr,
-    ze_memory_allocation_properties_t*,
-    ze_device_handle_t*
-  )
-);
-
-LEVEL0_FN
-(
-  zeCommandListAppendLaunchKernel,
-  (
-    ze_command_list_handle_t hCommandList,          ///< [in] handle of the command list
-    ze_kernel_handle_t hKernel,                     ///< [in] handle of the kernel object
-    const ze_group_count_t* pLaunchFuncArgs,        ///< [in] thread group launch arguments
-    ze_event_handle_t hSignalEvent,                 ///< [in][optional] handle of the event to signal on completion
-    uint32_t numWaitEvents,                         ///< [in][optional] number of events to wait on before launching; must be 0
-                                                    ///< if `nullptr == phWaitEvents`
-    ze_event_handle_t* phWaitEvents                 ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
-                                                    ///< on before launching
-  )
-);
-
-LEVEL0_FN
-(
-  zeCommandListAppendMemoryCopy,
-  (
-    ze_command_list_handle_t hCommandList,          ///< [in] handle of command list
-    void* dstptr,                                   ///< [in] pointer to destination memory to copy to
-    const void* srcptr,                             ///< [in] pointer to source memory to copy from
-    size_t size,                                    ///< [in] size in bytes to copy
-    ze_event_handle_t hSignalEvent,                 ///< [in][optional] handle of the event to signal on completion
-    uint32_t numWaitEvents,                         ///< [in][optional] number of events to wait on before launching; must be 0
-                                                    ///< if `nullptr == phWaitEvents`
-    ze_event_handle_t* phWaitEvents                 ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
-                                                    ///< on before launching
-  )
-);
-
-LEVEL0_FN
-(
-  zeCommandListCreate,
-  (
-    ze_context_handle_t hContext,                   ///< [in] handle of the context object
-    ze_device_handle_t hDevice,                     ///< [in] handle of the device object
-    const ze_command_list_desc_t* desc,             ///< [in] pointer to command list descriptor
-    ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
-  )
-);
-
-LEVEL0_FN
-(
-  zeCommandListCreateImmediate,
-  (
-    ze_context_handle_t hContext,                   ///< [in] handle of the context object
-    ze_device_handle_t hDevice,                     ///< [in] handle of the device object
-    const ze_command_queue_desc_t* desc,            ///< [in] pointer to command queue descriptor
-    ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
-  )
-);
-
-LEVEL0_FN
-(
-  zeCommandListDestroy,
-  (
-    ze_command_list_handle_t hCommandList           ///< [in][release] handle of command list object to destroy
-  )
-);
-
-LEVEL0_FN
-(
-  zeCommandListReset,
-  (
-    ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
-  )
-);
-
-LEVEL0_FN
-(
-  zeCommandQueueExecuteCommandLists,
-  (
-    ze_command_queue_handle_t hCommandQueue,        ///< [in] handle of the command queue
-    uint32_t numCommandLists,                       ///< [in] number of command lists to execute
-    ze_command_list_handle_t* phCommandLists,       ///< [in][range(0, numCommandLists)] list of handles of the command lists
-                                                    ///< to execute
-    ze_fence_handle_t hFence                        ///< [in][optional] handle of the fence to signal on completion
-  )
-);
-
-LEVEL0_FN
-(
-  zeEventHostReset,
-  (
-    ze_event_handle_t hEvent                        ///< [in] handle of the event
-  )
-);
-
-LEVEL0_FN
-(
-  zeModuleCreate,
-  (
-    ze_context_handle_t hContext,                // [in] handle of the context object
-    ze_device_handle_t hDevice,                  // [in] handle of the device
-    const ze_module_desc_t *desc,                // [in] pointer to module descriptor
-    ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
-    ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
-  )
-);
-
-LEVEL0_FN
-(
-  zeModuleDestroy,
-  (
-    ze_module_handle_t hModule       // [in][release] handle of the module
-  )
-);
-
-LEVEL0_FN
-(
-  zeKernelCreate,
-  (
-    ze_module_handle_t hModule,          // [in] handle of the module
-    const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
-    ze_kernel_handle_t *phKernel         // [out] handle of the Function object
-  )
-);
-
-LEVEL0_FN
-(
-  zeKernelDestroy,
-  (
-    ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
-  )
-);
-
-LEVEL0_FN
-(
-  zeFenceDestroy,
-  (
-    ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
-  )
-);
-
-LEVEL0_FN
-(
-  zeFenceReset,
-  (
-    ze_fence_handle_t hFence        //  [in] handle of the fence
-  )
-);
-
-LEVEL0_FN
-(
-  zeCommandQueueSynchronize,
-  (
-    ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
-    uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
-  )
-);
-
-
 
 //******************************************************************************
 // private operations
@@ -403,32 +105,32 @@ level0_path
 static void
 get_gpu_driver_and_device
 (
-  void
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   if (hDevice != NULL) return;
   uint32_t driverCount = 0;
   uint32_t i, d;
-  HPCRUN_LEVEL0_CALL(zeDriverGet, (&driverCount, NULL));
+  f_zeDriverGet(&driverCount, NULL, dispatch);
 
   ze_driver_handle_t* allDrivers = (ze_driver_handle_t*)hpcrun_malloc_safe(driverCount * sizeof(ze_driver_handle_t));
-  HPCRUN_LEVEL0_CALL(zeDriverGet, (&driverCount, allDrivers));
+  f_zeDriverGet(&driverCount, allDrivers, dispatch);
   PRINT("Get %d driver handles\n", driverCount);
 
   // Find a driver instance with a GPU device
   for(i = 0; i < driverCount; ++i) {
     uint32_t deviceCount = 0;
-    HPCRUN_LEVEL0_CALL(zeDeviceGet, (allDrivers[i], &deviceCount, NULL));
+    f_zeDeviceGet(allDrivers[i], &deviceCount, NULL, dispatch);
     PRINT("\tGet %d device handles\n", deviceCount);
 
     ze_device_handle_t* allDevices = (ze_device_handle_t*)hpcrun_malloc_safe(deviceCount * sizeof(ze_device_handle_t));
-    HPCRUN_LEVEL0_CALL(zeDeviceGet, (allDrivers[i], &deviceCount, allDevices));
+    f_zeDeviceGet(allDrivers[i], &deviceCount, allDevices, dispatch);
 
     for(d = 0; d < deviceCount; ++d) {
       ze_device_properties_t device_properties;
       device_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES;
       device_properties.pNext = NULL;
-      HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, (allDevices[d], &device_properties));
+      f_zeDeviceGetProperties(allDevices[d], &device_properties, dispatch);
       if(ZE_DEVICE_TYPE_GPU == device_properties.type) {
         hDriver = allDrivers[i];
         hDevice = allDevices[d];
@@ -452,7 +154,8 @@ level0_create_new_event
 (
   ze_context_handle_t hContext,
   ze_event_handle_t* event_ptr,
-  ze_event_pool_handle_t* event_pool_ptr
+  ze_event_pool_handle_t* event_pool_ptr,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
 
@@ -462,7 +165,7 @@ level0_create_new_event
     ZE_EVENT_POOL_FLAG_KERNEL_TIMESTAMP, // all events in pool are kernel timestamps
     1 // count
   };
-  HPCRUN_LEVEL0_CALL(zeEventPoolCreate, (hContext, &event_pool_desc, 1, &hDevice, event_pool_ptr));
+  f_zeEventPoolCreate(hContext, &event_pool_desc, 1, &hDevice, event_pool_ptr, dispatch);
 
   ze_event_desc_t event_desc = {
     ZE_STRUCTURE_TYPE_EVENT_DESC,
@@ -471,14 +174,15 @@ level0_create_new_event
     0, // no memory/cache coherency required on signal
     0  // no memory/cache coherency required on wait
   };
-  HPCRUN_LEVEL0_CALL(zeEventCreate, (*event_pool_ptr, &event_desc, event_ptr));
+  f_zeEventCreate(*event_pool_ptr, &event_desc, event_ptr, dispatch);
 }
 
 
 static void
 level0_attribute_event
 (
-  ze_event_handle_t event
+  ze_event_handle_t event,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("level0_attribute_event for event %p\n", event);
@@ -489,14 +193,14 @@ level0_attribute_event
   ze_device_properties_t props;
   props.stype = ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES ;
   props.pNext = NULL;
-  HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, (hDevice, &props));
+  f_zeDeviceGetProperties(hDevice, &props, dispatch);
 
-  ze_result_t status = HPCRUN_LEVEL0_CALL(zeEventQueryStatus, (event));
+  ze_result_t status = f_zeEventQueryStatus(event, dispatch);
   level0_check_result(status, __LINE__);
 
   // Query start and end time stamp for the event
   ze_kernel_timestamp_result_t timestamp;
-  HPCRUN_LEVEL0_CALL(zeEventQueryKernelTimestamp, (event, &timestamp));
+  f_zeEventQueryKernelTimestamp(event, &timestamp, dispatch);
   uint64_t start = timestamp.global.kernelStart * props.timerResolution;
   uint64_t end = timestamp.global.kernelEnd * props.timerResolution;
 
@@ -506,8 +210,8 @@ level0_attribute_event
   // We need to release the event and event_pool to level 0
   // if they are created by us.
   if (data->event_pool != NULL) {
-    HPCRUN_LEVEL0_CALL(zeEventDestroy, (event));
-    HPCRUN_LEVEL0_CALL(zeEventPoolDestroy,(data->event_pool));
+    f_zeEventDestroy(event, dispatch);
+    f_zeEventPoolDestroy(data->event_pool, dispatch);
   }
 
   // Free data structure for this event
@@ -522,7 +226,8 @@ level0_get_memory_types
   const void* src_ptr,
   const void* dest_ptr,
   ze_memory_type_t *src_type_ptr,
-  ze_memory_type_t *dst_type_ptr
+  ze_memory_type_t *dst_type_ptr,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Get source and destination type.
@@ -532,10 +237,10 @@ level0_get_memory_types
   ze_memory_allocation_properties_t property;
   property.stype = ZE_STRUCTURE_TYPE_MEMORY_ALLOCATION_PROPERTIES;
   property.pNext = NULL;
-  if (HPCRUN_LEVEL0_CALL(zeMemGetAllocProperties, (hContext, src_ptr, &property, NULL)) == ZE_RESULT_SUCCESS) {
+  if (f_zeMemGetAllocProperties(hContext, src_ptr, &property, NULL, dispatch) == ZE_RESULT_SUCCESS) {
     *src_type_ptr = property.type;
   }
-  if (HPCRUN_LEVEL0_CALL(zeMemGetAllocProperties, (hContext, dest_ptr, &property, NULL)) == ZE_RESULT_SUCCESS) {
+  if (f_zeMemGetAllocProperties(hContext, dest_ptr, &property, NULL, dispatch) == ZE_RESULT_SUCCESS) {
     *dst_type_ptr = property.type;
   }
 }
@@ -575,7 +280,8 @@ level0_command_list_append_launch_kernel_entry
 (
   ze_kernel_handle_t kernel,
   ze_command_list_handle_t command_list,
-  ze_event_handle_t event
+  ze_event_handle_t event,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   ze_event_pool_handle_t event_pool = NULL;
@@ -584,7 +290,7 @@ level0_command_list_append_launch_kernel_entry
     ze_context_handle_t hContext = level0_commandlist_context_map_lookup(command_list);
     // If the kernel is launched without an event,
     // we create a new event for collecting time stamps
-    level0_create_new_event(hContext, &event, &event_pool);
+    level0_create_new_event(hContext, &event, &event_pool, dispatch);
   }
 
   PRINT("level0_command_list_append_launch_kernel_entry: kernel handle %p, command list handle %p, event handle %p, event pool handle %p\n",
@@ -593,13 +299,13 @@ level0_command_list_append_launch_kernel_entry
   // Lookup the command list and append the kernel launch to the command list
   level0_data_node_t ** command_list_data_head = level0_commandlist_map_lookup(command_list);
   if (command_list_data_head != NULL) {
-    level0_data_node_t * data_for_kernel = level0_commandlist_append_kernel(command_list_data_head, kernel, event, event_pool);
+    level0_data_node_t * data_for_kernel = level0_commandlist_append_kernel(command_list_data_head, kernel, event, event_pool, dispatch);
     // Associate the data entry with the event
     level0_event_map_insert(event, data_for_kernel);
   } else {
     // Cannot find command list.
     // This means we are dealing with an immediate command list
-    level0_data_node_t * data_for_kernel = level0_commandlist_alloc_kernel(kernel, event, event_pool);;
+    level0_data_node_t * data_for_kernel = level0_commandlist_alloc_kernel(kernel, event, event_pool, dispatch);;
     // Associate the data entry with the event
     level0_event_map_insert(event, data_for_kernel);
   }
@@ -614,7 +320,8 @@ level0_command_list_append_launch_memcpy_entry
   ze_event_handle_t event,
   size_t mem_copy_size,
   const void* dest_ptr,
-  const void* src_ptr
+  const void* src_ptr,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   ze_event_pool_handle_t event_pool = NULL;
@@ -622,12 +329,12 @@ level0_command_list_append_launch_memcpy_entry
   if (event == NULL) {
     // If the memcpy is launched without an event,
     // we create a new event for collecting time stamps
-    level0_create_new_event(hContext, &event, &event_pool);
+    level0_create_new_event(hContext, &event, &event_pool, dispatch);
   }
 
   ze_memory_type_t src_type = ZE_MEMORY_TYPE_HOST;
   ze_memory_type_t dst_type = ZE_MEMORY_TYPE_HOST;
-  level0_get_memory_types(hContext, src_ptr, dest_ptr, &src_type, &dst_type);
+  level0_get_memory_types(hContext, src_ptr, dest_ptr, &src_type, &dst_type, dispatch);
 
   PRINT("level0_command_list_append_launch_memcpy_entry: src_type %d, dst_type %d, size %lu, command list %p, event handle %p, event pool handle %p\n",
     src_type, dst_type, mem_copy_size, (void*)command_list, (void*)event, (void*)event_pool);
@@ -635,13 +342,13 @@ level0_command_list_append_launch_memcpy_entry
   // Lookup the command list and append the mempcy to the command list
   level0_data_node_t ** command_list_data_head = level0_commandlist_map_lookup(command_list);
   if (command_list_data_head != NULL) {
-    level0_data_node_t * data_for_memcpy = level0_commandlist_append_memcpy(command_list_data_head, src_type, dst_type, mem_copy_size, event, event_pool);
+    level0_data_node_t * data_for_memcpy = level0_commandlist_append_memcpy(command_list_data_head, src_type, dst_type, mem_copy_size, event, event_pool, dispatch);
     // Associate the data entry with the event
     level0_event_map_insert(event, data_for_memcpy);
   } else {
     // Cannot find command list.
     // This means we are dealing with an immediate command list
-    level0_data_node_t * data_for_memcpy = level0_commandlist_alloc_memcpy(src_type, dst_type, mem_copy_size, event, event_pool);
+    level0_data_node_t * data_for_memcpy = level0_commandlist_alloc_memcpy(src_type, dst_type, mem_copy_size, event, event_pool, dispatch);
     // Associate the data entry with the event
     level0_event_map_insert(event, data_for_memcpy);
   }
@@ -672,7 +379,8 @@ level0_command_list_create_exit
 static void
 level0_command_list_destroy_entry
 (
-  ze_command_list_handle_t handle
+  ze_command_list_handle_t handle,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   level0_data_node_t ** command_list_head = level0_commandlist_map_lookup(handle);
@@ -685,7 +393,7 @@ level0_command_list_destroy_entry
 
   level0_data_node_t * command_node = *command_list_head;
   for (; command_node != NULL; command_node = command_node->next) {
-    level0_attribute_event(command_node->event);
+    level0_attribute_event(command_node->event, dispatch);
   }
 
   // Record the deletion of a command list
@@ -696,7 +404,8 @@ level0_command_list_destroy_entry
 static void
 level0_command_list_reset_entry
 (
-  ze_command_list_handle_t handle
+  ze_command_list_handle_t handle,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   level0_data_node_t ** command_list_head = level0_commandlist_map_lookup(handle);
@@ -708,7 +417,7 @@ level0_command_list_reset_entry
 
   level0_data_node_t * command_node = *command_list_head;
   for (; command_node != NULL; command_node = command_node->next) {
-    level0_attribute_event(command_node->event);
+    level0_attribute_event(command_node->event, dispatch);
   }
 
   // Reset the command list data to empty
@@ -744,7 +453,8 @@ static void
 level0_process_immediate_command_list
 (
   ze_event_handle_t event,
-  ze_command_list_handle_t command_list
+  ze_command_list_handle_t command_list,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   level0_data_node_t ** command_list_data_head = level0_commandlist_map_lookup(command_list);
@@ -756,7 +466,7 @@ level0_process_immediate_command_list
     // So, we attribute GPU metrics to the current CPU calling context.
     level0_command_begin(data_for_act);
 
-    level0_attribute_event(event);
+    level0_attribute_event(event, dispatch);
 
     // For command in immediate command list,
     // the ownership of data node belongs to the user, not the command list
@@ -768,7 +478,8 @@ level0_process_immediate_command_list
 static void
 level0_attribute_fence
 (
-  ze_fence_handle_t hFence
+  ze_fence_handle_t hFence,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   if (hFence == NULL) return;
@@ -777,7 +488,7 @@ level0_attribute_fence
   if (data == NULL) return;
 
   for (int i = 0; i < data->num; ++i) {
-    level0_command_list_reset_entry(data->list[i]);
+    level0_command_list_reset_entry(data->list[i], dispatch);
   }
 
   level0_fence_map_delete(hFence);
@@ -787,7 +498,8 @@ level0_attribute_fence
 static void
 level0_attribute_command_queue
 (
-  ze_command_queue_handle_t command_queue
+  ze_command_queue_handle_t command_queue,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   if (command_queue == NULL) return;
@@ -796,7 +508,7 @@ level0_attribute_command_queue
   if (data == NULL) return;
 
   for (int i = 0; i < data->num; ++i) {
-    level0_command_list_reset_entry(data->list[i]);
+    level0_command_list_reset_entry(data->list[i], dispatch);
   }
 
   level0_command_queue_map_delete(command_queue);
@@ -808,9 +520,10 @@ level0_attribute_command_queue
 //******************************************************************************
 
 ze_result_t
-foilbase_zeInit
+hpcrun_zeInit
 (
-  ze_init_flag_t flag
+  ze_init_flag_t flag,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // programs can invoke zeInit in a static constructor before the measurement
@@ -821,16 +534,16 @@ foilbase_zeInit
 
   // Entry action
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeInit,(flag));
+  ze_result_t ret = f_zeInit(flag, dispatch);
   level0_check_result(ret, __LINE__);
 
   // Exit action
-  get_gpu_driver_and_device();
+  get_gpu_driver_and_device(dispatch);
   return ret;
 }
 
 ze_result_t
-foilbase_zeCommandListAppendLaunchKernel
+hpcrun_zeCommandListAppendLaunchKernel
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of the command list
   ze_kernel_handle_t hKernel,                     ///< [in] handle of the kernel object
@@ -838,8 +551,9 @@ foilbase_zeCommandListAppendLaunchKernel
   ze_event_handle_t hSignalEvent,                 ///< [in][optional] handle of the event to signal on completion
   uint32_t numWaitEvents,                         ///< [in][optional] number of events to wait on before launching; must be 0
                                                   ///< if `nullptr == phWaitEvents`
-  ze_event_handle_t* phWaitEvents                 ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
+  ze_event_handle_t* phWaitEvents,                ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                                   ///< on before launching
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("Enter zeCommandListAppendLaunchKernel wrapper: command list %p\n", hCommandList);
@@ -847,20 +561,19 @@ foilbase_zeCommandListAppendLaunchKernel
   // We need to create a new event for querying time stamps
   // if the user appends the kernel with an empty event parameter
   ze_event_handle_t new_event_handle = level0_command_list_append_launch_kernel_entry(
-    hKernel, hCommandList, hSignalEvent);
+    hKernel, hCommandList, hSignalEvent, dispatch);
 
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListAppendLaunchKernel,
-    (hCommandList, hKernel, pLaunchFuncArgs,
-    new_event_handle, numWaitEvents, phWaitEvents));
+  ze_result_t ret = f_zeCommandListAppendLaunchKernel(hCommandList, hKernel, pLaunchFuncArgs,
+    new_event_handle, numWaitEvents, phWaitEvents, dispatch);
 
   // Exit action
-  level0_process_immediate_command_list(new_event_handle, hCommandList);
+  level0_process_immediate_command_list(new_event_handle, hCommandList, dispatch);
   return ret;
 }
 
 ze_result_t
-foilbase_zeCommandListAppendMemoryCopy
+hpcrun_zeCommandListAppendMemoryCopy
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of command list
   void* dstptr,                                   ///< [in] pointer to destination memory to copy to
@@ -869,8 +582,9 @@ foilbase_zeCommandListAppendMemoryCopy
   ze_event_handle_t hSignalEvent,                 ///< [in][optional] handle of the event to signal on completion
   uint32_t numWaitEvents,                         ///< [in][optional] number of events to wait on before launching; must be 0
                                                   ///< if `nullptr == phWaitEvents`
-  ze_event_handle_t* phWaitEvents                 ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
+  ze_event_handle_t* phWaitEvents,                ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                                   ///< on before launching
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("Enter zeCommandListAppendMemoryCopy wrapper: command list %p\n", hCommandList);
@@ -879,30 +593,29 @@ foilbase_zeCommandListAppendMemoryCopy
   // if the user appends the kernel with an empty event parameter
   ze_event_handle_t new_event_handle =
   level0_command_list_append_launch_memcpy_entry(
-      hCommandList, hSignalEvent, size, dstptr, srcptr);
+      hCommandList, hSignalEvent, size, dstptr, srcptr, dispatch);
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListAppendMemoryCopy,
-    (hCommandList, dstptr, srcptr, size, new_event_handle, numWaitEvents, phWaitEvents));
+  ze_result_t ret = f_zeCommandListAppendMemoryCopy(hCommandList, dstptr, srcptr, size, new_event_handle, numWaitEvents, phWaitEvents, dispatch);
 
   // Exit action
-  level0_process_immediate_command_list(new_event_handle, hCommandList);
+  level0_process_immediate_command_list(new_event_handle, hCommandList, dispatch);
   return ret;
 }
 
 
 ze_result_t
-foilbase_zeCommandListCreate
+hpcrun_zeCommandListCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
   const ze_command_list_desc_t* desc,             ///< [in] pointer to command list descriptor
-  ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
+  ze_command_list_handle_t* phCommandList,        ///< [out] pointer to handle of command list object created
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Entry action
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListCreate,
-    (hContext, hDevice, desc, phCommandList));
+  ze_result_t ret = f_zeCommandListCreate(hContext, hDevice, desc, phCommandList, dispatch);
 
   // Exit action
   level0_command_list_create_exit(*phCommandList, hContext, 0);
@@ -910,12 +623,13 @@ foilbase_zeCommandListCreate
 }
 
 ze_result_t
-foilbase_zeCommandListCreateImmediate
+hpcrun_zeCommandListCreateImmediate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
   const ze_command_queue_desc_t* altdesc,         ///< [in] pointer to command queue descriptor
-  ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
+  ze_command_list_handle_t* phCommandList,        ///< [out] pointer to handle of command list object created
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Entry action
@@ -927,8 +641,7 @@ foilbase_zeCommandListCreateImmediate
   altdesc_new.mode = ZE_COMMAND_QUEUE_MODE_SYNCHRONOUS;
   altdesc = &altdesc_new;
 
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListCreateImmediate,
-    (hContext, hDevice, altdesc, phCommandList));
+  ze_result_t ret = f_zeCommandListCreateImmediate(hContext, hDevice, altdesc, phCommandList, dispatch);
 
   // Exit action
   level0_command_list_create_exit(*phCommandList, hContext, 1);
@@ -936,44 +649,47 @@ foilbase_zeCommandListCreateImmediate
 }
 
 ze_result_t
-foilbase_zeCommandListDestroy
+hpcrun_zeCommandListDestroy
 (
-  ze_command_list_handle_t hCommandList           ///< [in][release] handle of command list object to destroy
+  ze_command_list_handle_t hCommandList,          ///< [in][release] handle of command list object to destroy
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("Enter zeCommandListDestroy wrapper: command list %p\n", hCommandList);
   // Entry action
-  level0_command_list_destroy_entry(hCommandList);
+  level0_command_list_destroy_entry(hCommandList, dispatch);
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListDestroy, (hCommandList));
+  ze_result_t ret = f_zeCommandListDestroy(hCommandList, dispatch);
   // Exit action
   return ret;
 }
 
 
 ze_result_t
-foilbase_zeCommandListReset
+hpcrun_zeCommandListReset
 (
-  ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
+  ze_command_list_handle_t hCommandList,          ///< [in] handle of command list object to reset
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("Enter zeCommandListReset wrapper: command list %p\n", hCommandList);
   // Entry action
-  level0_command_list_reset_entry(hCommandList);
+  level0_command_list_reset_entry(hCommandList, dispatch);
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListReset, (hCommandList));
+  ze_result_t ret = f_zeCommandListReset(hCommandList, dispatch);
   // Exit action
   return ret;
 }
 
 ze_result_t
-foilbase_zeCommandQueueExecuteCommandLists
+hpcrun_zeCommandQueueExecuteCommandLists
 (
   ze_command_queue_handle_t hCommandQueue,        ///< [in] handle of the command queue
   uint32_t numCommandLists,                       ///< [in] number of command lists to execute
   ze_command_list_handle_t* phCommandLists,       ///< [in][range(0, numCommandLists)] list of handles of the command lists
                                                   ///< to execute
-  ze_fence_handle_t hFence                        ///< [in][optional] handle of the fence to signal on completion
+  ze_fence_handle_t hFence,                       ///< [in][optional] handle of the fence to signal on completion
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("Enter zeCommandQueueExecuteCommandLists wrapper: command queue %p, fence %p\n",
@@ -983,14 +699,13 @@ foilbase_zeCommandQueueExecuteCommandLists
   level0_fence_map_insert(hFence, numCommandLists, phCommandLists);
   level0_command_queue_map_insert(hCommandQueue, numCommandLists, phCommandLists);
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandQueueExecuteCommandLists,
-    (hCommandQueue, numCommandLists, phCommandLists, hFence));
+  ze_result_t ret = f_zeCommandQueueExecuteCommandLists(hCommandQueue, numCommandLists, phCommandLists, hFence, dispatch);
   // Exit action
   return ret;
 }
 
 ze_result_t
-foilbase_zeEventPoolCreate
+hpcrun_zeEventPoolCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   const ze_event_pool_desc_t* desc,               ///< [in] pointer to event pool descriptor
@@ -1000,7 +715,8 @@ foilbase_zeEventPoolCreate
                                                   ///< have visibility to the event pool.
                                                   ///< if nullptr, then event pool is visible to all devices supported by the
                                                   ///< driver instance.
-  ze_event_pool_handle_t* phEventPool             ///< [out] pointer handle of event pool object created
+  ze_event_pool_handle_t* phEventPool,            ///< [out] pointer handle of event pool object created
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Entry action
@@ -1009,53 +725,54 @@ foilbase_zeEventPoolCreate
   // Execute the real level0 API
   ze_result_t ret;
   if (desc == NULL) {
-    ret = HPCRUN_LEVEL0_CALL(zeEventPoolCreate,
-      (hContext, NULL, numDevices, phDevices, phEventPool));
+    ret = f_zeEventPoolCreate(hContext, NULL, numDevices, phDevices, phEventPool, dispatch);
   } else {
-    ret = HPCRUN_LEVEL0_CALL(zeEventPoolCreate,
-      (hContext, &pool_desc, numDevices, phDevices, phEventPool));
+    ret = f_zeEventPoolCreate(hContext, &pool_desc, numDevices, phDevices, phEventPool, dispatch);
   }
   // Exit action
   return ret;
 }
 
 ze_result_t
-foilbase_zeEventDestroy
+hpcrun_zeEventDestroy
 (
-  ze_event_handle_t hEvent                        ///< [in][release] handle of event object to destroy
+  ze_event_handle_t hEvent,                       ///< [in][release] handle of event object to destroy
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Entry action
-  level0_attribute_event(hEvent);
+  level0_attribute_event(hEvent, dispatch);
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeEventDestroy, (hEvent));
+  ze_result_t ret = f_zeEventDestroy(hEvent, dispatch);
   // Exit action
   return ret;
 }
 
 ze_result_t
-foilbase_zeEventHostReset
+hpcrun_zeEventHostReset
 (
-  ze_event_handle_t hEvent                        ///< [in] handle of the event
+  ze_event_handle_t hEvent,                       ///< [in] handle of the event
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Entry action
-  level0_attribute_event(hEvent);
+  level0_attribute_event(hEvent, dispatch);
   // Execute the real level0 API
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeEventHostReset, (hEvent));
+  ze_result_t ret = f_zeEventHostReset(hEvent, dispatch);
 
   // Exit action
   return ret;
 }
 
 ze_result_t
-foilbase_zeModuleCreate
+hpcrun_zeModuleCreate
 (
   ze_context_handle_t hContext,                // [in] handle of the context object
   ze_device_handle_t hDevice,                  // [in] handle of the device
   const ze_module_desc_t *desc,                // [in] pointer to module descriptor
   ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
-  ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
+  ze_module_build_log_handle_t *phBuildLog,    // [out][optional] pointer to handle of module’s build log.
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   char compile_flags[128] = {0};
@@ -1068,40 +785,39 @@ foilbase_zeModuleCreate
     strcat(compile_flags, " -g");
     new_desc.pBuildFlags = compile_flags;
   }
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleCreate,
-    (hContext, hDevice, &new_desc, phModule, phBuildLog));
+  ze_result_t ret = f_zeModuleCreate(hContext, hDevice, &new_desc, phModule, phBuildLog, dispatch);
   PRINT("foilbase_zeModuleCreate: module handle %p\n", *phModule);
   // Exit action
-  level0_binary_process(*phModule);
+  level0_binary_process(*phModule, dispatch);
 
   return ret;
 }
 
 ze_result_t
-foilbase_zeModuleDestroy
+hpcrun_zeModuleDestroy
 (
-  ze_module_handle_t hModule       // [in][release] handle of the module
+  ze_module_handle_t hModule,      // [in][release] handle of the module
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Entry action
   level0_module_handle_map_delete(hModule);
 
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleDestroy,
-    (hModule));
+  ze_result_t ret = f_zeModuleDestroy(hModule, dispatch);
 
   return ret;
 }
 
 ze_result_t
-foilbase_zeKernelCreate
+hpcrun_zeKernelCreate
 (
   ze_module_handle_t hModule,          // [in] handle of the module
   const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
-  ze_kernel_handle_t *phKernel         // [out] handle of the Function object
+  ze_kernel_handle_t *phKernel,        // [out] handle of the Function object
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeKernelCreate,
-    (hModule, desc, phKernel));
+  ze_result_t ret = f_zeKernelCreate(hModule, desc, phKernel, dispatch);
   PRINT("foilbase_zeKernelCreate: module handle %p, kernel handle %p\n",hModule, *phKernel);
   // Exit action
   level0_kernel_module_map_insert(*phKernel, hModule);
@@ -1109,74 +825,58 @@ foilbase_zeKernelCreate
 }
 
 ze_result_t
-foilbase_zeKernelDestroy
+hpcrun_zeKernelDestroy
 (
-  ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
+  ze_kernel_handle_t hKernel,     // [in][release] handle of the kernel object
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Entry action
   level0_kernel_module_map_delete(hKernel);
 
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeKernelDestroy, (hKernel));
+  ze_result_t ret = f_zeKernelDestroy(hKernel, dispatch);
 
   return ret;
 }
 
 ze_result_t
-foilbase_zeFenceDestroy
+hpcrun_zeFenceDestroy
 (
-  ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
+  ze_fence_handle_t hFence,       // [in][release] handle of fence object to destroy
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("Enter zeFenceDestroy wrapper: fence %p\n", hFence);
-  level0_attribute_fence(hFence);
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeFenceDestroy, (hFence));
+  level0_attribute_fence(hFence, dispatch);
+  ze_result_t ret = f_zeFenceDestroy(hFence, dispatch);
   return ret;
 }
 
 ze_result_t
-foilbase_zeFenceReset
+hpcrun_zeFenceReset
 (
-  ze_fence_handle_t hFence       //  [in] handle of the fence
+  ze_fence_handle_t hFence,      //  [in] handle of the fence
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("Enter zeFenceReset wrapper: fence %p\n", hFence);
-  level0_attribute_fence(hFence);
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeFenceReset, (hFence));
+  level0_attribute_fence(hFence, dispatch);
+  ze_result_t ret = f_zeFenceReset(hFence, dispatch);
   return ret;
 }
 
 ze_result_t
-foilbase_zeCommandQueueSynchronize
+hpcrun_zeCommandQueueSynchronize
 (
   ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
-  uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
+  uint64_t timeout,                          // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   PRINT("Enter zeCommandQueueSynchronize wrapper: command queue %p\n", hCommandQueue);
-  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandQueueSynchronize, (hCommandQueue, timeout));
-  level0_attribute_command_queue(hCommandQueue);
+  ze_result_t ret = f_zeCommandQueueSynchronize(hCommandQueue, timeout, dispatch);
+  level0_attribute_command_queue(hCommandQueue, dispatch);
   return ret;
-}
-
-int
-level0_bind
-(
- void
-)
-{
-  hpcrun_force_dlopen(true);
-  CHK_DLOPEN(level0, level0_path(), RTLD_NOW | RTLD_GLOBAL);
-  hpcrun_force_dlopen(false);
-
-#define LEVEL0_BIND(fn) \
-  CHK_DLSYM(level0, fn);
-
-  FORALL_LEVEL0_ROUTINES(LEVEL0_BIND);
-
-#undef LEVEL0_BIND
-
-  return DYNAMIC_BINDING_STATUS_OK;
 }
 
 void

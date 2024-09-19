@@ -22,6 +22,7 @@
 #include "common.h"
 #include "monitor.h"
 #include "spinlock.h"
+#include "../audit/audit-api.h"
 
 #define MONITOR_CHOOSE_SHOOTDOWN_EARLY  1
 
@@ -35,14 +36,6 @@
  */
 #define SAFLAGS_REQUIRED   (SA_SIGINFO | SA_RESTART)
 #define SAFLAGS_FORBIDDEN  (SA_RESETHAND | SA_ONSTACK)
-
-typedef int  sigaction_fcn_t(int, const struct sigaction *,
-                             struct sigaction *);
-typedef int  sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
-typedef void sighandler_fcn_t(int);
-
-static sigaction_fcn_t    *real_sigaction = NULL;
-static sigprocmask_fcn_t  *real_sigprocmask = NULL;
 
 struct monitor_signal_entry {
     struct sigaction  mse_appl_act;
@@ -210,8 +203,8 @@ monitor_signal_handler(int sig, siginfo_t *info, void *context)
         action.sa_handler = SIG_DFL;
         action.sa_flags = 0;
         sigemptyset(&action.sa_mask);
-        (*real_sigaction)(sig, &action, NULL);
-        (*real_sigprocmask)(SIG_SETMASK, &action.sa_mask, NULL);
+        auditor_exports()->sigaction(sig, &action, NULL);
+        auditor_exports()->sigprocmask(SIG_SETMASK, &action.sa_mask, NULL);
         if (mse->mse_noraise) {
             /* For segv, etc, we just return. */
             return;
@@ -235,7 +228,7 @@ monitor_signal_handler(int sig, siginfo_t *info, void *context)
  *  list.
  */
 void
-monitor_signal_init(void)
+monitor_signal_init()
 {
     struct monitor_signal_entry *mse;
     struct sigaction *sa;
@@ -244,8 +237,6 @@ monitor_signal_init(void)
     int i, sig, ret;
 
     MONITOR_RUN_ONCE(signal_init);
-    MONITOR_GET_REAL_NAME_WRAP(real_sigaction, sigaction);
-    MONITOR_GET_REAL_NAME_WRAP(real_sigprocmask, sigprocmask);
 
     memset(monitor_signal_array, 0, sizeof(monitor_signal_array));
     for (i = 0; monitor_signal_avoid_list[i] > 0; i++) {
@@ -286,7 +277,7 @@ monitor_signal_init(void)
             sigemptyset(&sa->sa_mask);
             monitor_adjust_samask(&sa->sa_mask);
             sa->sa_flags = SAFLAGS_REQUIRED;
-            ret = (*real_sigaction)(sig, sa, &mse->mse_appl_act);
+            ret = auditor_exports()->sigaction(sig, sa, &mse->mse_appl_act);
             if (ret == 0) {
                 num_valid++;
             } else {
@@ -360,7 +351,7 @@ monitor_remove_client_signals(sigset_t *set, int how)
          * has the same value for all signals in the keep open list.
          */
         sigset_t cur_set;
-        (*real_sigprocmask)(0, NULL, &cur_set);
+        auditor_exports()->sigprocmask(0, NULL, &cur_set);
 
         if (monitor_debug) {
             monitor_sigset_string(buf, MONITOR_SIG_BUF_SIZE, &cur_set);
@@ -485,13 +476,13 @@ monitor_choose_shootdown_early(void)
  *  Return a signal unused by the client or application, if possible.
  */
 int
-monitor_shootdown_signal(void)
+monitor_shootdown_signal(const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     if (shootdown_signal > 0) {
         return shootdown_signal;
     }
 
-    monitor_signal_init();
+    monitor_signal_init(dispatch);
     monitor_choose_shootdown_early();
     return shootdown_signal;
 }
@@ -554,7 +545,7 @@ monitor_sigaction(int sig, monitor_sighandler_t *handler,
         mse->mse_kern_act.sa_flags = monitor_adjust_saflags(act->sa_flags);
         mse->mse_kern_act.sa_mask = act->sa_mask;
         monitor_adjust_samask(&mse->mse_kern_act.sa_mask);
-        (*real_sigaction)(sig, &mse->mse_kern_act, NULL);
+        auditor_exports()->sigaction(sig, &mse->mse_kern_act, NULL);
     }
 
     return (0);
@@ -573,7 +564,7 @@ monitor_sigaction(int sig, monitor_sighandler_t *handler,
  */
 static int
 monitor_appl_sigaction(int sig, const struct sigaction *act,
-                       struct sigaction *oldact)
+    struct sigaction *oldact, const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     struct monitor_signal_entry *mse;
     char *action;
@@ -592,7 +583,7 @@ monitor_appl_sigaction(int sig, const struct sigaction *act,
      */
     if (mse->mse_avoid) {
         MONITOR_DEBUG("application sigaction: %d (avoid)\n", sig);
-        return (*real_sigaction)(sig, act, oldact);
+        return f_sigaction(sig, act, oldact, dispatch);
     }
 
     if (act == NULL) {
@@ -620,21 +611,23 @@ monitor_appl_sigaction(int sig, const struct sigaction *act,
         mse->mse_kern_act.sa_mask = act->sa_mask;
         monitor_remove_client_signals(&mse->mse_kern_act.sa_mask, SIG_BLOCK);
         monitor_adjust_samask(&mse->mse_kern_act.sa_mask);
-        (*real_sigaction)(sig, &mse->mse_kern_act, NULL);
+        f_sigaction(sig, &mse->mse_kern_act, NULL, dispatch);
     }
 
     return (0);
 }
 
 int
-foilbase_sigaction(int sig, const struct sigaction *act,
-                             struct sigaction *oldact)
+hpcrun_sigaction(int sig, const struct sigaction *act, struct sigaction *oldact,
+                   const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
-    return monitor_appl_sigaction(sig, act, oldact);
+    return monitor_appl_sigaction(sig, act, oldact, dispatch);
 }
 
+typedef void sighandler_fcn_t(int);
 sighandler_fcn_t *
-foilbase_signal(int sig, sighandler_fcn_t *handler)
+hpcrun_signal(int sig, sighandler_fcn_t *handler,
+                const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     struct sigaction act, oldact;
 
@@ -642,7 +635,7 @@ foilbase_signal(int sig, sighandler_fcn_t *handler)
     act.sa_flags = 0;
     sigemptyset(&act.sa_mask);
 
-    if (monitor_appl_sigaction(sig, &act, &oldact) == 0)
+    if (monitor_appl_sigaction(sig, &act, &oldact, dispatch) == 0)
         return (oldact.sa_handler);
     else {
         errno = EINVAL;
@@ -655,8 +648,8 @@ foilbase_signal(int sig, sighandler_fcn_t *handler)
  *  change the mask for any signal in the keep open list.
  */
 int
-foilbase_sigprocmask(int how, const sigset_t *set,
-                               sigset_t *oldset)
+hpcrun_sigprocmask(int how, const sigset_t *set,
+                     sigset_t *oldset, const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     sigset_t my_set;
 
@@ -669,5 +662,5 @@ foilbase_sigprocmask(int how, const sigset_t *set,
         set = &my_set;
     }
 
-    return (*real_sigprocmask)(how, set, oldset);
+    return f_sigprocmask(how, set, oldset, dispatch);
 }

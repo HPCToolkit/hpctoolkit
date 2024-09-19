@@ -95,6 +95,7 @@ _measurements += {
 
 _env = test_env
 _env.prepend('LD_LIBRARY_PATH', meson.project_build_root() / 'src' / 'hpcrun')
+_env.prepend('LD_LIBRARY_PATH', meson.project_build_root() / 'src' / 'hpcrun' / 'foil')
 foreach name, spec : _measurements
   _stamp = custom_target(
     output: f'@name@.m.fresh',

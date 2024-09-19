@@ -49,24 +49,6 @@ extern char **environ;
 #define MONITOR_INIT_ENVIRON_SIZE  250
 #define MONITOR_DEFAULT_PAGESIZE  4096
 
-typedef pid_t fork_fcn_t(void);
-typedef int execv_fcn_t(const char *path, char *const argv[]);
-typedef int execve_fcn_t(const char *path, char *const argv[],
-                         char *const envp[]);
-typedef int sigaction_fcn_t(int, const struct sigaction *,
-                            struct sigaction *);
-typedef int sigprocmask_fcn_t(int, const sigset_t *, sigset_t *);
-typedef int system_fcn_t(const char *);
-typedef void *malloc_fcn_t(size_t);
-
-static fork_fcn_t    *real_fork = NULL;
-static execv_fcn_t   *real_execv = NULL;
-static execv_fcn_t   *real_execvp = NULL;
-static execve_fcn_t  *real_execve = NULL;
-static sigaction_fcn_t    *real_sigaction = NULL;
-static sigprocmask_fcn_t  *real_sigprocmask = NULL;
-static system_fcn_t  *real_system = NULL;
-
 static char *newenv_array[MONITOR_INIT_ENVIRON_SIZE];
 
 static int override_system = 1;
@@ -86,13 +68,6 @@ monitor_fork_init(void)
         return;
 
     monitor_early_init();
-    MONITOR_GET_REAL_NAME_WRAP(real_fork, fork);
-    MONITOR_GET_REAL_NAME_WRAP(real_execv, execv);
-    MONITOR_GET_REAL_NAME_WRAP(real_execvp, execvp);
-    MONITOR_GET_REAL_NAME_WRAP(real_execve, execve);
-    MONITOR_GET_REAL_NAME_WRAP(real_sigaction, sigaction);
-    MONITOR_GET_REAL_NAME_WRAP(real_sigprocmask, sigprocmask);
-    MONITOR_GET_REAL_NAME_WRAP(real_system, system);
 
     override_system = (getenv(NO_SYSTEM_OVERRIDE) == NULL);
 
@@ -219,7 +194,7 @@ monitor_is_executable(const char *file)
  *  fork (not the real vfork) in both cases.
  */
 static pid_t
-monitor_fork(void)
+monitor_fork(const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     void *user_data;
     pid_t ret;
@@ -228,7 +203,7 @@ monitor_fork(void)
     MONITOR_DEBUG1("calling monitor_pre_fork() ...\n");
     user_data = monitor_pre_fork();
 
-    ret = (*real_fork)();
+    ret = f_fork(dispatch);
     if (ret != 0) {
         /* Parent process. */
         if (ret < 0) {
@@ -248,15 +223,15 @@ monitor_fork(void)
 }
 
 pid_t
-foilbase_fork(void)
+hpcrun_fork(const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
-    return monitor_fork();
+    return monitor_fork(dispatch);
 }
 
 pid_t
-foilbase_vfork(void)
+hpcrun_vfork(const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
-    return monitor_fork();
+    return monitor_fork(dispatch);
 }
 
 /*
@@ -268,7 +243,8 @@ foilbase_vfork(void)
  *  case.
  */
 static int
-monitor_execv(const char *path, char *const argv[])
+monitor_execv(const char *path, char *const argv[],
+              const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     int ret, is_exec;
 
@@ -281,7 +257,7 @@ monitor_execv(const char *path, char *const argv[])
         monitor_end_process_fcn(MONITOR_EXIT_EXEC);
         monitor_end_library_fcn();
     }
-    ret = (*real_execv)(path, argv);
+    ret = f_execv(path, argv, dispatch);
 
     /* We only get here if real_execv fails. */
     if (is_exec) {
@@ -295,7 +271,8 @@ monitor_execv(const char *path, char *const argv[])
  *  Override execlp() and execvp().
  */
 static int
-monitor_execvp(const char *file, char *const argv[])
+monitor_execvp(const char *file, char *const argv[],
+               const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     int ret, is_exec;
 
@@ -308,7 +285,7 @@ monitor_execvp(const char *file, char *const argv[])
         monitor_end_process_fcn(MONITOR_EXIT_EXEC);
         monitor_end_library_fcn();
     }
-    ret = (*real_execvp)(file, argv);
+    ret = f_execvp(file, argv, dispatch);
 
     /* We only get here if real_execvp fails. */
     if (is_exec) {
@@ -322,7 +299,8 @@ monitor_execvp(const char *file, char *const argv[])
  *  Override execle() and execve().
  */
 static int
-monitor_execve(const char *path, char *const argv[], char *const envp[])
+monitor_execve(const char *path, char *const argv[], char *const envp[],
+               const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     int ret, is_exec;
 
@@ -335,7 +313,7 @@ monitor_execve(const char *path, char *const argv[], char *const envp[])
         monitor_end_process_fcn(MONITOR_EXIT_EXEC);
         monitor_end_library_fcn();
     }
-    ret = (*real_execve)(path, argv, envp);
+    ret = f_execve(path, argv, envp, dispatch);
 
     /* We only get here if real_execve fails. */
     if (is_exec) {
@@ -347,21 +325,24 @@ monitor_execve(const char *path, char *const argv[], char *const envp[])
 
 
 int
-foilbase_execv(const char *path, char *const argv[])
+hpcrun_execv(const char *path, char *const argv[],
+               const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
-    return monitor_execv(path, argv);
+    return monitor_execv(path, argv, dispatch);
 }
 
 int
-foilbase_execvp(const char *path, char *const argv[])
+hpcrun_execvp(const char *path, char *const argv[],
+                const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
-    return monitor_execvp(path, argv);
+    return monitor_execvp(path, argv, dispatch);
 }
 
 int
-foilbase_execve(const char *path, char *const argv[], char *const envp[])
+hpcrun_execve(const char *path, char *const argv[], char *const envp[],
+                const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
-    return monitor_execve(path, argv, envp);
+    return monitor_execve(path, argv, envp, dispatch);
 }
 
 /*
@@ -376,7 +357,8 @@ foilbase_execve(const char *path, char *const argv[], char *const envp[])
  */
 #define SHELL  "/bin/sh"
 static int
-monitor_system(const char *command, int callback)
+monitor_system(const char *command, int callback,
+               const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     struct sigaction ign_act, old_int, old_quit;
     sigset_t sigchld_set, old_set;
@@ -410,11 +392,11 @@ monitor_system(const char *command, int callback)
         MONITOR_DEBUG("(%s) calling monitor_pre_fork() ...\n", who);
         user_data = monitor_pre_fork();
     }
-    (*real_sigaction)(SIGINT, &ign_act, &old_int);
-    (*real_sigaction)(SIGQUIT, &ign_act, &old_quit);
-    (*real_sigprocmask)(SIG_BLOCK, &sigchld_set, &old_set);
+    auditor_exports()->sigaction(SIGINT, &ign_act, &old_int);
+    auditor_exports()->sigaction(SIGQUIT, &ign_act, &old_quit);
+    auditor_exports()->sigprocmask(SIG_BLOCK, &sigchld_set, &old_set);
 
-    pid = (*real_fork)();
+    pid = f_fork(dispatch);
     if (pid < 0) {
         /* Fork failed. */
         MONITOR_DEBUG("(%s) real fork failed\n", who);
@@ -424,15 +406,15 @@ monitor_system(const char *command, int callback)
         /* Child process. */
         MONITOR_DEBUG("(%s) child process about to exec, parent = %d\n",
                       who, getppid());
-        (*real_sigaction)(SIGINT, &old_int, NULL);
-        (*real_sigaction)(SIGQUIT, &old_quit, NULL);
-        (*real_sigprocmask)(SIG_SETMASK, &old_set, NULL);
+        auditor_exports()->sigaction(SIGINT, &old_int, NULL);
+        auditor_exports()->sigaction(SIGQUIT, &old_quit, NULL);
+        auditor_exports()->sigprocmask(SIG_SETMASK, &old_set, NULL);
         arglist[0] = SHELL;
         arglist[1] = "-c";
         arglist[2] = (char *)command;
         arglist[3] = NULL;
-        (*real_execve)(SHELL, arglist,
-                       callback ? environ : monitor_copy_environ(environ));
+        f_execve(SHELL, arglist,
+                 callback ? environ : monitor_copy_environ(environ), dispatch);
         auditor_exports()->exit(127);
         __builtin_unreachable();
     }
@@ -445,9 +427,9 @@ monitor_system(const char *command, int callback)
             }
         }
     }
-    (*real_sigaction)(SIGINT, &old_int, NULL);
-    (*real_sigaction)(SIGQUIT, &old_quit, NULL);
-    (*real_sigprocmask)(SIG_SETMASK, &old_set, NULL);
+    auditor_exports()->sigaction(SIGINT, &old_int, NULL);
+    auditor_exports()->sigaction(SIGQUIT, &old_quit, NULL);
+    auditor_exports()->sigprocmask(SIG_SETMASK, &old_set, NULL);
 
     if (callback) {
         MONITOR_DEBUG("(%s) calling monitor_post_fork() ...\n", who);
@@ -459,18 +441,19 @@ monitor_system(const char *command, int callback)
 }
 
 int
-foilbase_system(const char *command)
+hpcrun_system(const char *command,
+                const struct hpcrun_foil_appdispatch_libc* dispatch)
 {
     int ret;
 
     monitor_fork_init();
 
     if (override_system) {
-        ret = monitor_system(command, TRUE);
+        ret = monitor_system(command, TRUE, dispatch);
     }
     else {
         MONITOR_DEBUG("system (no override): %s\n", command);
-        ret = (*real_system)(command);
+        ret = f_system(command, dispatch);
     }
 
     return ret;

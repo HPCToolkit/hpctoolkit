@@ -11,6 +11,7 @@
 //******************************************************************************
 
 #include <CL/cl.h>
+#include "../../../foil/opencl.h"
 
 
 
@@ -19,65 +20,56 @@
 //******************************************************************************
 
 cl_int
-foilbase_clBuildProgram
+hpcrun_clBuildProgram
 (
-  typeof(&clBuildProgram) pfn_real,
-  typeof(&clGetProgramInfo) pfn_clGetProgramInfo,
   cl_program program,
   cl_uint num_devices,
   const cl_device_id* device_list,
   const char* options,
   void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
-  void* user_data
+  void* user_data,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_context
-foilbase_clCreateContext
+hpcrun_clCreateContext
 (
-  typeof(&clCreateContext) pfn_real,
-  typeof(&clGetPlatformIDs) pfn_clGetPlatformIDs,
-  typeof(&clGetDeviceIDs) pfn_clGetDeviceIDs,
   const cl_context_properties *properties,
   cl_uint num_devices,
   const cl_device_id *devices,
   void (CL_CALLBACK* pfn_notify) (const char *errinfo, const void *private_info, size_t cb, void *user_data),
   void *user_data,
-  cl_int *errcode_ret
+  cl_int *errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_command_queue
-foilbase_clCreateCommandQueue
+hpcrun_clCreateCommandQueue
 (
-  typeof(&clCreateCommandQueue) pfn_real,
   cl_context context,
   cl_device_id device,
   cl_command_queue_properties properties,
-  cl_int *errcode_ret
+  cl_int *errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_command_queue
-foilbase_clCreateCommandQueueWithProperties
+hpcrun_clCreateCommandQueueWithProperties
 (
-  typeof(&clCreateCommandQueueWithProperties) pfn_real,
   cl_context context,
   cl_device_id device,
   const cl_queue_properties* properties,
-  cl_int* errcode_ret
+  cl_int* errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clEnqueueNDRangeKernel
+hpcrun_clEnqueueNDRangeKernel
 (
-  typeof(&clEnqueueNDRangeKernel) pfn_real,
-  typeof(&clGetKernelInfo) pfn_clGetKernelInfo,
-  typeof(&clRetainEvent) pfn_clRetainEvent,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_kernel ocl_kernel,
   cl_uint work_dim,
@@ -86,34 +78,27 @@ foilbase_clEnqueueNDRangeKernel
   const size_t *local_work_size,
   cl_uint num_events_in_wait_list,
   const cl_event *event_wait_list,
-  cl_event *event
+  cl_event *event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 // this is a simplified version of clEnqueueNDRangeKernel, TODO: check if code duplication can be avoided
 cl_int
-foilbase_clEnqueueTask
+hpcrun_clEnqueueTask
 (
-  typeof(&clEnqueueTask) pfn_real,
-  typeof(&clGetKernelInfo) pfn_clGetKernelInfo,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_kernel kernel,
   cl_uint num_events_in_wait_list,
   const cl_event* event_wait_list,
-  cl_event* event
+  cl_event* event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clEnqueueReadBuffer
+hpcrun_clEnqueueReadBuffer
 (
-  typeof(&clEnqueueReadBuffer) pfn_real,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_mem buffer,
   cl_bool blocking_read,
@@ -122,17 +107,14 @@ foilbase_clEnqueueReadBuffer
   void *ptr,
   cl_uint num_events_in_wait_list,
   const cl_event *event_wait_list,
-  cl_event *event
+  cl_event *event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clEnqueueWriteBuffer
+hpcrun_clEnqueueWriteBuffer
 (
-  typeof(&clEnqueueWriteBuffer) pfn_real,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_mem buffer,
   cl_bool blocking_write,
@@ -141,17 +123,14 @@ foilbase_clEnqueueWriteBuffer
   const void *ptr,
   cl_uint num_events_in_wait_list,
   const cl_event *event_wait_list,
-  cl_event *event
+  cl_event *event,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 void*
-foilbase_clEnqueueMapBuffer
+hpcrun_clEnqueueMapBuffer
 (
-  typeof(&clEnqueueMapBuffer) pfn_real,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clSetEventCallback) pfn_clSetEventCallback,
   cl_command_queue command_queue,
   cl_mem buffer,
   cl_bool blocking_map,
@@ -161,76 +140,72 @@ foilbase_clEnqueueMapBuffer
   cl_uint num_events_in_wait_list,
   const cl_event* event_wait_list,
   cl_event* event,
-  cl_int* errcode_ret
+  cl_int* errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_mem
-foilbase_clCreateBuffer
+hpcrun_clCreateBuffer
 (
-  typeof(&clCreateBuffer) pfn_real,
-  typeof(&clGetEventProfilingInfo) pfn_clGetEventProfilingInfo,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
   cl_context context,
   cl_mem_flags flags,
   size_t size,
   void* host_ptr,
-  cl_int* errcode_ret
+  cl_int* errcode_ret,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clWaitForEvents
+hpcrun_clWaitForEvents
 (
-  typeof(&clWaitForEvents) pfn_real,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  typeof(&clGetEventInfo) pfn_clGetEventInfo,
   cl_uint num_events,
-  const cl_event* event_list
+  const cl_event* event_list,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clFinish
+hpcrun_clFinish
 (
-  typeof(&clFinish) pfn_real,
-  typeof(&clReleaseEvent) pfn_clReleaseEvent,
-  cl_command_queue command_queue
+  cl_command_queue command_queue,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clSetKernelArg
+hpcrun_clSetKernelArg
 (
-  typeof(&clSetKernelArg) pfn_real,
   cl_kernel kernel,
   cl_uint arg_index,
   size_t arg_size,
-  const void* arg_value
+  const void* arg_value,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clReleaseMemObject
+hpcrun_clReleaseMemObject
 (
-  typeof(&clReleaseMemObject) pfn_real,
-  cl_mem mem
+  cl_mem mem,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clReleaseKernel
+hpcrun_clReleaseKernel
 (
-  typeof(&clReleaseKernel) pfn_real,
-  cl_kernel kernel
+  cl_kernel kernel,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 
 cl_int
-foilbase_clReleaseCommandQueue
+hpcrun_clReleaseCommandQueue
 (
-  typeof(&clReleaseCommandQueue) pfn_real,
-  cl_command_queue command_queue
+  cl_command_queue command_queue,
+  const struct hpcrun_foil_appdispatch_opencl* dispatch
 );
 
 #endif  // _OPENCL_API_WRAPPERS_H_

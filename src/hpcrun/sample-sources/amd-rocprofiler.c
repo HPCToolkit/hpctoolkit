@@ -8,8 +8,6 @@
 //******************************************************************************
 
 #define _GNU_SOURCE
-#define __HIP_PLATFORM_AMD__
-#define __HIP_PLATFORM_HCC__
 
 #include <alloca.h>
 #include <ctype.h>
@@ -39,8 +37,6 @@
 //******************************************************************************
 
 #include "amd.h"
-
-#include "libdl.h"
 
 #include "simple_oo.h"
 #include "sample_source_obj.h"

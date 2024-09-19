@@ -13,6 +13,8 @@
 #include "pthread_h.h"
 #include <sys/types.h>
 #include <signal.h>
+#include "../foil/libc.h"
+#include "../foil/mpi.h"
 
 typedef int monitor_sighandler_t(int, siginfo_t *, void *);
 
@@ -108,63 +110,73 @@ extern int monitor_wrap_main(int, char **, char **);
     void *stack_end
 #endif
 
-extern int foilbase_libc_start_main(START_MAIN_PARAM_LIST);
+extern int hpcrun_libc_start_main(START_MAIN_PARAM_LIST,
+                                    const struct hpcrun_foil_appdispatch_libc* dispatch);
 
-extern pid_t foilbase_fork();
-extern pid_t foilbase_vfork();
-extern int foilbase_execv(const char *path, char *const argv[]);
-extern int foilbase_execvp(const char *path, char *const argv[]);
-extern int foilbase_execve(const char *path, char *const argv[], char *const envp[]);
-extern int foilbase_system(const char *command);
-extern void foilbase_exit(int status);
-extern void foilbase__exit(int status);
-extern void foilbase__Exit(int status);
-extern int foilbase_sigaction(int sig, const struct sigaction *act,
-                              struct sigaction *oldact);
+extern pid_t hpcrun_fork(const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern pid_t hpcrun_vfork(const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_execv(const char *path, char *const argv[],
+                          const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_execvp(const char *path, char *const argv[],
+                           const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_execve(const char *path, char *const argv[], char *const envp[],
+                           const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_system(const char *command, const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern void hpcrun_exit(int status, const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern void hpcrun_uexit(int status, const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern void hpcrun_uExit(int status, const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_sigaction(int sig, const struct sigaction *act, struct sigaction *oldact,
+                              const struct hpcrun_foil_appdispatch_libc* dispatch);
 typedef void (*sighandler_t)(int);
-extern sighandler_t foilbase_signal(int sig, sighandler_t handler);
-extern int foilbase_sigprocmask(int how, const sigset_t *set, sigset_t *oldset);
-extern int foilbase_sigwait(const sigset_t *set, int *sig);
-extern int foilbase_sigwaitinfo(const sigset_t *set, siginfo_t *info);
-extern int foilbase_sigtimedwait(const sigset_t *set, siginfo_t *info,
-                                 const struct timespec *timeout);
-extern int foilbase_pthread_create(void* caller, pthread_t *thread, const pthread_attr_t *attr,
-                                   pthread_start_fcn_t *start_routine, void *arg);
-extern void foilbase_pthread_exit(void *data);
-extern int foilbase_pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset);
+extern sighandler_t hpcrun_signal(int sig, sighandler_t handler,
+                                    const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_sigprocmask(int how, const sigset_t *set, sigset_t *oldset,
+                                const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_sigwait(const sigset_t *set, int *sig,
+                            const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_sigwaitinfo(const sigset_t *set, siginfo_t *info,
+                                const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_sigtimedwait(const sigset_t *set, siginfo_t *info,
+    const struct timespec *timeout, const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+    pthread_start_fcn_t *start_routine, void *arg,
+    void* caller, const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern void hpcrun_pthread_exit(void *data, const struct hpcrun_foil_appdispatch_libc* dispatch);
+extern int hpcrun_pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset,
+                                    const struct hpcrun_foil_appdispatch_libc* dispatch);
 
-extern int foilbase_MPI_Comm_rank(void *comm, int *rank);
-extern void foilbase_mpi_comm_rank(int *comm, int *rank, int *ierror);
-extern void foilbase_mpi_comm_rank_(int *comm, int *rank, int *ierror);
-extern void foilbase_mpi_comm_rank__(int *comm, int *rank, int *ierror);
-extern int foilbase_MPI_Finalize(void);
-extern void foilbase_mpi_finalize(int *ierror);
-extern void foilbase_mpi_finalize_(int *ierror);
-extern void foilbase_mpi_finalize__(int *ierror);
-extern int foilbase_MPI_Init(int *argc, char ***argv);
-extern void foilbase_mpi_init(int *ierror);
-extern void foilbase_mpi_init_(int *ierror);
-extern void foilbase_mpi_init__(int *ierror);
-extern int foilbase_MPI_Init_thread(int *argc, char ***argv, int required, int *provided);
-extern void foilbase_mpi_init_thread(int *required, int *provided, int *ierror);
-extern void foilbase_mpi_init_thread_(int *required, int *provided, int *ierror);
-extern void foilbase_mpi_init_thread__(int *required, int *provided, int *ierror);
-extern int foilbase_PMPI_Init(int *argc, char ***argv);
-extern void foilbase_pmpi_init(int *ierror);
-extern void foilbase_pmpi_init_(int *ierror);
-extern void foilbase_pmpi_init__(int *ierror);
-extern int foilbase_PMPI_Init_thread(int *argc, char ***argv, int required, int *provided);
-extern void foilbase_pmpi_init_thread(int *required, int *provided, int *ierror);
-extern void foilbase_pmpi_init_thread_(int *required, int *provided, int *ierror);
-extern void foilbase_pmpi_init_thread__(int *required, int *provided, int *ierror);
-extern int foilbase_PMPI_Finalize(void);
-extern void foilbase_pmpi_finalize(int *ierror);
-extern void foilbase_pmpi_finalize_(int *ierror);
-extern void foilbase_pmpi_finalize__(int *ierror);
-extern int foilbase_PMPI_Comm_rank(void *comm, int *rank);
-extern void foilbase_pmpi_comm_rank(int *comm, int *rank, int *ierror);
-extern void foilbase_pmpi_comm_rank_(int *comm, int *rank, int *ierror);
-extern void foilbase_pmpi_comm_rank__(int *comm, int *rank, int *ierror);
+extern int hpcrun_MPI_Comm_rank(void *comm, int *rank, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_comm_rank_fortran0(int *comm, int *rank, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_comm_rank_fortran1(int *comm, int *rank, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_comm_rank_fortran2(int *comm, int *rank, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern int hpcrun_MPI_Finalize(const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_finalize_fortran0(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_finalize_fortran1(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_finalize_fortran2(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern int hpcrun_MPI_Init(int *argc, char ***argv, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_init_fortran0(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_init_fortran1(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_init_fortran2(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern int hpcrun_MPI_Init_thread(int *argc, char ***argv, int required, int *provided, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_init_thread_fortran0(int *required, int *provided, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_init_thread_fortran1(int *required, int *provided, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_mpi_init_thread_fortran2(int *required, int *provided, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern int hpcrun_PMPI_Init(int *argc, char ***argv, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_init_fortran0(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_init_fortran1(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_init_fortran2(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern int hpcrun_PMPI_Init_thread(int *argc, char ***argv, int required, int *provided, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_init_thread_fortran0(int *required, int *provided, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_init_thread_fortran1(int *required, int *provided, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_init_thread_fortran2(int *required, int *provided, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern int hpcrun_PMPI_Finalize(const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_finalize_fortran0(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_finalize_fortran1(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_finalize_fortran2(int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern int hpcrun_PMPI_Comm_rank(void *comm, int *rank, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_comm_rank_fortran0(int *comm, int *rank, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_comm_rank_fortran1(int *comm, int *rank, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
+extern void hpcrun_pmpi_comm_rank_fortran2(int *comm, int *rank, int *ierror, const struct hpcrun_foil_appdispatch_mpi*);
 
 
 #ifdef __cplusplus

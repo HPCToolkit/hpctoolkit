@@ -618,7 +618,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_itimer_wallclock_ok(true);
 
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
-  if (foilbase_hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
+  if (hpcrun_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
     SAMPLE_SOURCES(start);
   }
 

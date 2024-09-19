@@ -38,7 +38,6 @@
 // local includes
 //******************************************************************************
 
-#include "libdl.h"
 #include "level0.h"
 
 #include "simple_oo.h"
@@ -179,11 +178,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  if (level0_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to Level0 library %s\n", dlerror());
-    auditor_exports()->exit(-1);
-  }
-
   level0_init(&level0_instrumentation_options);
 
   // Init records

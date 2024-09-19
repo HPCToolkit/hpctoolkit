@@ -97,24 +97,27 @@ level0_module_handle_map_insert
 void
 level0_binary_process
 (
-  ze_module_handle_t module
+  ze_module_handle_t module,
+  const struct hpcrun_foil_appdispatch_level0* dispatch
 )
 {
   // Get the debug binary
   size_t size;
-  zetModuleGetDebugInfo(
+  f_zetModuleGetDebugInfo(
     module,
     ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,
     &size,
-    NULL
+    NULL,
+    dispatch
   );
 
   uint8_t* buf = (uint8_t*) malloc(size);
-  zetModuleGetDebugInfo(
+  f_zetModuleGetDebugInfo(
     module,
     ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,
     &size,
-    buf
+    buf,
+    dispatch
   );
 
   // Generate a hash for the binary

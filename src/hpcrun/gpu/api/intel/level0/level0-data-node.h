@@ -54,6 +54,7 @@ typedef union level0_detail_entry {
 
 typedef struct level0_data_node {
   level0_command_type_t type;
+  const struct hpcrun_foil_appdispatch_level0* dispatch;
   ze_event_handle_t event;
   ze_event_pool_handle_t event_pool;
   gpu_activity_channel_t *initiator_channel;
