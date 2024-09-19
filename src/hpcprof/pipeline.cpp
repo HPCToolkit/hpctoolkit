@@ -168,7 +168,9 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
             return;
           }
         }
-        if(!f.path().empty() && f.path().is_absolute())
+        std::error_code ec;
+        if(!f.path().empty() && f.path().is_absolute()
+           && stdshim::filesystem::exists(f.path(), ec))
           sp = f.path();
       });
     uds.resolvedPath.module = structs.module.add_default<stdshim::filesystem::path>(
@@ -180,7 +182,9 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
             return;
           }
         }
-        if(!m.path().empty() && m.path().is_absolute())
+        std::error_code ec;
+        if(!m.path().empty() && m.path().is_absolute()
+           && stdshim::filesystem::exists(m.path(), ec))
           sp = m.path();
       });
   }
