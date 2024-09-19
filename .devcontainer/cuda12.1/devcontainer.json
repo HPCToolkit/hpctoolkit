@@ -8,7 +8,8 @@
     "dockerfile": "${localWorkspaceFolder}/.ci.predeps/Containerfile.cuda"
   },
   "capAdd": [
-    "SYS_ADMIN"
+    "SYS_ADMIN",
+    "PERFMON"
   ],
   "containerEnv": {
     "OMPI_ALLOW_RUN_AS_ROOT": "1",
