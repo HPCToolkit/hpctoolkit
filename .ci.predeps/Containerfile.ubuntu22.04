@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # OS installation stage: Install build tools from the OS
-FROM docker.io/ubuntu:22.04 as os-install
+FROM docker.io/ubuntu:22.04
 
 # Install the required OS packages
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -30,6 +30,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     gcc-11 \
     gcc-12 \
     git \
+    libboost-atomic-dev \
+    libboost-chrono-dev \
+    libboost-date-time-dev \
+    libboost-filesystem-dev \
+    libboost-graph-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
+    libboost-timer-dev \
     libbz2-dev \
     libdw-dev \
     libelf-dev \
@@ -72,31 +80,7 @@ RUN \
     'meson>=1.1.0,<2' \
   && : # END
 
-
-# From-source installation side-stage: Install (some) software from source
-FROM os-install as src-install
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  rm -f /etc/apt/apt.conf.d/docker-clean \
-  && apt-get update -yqq \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    bzip2 \
-  && : # END
-
-# FIXME: Boost doesn't support DESTDIR, so we install to a prefix under /dest and hope nothing
-# goes wrong. See https://github.com/boostorg/boost_install/issues/14 for discussion.
-# We only need to do this because we need a visibility=global Boost installation.
-# Tracking issue: https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/815.
-ADD https://boostorg.jfrog.io/artifactory/main/release/1.84.0/source/boost_1_84_0.tar.bz2 /usr/src/boost.tar.bz2
-RUN --mount=type=bind,target=/tmp,from=scratch,rw \
-  tar xjf /usr/src/boost.tar.bz2 -C /tmp \
-  && cd /tmp/boost_1_84_0 \
-  && ./bootstrap.sh --prefix=/dest/opt/boost --with-libraries=atomic,chrono,date_time,filesystem,graph,system,thread,timer \
-  && ./b2 install visibility=global
-
-
 # Composition stage: Produce what will become the final image
-FROM os-install
-COPY --from=src-install /dest /
 COPY \
   ci/native/src/clang.ini \
   ci/native/src/clang11.ini \
@@ -130,6 +114,3 @@ RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
   && echo "[zstd:project options]" >> "$t" \
   && echo "lz4 = 'disabled'" >> "$t" \
   && : # EOF
-
-# Set CMAKE_PREFIX_PATH to the paths for all the bits
-ENV BOOST_ROOT=/opt/boost LD_LIBRARY_PATH=/opt/boost/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
