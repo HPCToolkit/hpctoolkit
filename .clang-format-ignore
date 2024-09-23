@@ -2,6 +2,5 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-BasedOnStyle: InheritParentConfig
-
-DisableFormat: false
+# These are vendored sources that should never be autoformatted.
+src/vendor/valgrind/*.h
