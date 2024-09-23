@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# FIXME: Autoformatting is currently only enabled for the file globs listed below.
+meson/**/*
+src/hpcrun/foil/**/*
+tests/**/*
