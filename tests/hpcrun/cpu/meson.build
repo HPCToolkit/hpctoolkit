@@ -10,6 +10,7 @@ simple_tstexe = executable(
 )
 
 subdir('itimer')
+subdir('papi')
 subdir('perf')
 subdir('pthread-blame')
 subdir('memleak')

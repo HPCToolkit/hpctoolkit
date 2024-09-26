@@ -1,0 +1,50 @@
+#!/bin/sh -ex
+
+# SPDX-FileCopyrightText: 2024 Rice University
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+papi_check="$1"
+hpcrun="$2"
+tstexe_1loop="$3"
+
+# Although we're using PAPI, the backing counter is from perf_events
+if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -ge 3 ]; then exit 77; fi
+
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
+
+# test the existence of a PAPI event, and then test its handling in hpcrun
+# arguments:
+# $1: papi event to check
+# $2: the equivalent hpcrun's event
+#
+test_event()
+{
+    papi_event="$1"
+    hpcrun_event="$2"
+
+    if "$papi_check" "$papi_event"; then
+        # papi hardware counter is supported: check if this is handled by papi
+
+        "$hpcrun"  -o "$tmpdir"/m1  -dd PAPI -e "$hpcrun_event" "$tstexe_1loop"
+
+        grep -i -E -e 'papi :.*start'  "$tmpdir"/m1/*.log
+    fi
+}
+
+
+# test for real (non-vm) platforms:
+# check if any PAPI_* exist. If it does, we check if it's handled by
+# hpcrun's PAPI sample-source
+
+test_event PAPI_TOT_CYC  PAPI_TOT_CYC
+
+# Issue #862: force the event to be handled by PAPI
+# This test doesn't include checking PAPI_* since they are not software event
+
+native_event="CPU-CLOCK"
+hpc_native_event="PAPI::$native_event"
+
+test_event "$native_event"  "$hpc_native_event"
