@@ -16,7 +16,6 @@
 struct hpcrun_foil_appdispatch_rocm_hip {
   hipError_t (*hipDeviceSynchronize)();
   hipError_t (*hipDeviceGetAttribute)(int* pi, hipDeviceAttribute_t attrib, int dev);
-  hipError_t (*hipCtxGetCurrent)(hipCtx_t* ctx);
   hipError_t (*hipStreamSynchronize)(hipStream_t stream);
 };
 

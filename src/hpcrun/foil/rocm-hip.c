@@ -42,10 +42,6 @@ hipError_t f_hipDeviceGetAttribute(int* pi, hipDeviceAttribute_t attrib, int dev
   return dispatch()->hipDeviceGetAttribute(pi, attrib, dev);
 }
 
-hipError_t f_hipCtxGetCurrent(hipCtx_t* ctx) {
-  return dispatch()->hipCtxGetCurrent(ctx);
-}
-
 hipError_t f_hipStreamSynchronize(hipStream_t stream) {
   return dispatch()->hipStreamSynchronize(stream);
 }
