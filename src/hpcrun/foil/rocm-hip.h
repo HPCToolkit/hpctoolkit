@@ -10,7 +10,6 @@
 
 hipError_t f_hipDeviceSynchronize();
 hipError_t f_hipDeviceGetAttribute(int* pi, hipDeviceAttribute_t attrib, int dev);
-hipError_t f_hipCtxGetCurrent(hipCtx_t* ctx);
 hipError_t f_hipStreamSynchronize(hipStream_t stream);
 
 #endif // HPCRUN_FOIL_ROCM_HIP_H

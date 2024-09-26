@@ -7,6 +7,5 @@
 const struct hpcrun_foil_appdispatch_rocm_hip hpcrun_dispatch_rocm_hip = {
     .hipDeviceSynchronize = &hipDeviceSynchronize,
     .hipDeviceGetAttribute = &hipDeviceGetAttribute,
-    .hipCtxGetCurrent = &hipCtxGetCurrent,
     .hipStreamSynchronize = &hipStreamSynchronize,
 };

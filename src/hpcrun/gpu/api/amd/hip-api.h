@@ -49,13 +49,6 @@ typedef struct hip_device_property {
 
 // returns 0 on success
 int
-hip_context
-(
- hipCtx_t *ctx
-);
-
-// returns 0 on success
-int
 hip_device_property_query
 (
  int device_id,

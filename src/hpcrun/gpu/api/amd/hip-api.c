@@ -77,16 +77,6 @@ hip_device_sm_blocks_query
 //******************************************************************************
 
 int
-hip_context
-(
- hipCtx_t *ctx
-)
-{
-  HPCRUN_HIP_API_CALL(hipCtxGetCurrent, (ctx));
-  return 0;
-}
-
-int
 hip_device_property_query
 (
  int device_id,
