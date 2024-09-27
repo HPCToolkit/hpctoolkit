@@ -57,7 +57,7 @@ struct hpcrun_foil_hookdispatch_ga {
                       const struct hpcrun_foil_appdispatch_ga*);
   void (*pnga_gop)(Integer type, void* x, Integer n, char* op,
                    const struct hpcrun_foil_appdispatch_ga*);
-  void (*pnga_sync)();
+  void (*pnga_sync)(const struct hpcrun_foil_appdispatch_ga*);
 };
 
 #endif // HPCRUN_FOIL_GA_PRIVATE_H

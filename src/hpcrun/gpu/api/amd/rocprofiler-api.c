@@ -41,6 +41,7 @@
 #include "../../../audit/audit-api.h"
 #include "../../../thread_data.h"
 #include "../../../main.h"
+#include "../../../libmonitor/monitor.h"
 
 #include "../../../utilities/hpcrun-nanotime.h"
 

@@ -92,18 +92,6 @@ level0_check_result
 }
 
 
-static const char *
-level0_path
-(
-  void
-)
-{
-  static const char *path = "libze_loader.so";
-
-  return path;
-}
-
-
 static void
 get_gpu_driver_and_device
 (

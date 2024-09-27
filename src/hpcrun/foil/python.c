@@ -25,12 +25,12 @@ static struct Dispatch {
 #define FALLBACK_PY_3_9
 
 static PyFrameObject* fallback_PyFrame_GetBack(PyFrameObject* frame) {
-  dispatch.Py_IncRef(frame->f_back);
+  dispatch.Py_IncRef((PyObject*)frame->f_back);
   return frame->f_back;
 }
 
 static PyCodeObject* fallback_PyFrame_GetCode(PyFrameObject* frame) {
-  dispatch.Py_IncRef(frame->f_code);
+  dispatch.Py_IncRef((PyObject*)frame->f_code);
   return frame->f_code;
 }
 #endif
