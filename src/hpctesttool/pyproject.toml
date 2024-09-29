@@ -86,6 +86,7 @@ max-parents=7
 max-attributes=11
 max-module-lines=1000
 max-args=8
+max-positional-arguments=7
 
 [tool.ruff.lint]
 select = [

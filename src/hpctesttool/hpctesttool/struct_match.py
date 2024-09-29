@@ -7,7 +7,7 @@ import abc
 import re
 import string
 import typing
-import xml.etree.ElementTree as XmlET
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pyparsing as pp
@@ -288,7 +288,7 @@ class Tag:
             super().__init__("Uncaught MatchFailureError exception!")
             self.msg = msg
 
-    def match(self, elem: XmlET.Element) -> typing.Optional[str]:
+    def match(self, elem: ET.Element) -> typing.Optional[str]:
         if not self._matches_root(elem):
             return f"Root tag failed to match: <{elem.tag} {elem.attrib}> does not match {self}"
 
@@ -300,7 +300,7 @@ class Tag:
 
     def _matches_root(
         self,
-        elem: XmlET.Element,
+        elem: ET.Element,
         *,
         par_bounds: typing.Optional[typing.Tuple[int, int]] = None,
     ) -> bool:
@@ -316,7 +316,7 @@ class Tag:
         )
 
     def _match_children(
-        self, elem: XmlET.Element, path: typing.Optional[str] = None
+        self, elem: ET.Element, path: typing.Optional[str] = None
     ) -> None:
         path = (
             path + "/" if path is not None else ""

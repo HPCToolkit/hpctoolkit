@@ -15,7 +15,7 @@ from . import base
 testdatadir = Path(os.environ["TEST_DATA_DIR"])
 
 
-@pytest.fixture()
+@pytest.fixture
 def yaml():
     return ruamel.yaml.YAML(typ="safe")
 

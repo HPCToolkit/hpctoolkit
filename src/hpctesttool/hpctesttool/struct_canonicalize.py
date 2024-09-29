@@ -6,20 +6,20 @@
 import dataclasses
 import re
 import typing
-from xml.etree import ElementTree as XmlET
+from xml.etree import ElementTree as ET
 
 if typing.TYPE_CHECKING:
     import collections.abc
 
 
 def iter_xml(
-    root: XmlET.Element,
-) -> "collections.abc.Iterator[typing.Tuple[XmlET.Element, bool]]":
+    root: ET.Element,
+) -> "collections.abc.Iterator[typing.Tuple[ET.Element, bool]]":
     """Iterate over an XML element tree in depth-first order with exit callbacks. Returns each
     element in the tree exactly twice, along with a boolean indicating with this is the first time
     incountering the element.
     """
-    stack: typing.List[typing.Tuple[XmlET.Element, bool]] = [(root, True)]
+    stack: typing.List[typing.Tuple[ET.Element, bool]] = [(root, True)]
     while stack:
         elem, enter = stack.pop()
         yield elem, enter
@@ -60,10 +60,10 @@ class VRange:
 
 
 def canonical_form(file: typing.BinaryIO) -> typing.List[str]:  # noqa: C901
-    data = XmlET.parse(file)
+    data = ET.parse(file)
 
     # 1. Calculate a VRange for each element, based on the address range ("v") and children
-    ranges: typing.Dict[XmlET.Element, VRange] = {}
+    ranges: typing.Dict[ET.Element, VRange] = {}
     for elem, enter in iter_xml(data.getroot()):
         if enter:
             continue  # Post-order to ensure we have ranges for children
@@ -75,7 +75,7 @@ def canonical_form(file: typing.BinaryIO) -> typing.List[str]:  # noqa: C901
         ranges[elem] = vrange
 
     # 2. Sort the children of each element by their address ranges
-    children: typing.Dict[XmlET.Element, typing.List[XmlET.Element]] = {}
+    children: typing.Dict[ET.Element, typing.List[ET.Element]] = {}
     for elem in data.iter():
         children[elem] = sorted(
             elem, key=lambda e: ranges[e], reverse=True  # noqa: F821
