@@ -115,7 +115,7 @@ else
           _xerces_c_ver,
         ),
       )
-      xerces_dep = dependency('xerces-c', method: 'system', include_type: 'system')  # Force fallback to wrap
+      xerces_dep = dependency('xerces-c', method: 'system', include_type: 'system')      # Force fallback to wrap
     endif
   endif
 endif
@@ -135,7 +135,7 @@ else
           _yaml_cpp_ver,
         ),
       )
-      yaml_cpp_dep = dependency('yaml-cpp', method: 'system', include_type: 'system')  # Force fallback to wrap
+      yaml_cpp_dep = dependency('yaml-cpp', method: 'system', include_type: 'system')      # Force fallback to wrap
     endif
   endif
 endif
@@ -216,7 +216,7 @@ if host_machine.cpu_family() in ['x86', 'x86_64']
     endif
   endif
   if not xed_dep.found()
-    xed_dep = dependency('xed', method: 'system', version: '>=2022.08.11')  # Force wrap fallback
+    xed_dep = dependency('xed', method: 'system', version: '>=2022.08.11')    # Force wrap fallback
   endif
 endif
 if xed_dep.found()

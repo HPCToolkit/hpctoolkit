@@ -7,7 +7,7 @@ import difflib
 import re
 import sys
 import typing
-import xml.etree.ElementTree as XmlET
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import click
@@ -235,7 +235,7 @@ def match_struct(
     except pp.ParseFatalException as e:
         raise click.ClickException("Pattern syntax error:\n" + e.explain()) from e
 
-    data = XmlET.parse(structfile)
+    data = ET.parse(structfile)
     found = False
     for lm in data.findall("LM"):
         found = True

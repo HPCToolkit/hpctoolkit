@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 
-@pytest.fixture()
+@pytest.fixture
 def v4_data_small(yaml):
     return yaml.load(_data_small)
 
