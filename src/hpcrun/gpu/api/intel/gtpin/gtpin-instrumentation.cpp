@@ -75,6 +75,16 @@ extern "C"
 
 
 //*****************************************************************************
+// debugging
+//*****************************************************************************
+
+#define DEBUG 0
+
+#include "../../../common/gpu-print.h"
+
+
+
+//*****************************************************************************
 // import namespaces
 //*****************************************************************************
 
@@ -86,6 +96,10 @@ using namespace hpctoolkit::util;
 //*****************************************************************************
 // macros
 //*****************************************************************************
+
+#define GTPIN_COUNT_BROKEN 0
+
+#define GTPIN_THREAD_BUCKET_DEBUG 0
 
 #define GTPIN_KERNEL_IP_DEBUG 0
 
@@ -271,8 +285,18 @@ public:
 
 
 //*****************************************************************************
+// forward declarations
+//*****************************************************************************
+
+static void enqueue();
+
+
+
+//*****************************************************************************
 // local data
 //*****************************************************************************
+
+static thread_local gpu_op_ccts_t my_op_ccts;
 
 static thread_local CorrelationData correlation_head;
 static thread_local CorrelationData *correlation_tail = NULL;
@@ -649,6 +673,7 @@ create_igt_kernel_node
   correlation_data->next = NULL;
   correlation_tail->next = correlation_data;
   correlation_tail = correlation_data;
+  enqueue();
 }
 
 
@@ -677,6 +702,9 @@ process_block_activity
   gtpin_hpcrun_api->cstack_ptr_set(&(ga.next), 0);
 
   cct_node_t *cct_node = gtpin_hpcrun_api->hpcrun_cct_insert_ip_norm(host_op_node, ga.details.kernel_block.pc, false);
+
+  PRINT("  process block activity 0x%lx (host_op_node=%p, cct=%p)\n", ga.details.kernel_block.pc.lm_ip, host_op_node, cct_node);
+
   if (cct_node) {
     ga.cct_node = cct_node;
     gtpin_hpcrun_api->gpu_operation_multiplexer_push(activity_channel, NULL, &ga);
@@ -766,6 +794,8 @@ KernelProfile::instrument
   bool is64BitCounter = insF.CanAccessAtomically(GED_DATA_TYPE_uq);
   IGtRegAllocator &ra = coder.RegAllocator();
 
+  PRINT("hpcrun gtpin: OnKernelBuild instrumenting kernel %ld\n", kernel.Id());
+
   _timeReg = vregs.Make(VREG_TYPE_DWORD);
   _addrReg = vregs.MakeMsgAddrScratch();
   _dataReg = vregs.MakeMsgDataScratch(is64BitCounter ? VREG_TYPE_QWORD : VREG_TYPE_DWORD);
@@ -775,6 +805,7 @@ KernelProfile::instrument
   ra.Reserve(vregs.GetProfileBufferAddrVreg().Num());
 
   if (count_knob) {
+    PRINT("  setting up gtpin to count instructions\n");
     opcodeProfile = GtProfileArray(sizeof(OpcodeRecord), cfg.NumBbls(), kernel.GenModel().MaxThreadBuckets());
     opcodeProfile.Allocate(allocator);
 
@@ -784,6 +815,9 @@ KernelProfile::instrument
       simdGroupsCount += basicBlock.simdGroups.size();
 
       block_map[std::make_pair(kernel_ip.lm_id, kernel_ip.lm_ip + basicBlock.instructions[0].offset)] = basicBlock;
+
+      PRINT("    adding instrumentation for basic block in kernel (%d, 0x%lx) at 0x%lx\n",
+            kernel_ip.lm_id, kernel_ip.lm_ip, kernel_ip.lm_ip + basicBlock.instructions[0].offset);
 
       GtGenProcedure proc;
       opcodeProfile.ComputeAddress(coder, proc, _addrReg, bbl->Id());
@@ -803,6 +837,8 @@ KernelProfile::instrument
       }
     }
 
+    PRINT("  setting up gtpin to measure latency\n");
+
     latencyProfile = GtProfileArray(sizeof(LatencyRecord), bbls.size(), kernel.GenModel().MaxThreadBuckets());
     latencyProfile.Allocate(allocator);
 
@@ -817,6 +853,9 @@ KernelProfile::instrument
       simdGroupsCount += basicBlock.simdGroups.size();
 
       block_map[std::make_pair(kernel_ip.lm_id, kernel_ip.lm_ip + basicBlock.instructions[0].offset)] = basicBlock;
+
+      PRINT("    adding instrumentation for basic block in kernel (%d, %ld) at %ld\n",
+            kernel_ip.lm_id, kernel_ip.lm_ip, kernel_ip.lm_ip + basicBlock.instructions[0].offset);
 
       GtGenProcedure preCode;
       GeneratePreCode(preCode, coder);
@@ -894,12 +933,16 @@ KernelProfile::gatherMetrics
 
   uint32_t index = 0;
 
+  PRINT("  gatherMetrics\n");
+
   for (BasicBlock &bbl : basicBlocks) {
+    uint64_t bbl_count = 0;
+    uint64_t bbl_latency = 0;
     for (uint32_t threadBucket = 0; threadBucket < dispatch.Kernel().GenModel().MaxThreadBuckets(); ++threadBucket) {
       if (count_knob) {
         OpcodeRecord record;
         if (opcodeProfile.Read(*buffer, &record, index, 1, threadBucket)) {
-          bbl.executionCount += record.freq;
+          bbl_count += record.freq;
         }
       }
 
@@ -908,10 +951,15 @@ KernelProfile::gatherMetrics
         if (latencyProfile.Read(*buffer, &record, index, 1, threadBucket)) {
           bbl.executionCount += record.freq;
           if (collect_latency) {
-            bbl.latency += record.cycles;
+            bbl_latency += record.cycles;
           }
         }
       }
+
+#if GTPIN_THREAD_BUCKET_DEBUG
+        PRINT("    bbl (%d, 0x%lx): %lx: count=%ld latency=%ld threadBucket=%d\n", kernel_ip.lm_id, kernel_ip.lm_ip,
+              kernel_ip.lm_ip + bbl.instructions[0].offset, record.freq, record.cycles, threadBucket);
+#endif
 
       if (simd_knob) {
         uint32_t simd_index = 0;
@@ -925,7 +973,12 @@ KernelProfile::gatherMetrics
         }
       }
     }
-    // std::cout << "BLOCK WITH ID: " << index << " HAS LATENCY: " << bbl.latency << std::endl;
+
+    bbl.executionCount += bbl_count;
+    bbl.latency += bbl_latency;
+
+    PRINT("    bbl %d (%d, 0x%lx): %lx: count=%ld latency=%ld\n", index, kernel_ip.lm_id, kernel_ip.lm_ip,
+          kernel_ip.lm_ip + bbl.instructions[0].offset, bbl_count, bbl_latency);
 
     ++index;
     process_block_activity(kernel_ip, correlation_data, bbl);
@@ -949,9 +1002,14 @@ GTPinInstrumentation::OnKernelBuild
 void
 GTPinInstrumentation::OnKernelRun
 (IGtKernelDispatch &dispatch) {
+  PRINT("hpcrun gtpin: OnKernelRun kernel %ld\n", dispatch.Kernel().Id());
+
   GtKernelExecDesc execDesc;
   dispatch.GetExecDescriptor(execDesc);
   create_igt_kernel_node(execDesc, dispatch.Kernel().GpuPlatform());
+
+  PRINT("  knobs=(cnt=%d, lat=%d, simd=%d)\n",
+        count_knob, latency_knob, simd_knob);
 
   auto kernelProfile = _kernels.find(dispatch.Kernel().Id());
   if (kernelProfile) {
@@ -960,6 +1018,7 @@ GTPinInstrumentation::OnKernelRun
     if ((count_knob && kernelProfile->opcodeProfile.Initialize(*buffer)) ||
         (latency_knob && kernelProfile->latencyProfile.Initialize(*buffer)) ||
         (simd_knob && kernelProfile->simdProfile.Initialize(*buffer))) {
+      PRINT("  set profiling mode true\n");
       dispatch.SetProfilingMode(true);
     }
   }
@@ -977,6 +1036,9 @@ GTPinInstrumentation::Register
                     "Tool API version = " + std::to_string(ApiVersion()));
     return false;
   }
+
+  PRINT("hpcrun gtpin: registered tool\n");
+
   return true;
 }
 
@@ -987,16 +1049,20 @@ GTPinInstrumentation::OnKernelComplete
   if (!dispatch.IsProfilingEnabled()) {
     return;
   }
+
+  auto it = _kernels.find(dispatch.Kernel().Id());
+
+  PRINT("hpcrun gtpin: OnKernelComplete\n");
   gtpin_hpcrun_api->hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, HPCRUN_NO_TRACE, true);
 
   GtKernelExecDesc exec_desc;
   dispatch.GetExecDescriptor(exec_desc);
   CorrelationData correlation_data = correlation_map[exec_desc.ToString(dispatch.Kernel().GpuPlatform())];
 
-  auto it = _kernels.find(dispatch.Kernel().Id());
-  if (it) {
-    it->gatherMetrics(dispatch, correlation_data);
-  }
+  PRINT("  cid=%s kernel=%p\n", exec_desc.ToString(dispatch.Kernel().GpuPlatform()).c_str(),
+        gtpin_hpcrun_api->gpu_op_ccts_get(&(correlation_data.op_ccts), gpu_placeholder_type_kernel));
+
+  it->gatherMetrics(dispatch, correlation_data);
 }
 
 
@@ -1019,13 +1085,17 @@ gtpin_instrumentation_options
   latency_knob = instrumentation->attribute_latency;
   collect_latency = instrumentation->attribute_latency;
   simd_knob = instrumentation->analyze_simd;
+  count_knob = instrumentation->count_instructions;
+
+#if GTPIN_COUNT_BROKEN
   // instruction counting alone currently destroys correctness.
   // for now, replace instruction counting with latency measurements, which
   // performs instruction counting as a side effect.
-  if (instrumentation->count_instructions) {
+  if (count_knob) {
     latency_knob = true;
   }
   count_knob = false;
+#endif
 
   if (count_knob || latency_knob || simd_knob) {
     // customize GTPin behaviors
@@ -1052,6 +1122,17 @@ HPCRUN_EXPOSED
 void
 gtpin_produce_runtime_callstack
 (gpu_op_ccts_t *op_ccts) {
+  my_op_ccts = *op_ccts;
+}
+
+
+static void
+enqueue
+(
+  void
+)
+{
+  gpu_op_ccts_t *op_ccts = &my_op_ccts;
   if (correlation_head.next == NULL)
     std::abort();
   CorrelationData *correlation_data = correlation_head.next;
@@ -1062,6 +1143,10 @@ gtpin_produce_runtime_callstack
     .op_ccts = *op_ccts,
     .activity_channel = gtpin_hpcrun_api->gpu_activity_channel_get_local(),
     .next = NULL};
+
+  PRINT("in produce runtime callstack: id=%s, kernel_cct = %p\n",
+          correlation_data->correlation_id.c_str(),
+          gtpin_hpcrun_api->gpu_op_ccts_get(op_ccts, gpu_placeholder_type_kernel));
 
   if (correlation_data->next == NULL) {
     correlation_tail = &correlation_head;
@@ -1076,13 +1161,17 @@ void
 gtpin_process_block_instructions
 (cct_node_t *root) {
 
+  PRINT("hpcrun gtpin: process_block_instructions\n");
+
   if (GTPIN_KERNEL_IP_DEBUG) dumpKernelIps();
 
   std::vector<std::pair<cct_node_t *, BasicBlock>> data_vector;
   gtpin_hpcrun_api->hpcrun_cct_walk_node_1st(root, visit_block, &data_vector);
 
+  PRINT("  iterating data vectors\n");
   for (const auto &data : data_vector) {
     cct_node_t *block = data.first;
+    PRINT("    block %p\n", block);
     BasicBlock basicBlock = data.second;
     block_metrics_t block_metrics = gtpin_hpcrun_api->fetch_block_metrics(block);
     uint64_t executionCount = count_knob || latency_knob ? block_metrics.execution_count : 0;
@@ -1097,6 +1186,7 @@ gtpin_process_block_instructions
     uint16_t blockLmId = basicBlock.kernel_ip.lm_id;
     uintptr_t blockLmIp = basicBlock.kernel_ip.lm_ip;
     cct_node_t *blockParent =   gtpin_hpcrun_api->hpcrun_cct_parent(block);
+    PRINT("hpcrun gtpin: block (%d, %lx):\n", blockLmId, blockLmIp);
     const bool not_unwound = false;
     for (const Instruction &instruction : basicBlock.instructions) {
       uint64_t scalarSimdLoss = simd_knob && instruction.execSize == 1 ? basicBlock.simdWidth - 1 : 0;
@@ -1110,6 +1200,11 @@ gtpin_process_block_instructions
           .active_simd_lanes = activeSimdLanes,
           .wasted_simd_lanes = totalSimdLanes - activeSimdLanes,
           .scalar_simd_loss = scalarSimdLoss});
+      PRINT("  ip (%d, 0x%lx) cct_node *child=%p (ec=%ld, lat=%ld, tsl=%ld,"
+            " asl=%ld, wsl=%ld ssl=%ld)\n",
+            instructionIp.lm_id, instructionIp.lm_ip, child, executionCount,
+            instruction.latency, totalSimdLanes, activeSimdLanes,
+            totalSimdLanes - activeSimdLanes, scalarSimdLoss);
     }
   }
 }
