@@ -37,8 +37,6 @@
 // macros
 //******************************************************************************
 
-#define UNIT_TEST 0
-
 #define FORALL_OPENCL_KINDS(macro)                                      \
   macro(GPU_ACTIVITY_UNKNOWN)                                                   \
   macro(GPU_ACTIVITY_KERNEL)           \

@@ -37,8 +37,6 @@
 // macros
 //******************************************************************************
 
-#define UNIT_TEST 0
-
 #define DEBUG 0
 
 #include "../common/gpu-print.h"
