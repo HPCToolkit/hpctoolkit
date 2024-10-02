@@ -37,6 +37,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     libboost-thread-dev \
     libboost-timer-dev \
     libbz2-dev \
+    libgmock-dev \
+    libgtest-dev \
     libiberty-dev \
     liblzma-dev \
     libmpich-dev \

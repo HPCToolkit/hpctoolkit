@@ -53,29 +53,3 @@ random_level(int max_height)
   // return a random level [1 .. max_height] with the desired distribution.
   return first_one_position + 1;
 }
-
-#define UNIT_TEST___random_level 0
-#if UNIT_TEST___random_level
-
-#include <stdio.h>
-#include <assert.h>
-
-// test that the random levels for skip list node heights have the proper
-// distribution between 1 .. max_height, where the probability of 2^h is
-// half that of 2^(h-1), for h in [2 .. max_height]
-int main()
-{
-  int bins[15];
-
-  for (int i = 0; i < 15; i++) bins[i] = 0;
-
-  for (int i = 0; i < 10000 * 1024 ; i++) {
-    int j = random_level(10);
-    assert(1 <= j && j <= 15);
-    bins[j-1]++;
-  }
-  for (int i = 0; i < 15;i++)
-    printf("bin[%d] = %d\n", i, bins[i]);
-}
-
-#endif

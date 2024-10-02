@@ -21,6 +21,8 @@ RUN --mount=type=cache,target=/var/lib/dnf,sharing=locked \
     gcc \
     gcc-c++ \
     git \
+    gmock-devel \
+    gtest-devel \
     libpfm-devel \
     libunwind-devel \
     make  `# FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/704` \

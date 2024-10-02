@@ -46,8 +46,6 @@
 //  regarding inter-stream synchronization.
 #define TRACK_SYNCHRONIZATION 0
 
-#define UNIT_TEST 0
-
 #define DEBUG 0
 
 #include "../common/gpu-print.h"

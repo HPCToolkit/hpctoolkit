@@ -3,6 +3,20 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+test_srcs = files(
+  'sample-sources/exclude-test.cpp',
+  'sample-sources/exclude.c',
+  'sample-sources/perf/event_name_parser.c',
+  'sample-sources/perf/event_name_parser_test.cpp',
+)
+
+test(
+  'hpcrun-unit',
+  executable('hpcrun-unit-test', test_srcs, dependencies: [gtest_main_dep, gmock_dep]),
+  protocol: 'gtest',
+)
+
+
 libs = []
 
 hpcrun_sonames = configuration_data()

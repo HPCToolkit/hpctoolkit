@@ -8,6 +8,10 @@
 #ifndef _EVENT_NAME_PARSER_H
 #define _EVENT_NAME_PARSER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct perf_event_name_s
 {
   // the number of events
@@ -54,5 +58,9 @@ perf_util_parse_eventname(const char *event, perf_event_name_t* event_name);
 ///
 void
 perf_util_free_eventname(perf_event_name_t* event_name);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
