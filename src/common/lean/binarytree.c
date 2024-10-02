@@ -82,12 +82,20 @@ subtree_tostr2(binarytree_t *subtree, val_tostr tostr, char valstr[],
     subtree_tostr2(right, tostr, valstr, Left_lead_buff, Right_subtree_buff);
     tostr(subtree->val, valstr);
 
+    // FIXME: Only you can stop stringop abuse
+#if __GNUC__ && (!__clang__ || __clang_major__ >= 18)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wformat-truncation"
+#endif
     snprintf(result, MAX_TREE_STR, "%s%s%s%s%s%s%s%s%s%s%s%s",
              "|_ ", valstr, "\n",
              left_lead, "|\n",
              left_lead, Left_subtree_buff, "\n",
              left_lead, "|\n",
              left_lead, Right_subtree_buff);
+#if __GNUC__ && (!__clang__ || __clang_major__ >= 18)
+#pragma GCC diagnostic pop
+#endif
   }
   else {
     strcpy(result, "|_ {}");
@@ -257,12 +265,20 @@ binarytree_tostring_indent(binarytree_t * root, val_tostr tostr,
     snprintf(Right_subtree_buff, MAX_SUBTREE_STR, "%s", result);
     tostr(root->val, valstr);
 
+    // FIXME: Only you can stop stringop abuse
+#if __GNUC__ && (!__clang__ || __clang_major__ >= 18)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wformat-truncation"
+#endif
     snprintf(result, MAX_TREE_STR, "%s%s%s%s%s%s%s%s%s%s%s",
              valstr, "\n",
              indents,"|\n",
              indents, Left_subtree_buff, "\n",
              indents, "|\n",
              indents, Right_subtree_buff);
+#if __GNUC__ && (!__clang__ || __clang_major__ >= 18)
+#pragma GCC diagnostic pop
+#endif
   }
   else {
     strcpy(result, "{}");

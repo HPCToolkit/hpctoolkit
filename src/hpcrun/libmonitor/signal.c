@@ -476,13 +476,13 @@ monitor_choose_shootdown_early(void)
  *  Return a signal unused by the client or application, if possible.
  */
 int
-monitor_shootdown_signal(const struct hpcrun_foil_appdispatch_libc* dispatch)
+monitor_shootdown_signal()
 {
     if (shootdown_signal > 0) {
         return shootdown_signal;
     }
 
-    monitor_signal_init(dispatch);
+    monitor_signal_init();
     monitor_choose_shootdown_early();
     return shootdown_signal;
 }
