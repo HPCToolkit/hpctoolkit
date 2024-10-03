@@ -124,6 +124,7 @@ $ meson devenv
 
 Additional configuration arguments can be passed to the initial `meson setup` or later `meson configure` invocations:
 
+- `-Dtests=(disabled|auto|enabled)`: Enable unit tests with `meson test`. (`disabled` only disables tests that require additional dependencies.)
 - `-Dmanpages=(disabled|auto|enabled)`: Generate and build man pages. Requires [Docutils](https://www.docutils.org/).
 - `-Dhpcprof_mpi=(disabled|auto|enabled)`: Build `hpcprof-mpi` in addition to `hpcprof`. Requires MPI.
 - `-Dpython=(disabled|auto|enabled)`: Enable the (experimental) Python unwinder. Requires Python headers.
@@ -134,10 +135,6 @@ Additional configuration arguments can be passed to the initial `meson setup` or
 - `-Dopencl=(disabled|auto|enabled)`: Enable OpenCL metrics (`-e gpu=opencl`). Requires OpenCL headers.
 - `-Drocm=(disabled|auto|enabled)`: Enable ROCm metrics (`-e gpu=amd`). Requires ROCm.
 - `-Dvalgrind_annotations=(false|true)`: Inject annotations for debugging with Valgrind.
-- `-Dextended_tests=(disabled|auto|enabled)`: Feature option for that require extra dependencies. Request:
-  - CUDA compiler (e.g. `nvcc`) if `-Dcuda` support is available/enabled
-  - HIP compiler (`hipcc`) if `-Drocm` support is available/enabled
-  - SYCL-compatible compiler (e.g. `icpx`) if `-Dlevel0` support is available/enabled
 
 Note that many of the features above require additional optional dependencies when enabled.
 
