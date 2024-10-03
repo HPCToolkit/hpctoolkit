@@ -3,10 +3,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-if not opencl_full_dep.found()
-  subdir_done()
-endif
-
 _tstexe_vecadd_opencl = executable(
   'tstexe-vecadd-opencl',
   'vecadd.opencl.c',

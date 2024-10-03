@@ -382,10 +382,34 @@ add_project_arguments(
 
 # Find GoogleTest which is used as a test harness and framework. GoogleMock is a bundled library
 # with extra features that extend the base GoogleTest experience.
-gtest_dep = dependency('gtest', version: '>=1.8.1')
-gtest_main_dep = dependency('gtest_main', version: '>=1.8.1')
-gmock_dep = dependency('gmock', version: '>=1.8.1')
-gmock_main_dep = dependency('gmock_main', version: '>=1.8.1')
+gtest_dep = dependency(
+  'gtest',
+  version: '>=1.8.1',
+  include_type: 'system',
+  disabler: true,
+  required: get_option('tests'),
+)
+gtest_main_dep = dependency(
+  'gtest_main',
+  version: '>=1.8.1',
+  include_type: 'system',
+  disabler: true,
+  required: get_option('tests'),
+)
+gmock_dep = dependency(
+  'gmock',
+  version: '>=1.8.1',
+  include_type: 'system',
+  disabler: true,
+  required: get_option('tests'),
+)
+gmock_main_dep = dependency(
+  'gmock_main',
+  version: '>=1.8.1',
+  include_type: 'system',
+  disabler: true,
+  required: get_option('tests'),
+)
 
 
 # Find rst2man, which is used to generate the man pages from source
@@ -518,7 +542,7 @@ endif
 # enable this here either.
 has_cuda = false
 if cupti_dep.found()
-  has_cuda = add_languages('cuda', native: false, required: get_option('extended_tests'))
+  has_cuda = add_languages('cuda', native: false, required: get_option('tests'))
   if has_cuda
     cuda_cc = meson.get_compiler('cuda')
     if cuda_cc.get_id() == 'nvcc'
@@ -702,7 +726,7 @@ endif
 # Similar to CUDA, we combine cpp_*args and hip_*args for the command lines here.
 has_hip = false
 if rocm_dep.found()
-  _hip_cc = find_program('hip', 'hipcc', required: get_option('extended_tests'))
+  _hip_cc = find_program('hip', 'hipcc', required: get_option('tests'))
   has_hip = _hip_cc.found()
   if has_hip
     hip = generator(
@@ -791,13 +815,14 @@ if opencl_dep.found()
 endif
 
 # Find a full OpenCL installation. We need this to run some of the tests.
-opencl_full_dep = dependency('', required: false)
+opencl_full_dep = disabler()
 if opencl_dep.found()
   opencl_full_dep = dependency(
     'OpenCL',
-    required: get_option('extended_tests'),
     version: _opencl_ver,
     include_type: 'system',
+    disabler: true,
+    required: get_option('tests'),
   )
 endif
 
@@ -1008,7 +1033,7 @@ endif
 # but we emulate Meson's basic behavior for languages.
 # Similar to CUDA, we combine cpp_*args and hip_*args for the command lines here.
 has_sycl = false
-if level0_dep.found() and get_option('extended_tests').allowed()
+if level0_dep.found() and get_option('tests').allowed()
 
   # Path 1: If "sycl" has been registered as a binary in the machine file, use that.
   _sycl_cc = find_program('sycl', required: false)
@@ -1082,7 +1107,7 @@ if level0_dep.found() and get_option('extended_tests').allowed()
   endif
 
   # Regardless of what route we take, if we need SYCL and don't have it, error out.
-  if get_option('extended_tests').enabled() and not has_sycl
+  if get_option('tests').enabled() and not has_sycl
     error('Unable to find a SYCL compiler!')
   endif
 

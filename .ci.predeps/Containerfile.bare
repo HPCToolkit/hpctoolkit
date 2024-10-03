@@ -86,7 +86,7 @@ RUN t=/usr/share/meson/native/hpctoolkit-ci.ini && rm -f "$t" \
   && echo "" >> "$t" \
   && echo "[project options]" >> "$t" \
   && echo "auto_features = 'enabled'" >> "$t" \
-  && echo "extended_tests = 'disabled'" >> "$t" \
+  && echo "tests = 'disabled'" >> "$t" \
   && echo "manpages = 'disabled'" >> "$t" \
   && echo "manual = 'disabled'" >> "$t" \
   && echo "python = 'disabled'" >> "$t" \

@@ -810,8 +810,8 @@ compiler icx:
       - -Dopencl=disabled
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
+      - -Dtests=disabled
       - -Dmanpages=disabled
-      - -Dextended_tests=disabled
       - -Dhpcprof_mpi=disabled
       TEST_ARGS: SKIP
 'option: [bare amd64]':
@@ -827,7 +827,7 @@ compiler icx:
       - -Dopencl=disabled
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
-      - -Dextended_tests=disabled
+      - -Dtests=disabled
       TEST_ARGS: SKIP
 'option: [cuda amd64]':
   extends: .option test job
@@ -839,7 +839,7 @@ compiler icx:
       - -Dcuda=disabled
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
-      - -Dextended_tests=disabled
+      - -Dtests=disabled
       TEST_ARGS: SKIP
 'option: [rocm amd64]':
   extends: .option test job
@@ -851,7 +851,7 @@ compiler icx:
       - -Drocm=disabled
       TEST_ARGS: --suite hpcrun
     - SETUP_ARGS:
-      - -Dextended_tests=disabled
+      - -Dtests=disabled
       TEST_ARGS: SKIP
 'option: [intel amd64]':
   extends: .option test job
@@ -862,7 +862,7 @@ compiler icx:
     - SETUP_ARGS:
       - -Dlevel0=disabled
       - -Dgtpin=disabled
-      - -Dextended_tests=disabled
+      - -Dtests=disabled
       TEST_ARGS: SKIP
 
 
