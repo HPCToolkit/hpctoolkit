@@ -1,0 +1,121 @@
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
+spack:
+  interruptible: true
+  stage: pre-deploy checks
+  image:
+    name: ghcr.io/spack/almalinux9:develop
+    entrypoint: ['spack-env']
+  needs: []
+  tags: [saas-linux-large-amd64]
+  rules:
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+  - allow_failure: true
+    when: manual
+
+  cache:
+  - key: spack-src-$CI_JOB_NAME_SLUG
+    paths:
+    - .cache/spack-src/
+
+  script:
+  # Update to the latest Spack. We fiddle with the Git repository some to get access to
+  # the entire commit history with tags, without downloading all the diffs and stuff.
+  - |
+    # Updating Spack to the latest...
+    git -C $SPACK_ROOT checkout --quiet develop || exit $?
+    git -C $SPACK_ROOT remote set-branches origin develop || exit $?
+    git -C $SPACK_ROOT config --add remote.origin.partialclonefilter tree:0 || exit $?
+    git -C $SPACK_ROOT pull --unshallow --quiet || exit $?
+    git -C $SPACK_ROOT rev-parse HEAD > spack-commit || exit $?
+    spack --version || exit $?
+
+  # Save the location of the stages directory to a file, for the after_script.
+  - spack location --stages > spack-stages
+
+  # FIXME: Spack does not currently have a way to configure details to fetch Git commits
+  # that are not fetched by default. Configure Git to always fetch MR commits.
+  - git config --global remote.origin.fetch '+refs/merge-requests/*:refs/remotes/origin/merge-requests/*'
+
+  # Keep a cache for files that Spack pulls in from the network. To keep it small,
+  # only retain and push files that were used in this build.
+  - mv -T .cache/spack-src .cache/spack-src-pull || true
+  - mkdir -p .cache/spack-src
+  - spack mirror add gitlab-local "$CI_PROJECT_DIR"/.cache/spack-src-pull || true
+  - spack config add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src || true
+
+  # For speed maintain a buildcache of anything we build during this run.
+  - spack config add config:install_tree:padded_length:256
+  - >-
+    spack mirror add --unsigned --type binary --autopush
+    --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
+    ci oci://"$CI_REGISTRY_IMAGE"/ci.spack-buildcache
+    || true
+
+  # Configure Spack so that the only `hpctoolkit` that can ever be built is this commit,
+  # mapped to the closest matching Spack recipe.
+  - |
+    # Determining Spack package version for Git ref...
+    if [ "$CI_COMMIT_TAG" ] && [ "$CI_COMMIT_REF_PROTECTED" = "true" ]; then
+      ver="$CI_COMMIT_TAG"  # Protected tags are valid versions
+    else
+      branch="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_COMMIT_BRANCH:-develop}}"
+      case "$branch" in
+      develop) ver="develop"; ;;  # develop -> @develop
+      release/*) ver="$(echo "$branch" | cut -d/ -f2-).stable"; ;;  # release/X -> @X.stable
+      *) ver="develop.${branch//\//.}"; ;;  # X/Y -> @develop.X.Y
+      esac
+    fi
+    echo "Identified ref as hpctoolkit@git.${CI_COMMIT_SHA}=${ver}"
+  - spack -D ci/spack/ config add "packages:hpctoolkit:require:'@git.${CI_COMMIT_SHA}=${ver}'"
+
+  # Install required signing keys for the public buildcache.
+  - spack -D ci/spack/ buildcache keys --install --trust
+
+  # Install and test.
+  # FIXME: Test-only dependencies are not properly restored from the spack.lock file, so
+  # only one `spack install` can be run here. This means we can't tell if a failed build
+  # is a dependency or is `hpctoolkit` proper.
+  - spack -D ci/spack/ install --fail-fast --test=root
+  - spack -D ci/spack/ test run --log-file spack.junit.xml --log-format junit hpctoolkit
+
+  after_script:
+  # Try to recover the logs generated during the install process
+  - mkdir -p spack-logs/
+  - cp --parents -v -t spack-logs/ "$(cat spack-stages)"/*/*.txt ~/.spack/test/*/*.txt || true
+  - mv -T ci/spack env
+  - |
+    echo "To reproduce in a container environment:"
+    echo "  podman run --rm -it $CI_JOB_IMAGE"
+    echo "  git -C "'$SPACK_ROOT'" pull origin $(cat spack-commit):"
+    echo "  curl -Lo /tmp/artifacts.zip ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
+    echo "  unzip -d /tmp/ /tmp/artifacts.zip"
+    echo "  spack -D /tmp/env install --fail-fast --test=root"
+
+  artifacts:
+    expire_in: 2 days
+    paths:
+    - spack-logs/
+    - env/
+    reports:
+      junit: spack.junit.xml
+    when: always
+
+
+# Run Spack tests that require access to an Nvidia GPU
+spack +cuda:
+  extends: spack
+  tags: [saas-linux-medium-amd64-gpu-standard]
+  before_script:
+  # These library search paths are needed to support nvidia-docker v1.
+  # Spack wipes LD_LIBRARY_PATH so we use ldconfig instead.
+  - printf '/usr/local/nvidia/lib\n/usr/local/nvidia/lib64' >> /etc/ld.so.conf.d/nvidia.conf
+  - ldconfig
+  variables:
+    ENV_ONLY_CUDA: 1
+    # These variables must be set for compatibility with legacy (non-CDI) nvidia-container-toolkit
+    NVIDIA_VISIBLE_DEVICES: all
+    NVIDIA_DRIVER_CAPABILITIES: compute,utility
