@@ -299,6 +299,9 @@ include:
     name: libintl-amd64
     containerfile: .ci.predeps/Containerfile.libintl
 
+# Run pre-deployment checks for Spack
+- local: ci/spack/.gitlab-ci.yml
+
 
 # The vast majority of jobs in this sequence do a build and then run some tests. This is the base
 # job spec for such jobs, configurable via a small number of variables.
@@ -975,112 +978,6 @@ clang-tidy-fix:
   artifacts:
     paths:
     - clang-tidy-fixits.patch
-
-
-# Check that Spack develop can properly build HPCToolkit in a small matrix of configurations.
-spack:
-  interruptible: true
-  stage: pre-deploy checks
-  image:
-    name: ghcr.io/spack/almalinux9:develop
-    entrypoint: ['spack-env']
-  needs: []
-  tags: [saas-linux-large-amd64]
-  allow_failure:
-    exit_codes: [77]
-  variables:
-    ERRORS_IGNORED_EXIT_CODE: 0  # Do not report ignored errors
-    ERRORS_REPORTED_EXIT_CODE: 77  # Do not fail on real errors
-  rules:
-  - *never_if_runner_unprivileged  # Expensive and not necessary for review
-  - if: $CI_COMMIT_REF_PROTECTED == "true"
-    variables:
-      ERRORS_IGNORED_EXIT_CODE: 77  # Report but do not fail on ignored errors
-      ERRORS_REPORTED_EXIT_CODE: 1  # Fail on real errors
-  - when: on_success
-  cache:
-  - key: spack-src-$CI_JOB_NAME_SLUG
-    paths:
-    - .cache/spack-src/
-  script:
-  # Update to the latest Spack. We fiddle with the Git repository some to get access to the entire
-  # commit history with tags, without downloading all the diffs and stuff.
-  - |
-    # Updating Spack to the latest...
-    git -C $SPACK_ROOT checkout --quiet develop || exit $?
-    git -C $SPACK_ROOT remote set-branches origin develop || exit $?
-    git -C $SPACK_ROOT config --add remote.origin.partialclonefilter tree:0 || exit $?
-    git -C $SPACK_ROOT pull --unshallow --quiet || exit $?
-    git -C $SPACK_ROOT rev-parse HEAD > spack-commit || exit $?
-    spack --version || exit $?
-  # Figure out the version of the recipe we claim this commit to be. There are a number of cases.
-  - |
-    # Determining Spack package version for Git ref...
-    if [ "$CI_COMMIT_TAG" ] && [ "$CI_COMMIT_REF_PROTECTED" = "true" ]; then
-      ver="$CI_COMMIT_TAG"  # Protected tags are valid versions
-    else
-      branch="${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_COMMIT_BRANCH:-develop}}"
-      case "$branch" in
-      develop) ver="develop"; ;;  # develop -> @develop
-      release/*) ver="$(echo "$branch" | cut -d/ -f2-).stable"; ;;  # release/X -> @X.stable
-      *) ver="develop.${branch//\//.}"; ;;  # X/Y -> @develop.X.Y
-      esac
-    fi
-    refver="git.${CI_COMMIT_SHA}=${ver}"
-    echo "Identified ref as hpctoolkit@git.${CI_COMMIT_SHA}=${ver}"
-  # Save the location of the stages directory to a file, for the after_script.
-  - spack location --stages > spack-stages
-  # We keep a cache for files that Spack pulls in from the network. To keep it small, we only retain
-  # and push files that were used in this build.
-  - mv -T .cache/spack-src .cache/spack-src-pull || true
-  - mkdir -p .cache/spack-src
-  - spack mirror add --scope=site gitlab-local "$CI_PROJECT_DIR"/.cache/spack-src-pull || true
-  - spack config --scope=site add config:source_cache:"$CI_PROJECT_DIR"/.cache/spack-src || true
-  # Pad the install paths to make sure the generated buildcache binaries are compatible across
-  # multiple systems and environments.
-  - spack config --scope=site add config:install_tree:padded_length:256
-  - |
-    ci/spack/run.sh -d env/ -c @DEVELOP_SNAPSHOT -c @GIT_HPCTOOLKIT -j spack.junit.xml -k \
-      -b '--unsigned --type binary shared oci://"$CI_REGISTRY_IMAGE"/ci.spack-buildcache' \
-      -S '--unsigned --type binary
-          --oci-username "$CI_REGISTRY_USER" --oci-password "$CI_REGISTRY_PASSWORD"
-          __emul_autopush oci://"$CI_REGISTRY_IMAGE"/ci.spack-buildcache' \
-      "$refver" \
-    || case $? in
-    44) exit $ERRORS_REPORTED_EXIT_CODE; ;;
-    77) exit $ERRORS_IGNORED_EXIT_CODE; ;;
-    *) exit $?; ;;
-    esac
-  after_script:
-  # Try to recover the logs generated during the install process
-  - mkdir -p spack-logs/
-  - cp --parents -v -t spack-logs/ "$(cat spack-stages)"/*/*.txt ~/.spack/test/*/*.txt || true
-  - |
-    echo "To reproduce in a container environment:"
-    echo "  podman run --rm -it -v ./:/hpctoolkit:ro $CI_JOB_IMAGE"
-    echo "  git -C "'$SPACK_ROOT'" pull origin $(cat spack-commit):"
-    echo "  curl -Lo /tmp/artifacts.zip ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
-    echo "  unzip -d /tmp/ /tmp/artifacts.zip"
-    echo "  /hpctoolkit/ci/spack/run.sh -d /tmp/env -k"
-  artifacts:
-    expire_in: 2 days
-    paths:
-    - spack-logs/
-    - env/
-    reports:
-      junit: spack.junit.xml
-    when: always
-spack +cuda:
-  extends: spack
-  tags: [saas-linux-medium-amd64-gpu-standard]
-  before_script:
-  # These library search paths are needed to support nvidia-docker v1.
-  # Spack wipes LD_LIBRARY_PATH so we use ldconfig instead.
-  - printf '/usr/local/nvidia/lib\n/usr/local/nvidia/lib64' >> /etc/ld.so.conf.d/nvidia.conf
-  - ldconfig
-  variables:
-    <<: *cuda_variables
-    ENABLE_CUDA: 1
 
 
 # Generate just the documentation, and expose all the possible formats as artifacts.

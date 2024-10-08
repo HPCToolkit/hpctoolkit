@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2024 Rice University
+# SPDX-FileCopyrightText: 2024 Contributors to the HPCToolkit Project
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+spack:
+  view: false
+  concretizer:
+    unify: false
+    reuse:
+      roots: false
+      exclude:
+      - hpctoolkit
+      from:
+      - type: external
+      - type: buildcache
+    targets:
+      granularity: generic
+    duplicates:
+      strategy: full
+
+  definitions:
+  # FIXME: The CUDA tests currently fail if no CUDA device is available. To avoid
+  # these known test failures, only attempt +cuda if CUDA is known to be available.
+  # For details see https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/842
+  - when: env.get("ENV_ONLY_CUDA", "0") != "0"
+    hpct_cuda: [+cuda]
+  - when: env.get("ENV_ONLY_CUDA", "0") == "0"
+    hpct_cuda: [~cuda]
+
+  specs:
+  - matrix:
+    - [hpctoolkit build_system=meson buildtype=release ~viewer ~mpi]
+    - [+papi, ~papi]
+    - [$hpct_cuda]
+    # FIXME: Figure out how to select an appropriate OpenCL implementation for +opencl
+    - [~opencl]
+    exclude:
+    - hpctoolkit +papi +cuda
+
+  packages:
+    all:
+      require:
+      - target=:x86_64_v3
+
+  mirrors:
+    spack-develop:
+      url: https://binaries.spack.io/develop
+      signed: true
+      binary: true
+      source: false
+
+    hpctoolkit-ci:
+      url: oci://registry.gitlab.com/hpctoolkit/hpctoolkit/ci.spack-buildcache
+      signed: false
+      binary: true
+      source: false
