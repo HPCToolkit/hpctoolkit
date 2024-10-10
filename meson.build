@@ -764,10 +764,10 @@ opencl_dep = dependency('', required: false)
 if get_option('opencl').allowed()
   _opencl_ver = '>=2.1'
 
-  # - As of OpenCL >=2023.02.06 (found in Debian >=12, Ubuntu >=23.04, and Fedora) the headers can
-  #   be accessed via pkg-config as OpenCL-Headers.pc.
-  # - Before that, since OpenCL >=2020.12.18 (found in Debian >=10, Ubuntu >=20.04, and RHEL >=9)
-  #   the headers can be accessed via CMake as OpenCLHeaders-config.cmake.
+  # - As of OpenCL >=2023.02.06 (found in Debian >=12, Ubuntu >=23.04, and Fedora) the
+  #   headers can be accessed via pkg-config as OpenCL-Headers.pc.
+  # - Before that, since OpenCL >=2020.12.18 (found in Debian >=10, Ubuntu >=20.04, and
+  #   RHEL >=9) the headers can be accessed via CMake as OpenCLHeaders-config.cmake.
   opencl_dep = dependency(
     'OpenCL-Headers',
     'OpenCLHeaders',
@@ -776,9 +776,9 @@ if get_option('opencl').allowed()
     include_type: 'system',
   )
 
-  # For older distros, CMake >=3.1 ships a FindOpenCL.cmake script, but it requires a full OpenCL
-  # installation and not just the headers. If that's all we got, use it and cut out the link
-  # flags so we only get the headers.
+  # For older distros, CMake >=3.1 ships a FindOpenCL.cmake script, but it requires a
+  # full OpenCL installation and not just the headers. If that's all we got, use it and
+  # cut out the link flags so we only get the headers.
   if not opencl_dep.found()
     opencl_dep = dependency(
       'OpenCL',
@@ -789,8 +789,8 @@ if get_option('opencl').allowed()
     opencl_dep = opencl_dep.partial_dependency(includes: true, compile_args: true)
   endif
 
-  # For Spack builds and partial system installations, we also support the case where the header
-  # is already available on the standard include paths.
+  # For Spack builds and partial system installations, we also support the case where
+  # the headers are already available on the standard include paths.
   if not opencl_dep.found() and cc.has_header('CL/cl.h', required: false)
     opencl_dep = declare_dependency()
   endif
@@ -822,52 +822,39 @@ if opencl_dep.found()
     version: _opencl_ver,
     include_type: 'system',
     disabler: true,
-    required: get_option('tests'),
-  )
-endif
-
-
-# Find support for Intel performance monitoring via Level Zero.
-level0_dep = dependency('', required: false)
-if get_option('level0').allowed()
-  level0_dep = dependency(
-    'level-zero',
     required: false,
-    version: '>=1.0',
-    include_type: 'system',
   )
 
-  if not level0_dep.found()
-
-    # To work around certain incomplete modulefiles, we also support the case
-    # where the library and headers are already available in compiler flags.
-    _l0_lib = cc.find_library('ze_loader', has_headers: ['ze_api.h'], required: false)
-    if _l0_lib.found()
-      _l0_ver = cc.compute_int(
-        'ZE_API_VERSION_CURRENT',
-        prefix: '#include <ze_api.h>',
-        dependencies: _l0_lib,
-        low: 0x10000,
-        guess: 0x10008,
-        high: 0x30000,
-      )
-      level0_dep = declare_dependency(
-        dependencies: _l0_lib,
-        version: '@0@.@1@'.format(_l0_ver / 0x10000, _l0_ver % 0x10000),
-      )
-    endif
+  # For badly written modulefiles, we also support the case where the library is already
+  # available on environment-provided library paths.
+  if not opencl_full_dep.found()
+    opencl_full_dep = cc.find_library(
+      'OpenCL',
+      has_headers: ['CL/cl.h'],
+      disabler: true,
+      required: false,
+    )
   endif
 
-  # Fall back to dependency() to get a good error message and enable wrap fallbacks
-  if not level0_dep.found()
-    level0_dep = dependency(
-      'level-zero',
-      required: get_option('level0'),
-      version: '>=1.0',
+  # Fall back to dependency() to get a good error message and enable wrap fallbacks.
+  if not opencl_full_dep.found()
+    opencl_full_dep = dependency(
+      'OpenCL',
+      version: _opencl_ver,
       include_type: 'system',
+      disabler: true,
+      required: get_option('tests'),
     )
   endif
 endif
+
+# Find support for Intel performance monitoring via Level Zero.
+level0_dep = dependency(
+  'level-zero',
+  required: get_option('level0'),
+  version: '>=1.0',
+  include_type: 'system',
+)
 if level0_dep.found()
   add_project_arguments('-DUSE_LEVEL0', '-DHPCRUN_SS_LEVEL0', language: ['c', 'cpp'])
 endif
@@ -877,76 +864,17 @@ _gtpin_f = get_option('gtpin').require(
   level0_dep.found(),
   error_message: 'gtpin is only available with level0',
 )
-
-igc_dep = dependency('', required: false)
-if _gtpin_f.allowed()
-  igc_dep = dependency('igc-opencl', required: false, include_type: 'system')
-
-  if not igc_dep.found()
-
-    # To work around certain incomplete deployments/modulefiles, we also support
-    # the case where the headers are already available by full path in the
-    # compiler flags. In this case IGC_INCLUDE_FULL_PATH is #defined and
-    # downstream sources #include a longer header path when this is set.
-    _ok = true
-    foreach _hdr : [
-      'igc.opencl.h',
-      'ocl_igc_shared/executable_format/patch_list.h',
-      'ocl_igc_shared/device_enqueue/DeviceEnqueueInternalTypes.h',
-    ]
-      if not cc.has_header(_hdr)
-        _ok = false
-        break
-      endif
-    endforeach
-    if _ok
-      igc_dep = declare_dependency(
-        compile_args: ['-DIGC_INCLUDE_FULL_PATH'],
-        version: 'unknown',
-      )
-    endif
-  endif
-
-  # Fall back to dependency() to get a good error message and enable wrap fallbacks
-  if not igc_dep.found()
-    igc_dep = dependency('igc-opencl', required: _gtpin_f, include_type: 'system')
-  endif
-endif
+igc_dep = dependency('igc-opencl', required: _gtpin_f, include_type: 'system')
 if igc_dep.found()
   add_project_arguments('-DENABLE_IGC', language: ['c', 'cpp'])
 endif
-
-iga_dep = dependency('', required: false)
-if _gtpin_f.allowed()
-  iga_dep = dependency(
-    'IGA',
-    method: 'cmake',
-    cmake_module_path: 'cmake',
-    required: false,
-    include_type: 'system',
-  )
-
-  if not iga_dep.found()
-
-    # To work around certain incomplete modulefiles, we also support the case where the
-    # headers and library are already available in the compiler flags.
-    _iga_lib = cc.find_library('iga64', has_headers: ['iga/iga.h'], required: false)
-    if _iga_lib.found()
-      iga_dep = declare_dependency(dependencies: _iga_lib, version: 'unknown')
-    endif
-  endif
-
-  # Fall back to dependency() to get a good error message and enable wrap fallbacks
-  if not iga_dep.found()
-    iga_dep = dependency(
-      'IGA',
-      method: 'cmake',
-      cmake_module_path: 'cmake',
-      required: _gtpin_f,
-      include_type: 'system',
-    )
-  endif
-endif
+iga_dep = dependency(
+  'IGA',
+  method: 'cmake',
+  cmake_module_path: 'cmake',
+  required: _gtpin_f,
+  include_type: 'system',
+)
 
 # GTPin is a snowflake of a case, it only comes in a binary tarball with non-standard names for
 # all the paths like `Include` and `Lib`. This means we can't use CMake to find it, the user
