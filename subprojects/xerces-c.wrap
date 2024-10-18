@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: CC0-1.0
 
 [wrap-file]
-directory = xerces-c-3.2.5
-source_url = https://dlcdn.apache.org//xerces/c/3/sources/xerces-c-3.2.5.tar.gz
-source_filename = xerces-c-3.2.5.tar.gz
-source_hash = 545cfcce6c4e755207bd1f27e319241e50e37c0c27250f11cda116018f1ef0f5
+directory = xerces-c-3.3.0
+source_url = https://dlcdn.apache.org/xerces/c/3/sources/xerces-c-3.3.0.tar.gz
+source_fallback_url = https://archive.apache.org/dist/xerces/c/3/sources/xerces-c-3.3.0.tar.gz
+source_filename = xerces-c-3.3.0.tar.gz
+source_hash = 9555f1d06f82987fbb4658862705515740414fd34b4db6ad2ed76a2dc08d3bde
 method = cmake
 
 [provide]
